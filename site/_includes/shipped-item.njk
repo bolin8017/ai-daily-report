@@ -1,0 +1,8 @@
+<li data-source="{{ item.source or 'default' }}">
+  {% if item.url %}<a href="{{ item.url }}">{{ item.name or item.title }}</a>{% else %}{{ item.name or item.title }}{% endif %}
+  <span class="score">{% if item.stars %}⭐{{ item.stars | formatNum }}{% elif item.score %}{{ item.score }}{% if item.comments %} / {{ item.comments }}留言{% endif %}{% endif %}</span>
+  {% if item.repo_age %}<span class="repo-age">{{ item.repo_age }}</span>{% endif %}
+  {% if item.severity %}<span class="severity severity-{{ item.severity }}">{{ item.severity }}</span>{% endif %}
+  <span class="takeaway">{{ item.desc or item.takeaway }}</span>
+  {% if item.action %}<span class="action-item">→ {{ item.action }}</span>{% endif %}
+</li>

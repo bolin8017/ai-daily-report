@@ -1,0 +1,32 @@
+<div class="idea-card">
+  <h3>
+    {%- if idea.projects and (idea.projects | length) -%}
+      {%- for p in idea.projects -%}
+        {% if not loop.first %} × {% endif -%}
+        <a href="{{ p.url }}">{{ p.name }}</a>
+        {%- if p.stars %} <code>⭐{{ p.stars | formatNum }}</code>{% elif p.score %} <code>{{ p.score }}</code>{% endif -%}
+      {%- endfor %} → {{ idea.title }}
+    {%- else -%}
+      {{ idea.title }}
+    {%- endif -%}
+  </h3>
+  <p>{{ idea.description }}</p>
+  {% if idea.market_evidence %}<p class="market-evidence">📊 {{ idea.market_evidence }}</p>{% endif %}
+  <ul>
+    {% if idea.difficulty -%}
+      {% set diff_num = idea.difficulty | int -%}
+      {% if diff_num > 0 and diff_num < 6 -%}
+        <li><strong>難度</strong> — {% for i in range(0, diff_num) %}★{% endfor %}{% for i in range(diff_num, 5) %}☆{% endfor %} ({{ diff_num }}/5)</li>
+      {%- else -%}
+        <li><strong>難度</strong> — {{ idea.difficulty }}</li>
+      {%- endif %}
+    {%- endif %}
+    {% if idea.dev_time %}<li><strong>開發時間</strong> — {{ idea.dev_time }}</li>{% endif %}
+    {% if idea.use_case %}<li><strong>使用場景</strong> — {{ idea.use_case }}</li>{% endif %}
+    {% if idea.tech_stack %}<li><strong>技術組合</strong> — {{ idea.tech_stack }}</li>{% endif %}
+    {% if idea.hardware %}<li><strong>硬體需求</strong> — {{ idea.hardware }}</li>{% endif %}
+    {% if idea.skill_level %}<li><strong>技術門檻</strong> — {{ idea.skill_level }}</li>{% endif %}
+    {% if idea.dependencies %}<li><strong>外部依賴</strong> — {{ idea.dependencies }}</li>{% endif %}
+    {% if idea.first_step %}<li><strong>入門第一步</strong> — <code>{{ idea.first_step }}</code></li>{% endif %}
+  </ul>
+</div>

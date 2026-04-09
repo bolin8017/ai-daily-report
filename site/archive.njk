@@ -1,0 +1,16 @@
+---
+layout: base.njk
+pagination:
+  data: archiveReports
+  size: 1
+  alias: archiveReport
+permalink: "archive/{{ archiveReport.date }}.html"
+eleventyComputed:
+  pageTitle: "AI Creative Daily — {{ archiveReport.date }}"
+  pageDate: "{{ archiveReport.date }}"
+  isArchive: true
+---
+
+{%- set report = archiveReport -%}
+{%- set rssByCategory = {} -%}
+{% include "report-body.njk" %}

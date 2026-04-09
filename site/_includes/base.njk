@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'">
+  {%- set displayDate = pageDate if pageDate else report.date -%}
+  <title>AI Creative Daily — {{ displayDate }}</title>
+  <meta name="description" content="AI-powered daily creative tech brief. A Claude Code agent synthesizes signals from GitHub Trending, Hacker News, Lobsters, Dev.to and other communities into steal-worthy side project ideas and deep analysis.">
+  <meta name="theme-color" content="#e2a84b">
+  <link rel="canonical" href="https://bolin8017.github.io/ai-daily-report/{% if isArchive %}archive/{{ displayDate }}.html{% endif %}">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌅</text></svg>">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="AI Creative Daily — {{ displayDate }}">
+  <meta property="og:description" content="Daily creative tech brief with side project ideas from trending repos, Hacker News, and Lobsters.">
+  <meta property="og:url" content="https://bolin8017.github.io/ai-daily-report/{% if isArchive %}archive/{{ displayDate }}.html{% endif %}">
+  <meta property="og:locale" content="zh_TW">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="AI Creative Daily — {{ displayDate }}">
+  <meta name="twitter:description" content="Daily creative tech brief with side project ideas from trending repos, Hacker News, and Lobsters.">
+  <link rel="stylesheet" href="{{ '/assets/style.css' | url }}">
+  <link rel="alternate" type="application/rss+xml" title="AI Daily Report" href="{{ '/feed.xml' | url }}">
+  <base target="_blank">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到內容</a>
+  <header>
+    <div class="header-inner">
+      <h1>AI Creative Daily<span class="dot">.</span></h1>
+      <time datetime="{{ displayDate }}">{{ displayDate }} {{ displayDate | dayOfWeek }}</time>
+    </div>
+    {% if isArchive %}
+    <a href="{{ '/' | url }}" class="back-to-today" target="_self">← 回到今日報告</a>
+    {% endif %}
+  </header>
+  <main id="main-content">
+    {{ content | safe }}
+  </main>
+  <footer>
+    {% if not isArchive %}
+    <div class="sources">
+      {%- for src in sourcesStatus %}
+      <span class="source-status {% if src.ok %}ok{% else %}warn{% endif %}">{{ src.name }} {% if src.ok %}✓{% else %}⚠{% endif %} {{ src.count }}</span>
+      {%- endfor %}
+    </div>
+    {% endif %}
+    <nav class="archive">
+      {%- for item in archiveLinks %}
+      {%- if item.date != report.date %}
+      <a href="{{ ('/' + item.url) | url }}">{{ item.date }}</a>
+      {%- endif %}
+      {%- endfor %}
+    </nav>
+    <p class="powered-by">Powered by Claude Code</p>
+  </footer>
+  <script src="{{ '/assets/app.js' | url }}" defer></script>
+</body>
+</html>

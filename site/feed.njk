@@ -1,0 +1,32 @@
+---
+permalink: /feed.xml
+eleventyExcludeFromCollections: true
+---
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>AI Creative Daily</title>
+    <link>https://bolin8017.github.io/ai-daily-report/</link>
+    <description>AI-powered daily creative tech brief — side project ideas from GitHub Trending, Hacker News, Lobsters, Dev.to and other communities</description>
+    <language>zh-TW</language>
+    <atom:link href="https://bolin8017.github.io/ai-daily-report/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>AI Creative Daily — {{ report.date }}</title>
+      <link>https://bolin8017.github.io/ai-daily-report/</link>
+      <guid>https://bolin8017.github.io/ai-daily-report/#{{ report.date }}</guid>
+      <pubDate>{{ report.date }}T08:00:00+08:00</pubDate>
+      <description>{{ report.lead.html | striptags | truncate(200) }}</description>
+    </item>
+    {%- for arch in archiveLinks %}
+    {%- if arch.date != report.date %}
+    <item>
+      <title>AI Creative Daily — {{ arch.date }}</title>
+      <link>https://bolin8017.github.io/ai-daily-report/{{ arch.url }}</link>
+      <guid>https://bolin8017.github.io/ai-daily-report/{{ arch.url }}</guid>
+      <pubDate>{{ arch.date }}T08:00:00+08:00</pubDate>
+      <description>AI Creative Daily report for {{ arch.date }}</description>
+    </item>
+    {%- endif %}
+    {%- endfor %}
+  </channel>
+</rss>

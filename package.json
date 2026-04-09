@@ -1,0 +1,53 @@
+{
+  "name": "ai-daily-report",
+  "version": "0.1.0",
+  "description": "AI-powered daily creative tech brief — a Claude Code agent collects signals from GitHub, Hacker News, Lobsters and other tech communities, then synthesizes them into an opinionated daily HTML report published to GitHub Pages.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "author": "bolin8017",
+  "homepage": "https://bolin8017.github.io/ai-daily-report/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bolin8017/ai-daily-report.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bolin8017/ai-daily-report/issues"
+  },
+  "keywords": [
+    "ai",
+    "daily-report",
+    "claude-code",
+    "hacker-news",
+    "github-trending",
+    "static-site",
+    "eleventy"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "eleventy",
+    "serve": "eleventy --serve",
+    "start": "bash scripts/run.sh",
+    "pipeline": "node src/pipeline.js",
+    "pipeline:dry": "node src/pipeline.js --dry-run",
+    "validate:report": "bash -c 'node src/lib/validate.js report \"$(ls -1 data/reports/*.json 2>/dev/null | sort -r | head -1)\"'",
+    "validate:memory": "node src/lib/validate.js memory data/memory.json",
+    "validate:config": "node src/lib/validate.js config config.json",
+    "test": "vitest run",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "octokit": "^5.0.5",
+    "rss-parser": "^3.13.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^3.1.5",
+    "@biomejs/biome": "^2.4.10",
+    "vitest": "^4.1.2"
+  }
+}
