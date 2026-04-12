@@ -5,10 +5,10 @@
 #
 #   1. Install Docker (if missing) and verify the daemon
 #   2. Add 2GB swap (required because the VM has only 958MB RAM and runs other
-#      services; LLM synthesis peaks can OOM without swap cushion)
+#      services; LLM synthesis peaks need headroom to avoid OOM)
 #   3. Clone the repo and build the Docker image
-#   4. Print instructions for Claude CLI OAuth (requires one-shot SSH port-forward)
-#   5. Print instructions for the crontab entry
+#   4. Install systemd timer for daily 04:00 Asia/Taipei execution
+#   5. Print instructions for Claude CLI OAuth and secrets
 #
 # Usage on the VM:
 #   curl -fsSL https://raw.githubusercontent.com/bolin8017/ai-daily-report/main/scripts/setup-vm.sh | bash
@@ -22,6 +22,7 @@ REPO_DIR="${HOME}/ai-daily-report"
 IMAGE="ai-daily-report:latest"
 SWAP_SIZE="2G"
 SWAP_FILE="/swapfile"
+UNIT_DIR="/etc/systemd/system"
 
 log() { echo "[setup-vm] $*"; }
 err() { echo "[setup-vm] ERROR: $*" >&2; }
@@ -88,27 +89,57 @@ step_image() {
 }
 
 # ──────────────────────────────────────────────────────────────
-# Step 4-5: operator instructions
+# Step 4: systemd timer (replaces crontab)
+# ──────────────────────────────────────────────────────────────
+step_systemd() {
+  log "installing systemd units..."
+
+  # Generate service file from template (substitute __USER__ and __REPO_DIR__)
+  sed -e "s|__USER__|${USER}|g" -e "s|__REPO_DIR__|${REPO_DIR}|g" \
+    "$REPO_DIR/systemd/ai-daily-report.service" \
+    | sudo tee "$UNIT_DIR/ai-daily-report.service" > /dev/null
+
+  # Timer has no user-specific placeholders
+  sudo cp "$REPO_DIR/systemd/ai-daily-report.timer" "$UNIT_DIR/ai-daily-report.timer"
+
+  sudo systemctl daemon-reload
+  sudo systemctl enable ai-daily-report.timer
+  sudo systemctl start ai-daily-report.timer
+
+  log "timer status: $(systemctl is-active ai-daily-report.timer)"
+  log "next trigger:"
+  systemctl list-timers ai-daily-report.timer --no-pager | sed 's/^/  /'
+
+  # Remove old crontab entry if it exists
+  if crontab -l 2>/dev/null | grep -q 'cron-run.sh'; then
+    log "removing old crontab entry..."
+    crontab -l | grep -v 'cron-run.sh' | grep -v 'TZ=Asia/Taipei' | crontab -
+    log "old crontab entry removed"
+  fi
+}
+
+# ──────────────────────────────────────────────────────────────
+# Step 5: operator instructions
 # ──────────────────────────────────────────────────────────────
 print_next_steps() {
-  cat <<'EOF'
+  cat <<EOF
 
 [setup-vm] ✓ setup complete
 
 Remaining manual steps:
 
 1. CLAUDE CLI AUTH (one-time)
-   The pipeline uses the Claude Max subscription via `claude -p`. On this
+   The pipeline uses the Claude Max subscription via \`claude -p\`. On this
    headless VM you need to authenticate once:
 
      # from your local machine, SSH with port forwarding:
      gcloud compute ssh homelab --zone=us-west1-b -- -L 9999:localhost:9999
 
      # on the VM:
-     docker run --rm -it \
-       -v "$HOME/.claude":/root/.claude \
-       -p 9999:9999 \
-       ai-daily-report:latest \
+     docker run --rm -it \\
+       -v "\$HOME/.claude":/root/.claude \\
+       -p 9999:9999 \\
+       ai-daily-report:latest \\
        bash -c "claude /login"
 
    Follow the printed URL in your local browser; paste the auth code back
@@ -124,22 +155,22 @@ Remaining manual steps:
      chmod 600 ~/.ai-daily-report.env
 
 3. MANUAL DRY RUN
-   Test once end-to-end before wiring cron:
+   Test once end-to-end before relying on the timer:
 
-     set -a; source ~/.ai-daily-report.env; set +a
-     bash "$HOME/ai-daily-report/scripts/cron-run.sh"
+     sudo systemctl start ai-daily-report.service
+     journalctl -u ai-daily-report -f
 
    Watch for a new commit on origin/main and a green GitHub Actions build.
 
-4. CRONTAB
-   When the manual run succeeds, add the scheduled entry:
+4. VERIFY TIMER
+   The systemd timer is already enabled and will fire daily at 04:00 Asia/Taipei.
+   Check status with:
 
-     crontab -e
-     # add:
-     TZ=Asia/Taipei
-     0 4 * * * /home/$USER/ai-daily-report/scripts/cron-run.sh >> /var/log/ai-daily-report.log 2>&1
+     systemctl list-timers ai-daily-report.timer
+     journalctl -u ai-daily-report --since today
 
-   (You may need `sudo touch /var/log/ai-daily-report.log && sudo chown $USER /var/log/ai-daily-report.log` first.)
+   If the VM reboots and misses 04:00, the timer catches up automatically
+   (Persistent=true).
 
 EOF
 }
@@ -149,6 +180,7 @@ main() {
   step_swap
   step_repo
   step_image
+  step_systemd
   print_next_steps
 }
 

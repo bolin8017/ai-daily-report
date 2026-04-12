@@ -1,0 +1,34 @@
+# AI Daily Report — systemd service unit
+#
+# Runs the two-stage pipeline inside Docker:
+#   Stage 1: fetch + condense + commit staging data
+#   Stage 2: Claude agent analysis + commit report
+#
+# Install via scripts/setup-vm.sh, which substitutes __USER__ and
+# __REPO_DIR__ with actual values and copies to /etc/systemd/system/.
+
+[Unit]
+Description=AI Daily Report — daily tech brief pipeline
+After=docker.service network-online.target
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=__USER__
+ExecStart=__REPO_DIR__/scripts/cron-run.sh
+
+# 30 min max for Stage 1 (fetch ~1 min) + Stage 2 (LLM ~10 min)
+TimeoutStartSec=1800
+
+# Pipeline timezone — determines the report date (YYYY-MM-DD)
+Environment=TZ=Asia/Taipei
+Environment=REPORT_TIMEZONE=Asia/Taipei
+
+# Logging → journalctl -u ai-daily-report
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ai-daily-report
+
+[Install]
+WantedBy=multi-user.target
