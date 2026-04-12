@@ -51,7 +51,7 @@ docker run --rm \
   --cpus=2 \
   -e GITHUB_TOKEN \
   -e REPORT_TIMEZONE="${REPORT_TIMEZONE:-Asia/Taipei}" \
-  -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}" \
+  -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-6}" \
   -v "$VOLUME":/workspace \
   -v "$CLAUDE_HOST_DIR":/root/.claude \
   "$IMAGE"

@@ -19,7 +19,7 @@ if [ -f .env ]; then
 fi
 
 DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%Y-%m-%d)
-MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
+MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
 SKIP_PUSH="${SKIP_PUSH:-0}"
 
 # ── Preflight checks ──────────────────────────────────────────────
