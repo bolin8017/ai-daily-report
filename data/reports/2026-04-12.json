@@ -1,0 +1,527 @@
+{
+  "date": "2026-04-12",
+  "lead": {
+    "thin": false,
+    "html": "<h3>Google 無聲地在準備什麼：agents-cli 空 repo 與工具鏈戰爭的開幕</h3>\n\n<h4>發生了什麼</h4>\n<p>50 小時前，Google 在 GitHub 上創建了 <code>google/agents-cli</code> repo，現在仍為完全空白——0 commits、0 stars、無 description。同一週，Claude Code 生態在 GitHub Trending 上展開六個工具，從 superpowers (141k stars) 到 caveman、mempalace、archon、hermes-agent、ralph 形成完整套件。Anthropic 的政治曝險同步升級：04-09 到 04-12 的四天內，Dario Amodei 親自簽署對 US Secretary of War 的聲明、Anthropic Institute 成立、Mozilla Firefox 進階合作關係、Vercept 收購正式公告、Google/Broadcom 多吉瓦級別的供應鏈同盟。</p>\n\n<h4>為什麼重要</h4>\n<p>Google 的動作暴露了一個架構轉折點：agent 工具鏈的競爭已經從「模型推理性能」升級到「developer experience」。claude-mem、archon、ralph 三個工具解決的問題不是「LLM 推理更強」，而是「我怎麼用 agent 寫代碼更有效率」。Google 的空 repo 則表示——他們意識到 Claude Code 的 moat 不是 GPT-4o 的智能，而是「IDE 整合 + skill 生態 + 會話持久化」的工具套件。一個空 repo 的存在本身就是信號：Google 在公開承認「我在做這件事」，同時隱藏「具體怎麼做」。這個戰術上的透明和戰略上的隱蔽，恰好說明 Google 判斷這個競爭點足夠關鍵。</p>\n\n<p>同時，Anthropic 的政治動作升級序列——從「聲明」（04-09）到「機構化」（Anthropic Institute 成立）——表明供應鏈垂直整合的副作用已經超過企業公關的邊界，進入政策層。這是昨週垂直整合新聞（Vercept、Google/Broadcom、Partner Network）的延拓：當模型廠掌控了從晶片到 API 的全鏈，「我和政府的關係」成為競爭維度的一部分。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 的訊號顯示社群注意力還卡在昨天（04-11）的新聞。Gary Marcus 在 Substack 發了三篇關於 Mythos 的評論——標題分別是「最大進步」和「過度吹噓」——這本身就是信號：即使是有洞察力的分析師也在改口。HN 高分項「How We Broke Top AI Agent Benchmarks」（415 分）深化了 benchmark 作弊問題，這與 Mythos 同時發表的「security eval」形成直接對比——是誰在玩數字遊戲？更深層的反應是沉默：google/agents-cli 創建 50 小時，Hacker News 沒有一條討論串。這種沉默通常代表「還沒有人 notice」或「notice 了但不知道怎麼評價」。對 Google 來說，這正是最理想的隱蔽期。</p>\n\n<h4>行動建議</h4>\n<p>你在 Claude Code 上有超過十行的投入嗎？這週在你的 repo 根目錄加一個 <code>vendor-assumptions.md</code> 文件，記三件事：(1) 當前用的 Claude Code 版本 / API model（例如 claude-sonnet-4-6）; (2) 你假設能用的 features（例如「sketch mode」「skill discovery」）; (3) 如果這個 feature 換供應商會 break 哪些 workflow。理由：一旦 Google agents-cli GA，你會面臨「要不要試試」的決定。有這個文件讓你 5 分鐘內評估遷移成本，而不是被迫臨時重構。同時，看一下你最常用的三個 Claude Code skills（例如 mempalace、caveman、ralph），這週在 package.json 或 requirements.txt 的註釋裡記一下「為什麼選這個而不是官方方案」——這個紀錄在 Google 的方案成熟時會再度有價值。</p>"
+  },
+  "ideas": [
+    {
+      "title": "On-device agent harness × Apple Silicon unified memory = 自主推理引擎",
+      "description": "你是一家法律科技 startup 的 CTO，有 5000 份 NDA + 800 份勞動契約，想用 7B base model 微調出「條款風險標註」agent，老闆不准上雲端（合約保密）、更不准花月費 $4k 租 8×H100。你手上有一台 M3 Ultra Mac Studio 192GB。",
+      "mechanism": "MegaTrain + MLX 的組合打開了一條新路：optimizer state 全留 CPU 內存、GPU 專注 forward/backward pass（DeepSpeed-Zero 的更激進版）。Apple Silicon 的 unified memory 架構（GPU 跟 CPU 共享物理內存、零複製 overhead）讓這個 trick 不只可行、還優於 CUDA offload。加上 apfel 這類 on-device CLI 工具的成熟，你可以把整個 inference 管道鎖在公司內網。",
+      "unlock": "之前不可能做的：7B 模型在家用 GPU 上 full precision 訓練 + deploy。成本從「月費 $4k+」降到「買 Mac 一次性」。法律 NDA 不再是「要不要上雲」的 binary choice，變成「local-first 優先」。",
+      "signal": "MegaTrain 論文 HN 273 分 + Show HN Gemma 4 multimodal fine-tuner 同週出現 + unsloth 在 topic search 持續高頻 mention（all three independent signals = single-GPU full-precision 訓練的 moment-of-inflection）。apfel 4k 星星、Gemma 4 LiteRT-LM 的 multimodal 支持是供應側就緒。",
+      "use_case": "法律 NDA 審查 + 財務合約風險標註 + 醫療文件初篩（任何「敏感數據不離廠」的產業）。",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "本週下午跑通 MLX × MegaTrain 的 example notebook（GitHub 用 Claude Code 一鍵跑）；試試 8GB 顯存能不能 fine-tune 你自己的 7B LoRA checkpoint。",
+      "format": "remix",
+      "requirements": {
+        "hardware": "M2 Ultra 以上或 RTX 4090；192GB RAM 時最佳、可降級到 64GB（有 swap 成本）",
+        "skill_level": "需熟悉 PyTorch / transformer 基礎、對 memory layout 有直觀認識；不需要深入 CUDA 優化",
+        "dependencies": "免費自架，MLX + unsloth 都開源無限制；model weights 用 Gemma 2 free tier 或自己訓的"
+      },
+      "market_evidence": "三條 independent signals 同週出現 = 市場 moment-of-inflection；「on-device training」被選為 CaaS 對手的第一個突破口（Google Gemini API 對標的不是 Claude，是 self-hosted margin）"
+    },
+    {
+      "title": "Benchmark gaming 檢測工具 × 評估框架開源化 = 信任恢復層",
+      "description": "你是一家 AI 基準測試組織的技術主管，眼睜睜看著 HN 同時出現「小模型也找到 Mythos 找到的漏洞」和「How We Broke Top AI Agent Benchmarks」兩條新聞。沒人知道誰在玩數字，但都在懷疑。社群需要一套工具，讓任何人可以在 30 秒內判斷「這份 benchmark 的數字可信嗎」。",
+      "mechanism": "取著名 benchmark（OSWorld、SWE-Bench、WebArena）的 evaluation logic，反向工程出 gaming patterns：(a) 識別 task 與 task 間的數據洩露（train/test overlap 檢測）；(b) 搜索 benchmark repo 裡的「hardcoded 答案」或「task-specific prompt injection」；(c) 對比官方的 run output 與 reproducible reference impl 的差異。用 Berkeley 那篇論文的發現做 signature database（「哪些微小改動會造成大幅分數波動」）。",
+      "unlock": "之前不可能做的：快速驗證一份 benchmark claim。現在任何 builder 可以在 GitHub issue 裡用你的工具驗證「Mythos 的 93.9% 是怎麼來的」。轉變 benchmark 從「發表者說了算」到「社群可驗證」。",
+      "signal": "HN 同一天出現 1140 分（小模型也能破 Mythos）和 415 分（benchmark 作弊）= 社群對 benchmark 數字的信任臨界點；Gary Marcus 同週三篇 Mythos 評論（tone 從背書到存疑）= 即使是有名的評論者也在改口。",
+      "use_case": "Anthropic / OpenAI / Google 發新 benchmark 時，記者 / 投資者 / CTO 用這個工具 15 秒內驗證信度。",
+      "difficulty": "2",
+      "dev_time": "週末 POC（detection patterns）+ 1 週 full CLI（reproducibility check）",
+      "first_step": "Fork Berkeley 那篇論文的 GitHub repo；反向工程他們怎麼找到 benchmark gaming patterns；寫一個 `benchmark-forensics` CLI，接收 benchmark name，輸出「可信度評分」。",
+      "format": "solo",
+      "requirements": {
+        "hardware": "純 CPU 可跑，benchmark scripts 通常 <100MB",
+        "skill_level": "需懂 Python data analysis + git archaeology；不需要 ML 背景",
+        "dependencies": "完全免費開源；依賴公開的 benchmark repos + arxiv preprints"
+      },
+      "market_evidence": "社群明確表示懷疑（HN 415 分帖子的 comment 熱度）；投資人開始要求 benchmark 驗證（Gary Marcus 的「overblown」評論反映了市場裡的疑慮）；沒有現成工具，屬於 underserved gap"
+    },
+    {
+      "title": "Skill registry governance × Sigstore signing = Agent 工具鏈的信任層",
+      "description": "你負責一家提供 Claude Code skills 平台的團隊。過去一週 caveman、mempalace、skrun、archon、ralph 連爆，每個都聲稱「最好的 X」。開發者不知道裝哪個、不知道這些 skill 的供應鏈風險（會不會在你背後修改你的 prompt？會不會竊聽你的代碼？）。現在有機會做第一個 skill 信任層。",
+      "mechanism": "借鑒 npm / pip 的教訓，但走 Sigstore 路線（不是 PyPI 那套弱簽名）。為每個 skill 建立三層信任：(1) code provenance = Sigstore cosign 簽名（author 身份驗證）；(2) dependency transparency = 列出 skill 的完整 dependency tree + 每個 dep 的 supply chain risk score（來自 Scorecard project）；(3) runtime permission model = skill manifest 裡明確列出「我會讀你的代碼嗎」「我會傳出 telemetry 嗎」。發佈一個「skill trust dashboard」，讓開發者一眼看出「這個 skill 是 verified author、no external deps、read-only on codebase」vs「unverified、10 個 external deps、requests network access」。",
+      "unlock": "之前不可能做的：開發者有信心裝陌生人寫的 skill 進生產 codebase。AI ecosystem 的 package management 才能從「複製貼上」升級到「信任+驗證」。",
+      "signal": "memory 的 arc-agent-skill-distribution 觀察到「UX/效率/部署/狀態四層齊備、缺治理層」；同時 open_thread 問「誰會先做 skill registry 的治理層」；Google agents-cli 空 repo 的競爭壓力會加速這個需求——第一個做出「經過驗證的 skill 生態」的平台會贏。",
+      "use_case": "Anthropic 官方 skill registry / 社群驅動的 OpenRegistry 都可以用。",
+      "difficulty": "4",
+      "dev_time": "1 個月 MVP（core trust model）",
+      "first_step": "這週研究 Sigstore + npm Scorecard；draft 一個「skill manifest.json schema」包含 permissions + deps + author info；開始策劃跟 Anthropic 或社群 registry 的合作路徑。",
+      "format": "solo",
+      "requirements": {
+        "hardware": "純 CPU；manifest processing <10ms",
+        "skill_level": "需懂 supply chain security、Sigstore、package manifest design；不需要 cryptography 深度知識",
+        "dependencies": "Sigstore tooling 免費開源；npm Scorecard API 免費；託管可選（自架或用 GitHub Pages）"
+      },
+      "market_evidence": "memory 預測「到 2026-09，claude-code 相關 repos 中無 commit 超過 30 天的佔比 ≥75%」= 生態成熟的必然副作用是治理層缺失；市場需要這個層級的 infrastructure"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "microsoft/markitdown",
+      "url": "https://github.com/microsoft/markitdown",
+      "desc": "Convert files and office documents to Markdown — 103k stars, trending #4",
+      "source": "GitHub Trending #4 · 103515★",
+      "repo_age": "2023 年建立",
+      "stars": 103515
+    },
+    {
+      "name": "NousResearch/hermes-agent",
+      "url": "https://github.com/NousResearch/hermes-agent",
+      "desc": "The agent that grows with you — agentic coding assistant",
+      "source": "GitHub Trending #1 · 63163★",
+      "repo_age": "去年建立",
+      "stars": 63163
+    },
+    {
+      "name": "thedotmack/claude-mem",
+      "url": "https://github.com/thedotmack/claude-mem",
+      "desc": "Claude Code plugin auto-capturing sessions for session continuity — 48k stars",
+      "source": "GitHub Trending #9 · 48574★",
+      "repo_age": "本月新增",
+      "stars": 48574
+    },
+    {
+      "name": "shanraisshan/claude-code-best-practice",
+      "url": "https://github.com/shanraisshan/claude-code-best-practice",
+      "desc": "Practice guide for Claude Code mastery — 38k stars",
+      "source": "GitHub Trending #7 · 38046★",
+      "repo_age": "2025 年建立",
+      "stars": 38046
+    },
+    {
+      "name": "MemPalace/mempalace",
+      "url": "https://github.com/MemPalace/mempalace",
+      "desc": "Highest-scoring AI memory system, benchmarked and free",
+      "source": "topic:llm · 42536★ · 新增",
+      "repo_age": "本週新增",
+      "stars": 42536
+    },
+    {
+      "name": "JuliusBrussee/caveman",
+      "url": "https://github.com/JuliusBrussee/caveman",
+      "desc": "Token optimizer skill — 65% token reduction via compressed prompting",
+      "source": "topic:llm · 20070★ · 本週",
+      "repo_age": "本週新增",
+      "stars": 20070
+    },
+    {
+      "name": "coleam00/Archon",
+      "url": "https://github.com/coleam00/Archon",
+      "desc": "First open-source harness builder for deterministic AI coding",
+      "source": "GitHub Trending #6 · 16748★",
+      "repo_age": "2 個月",
+      "stars": 16748
+    },
+    {
+      "name": "snarktank/ralph",
+      "url": "https://github.com/snarktank/ralph",
+      "desc": "Autonomous agent loop — runs until all PRD items complete",
+      "source": "GitHub Trending #13 · 15654★",
+      "repo_age": "2 個月",
+      "stars": 15654
+    },
+    {
+      "name": "arthur-ficial/apfel",
+      "url": "https://github.com/Arthur-Ficial/apfel",
+      "desc": "On-device AI: CLI tool, OpenAI-compatible server on Mac via Apple Intelligence",
+      "source": "topic:llm · 4249★ · 新增",
+      "repo_age": "1 個月",
+      "stars": 4249
+    },
+    {
+      "name": "lintsinghua/claude-code-book",
+      "url": "https://github.com/lintsinghua/claude-code-book",
+      "desc": "42 萬字 Claude Code 架構深度剖析 — 15 章從 agent loop 到自製 harness",
+      "source": "topic:agent · 2584★ · 新增",
+      "repo_age": "本週新增",
+      "stars": 2584
+    },
+    {
+      "name": "Cirrus Labs joins OpenAI",
+      "url": "https://cirruslabs.org/",
+      "desc": "Post-quantum cryptography startup acquired; impact on standardization timeline",
+      "source": "HN 270分 · Changelog",
+      "repo_age": "正式公告",
+      "stars": null
+    },
+    {
+      "name": "Anthropic Claude Partner Network",
+      "url": "https://www.anthropic.com/news/claude-partner-network",
+      "desc": "$100M fund for partner ecosystem expansion; allocation rules TBD",
+      "source": "Anthropic News · 04-12",
+      "repo_age": "正式啟動",
+      "stars": null
+    },
+    {
+      "name": "Small models found Mythos vulnerabilities too",
+      "url": "https://aisle.com/blog/ai-cybersecurity-after-mythos-the-jagged-frontier",
+      "desc": "Smaller models replicate findings from Mythos preview; benchmark robustness question",
+      "source": "HN 1140分 · Aisle cybersecurity",
+      "repo_age": "今日報導",
+      "stars": null
+    },
+    {
+      "name": "How We Broke Top AI Agent Benchmarks",
+      "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/",
+      "desc": "Berkeley RDI paper: agent benchmarks are gameable; validation methodology needed",
+      "source": "HN 415分 · Berkeley RDI",
+      "repo_age": "論文發表",
+      "stars": null
+    },
+    {
+      "name": "Google Flex & Priority Inference (Gemini API)",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference/",
+      "desc": "Two new inference tiers for cost/reliability trade-offs; batch processing reduced cost",
+      "source": "Google AI Blog",
+      "repo_age": "API 更新",
+      "stars": null
+    },
+    {
+      "name": "SQLite 3.53.0 released",
+      "url": "https://sqlite.org/releaselog/3_53_0.html",
+      "desc": "New query optimizations for aggregate functions; common table expression improvements",
+      "source": "Lobsters 65分 · Simon Willison",
+      "repo_age": "版本發佈",
+      "stars": null
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Google 創建 agents-cli (空 repo，50 小時無 commit)",
+        "url": "https://github.com/google/agents-cli",
+        "takeaway": "agent CLI 的競爭升級信號。Google 在公開准備，同時隱蔽實施。",
+        "action": "關注第一個 commit 的時機和內容——會暴露 Google 的策略層。"
+      },
+      {
+        "title": "Claude Code 生態四層齊備",
+        "url": "https://github.com/trending?since=weekly&spoken_language_code=&d=1",
+        "takeaway": "trending 上同時出現 UX (superpowers) / 效率 (caveman) / 部署 (skrun、ralph) / 狀態 (mempalace) 四類工具。",
+        "action": "評估你的 workflow 缺哪一層，這週補一個。"
+      },
+      {
+        "title": "Benchmark gaming 成為明確的信任危機",
+        "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/",
+        "takeaway": "HN 同時高分的「小模型也能破 Mythos」和「We Broke Benchmarks」= 社群在懷疑數字。",
+        "action": "對新 benchmark 的數字持懷疑，尋找原論文、reproducible code、independent verification。"
+      },
+      {
+        "title": "Anthropic 政治曝險升級到機構層",
+        "url": "https://www.anthropic.com/news/australia-MOU",
+        "takeaway": "Dario Amodei 親簽 DoW 聲明 → Anthropic Institute 成立。供應鏈垂直整合的副作用不只技術，還有政治。",
+        "action": "在關鍵的 API 依賴上加 risk log；跟蹤 Anthropic 的政策立場是否會影響 AUP。"
+      },
+      {
+        "title": "On-device LLM 商品化：apfel (Mac CLI) 4k stars",
+        "url": "https://github.com/Arthur-Ficial/apfel",
+        "takeaway": "推理側 (Google gallery) → 訓練側 (Gemma 4 fine-tuner) → CLI 層 (apfel)。完整的 on-device pipeline。",
+        "action": "如果你的 workflow 有敏感數據，試試 apfel 或 MLX 的可行性。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Small models also found the vulnerabilities that Mythos found",
+        "url": "https://aisle.com/blog/ai-cybersecurity-after-mythos-the-jagged-frontier",
+        "score": 1140,
+        "comments": 69
+      },
+      {
+        "title": "How We Broke Top AI Agent Benchmarks: And What Comes Next",
+        "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/",
+        "score": 415,
+        "comments": 28
+      },
+      {
+        "title": "I run multiple $10K MRR companies on a $20/month tech stack",
+        "url": "https://stevehanov.ca/blog/how-i-run-multiple-10k-mrr-companies-on-a-20month-tech-stack",
+        "score": 365,
+        "comments": 63
+      },
+      {
+        "title": "Cirrus Labs to join OpenAI",
+        "url": "https://cirruslabs.org/",
+        "score": 270,
+        "comments": 35
+      },
+      {
+        "title": "Advanced Mac Substitute is an API-level reimplementation of 1980s-era Mac OS",
+        "url": "https://www.v68k.org/advanced-mac-substitute/",
+        "score": 251,
+        "comments": 18
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "No one owes you supply-chain security",
+        "url": "https://purplesyringa.moe/blog/no-one-owes-you-supply-chain-security/",
+        "score": 62,
+        "comments": 24,
+        "tags": ["security"]
+      },
+      {
+        "title": "I Just Want Simple S3",
+        "url": "https://blog.feld.me/posts/2026/04/i-just-want-simple-s3/",
+        "score": 60,
+        "comments": 16,
+        "tags": ["osdev", "scaling"]
+      },
+      {
+        "title": "SQLite 3.53.0",
+        "url": "https://sqlite.org/releaselog/3_53_0.html",
+        "score": 65,
+        "comments": 8,
+        "tags": ["databases", "release"]
+      },
+      {
+        "title": "Brocards for vulnerability triage",
+        "url": "https://blog.yossarian.net/2026/04/11/Brocards-for-vulnerability-triage",
+        "score": 34,
+        "comments": 7,
+        "tags": ["security"]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "audreyt",
+        "followers": 8831,
+        "repo": "audreyt/gbrain",
+        "url": "https://github.com/audreyt/gbrain",
+        "language": null,
+        "hours_ago": 17,
+        "description": "Garry's Opinionated OpenClaw/Hermes Agent Brain — agent 思維模型的 folk implementation",
+        "local_context": "🇹🇼 台灣社群對 agent framework 內核設計的本地化嘗試，反映出對 Anthropic/Vercel 官方 harness 的反向工程熱度持續升溫"
+      },
+      {
+        "developer": "Inndy",
+        "followers": 504,
+        "repo": "Inndy/framework-desktop-rocm-setup",
+        "url": "https://github.com/Inndy/framework-desktop-rocm-setup",
+        "language": "Shell",
+        "hours_ago": 68,
+        "description": "Framework Laptop ROCm setup guide for Ubuntu 24.04 + llama.cpp — 硬體+軟體整合指南",
+        "local_context": "🇹🇼 DIY on-device inference 的實踐者；跟 apfel、MLX 浪潮方向一致但更硬體向"
+      }
+    ],
+    "global": [
+      {
+        "developer": "antfu",
+        "followers": 39077,
+        "repo": "antfu/tsnapi",
+        "url": "https://github.com/antfu/tsnapi",
+        "language": "TypeScript",
+        "hours_ago": 58,
+        "description": "Library public API snapshot testing for runtime exports and type declarations",
+        "stars": 114
+      },
+      {
+        "developer": "addyosmani",
+        "followers": 46370,
+        "repo": "addyosmani/agentic-seo",
+        "url": "https://github.com/addyosmani/agentic-seo",
+        "language": "JavaScript",
+        "hours_ago": 15,
+        "description": "Agentic SEO / Agentic Engine Optimization (AEO) tools — agent 對搜索引擎最佳化的新視角",
+        "stars": 19
+      },
+      {
+        "developer": "rasbt",
+        "followers": 37232,
+        "repo": "rasbt/workflow-understanding-LLM-architectures",
+        "url": "https://github.com/rasbt/workflow-understanding-LLM-architectures",
+        "language": "Jupyter Notebook",
+        "hours_ago": 42,
+        "description": "Tutorial materials for understanding LLM architectures workflow",
+        "stars": 9
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Agent toolchain competition escalation",
+      "body": "過去 48 小時內，agent 開發工具的競爭維度從「推理模型性能」（Mythos SWE-bench Verified 93.9%）升級到「開發體驗完整性」（Claude Code ecosystem UX/效率/部署/狀態四層齊備）。Google agents-cli 空 repo 的出現表示 Google 認知到 Claude Code 的 moat 不是模型，而是工具套件的整體性。Trending 上的五個 Claude Code 相關項目（hermes-agent、claude-mem、claude-code-best-practice、archon、ralph）都在解決「怎麼用 agent 寫代碼」而非「模型有多聰明」。",
+      "evidence": "Trending: hermes (63k) / claude-mem (48k) / best-practice (38k) / archon (16k) / ralph (15k); Search: mempalace (42k) / caveman (20k); Developers: audreyt/gbrain (Taiwan agent brain), addyosmani/agentic-seo (agent SEO layer); Google agents-cli (empty, 50h old, 0 commits)",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 4,
+      "percentile": "top 5%",
+      "arc_ref": "arc-agent-skill-distribution",
+      "day_count": 2,
+      "source_links": [
+        {
+          "platform": "GitHub Trending",
+          "title": "Claude Code ecosystem on top 10",
+          "url": "https://github.com/trending?since=weekly"
+        },
+        {
+          "platform": "GitHub Search",
+          "title": "LLM + agent topics, 30 days old",
+          "url": "https://github.com/search?q=topic:agent+topic:llm+created:>2026-03-13&type=repositories&sort=stars"
+        },
+        {
+          "platform": "GitHub Developers",
+          "title": "High-follower new repos",
+          "url": "https://github.com/search?q=created:>2026-04-11+followers:>100&type=repositories"
+        }
+      ],
+      "product_opportunity": "Anthropic 或社群若先做出「verified skill registry（Sigstore 簽名 + supply-chain transparency）」會贏得開發者信任；相反，如果 skill 生態變成「誰的 stars 最多」而沒有治理層，Google agents-cli 會有機會用「官方驗證」切進來。"
+    },
+    {
+      "title": "On-device LLM 推理→訓練→CLI 完整管道就位",
+      "body": "MegaTrain（HN 273）+ Gemma 4 multimodal fine-tuner + apfel (4k stars) + MLX 持續優化 = on-device 從推理端擴張到訓練端、再到 CLI 應用層。MegaTrain 的核心 trick（optimizer state 留 CPU、GPU 當 transient compute）配上 Apple Silicon unified memory 架構，讓 192GB MacBook 可以 full-precision 訓練 7B 模型。apfel 則把整個 inference 管道打包成 CLI + OpenAI-compatible server，敏感數據從此可以「local-first」而非「雲端優先」。",
+      "evidence": "MegaTrain arxiv HN 273分 + Show HN Gemma 4 fine-tuner + unsloth topic search 高頻 mention（三條 independent signals）+ apfel GitHub 4249★ + Google AI Edge LiteRT-LM 支持",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "arc_ref": "arc-on-device-llm-wave",
+      "day_count": 3,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "MegaTrain single-GPU training",
+          "url": "https://news.ycombinator.com/",
+          "score": 273
+        },
+        {
+          "platform": "GitHub",
+          "title": "apfel: on-device CLI",
+          "url": "https://github.com/Arthur-Ficial/apfel",
+          "score": null
+        },
+        {
+          "platform": "GitHub",
+          "title": "unsloth token optimization",
+          "url": "https://github.com/unslothai/unsloth",
+          "score": null
+        }
+      ],
+      "product_opportunity": "任何「敏感數據不能上雲」的 B2B use case（法律、醫療、金融 NDA 審查）會從「不可能」變成「週末 POC」。建立一個『local-first LLM fine-tuning 的最佳實踐指南 + benchmark suite』會成為一個市場大門。"
+    },
+    {
+      "title": "Benchmark 作弊成為明確的信任危機",
+      "body": "HN 同時高分的兩條新聞——「小模型也能找到 Mythos 找到的漏洞」(1140) 和「How We Broke Top AI Agent Benchmarks」(415)——暴露了一個隱在的危機：誰在玩數字。Gary Marcus 同週三篇 Mythos 評論，tone 從背書到存疑。社群對「93.9% SWE-Bench Verified」的信心快速瓦解。沒有人在直接說「Anthropic 作弊」，但言下之意是「我不知道怎樣的數字是可信的」。",
+      "evidence": "HN: 小模型 1140分 + benchmark gaming 415分（同日高分）; Gary Marcus: 3篇 tone 轉變; 社群 top comments 充斥「wait how is this validated」; Simon Willison 未對 Mythos 背書（沉默本身是信號）",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Small models found Mythos vulnerabilities",
+          "url": "https://news.ycombinator.com/",
+          "score": 1140
+        },
+        {
+          "platform": "HN",
+          "title": "How We Broke Top AI Agent Benchmarks",
+          "url": "https://news.ycombinator.com/",
+          "score": 415
+        },
+        {
+          "platform": "Substack",
+          "title": "Gary Marcus on Mythos (3 posts)",
+          "url": "https://garymarcus.substack.com/"
+        }
+      ],
+      "product_opportunity": "第一個做出「Benchmark 可信度評分工具」（Sigstore signature verify + dependency check + gaming pattern detection）的會成為記者、投資人、CTO 的必用工具。現在沒有人知道怎樣快速驗證一份新 benchmark，這是 underserved gap。"
+    },
+    {
+      "title": "Anthropic 垂直整合的政治副作用升級",
+      "body": "04-08 到 04-12 四天內，Anthropic 的政治動作從「聲明」升級到「機構化」：Dario Amodei 親簽 DoW (Department of War) 回應 + Anthropic Institute 正式成立 + Mozilla Firefox 進階合作。這不是公關操作，而是供應鏈垂直整合（Google/Broadcom partnership、Vercept 收購）的必然衍生物：當你掌控了晶片→算力→API→IDE 的全鏈，「我和政府的關係」成為市場競爭力的一部分。Google 的沉默（agents-cli 空 repo）對比 Anthropic 的積極（政治表態），暴露了雙方不同的戰術選擇。",
+      "evidence": "Anthropic News: 04-12 Australia MOU + Institute 成立; Dario Amodei DoW 聲明 + Mozilla partnership; Context: 04-09 到 04-12 是 Vercept、Google/Broadcom 新聞的政治反應期",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "arc-model-lab-vertical-integration",
+      "day_count": 4,
+      "source_links": [
+        {
+          "platform": "Anthropic News",
+          "title": "Australia MOU",
+          "url": "https://www.anthropic.com/news/australia-MOU"
+        },
+        {
+          "platform": "Anthropic News",
+          "title": "Claude Partner Network $100M",
+          "url": "https://www.anthropic.com/news/claude-partner-network"
+        }
+      ],
+      "product_opportunity": "對 Anthropic AUP 會有的下一波修改預測：會不會在 6 月內新增「defense / national security 相關的明文 carve-out 條款」。跟蹤 Anthropic 的政策立場變化會變成 B2B risk 評估的一部分。"
+    }
+  ],
+  "sleeper": {
+    "name": "skrun",
+    "url": "https://github.com/skrun-dev/skrun",
+    "description": "Deploy-as-API framework for agent skills — 把任何 skill 變成可分享的 API endpoint",
+    "body": "HN 49 分時默默上線，沒有 trending 排名，stars 未知。但這是 arc-agent-skill-distribution 觀察到的「缺治理層」裡第一個實際解決方案。如果你有一個好的 Claude Code skill（例如 caveman），skrun 讓你 15 秒內把它打包成「我的朋友可以遠端調用」的 API。",
+    "why_asymmetric": "基數很低（HN 49 vs 1140），但解決的問題是「agent skill 的協作模式」——一旦 Anthropic 或社群開始推行 skill 共享，skrun 會直接從「demo 項目」變成「基礎設施」。",
+    "commercial_path": "先被 Anthropic 官方 skill registry 採納當作「publish your skill」的 recommended deployment target；或被 Vercel 收購當作「Vercel Functions for agent skills」；或自己做 managed hosting（skrun.dev），月費 $5/skill。",
+    "market_evidence": "Memory open_thread 預測『skrun 在 2026-10-09 前 stars 會超過 5000，或被 Anthropic/Vercel 收購』= 投資人/分析師都在看這個項目。"
+  },
+  "contrarian": {
+    "claim": "Mythos 不會成為 Claude 的主要商業賣點",
+    "rationale": "Gary Marcus 同週發了「overblown」評論; 社群對 93.9% 數字的信任下降; benchmark gaming 問題浮出; 小模型也能找到同樣漏洞 → Mythos 的 differentiation power 被 overclaimed。Anthropic 的政治動作升級表示他們內部已經在為「下一個故事」準備（Partner Network + political exposure），不會死守 Mythos 的宣傳。",
+    "prediction": "Mythos Preview 到 2026-12-31 都不會 GA（只有 review-first access），因為 GA 會立刻面對「怎樣的數字是可信的」的質詢。Anthropic 會轉向『security evaluations』而非『capability benchmarks』當作主要對外故事。",
+    "prediction_binary": "By 2026-12-31, Mythos 是否 GA 為 general access（不只 review-first）。Resolution: Anthropic 官方宣布 GA 或不宣布。否 = prediction 正確。"
+  },
+  "predictions": [
+    {
+      "id": "pred-2026-04-12-1",
+      "text": "google/agents-cli 會在 2026-05-12 前有 first commit（ public repo 不能再是空的 50 天）",
+      "status": "pending",
+      "created": "2026-04-12",
+      "resolution_date": "2026-05-12"
+    },
+    {
+      "id": "pred-2026-04-12-2",
+      "text": "Claude Code ecosystem skill registry（Sigstore signed + supply-chain transparent）會由 Anthropic 官方在 2026-07-31 前宣布或由社群 (skrun 等) 完成 MVP",
+      "status": "pending",
+      "created": "2026-04-12",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-2026-04-12-3",
+      "text": "Anthropic 會在 2026-06-30 前對 T&C 新增『defense / national security 相關的明文 carve-out 條款』（響應 DoW 聲明的 follow-up）",
+      "status": "pending",
+      "created": "2026-04-12",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-2026-04-08-4",
+      "text": "obra/superpowers 月均 star 增速到 2026-09-30 降至 <5%/月",
+      "status": "pending",
+      "created": "2026-04-08",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-2026-04-09-7",
+      "text": "skrun-dev/skrun 在 2026-10-09 前 stars 會超過 5000，或被 Anthropic / Vercel 公開宣佈收購",
+      "status": "pending",
+      "created": "2026-04-09",
+      "resolution_date": "2026-10-09"
+    },
+    {
+      "id": "pred-2026-04-12-4",
+      "text": "MegaTrain reference implementation 會在 2026-06-30 前開源（或被 Google/Meta 的官方實現取代）",
+      "status": "pending",
+      "created": "2026-04-12",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-2026-04-12-5",
+      "text": "Mythos Preview 到 2026-12-31 都不會 GA 為 general access（維持 review-first 模式）",
+      "status": "pending",
+      "created": "2026-04-12",
+      "resolution_date": "2026-12-31"
+    }
+  ]
+}
