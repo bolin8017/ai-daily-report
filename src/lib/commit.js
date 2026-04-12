@@ -55,12 +55,15 @@ function tokenizedRemoteUrl(token) {
  * Commit data changes and push to origin main.
  * @param {object} opts
  * @param {string} opts.date - YYYY-MM-DD for the commit message
+ * @param {string} [opts.message] - custom commit message (default: "report: {date} daily creative brief")
+ * @param {string[]} [opts.paths] - files/dirs to git-add (default: report + memory + snapshot)
  * @returns {Promise<{ pushed: boolean, sha: string | null }>}
  */
-export async function commitAndPush({ date }) {
+export async function commitAndPush({ date, message, paths }) {
   await ensureGitAuthor();
 
-  await git(['add', 'data/reports/', 'data/memory.json', 'data/feeds-snapshot.json']);
+  const addPaths = paths ?? ['data/reports/', 'data/memory.json', 'data/feeds-snapshot.json'];
+  await git(['add', ...addPaths]);
 
   const diff = await git(['diff', '--cached', '--quiet'], { reject: false });
   // exit 0 = no diff, exit 1 = diff present
@@ -69,7 +72,8 @@ export async function commitAndPush({ date }) {
     return { pushed: false, sha: null };
   }
 
-  await git(['commit', '-m', `report: ${date} daily creative brief`]);
+  const commitMsg = message ?? `report: ${date} daily creative brief`;
+  await git(['commit', '-m', commitMsg]);
 
   const pushUrl = process.env.GITHUB_TOKEN
     ? tokenizedRemoteUrl(process.env.GITHUB_TOKEN)

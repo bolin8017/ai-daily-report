@@ -4,14 +4,11 @@
 #   TZ=Asia/Taipei
 #   0 4 * * * /home/bolin8017/ai-daily-report/scripts/cron-run.sh >> /var/log/ai-daily-report.log 2>&1
 #
-# Responsibilities:
-#   1. Load environment (GITHUB_TOKEN) from a secrets file
-#   2. Run the Docker image with memory caps, persistent workspace volume, and
-#      the host's ~/.claude bind-mounted for Claude CLI auth state
-#   3. Log a dated banner before/after so log tails are readable
+# Two-stage pipeline:
+#   Stage 1 (collect): fetch + condense + snapshot → commit staging data
+#   Stage 2 (analyze): claude agent reads staging data → writes report + memory → commit
 #
-# The pipeline itself runs inside the container; this wrapper only handles
-# invocation, resource limits, and logging.
+# Both stages run inside the same Docker container invocation.
 
 set -euo pipefail
 
@@ -54,6 +51,7 @@ docker run --rm \
   --cpus=2 \
   -e GITHUB_TOKEN \
   -e REPORT_TIMEZONE="${REPORT_TIMEZONE:-Asia/Taipei}" \
+  -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}" \
   -v "$VOLUME":/workspace \
   -v "$CLAUDE_HOST_DIR":/root/.claude \
   "$IMAGE"

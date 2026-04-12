@@ -1,5 +1,5 @@
 // Tests for src/lib/condense.js — focuses on the in-memory condenseAll()
-// API that src/pipeline.js depends on.
+// API that src/collect.js depends on.
 
 import { describe, expect, it } from 'vitest';
 import { condenseAll } from '../src/lib/condense.js';

@@ -1,27 +1,29 @@
 #!/usr/bin/env bash
 # Container entrypoint. Runs inside the ai-daily-report Docker image.
 #
-# Two modes:
-#   1. No args (cron default): clone/pull repo, npm ci, exec the pipeline.
-#      Requires GITHUB_TOKEN.
-#   2. Args passed (interactive / debug): exec the args directly, bypassing
-#      the pipeline. Used for `docker run ai-daily-report claude` (one-time
-#      OAuth) or `docker run ai-daily-report bash` (ad-hoc shell).
+# Modes:
+#   No args / "both" : full pipeline — Stage 1 (collect) then Stage 2 (analyze)
+#   "collect"        : Stage 1 only — fetch + condense + commit staging data
+#   "analyze"        : Stage 2 only — claude agent produces report + memory
+#   Other args       : exec directly (for `docker run ... bash` or `docker run ... claude /login`)
 #
-# Expected environment (mode 1 only):
+# Expected environment:
 #   GITHUB_TOKEN       — PAT with Contents:read/write scope for clone + push
 #   REPORT_TIMEZONE    — optional, defaults to Asia/Taipei
+#   CLAUDE_MODEL       — optional, defaults to claude-sonnet-4-6
 #   /root/.claude      — bind-mounted claude CLI auth state (host's ~/.claude)
 #   /workspace         — Docker named volume (persistent across runs)
 
 set -euo pipefail
 
-# Mode 2: if any args were passed to `docker run`, exec them directly.
-# Nothing below this point runs when an explicit command is given, which is
-# what you want for interactive sessions (no GITHUB_TOKEN check, no git pull).
-if [ $# -gt 0 ]; then
+# Pass-through mode: if args are not one of our commands, exec them directly.
+if [ $# -gt 0 ] && [ "$1" != "collect" ] && [ "$1" != "analyze" ] && [ "$1" != "both" ]; then
   exec "$@"
 fi
+
+MODE="${1:-both}"
+
+# ── Workspace setup ────────────────────────────────────────────
 
 REPO_URL="https://github.com/bolin8017/ai-daily-report.git"
 WORKSPACE="/workspace"
@@ -31,14 +33,9 @@ if [ -z "${GITHUB_TOKEN:-}" ]; then
   exit 1
 fi
 
-# Tokenized URL for clone/fetch/push. Kept out of git history by only using
-# it in-memory here.
 AUTH_URL="${REPO_URL/https:\/\//https:\/\/x-access-token:${GITHUB_TOKEN}@}"
 
 cd "$WORKSPACE"
-
-# Git insists safe.directory is configured when mounted paths have a different
-# owner than the running user. Accept the volume as safe.
 git config --global --add safe.directory "$WORKSPACE"
 
 if [ ! -d .git ]; then
@@ -59,5 +56,20 @@ if [ ! -f "$LOCK_MARK" ] || [ "package-lock.json" -nt "$LOCK_MARK" ]; then
   cp package-lock.json "$LOCK_MARK"
 fi
 
-echo "[entrypoint] starting pipeline"
-exec node src/pipeline.js
+# ── Run stages ─────────────────────────────────────────────────
+
+case "$MODE" in
+  collect)
+    echo "[entrypoint] running Stage 1 (collect only)"
+    exec node src/collect.js
+    ;;
+  analyze)
+    echo "[entrypoint] running Stage 2 (analyze only)"
+    exec bash scripts/analyze.sh
+    ;;
+  both)
+    echo "[entrypoint] running Stage 1 + Stage 2"
+    node src/collect.js
+    exec bash scripts/analyze.sh
+    ;;
+esac

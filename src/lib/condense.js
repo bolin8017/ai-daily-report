@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Condense raw fetcher results into compact versions that stay under a strict
-// token budget. Used primarily in-memory by src/pipeline.js; the standalone
+// token budget. Used primarily in-memory by src/collect.js; the standalone
 // mode (reads tmp/*.json, writes tmp/*-condensed.json) is kept for debugging.
 //
 // Strategy:

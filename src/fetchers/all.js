@@ -1,4 +1,4 @@
-// Parallel runner for all 4 fetchers. Used by src/pipeline.js.
+// Parallel runner for all 4 fetchers. Used by src/collect.js.
 //
 // Returns `{ feeds, trending, search, developers }`, each with the envelope
 // shape `{ ok, items, ...meta }`. A single fetcher failure is tolerated; the
