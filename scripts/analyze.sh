@@ -24,10 +24,12 @@ SKIP_PUSH="${SKIP_PUSH:-0}"
 
 # ── Preflight checks ──────────────────────────────────────────────
 
-if [ ! -f "data/staging/metadata.json" ]; then
-  echo "[analyze] FATAL: data/staging/metadata.json not found — run Stage 1 first" >&2
-  exit 1
-fi
+for f in data/staging/metadata.json .claude/agents/daily-report.md .claude/daily-report-quality.md; do
+  if [ ! -f "$f" ]; then
+    echo "[analyze] FATAL: ${f} not found" >&2
+    exit 1
+  fi
+done
 
 STAGING_DATE=$(node -e "console.log(JSON.parse(require('fs').readFileSync('data/staging/metadata.json','utf8')).date)")
 if [ "$STAGING_DATE" != "$DATE" ]; then
@@ -54,11 +56,17 @@ trap 'rm -f "$PROMPT_FILE"' EXIT
 
 # ── Invoke Claude ─────────────────────────────────────────────────
 
+CLAUDE_EXIT=0
 claude -p \
   --output-format text \
   --model "$MODEL" \
   --allowedTools Read Write Bash Grep Glob \
-  < "$PROMPT_FILE"
+  < "$PROMPT_FILE" || CLAUDE_EXIT=$?
+
+if [ "$CLAUDE_EXIT" -ne 0 ]; then
+  echo "[analyze] FATAL: claude -p exited with code ${CLAUDE_EXIT}" >&2
+  exit "$CLAUDE_EXIT"
+fi
 
 echo "[analyze] $(date -Iseconds) — claude session complete"
 
@@ -80,23 +88,26 @@ node src/lib/validate.js memory data/memory.json
 # ── Commit + push ─────────────────────────────────────────────────
 
 echo "[analyze] committing..."
-git add "$REPORT_FILE" data/memory.json data/feeds-snapshot.json
+git add "$REPORT_FILE" data/memory.json
 
 if git diff --cached --quiet; then
   echo "[analyze] no changes to commit"
-else
-  git commit -m "report: ${DATE} daily creative brief"
+  echo "[analyze] $(date -Iseconds) — done"
+  exit 0
+fi
 
-  if [ "$SKIP_PUSH" = "1" ]; then
-    echo "[analyze] SKIP_PUSH — committed locally, skipping push"
-  elif [ -n "${GITHUB_TOKEN:-}" ]; then
-    PUSH_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/bolin8017/ai-daily-report.git"
-    git push "$PUSH_URL" HEAD:main
-    SHA=$(git rev-parse --short HEAD)
-    echo "[analyze] pushed ${SHA} to origin/main"
-  else
-    echo "[analyze] GITHUB_TOKEN not set — committed locally, skipping push"
-  fi
+git commit -m "report: ${DATE} daily creative brief"
+
+if [ "$SKIP_PUSH" = "1" ]; then
+  echo "[analyze] SKIP_PUSH — committed locally, skipping push"
+elif [ -n "${GITHUB_TOKEN:-}" ]; then
+  # Use git remote URL (already set to authenticated URL by docker-entrypoint.sh)
+  # to avoid exposing GITHUB_TOKEN in process args
+  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/bolin8017/ai-daily-report.git"
+  git push origin HEAD:main
+  echo "[analyze] pushed $(git rev-parse --short HEAD) to origin/main"
+else
+  echo "[analyze] GITHUB_TOKEN not set — committed locally, skipping push"
 fi
 
 echo "[analyze] $(date -Iseconds) — done"

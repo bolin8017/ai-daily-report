@@ -10,18 +10,18 @@
 # Expected environment:
 #   GITHUB_TOKEN       — PAT with Contents:read/write scope for clone + push
 #   REPORT_TIMEZONE    — optional, defaults to Asia/Taipei
-#   CLAUDE_MODEL       — optional, defaults to claude-sonnet-4-6
+#   CLAUDE_MODEL       — optional, defaults to claude-opus-4-6
 #   /root/.claude      — bind-mounted claude CLI auth state (host's ~/.claude)
 #   /workspace         — Docker named volume (persistent across runs)
 
 set -euo pipefail
 
 # Pass-through mode: if args are not one of our commands, exec them directly.
-if [ $# -gt 0 ] && [ "$1" != "collect" ] && [ "$1" != "analyze" ] && [ "$1" != "both" ]; then
-  exec "$@"
-fi
-
 MODE="${1:-both}"
+case "$MODE" in
+  collect|analyze|both) ;;
+  *) exec "$@" ;;
+esac
 
 # ── Workspace setup ────────────────────────────────────────────
 
@@ -48,12 +48,13 @@ else
   git reset --hard origin/main
 fi
 
-# Install deps only if package-lock.json has moved since last install
+# Install deps only if package-lock.json is newer than last install.
+# npm ci creates node_modules/.package-lock.json with the current timestamp,
+# so a subsequent git pull that updates package-lock.json triggers reinstall.
 LOCK_MARK="node_modules/.package-lock.json"
 if [ ! -f "$LOCK_MARK" ] || [ "package-lock.json" -nt "$LOCK_MARK" ]; then
   echo "[entrypoint] installing npm dependencies..."
   npm ci --omit=dev --no-audit --no-fund --prefer-offline
-  cp package-lock.json "$LOCK_MARK"
 fi
 
 # ── Run stages ─────────────────────────────────────────────────

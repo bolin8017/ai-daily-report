@@ -36,7 +36,7 @@ for arg in "$@"; do
       ;;
     --analyze)
       MODE="analyze-only"
-      unset SKIP_PUSH
+      # Keep SKIP_PUSH=1 default; use --full for push
       ;;
     *)
       echo "unknown flag: $arg" >&2
