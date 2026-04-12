@@ -1,0 +1,23 @@
+# AI Daily Report — failure notification (triggered by OnFailure=)
+#
+# Logs a prominent error to journalctl and optionally sends a webhook.
+# Configure ALERT_WEBHOOK_URL in ~/.ai-daily-report.env for external alerts
+# (Slack incoming webhook, Discord webhook, ntfy.sh, etc.).
+#
+# Install via scripts/setup-vm.sh.
+
+[Unit]
+Description=AI Daily Report — failure alert for %i
+
+[Service]
+Type=oneshot
+User=__USER__
+EnvironmentFile=-__HOME__/.ai-daily-report.env
+ExecStart=/bin/bash -c '\
+  MSG="[ai-daily-report] PIPELINE FAILED at $(date -Iseconds). Unit: %i. Check: journalctl -u %i --since today"; \
+  echo "$MSG" | systemd-cat -t ai-daily-report-alert -p crit; \
+  if [ -n "${ALERT_WEBHOOK_URL:-}" ]; then \
+    curl -sf -X POST -H "Content-Type: application/json" \
+      -d "{\"text\": \"$MSG\"}" \
+      "$ALERT_WEBHOOK_URL" || true; \
+  fi'

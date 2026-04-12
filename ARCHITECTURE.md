@@ -16,25 +16,39 @@ This document explains the design decisions behind the AI Daily Report pipeline.
 
 ```mermaid
 flowchart TD
-  Cron[VM cron @ 04:00 Asia/Taipei<br/>TZ=Asia/Taipei 0 4 * * *] --> Host
+  Timer["systemd timer @ 04:00 Asia/Taipei<br/>Persistent=true"] --> Host
 
   subgraph Host["GCP e2-micro VM (homelab, us-west1)"]
-    Host[scripts/cron-run.sh<br/>loads GITHUB_TOKEN from ~/.ai-daily-report.env]
-    Host --> Docker["docker run --rm ai-daily-report:latest<br/>--memory=600m --memory-swap=1g"]
+    CronRun["scripts/cron-run.sh<br/>loads GITHUB_TOKEN from ~/.ai-daily-report.env"]
+    CronRun --> Docker["docker run --rm ai-daily-report:latest<br/>--memory=600m --memory-swap=1g"]
 
     subgraph Container["Docker container (node:22-slim + claude CLI)"]
-      Entry[scripts/docker-entrypoint.sh<br/>git pull + npm ci --prefer-offline]
-      Entry --> Pipeline["node src/pipeline.js"]
-      Pipeline --> Fetch["runFetchers() — 4 parallel"]
-      Fetch --> Condense["condenseAll() + buildSnapshot()"]
-      Condense --> Synth1["synthesizeReport() via claude -p"]
-      Synth1 --> Synth2["synthesizeMemory() via claude -p"]
-      Synth2 --> Validate["Zod: ReportSchema + MemorySchema"]
-      Validate --> CommitPush["commitAndPush() → origin main"]
+      Entry["scripts/docker-entrypoint.sh<br/>git pull + npm ci --prefer-offline"]
+
+      subgraph Stage1["Stage 1: Collect (node src/collect.js)"]
+        Fetch["runFetchers() — 4 parallel"]
+        Fetch --> Condense["condenseAll() + buildSnapshot()"]
+        Condense --> WriteStaging["write data/staging/*"]
+        WriteStaging --> CommitStaging["commitAndPush() staging data"]
+      end
+
+      subgraph Stage2["Stage 2: Analyze (scripts/analyze.sh → claude -p)"]
+        Prompt["assemble prompt from agent MD + quality rules"]
+        Prompt --> ClaudeP["claude -p --allowedTools Read,Write"]
+        ClaudeP --> ReadStaging["Read data/staging/* files"]
+        ReadStaging --> Analyze["analyze + synthesize"]
+        Analyze --> WriteReport["Write data/reports/YYYY-MM-DD.json\n+ data/memory.json"]
+        WriteReport --> Validate["Zod: ReportSchema + MemorySchema"]
+        Validate --> CommitReport["commit + push report & memory"]
+      end
+
+      Entry --> Stage1
+      Stage1 --> Stage2
     end
   end
 
-  CommitPush --> GHA[GitHub Actions: deploy.yml]
+  Timer --> CronRun
+  CommitReport --> GHA[GitHub Actions: deploy.yml]
 
   subgraph GHACI["GITHUB ACTIONS — hosted, free"]
     GHA --> Lint[lint + test]
@@ -47,11 +61,11 @@ flowchart TD
   Deploy --> Pages[🌐 GitHub Pages CDN]
 ```
 
-### Why VM + cron + Docker?
+### Why VM + systemd timer + Docker?
 
 | Concern | Where | Why |
 |---|---|---|
-| **Scheduling** | VM cron | Zero cost (already-running homelab VM), reliable, full logs via `journalctl` + `/var/log/ai-daily-report.log`. |
+| **Scheduling** | systemd timer | Zero cost (already-running homelab VM), reliable, full logs via `journalctl`. `Persistent=true` catches up missed runs (e.g., after a VM reboot). |
 | **LLM call** | `claude -p` inside the container | Uses Max subscription (no API billing). Runs as primary session — no nested-claude deadlock. Credentials persist in a bind-mounted `~/.claude`. |
 | **Isolation** | Docker | Caps memory to 600m so a synthesis spike can't OOM the host's other services (uvicorn + caddy). Rebuildable from Dockerfile. |
 | **Build (11ty)** | CI | Deterministic, no secrets needed, free hosted runner. |
@@ -69,39 +83,48 @@ A plain VM sidesteps both: `claude -p` is the primary process (no nesting), and 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant Cron as VM cron
+  participant Timer as systemd timer
   participant CronRun as scripts/cron-run.sh
   participant Docker as Docker engine
   participant Entry as docker-entrypoint.sh
-  participant Pipeline as src/pipeline.js
+  participant Collect as src/collect.js
   participant Fetchers as src/fetchers/*
+  participant AnalyzeSh as scripts/analyze.sh
   participant Claude as claude -p
   participant Git
   participant GHA as GitHub Actions
   participant Pages
 
-  Cron->>CronRun: trigger (04:00 Asia/Taipei)
+  Timer->>CronRun: trigger (04:00 Asia/Taipei)
   CronRun->>CronRun: load ~/.ai-daily-report.env
   CronRun->>Docker: run ai-daily-report:latest --memory=600m
   Docker->>Entry: start (GITHUB_TOKEN injected, /root/.claude mounted)
   Entry->>Entry: git pull origin main (into /workspace volume)
   Entry->>Entry: npm ci --omit=dev --prefer-offline
-  Entry->>Pipeline: exec node src/pipeline.js
-  Pipeline->>Fetchers: runFetchers() — Promise.all × 4
-  Fetchers->>Pipeline: raw objects (feeds, trending, search, developers)
-  Pipeline->>Pipeline: buildSnapshot(raw.feeds) → data/feeds-snapshot.json
-  Pipeline->>Pipeline: condenseAll(raw) → 4 × ≤8500-token objects
-  Pipeline->>Claude: synthesizeReport(date, condensed, memory)
-  Claude->>Pipeline: JSON report (stdout)
-  Pipeline->>Pipeline: ReportSchema.parse + write data/reports/YYYY-MM-DD.json
-  Pipeline->>Claude: synthesizeMemory(date, report, memory)
-  Claude->>Pipeline: JSON memory (stdout)
-  Pipeline->>Pipeline: MemorySchema.parse + write data/memory.json
-  Pipeline->>Git: commitAndPush (x-access-token URL)
+
+  Note over Entry,Collect: Stage 1: Collect
+  Entry->>Collect: exec node src/collect.js
+  Collect->>Fetchers: runFetchers() — Promise.all × 4
+  Fetchers->>Collect: raw objects (feeds, trending, search, developers)
+  Collect->>Collect: condenseAll(raw) → 4 × ≤8500-token objects
+  Collect->>Collect: buildSnapshot(raw.feeds) → data/feeds-snapshot.json
+  Collect->>Collect: write data/staging/*
+  Collect->>Git: commitAndPush staging data (x-access-token URL)
+
+  Note over Entry,Claude: Stage 2: Analyze
+  Entry->>AnalyzeSh: exec scripts/analyze.sh
+  AnalyzeSh->>AnalyzeSh: assemble prompt (agent MD + quality rules)
+  AnalyzeSh->>Claude: claude -p --allowedTools Read,Write
+  Claude->>Claude: Read data/staging/* files
+  Claude->>Claude: analyze + synthesize
+  Claude->>Claude: Write data/reports/YYYY-MM-DD.json + data/memory.json
+  AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema + MemorySchema
+  AnalyzeSh->>Git: commit + push report & memory (x-access-token URL)
+
   Git->>GHA: webhook
   GHA->>GHA: lint + test + validate + 11ty build
   GHA->>Pages: actions/deploy-pages OIDC
-  Pages-->>Cron: live in ~30s
+  Pages-->>Timer: live in ~30s
 ```
 
 ## Schema-first design
@@ -174,7 +197,12 @@ All 4 reviewers independently flagged **pattern-matching to overconfidence** (e.
 
 ### Iteration infrastructure
 
-Prompt iteration happens locally via `bash scripts/run.sh --skip-push`, which runs the full pipeline (both `claude -p` calls) but stops before the commit. With cached fetcher output (either copy `tmp/*.json` or just rerun — most GitHub API calls are quota-friendly), the inner loop is ~2-3 minutes per prompt tweak. `src/pipeline.js` reads `.claude/agents/daily-report.md` on every invocation, so editing the prompt doesn't require a rebuild.
+Prompt iteration happens locally via two complementary paths:
+
+- `bash scripts/run.sh --skip-push` — runs Stage 1 + Stage 2 without pushing, useful for end-to-end validation of a prompt change.
+- `bash scripts/run.sh --analyze` — runs Stage 2 only (reuses existing staging data), useful for rapid prompt iteration without re-fetching sources. The inner loop is ~2-3 minutes per prompt tweak.
+
+The agent prompt (`.claude/agents/daily-report.md`) is read fresh on every invocation, so editing the prompt doesn't require a rebuild.
 
 **The convergence bar**: "would I personally want to read this report if I wasn't the one writing it?" Three iteration rounds (v1-initial → v2-audience-lock → v3-slug-precision) were needed to reach convergence on the current prompt. The one-shot refactor (giving up the 10-step agent workflow in favour of a single `claude -p` call that reasons through Steps 2-6 internally) was validated against the same convergence bar during the VM migration.
 
@@ -201,7 +229,7 @@ Prompt iteration happens locally via `bash scripts/run.sh --skip-push`, which ru
 - `narrative_arcs` — multi-day patterns: `{ arc_id, title, episodes: [...], status }`
 - `predictions` — falsifiable predictions with `status: pending | confirmed | failed`
 
-A second `claude -p` call in `src/pipeline.js` (`synthesizeMemory`) produces the updated memory object given the current memory state + today's report. The Zod validator confirms `schema_version: 2` on every write.
+The agent produces both the report and updated memory in a single `claude -p` session (Steps 8-9 of the agent prompt). Stage 2's `analyze.sh` validates both against Zod schemas before committing.
 
 We considered SQLite and a vector DB (Chroma) but the data doesn't need them. JSON is fine until it grows past ~10 MB (currently ~50 KB).
 
@@ -226,9 +254,9 @@ The legacy `gh-pages` branch is no longer used. Build runs in CI via `actions/de
 2. Uploads as a Pages artifact (signed via OIDC)
 3. Deploys atomically (no force-push, no orphan commits)
 
-## Scheduled deployment via VM cron
+## Scheduled deployment via systemd timer
 
-The production pipeline runs on a Google Cloud **e2-micro** VM (always-free tier, us-west1-b) via standard Linux cron. The VM already hosts other homelab services (FastAPI / uvicorn + Caddy reverse proxy); the report pipeline is containerized so it cannot impact those.
+The production pipeline runs on a Google Cloud **e2-micro** VM (always-free tier, us-west1-b) via a systemd timer. The VM already hosts other homelab services (FastAPI / uvicorn + Caddy reverse proxy); the report pipeline is containerized so it cannot impact those.
 
 **One-time setup** (handled by `scripts/setup-vm.sh`, idempotent):
 
@@ -240,13 +268,11 @@ The production pipeline runs on a Google Cloud **e2-micro** VM (always-free tier
 | `docker build -t ai-daily-report:latest` | Builds the image from `Dockerfile`: node:22-slim + git + tini + `@anthropic-ai/claude-code` globally installed |
 | Claude Code OAuth (one time, interactive) | Run `claude /login` inside a throwaway container with `-v ~/.claude:/root/.claude`; credentials land on the host and persist via bind mount |
 | Write `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh` at invocation time; `chmod 600` to protect the PAT |
+| Install systemd timer unit | `ai-daily-report.timer` with `OnCalendar=*-*-* 04:00:00` (Asia/Taipei) and `Persistent=true` so missed runs (e.g., after a VM reboot) are caught up automatically |
 
-**Crontab entry:**
+**systemd timer:**
 
-```cron
-TZ=Asia/Taipei
-0 4 * * * /home/bolin8017/ai-daily-report/scripts/cron-run.sh >> /var/log/ai-daily-report.log 2>&1
-```
+The timer unit (`ai-daily-report.timer`) fires `ai-daily-report.service`, which invokes `scripts/cron-run.sh`. `Persistent=true` ensures that if the VM was down at 04:00, the run triggers as soon as the machine comes back up. Logs are captured via `journalctl -u ai-daily-report`.
 
 **`scripts/cron-run.sh` responsibilities:**
 
@@ -260,22 +286,29 @@ TZ=Asia/Taipei
 1. If `/workspace` is empty, `git clone https://x-access-token:$GITHUB_TOKEN@github.com/bolin8017/ai-daily-report.git .`
 2. Otherwise `git fetch origin main && git reset --hard origin/main` (fresh state every run)
 3. Run `npm ci --omit=dev --prefer-offline` only if `package-lock.json` changed since last install (marker file in `node_modules/.package-lock.json`)
-4. `exec node src/pipeline.js`
+4. Run **Stage 1** (`node src/collect.js`) — collect and stage data
+5. Run **Stage 2** (`scripts/analyze.sh`) — synthesize report via `claude -p`
 
-**Pipeline lifecycle** (all in a single Node process — see `src/pipeline.js`):
+**Two-stage pipeline lifecycle:**
+
+**Stage 1 — Collect** (deterministic Node process, `src/collect.js`):
 
 1. Compute today's date in `Asia/Taipei`
 2. `runFetchers()` — `Promise.all([fetchFeeds, fetchTrending, fetchSearch, fetchDevelopers])`; tolerate 1-of-4 degraded
 3. `buildSnapshot(raw.feeds)` — writes `data/feeds-snapshot.json` for 11ty
 4. `condenseAll(raw)` — 4 × ≤8500-token objects for prompt-size control
-5. `synthesizeReport({ date, condensed, memory })` — wraps `.claude/agents/daily-report.md` + `.claude/daily-report-quality.md` + condensed data + memory context as prompt body, pipes to `claude -p --output-format text --model claude-sonnet-4-6`, parses first JSON object from response
-6. `ReportSchema.parse(report)`, write `data/reports/YYYY-MM-DD.json`
-7. `synthesizeMemory({ date, report, memory })` — second `claude -p` call with a focused update-rules prompt
-8. `MemorySchema.parse(newMemory)`, write `data/memory.json`
-9. `commitAndPush({ date })` — stages the 3 changed files, commits as `report: <date> daily creative brief`, pushes to `HEAD:main` using `x-access-token:$GITHUB_TOKEN` URL rewrite
-10. GHA picks up the push and deploys to Pages
+5. Write condensed data to `data/staging/`
+6. `commitAndPush()` — stages and pushes staging data so it's available for Stage 2
 
-**Why VM cron instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing you onto `ANTHROPIC_API_KEY` (paid, defeats the Max advantage) or OAuth secret juggling. A VM with a one-time interactive `claude /login` sidesteps both — the login token persists in `~/.claude` and every subsequent cron invocation just works.
+**Stage 2 — Analyze** (agent session, `scripts/analyze.sh`):
+
+1. Assemble the prompt from `.claude/agents/daily-report.md` + `.claude/daily-report-quality.md` + memory context
+2. Invoke `claude -p --allowedTools Read,Write --model claude-opus-4-6` — the agent reads staging files via the Read tool, synthesizes the report, and writes `data/reports/YYYY-MM-DD.json` + `data/memory.json` directly via the Write tool
+3. Validate outputs: `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
+4. `commitAndPush({ date })` — stages the report and memory files, commits as `report: <date> daily creative brief`, pushes to `HEAD:main` using `x-access-token:$GITHUB_TOKEN` URL rewrite
+5. GHA picks up the push and deploys to Pages
+
+**Why systemd timer instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing you onto `ANTHROPIC_API_KEY` (paid, defeats the Max advantage) or OAuth secret juggling. A VM with a one-time interactive `claude /login` sidesteps both — the login token persists in `~/.claude` and every subsequent timer invocation just works.
 
 **Memory budget**: e2-micro has 958MB total, ~400MB already used by the host's other services. Synthesis peaks (~500-700MB for fetchers + claude CLI context) pushed into the 2GB swapfile absorb the burst without OOM. `docker run --memory=600m --memory-swap=1g` caps the container so a runaway can never hurt the host.
 
@@ -286,8 +319,8 @@ TZ=Asia/Taipei
 | **GitHub Trending HTML can change** | github-trending fetcher returns 0 repos | cheerio is more resilient than regex; `runFetchers` tolerates 1 of 4 degraded; schema validator catches empty report and aborts the deploy |
 | **External RSSHub dependency** (`rsshub.pseudoyu.com`) | Multiple feeds break at once if the instance goes down | `feeds.js` has its own majority-of-sources threshold; `runFetchers` additionally tolerates 1-of-4; fall back to `rsshub.rssforever.com` via `config.json → sources.rsshub_url`. Self-hosting RSSHub was rejected as VM maintenance burden for a once-a-day read. |
 | **HN Algolia API is undocumented** | Score enrichment may break | Wrapped in try/catch; missing scores degrade report quality but don't break the pipeline |
-| **LLM synthesis is the quality single point of failure** | Bad JSON or schema-invalid output blocks the day | `extractJson()` handles fences + preamble; Zod validation aborts the run before commit. Yesterday's report stays live. |
-| **VM / Docker / cron failure** | Report missed for the day | `/var/log/ai-daily-report.log` is the first place to look; `bash scripts/cron-run.sh` can be re-invoked manually. Host uptime is responsibility of the homelab owner. |
+| **LLM synthesis is the quality single point of failure** | Schema-invalid output blocks the day | The agent writes files directly via the Write tool (no JSON extraction from stdout needed); Zod validation in `analyze.sh` aborts the run before commit. Yesterday's report stays live. |
+| **VM / Docker / systemd timer failure** | Report missed for the day | systemd timer's `Persistent=true` catches up missed runs after a reboot. `OnFailure=` unit can trigger alerting. `journalctl -u ai-daily-report` is the first place to look; `bash scripts/cron-run.sh` can be re-invoked manually. Host uptime is responsibility of the homelab owner. |
 | **Claude subscription token expires** | `claude -p` calls start failing | `~/.claude` needs to be re-authed; pipeline fails loudly rather than silently degrading. Re-run `claude /login` in a throwaway container. |
 
 ## Future work

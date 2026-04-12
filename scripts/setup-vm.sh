@@ -102,6 +102,11 @@ step_systemd() {
   # Timer has no user-specific placeholders
   sudo cp "$REPO_DIR/systemd/ai-daily-report.timer" "$UNIT_DIR/ai-daily-report.timer"
 
+  # Failure notification service (template unit)
+  sed -e "s|__USER__|${USER}|g" -e "s|__HOME__|${HOME}|g" \
+    "$REPO_DIR/systemd/ai-daily-report-notify@.service" \
+    | sudo tee "$UNIT_DIR/ai-daily-report-notify@.service" > /dev/null
+
   sudo systemctl daemon-reload
   sudo systemctl enable ai-daily-report.timer
   sudo systemctl start ai-daily-report.timer

@@ -12,6 +12,7 @@ import { runFetchers } from './fetchers/all.js';
 import { commitAndPush } from './lib/commit.js';
 import { condenseAll } from './lib/condense.js';
 import { buildSnapshot } from './lib/snapshot.js';
+import { StagingMetadataSchema } from './schemas/staging.js';
 
 const TZ = process.env.REPORT_TIMEZONE ?? 'Asia/Taipei';
 const SKIP_PUSH = process.env.SKIP_PUSH === '1' || process.argv.includes('--skip-push');
@@ -61,6 +62,9 @@ async function main() {
       },
     },
   };
+
+  // Validate metadata against schema before writing (contract with Stage 2)
+  StagingMetadataSchema.parse(files['data/staging/metadata.json']);
 
   for (const [path, data] of Object.entries(files)) {
     writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);

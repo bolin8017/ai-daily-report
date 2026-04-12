@@ -12,54 +12,62 @@ For the public-facing overview and quick start, see [README.md](./README.md). Fo
 
 ## Deployment mode
 
-The pipeline runs as a **single Node.js process** (`src/pipeline.js`) that fetches sources in parallel, calls `claude -p` twice (once for the report, once to update memory), validates the outputs against Zod schemas, and commits + pushes to `origin main`. GitHub Actions then builds the 11ty site and deploys to Pages.
+The pipeline is split into **two independent stages**, both running inside a Docker container on the VM:
 
-**Production runtime**: a Google Cloud e2-micro VM (always-free tier, us-west1) runs the pipeline daily at 04:00 Asia/Taipei via `cron` → `scripts/cron-run.sh` → `docker run ai-daily-report:latest`. The Docker image contains only Node 22, git, and the Claude Code CLI; the repo is cloned into a persistent Docker volume at `/workspace` and refreshed via `git pull` on each run.
+- **Stage 1** (`src/collect.js`): pure Node.js — fetches 4 sources in parallel, condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`, commits + pushes.
+- **Stage 2** (`scripts/analyze.sh`): invokes `claude -p --allowedTools Read Write Bash Grep Glob` — the agent reads staged data via Read tool, analyzes per `.claude/agents/daily-report.md`, writes report + memory via Write tool. The script then validates against Zod schemas, commits + pushes.
 
-**Why VM instead of Anthropic Cloud Runtime**: the earlier CCR design (agent-driven, 22 tool calls per run) hit two architectural walls — nested `claude -p` subprocesses deadlocked on SSE keepalives, and the 10K-token Read tool limit made a single merged digest file unviable. A bare VM has neither constraint: `claude -p` runs as the primary session, and all data flows in-process via Node objects. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full rationale.
+GitHub Actions picks up the push and deploys the 11ty site to Pages.
+
+**Production runtime**: a Google Cloud e2-micro VM (always-free tier, us-west1) runs both stages daily at 04:00 Asia/Taipei via **systemd timer** → `scripts/cron-run.sh` → `docker run ai-daily-report:latest`. The Docker image contains Node 22, git, and the Claude Code CLI; the repo is cloned into a persistent Docker volume at `/workspace` and refreshed via `git pull` on each run.
+
+**Why two stages instead of one process**: the original `pipeline.js` called `claude -p` as a subprocess from Node.js, which hung indefinitely due to FD table / SSE keepalive interactions. The two-stage split lets Stage 2 call `claude -p` directly from bash (no Node parent), avoiding the hang. It also gives the agent native tool access (Read/Write) instead of piping 50KB+ of data through the prompt body.
 
 **VM environment requirements** (managed by `scripts/setup-vm.sh`):
 
 | Setting | Value | Why |
 |---|---|---|
-| **Swap** | 2GB file at `/swapfile` | e2-micro has only 958MB RAM shared with host services (uvicorn + caddy + docker). LLM synthesis peaks need headroom to avoid OOM. |
+| **Swap** | 2GB file at `/swapfile` | e2-micro has only 958MB RAM shared with host services. LLM synthesis peaks need headroom to avoid OOM. |
 | **Docker image** | `ai-daily-report:latest`, built locally from `Dockerfile` | Contains Node 22 + git + `@anthropic-ai/claude-code` CLI. No project code baked in — code flows via `git pull` on each run. |
 | **Docker volume** | `ai-daily-report-workspace` | Persists the cloned repo + `node_modules` between runs so cold starts stay <10s. |
-| **Claude auth** | Bind mount `~/.claude` from host → `/root/.claude` in container | One-time interactive `claude /login` inside the container creates credentials that persist across cron invocations. |
+| **Claude auth** | Bind mount `~/.claude` from host → `/root/.claude` in container | One-time interactive `claude /login` inside the container creates credentials that persist across timer invocations. |
 | **Secrets** | `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh`, injected into container via `-e GITHUB_TOKEN`. |
 | **Memory limits** | `docker run --memory=600m --memory-swap=1g` | Caps the pipeline so an OOM never kills the host's other services. |
-| **Timezone** | `TZ=Asia/Taipei` in crontab | VM is UTC; the pipeline needs local date for `YYYY-MM-DD` computation. |
+| **Scheduling** | systemd timer (`systemd/ai-daily-report.timer`) | `Persistent=true` catches up after VM reboots; `OnFailure=` triggers alert on crash; logs go to `journalctl -u ai-daily-report`. |
 
 ## How to Run
 
 | Command | What it does |
 |---|---|
-| `npm start` | Local dev: runs `scripts/run.sh` → `node src/pipeline.js --dry-run` (fetch + snapshot + condense only, skips `claude -p`). |
-| `bash scripts/run.sh --full` | Full local pipeline including both `claude -p` calls (requires host Claude Code login). |
-| `bash scripts/run.sh --skip-push` | Full pipeline but without the final `git push`, useful for iteration on prompts. |
-| `npm run pipeline` / `npm run pipeline:dry` | Direct invocation of `node src/pipeline.js` with or without `--dry-run`. |
+| `npm start` | Local dev: runs `scripts/run.sh` → Stage 1 only (fetch + snapshot + condense, no push, no LLM). |
+| `bash scripts/run.sh --full` | Stage 1 + Stage 2 (requires host Claude Code login). |
+| `bash scripts/run.sh --skip-push` | Stage 1 + Stage 2 but without `git push`, useful for prompt iteration. |
+| `bash scripts/run.sh --analyze` | Stage 2 only (assumes `data/staging/` exists from a prior Stage 1 run). |
+| `npm run collect` / `npm run collect:dry` | Direct invocation of `node src/collect.js` with or without `--skip-push`. |
+| `npm run analyze` | Direct invocation of `bash scripts/analyze.sh`. |
 | `node src/fetchers/feeds.js` | Any single fetcher can still be run standalone; all 4 fetchers are dual-mode (importable + CLI). |
 | `node src/lib/condense.js` | Standalone mode reads `tmp/*.json`, writes `tmp/*-condensed.json` — useful for debugging the condense budget. |
 | `npm run build` | Rebuild the static site from committed `data/reports/*.json`. |
 | `npm run serve` | 11ty dev server with live reload. |
-| `npm test` | Vitest unit tests for schemas + synthesize + condense. |
+| `npm test` | Vitest unit tests for schemas + condense. |
 | `npm run lint` / `npm run format` | Biome check / format --write. |
 | `npm run validate:report` | Validate the newest report in `data/reports/` against `ReportSchema`. |
 
 **VM operations** (on the homelab VM):
-- `bash scripts/setup-vm.sh` — one-time install (swap + Docker + image build). Idempotent.
-- `bash scripts/cron-run.sh` — one-off manual run, same path cron uses.
-- Crontab entry: see `scripts/setup-vm.sh` output.
+- `bash scripts/setup-vm.sh` — one-time install (swap + Docker + systemd timer + image build). Idempotent.
+- `sudo systemctl start ai-daily-report.service` — one-off manual run.
+- `journalctl -u ai-daily-report --since today` — view latest run logs.
+- `systemctl list-timers ai-daily-report.timer` — check next scheduled run.
 
 ## Project Structure
 
 ```
 .
 ├── src/
-│   ├── pipeline.js               # Main entry — orchestrates fetch → condense → synthesize → validate → commit
+│   ├── collect.js                # Stage 1 entry — fetch → condense → snapshot → write staging → commit
 │   ├── fetchers/                 # All dual-mode (importable + standalone CLI)
 │   │   ├── _dispatch.js          # Shared helper that detects CLI mode and emits JSON
-│   │   ├── all.js                # Parallel runner — used by pipeline.js
+│   │   ├── all.js                # Parallel runner — used by collect.js
 │   │   ├── feeds.js              # Unified RSSHub + RSS + JSON API fetcher
 │   │   ├── github-trending.js    # cheerio + Octokit GitHub trending scraper
 │   │   ├── github-search.js     # GitHub Search API by topic (freshness-first)
@@ -68,18 +76,23 @@ The pipeline runs as a **single Node.js process** (`src/pipeline.js`) that fetch
 │   │   ├── config.js
 │   │   ├── feed-item.js
 │   │   ├── memory.js
-│   │   └── report.js
+│   │   ├── report.js
+│   │   └── staging.js            # Stage 1 → Stage 2 contract (metadata shape)
 │   └── lib/
 │       ├── validate.js           # CLI schema validator
 │       ├── snapshot.js           # Committed feeds-snapshot.json builder (dual-mode)
 │       ├── condense.js           # Per-source ≤8500-token condenser (dual-mode)
-│       ├── synthesize.js         # claude -p wrapper; synthesizeReport + synthesizeMemory + extractJson
 │       └── commit.js             # git add/commit/push with GITHUB_TOKEN-based push auth
 ├── scripts/
-│   ├── run.sh                    # Local dev wrapper around node src/pipeline.js (defaults to --dry-run)
-│   ├── cron-run.sh               # Host cron entry: loads secrets + runs the Docker image with memory caps
-│   ├── docker-entrypoint.sh      # Inside-container entry: git clone/pull + npm ci + exec pipeline.js
-│   └── setup-vm.sh               # One-time VM setup: swap + Docker + image build + OAuth instructions
+│   ├── analyze.sh                # Stage 2 — assemble prompt → claude -p → validate → commit
+│   ├── run.sh                    # Local dev wrapper (default: Stage 1 only, --full for both)
+│   ├── cron-run.sh               # Docker invocation — used by systemd service
+│   ├── docker-entrypoint.sh      # Inside-container entry: git pull + npm ci + collect/analyze/both
+│   └── setup-vm.sh               # One-time VM setup: swap + Docker + systemd timer + OAuth
+├── systemd/                      # systemd units (installed by setup-vm.sh)
+│   ├── ai-daily-report.service   # Service: runs cron-run.sh with timeout + OnFailure
+│   ├── ai-daily-report.timer     # Timer: daily 04:00 Asia/Taipei, Persistent=true
+│   └── ai-daily-report-notify@.service  # Failure alert (optional webhook)
 ├── Dockerfile                    # node:22-slim + git + tini + @anthropic-ai/claude-code (no project code)
 ├── .dockerignore
 ├── site/                         # 11ty source templates (Nunjucks)
@@ -89,16 +102,17 @@ The pipeline runs as a **single Node.js process** (`src/pipeline.js`) that fetch
 │   ├── index.njk                 # Main page (includes report-body.njk)
 │   └── archive.njk              # Archive pages via 11ty pagination
 ├── tests/
-│   └── schemas.test.js           # Vitest smoke tests for all Zod schemas
+│   └── schemas.test.js           # Vitest smoke tests for all Zod schemas (including staging contract)
 ├── data/                         # Committed state — triggers CI deploy on change
 │   ├── reports/                  # Daily reports (YYYY-MM-DD.json, git-tracked, dated-only)
+│   ├── staging/                  # Stage 1 output consumed by Stage 2 (condensed data + metadata)
 │   ├── memory.json               # v2 cross-day state
 │   └── feeds-snapshot.json       # Condensed snapshot for 11ty templates
 ├── docs/                         # 11ty build output (gitignored — built in CI)
 ├── .github/workflows/deploy.yml  # CI: build + deploy to GitHub Pages via OIDC
 ├── .claude/
-│   ├── agents/daily-report.md    # Agent prompt (embedded in synthesizeReport)
-│   └── daily-report-quality.md   # Voice / slop rules (embedded in synthesizeReport)
+│   ├── agents/daily-report.md    # Agent prompt (piped to claude -p by analyze.sh)
+│   └── daily-report-quality.md   # Voice / slop rules (concatenated after agent prompt)
 ├── biome.json                    # Biome lint + format config
 └── eleventy.config.js            # 11ty build config (ESM)
 ```
@@ -134,8 +148,9 @@ All data shapes are validated against Zod schemas in `src/schemas/`:
 |---|---|---|
 | `ConfigSchema` | `config.json` | Startup (fetchers read config directly) |
 | `FetchOutputSchema` | per-fetcher envelope | Not enforced in-process; available for debugging standalone fetcher output |
-| `ReportSchema` | `data/reports/YYYY-MM-DD.json` | `src/pipeline.js` after `synthesizeReport` |
-| `MemorySchema` | `data/memory.json` | `src/pipeline.js` after `synthesizeMemory` |
+| `StagingMetadataSchema` | `data/staging/metadata.json` | `src/collect.js` before writing (Stage 1 → Stage 2 contract) |
+| `ReportSchema` | `data/reports/YYYY-MM-DD.json` | `scripts/analyze.sh` after agent writes report |
+| `MemorySchema` | `data/memory.json` | `scripts/analyze.sh` after agent writes memory |
 
 **If validation fails, the pipeline aborts.** This catches schema drift between LLM output and template expectations early — before broken data reaches `docs/`.
 
@@ -153,19 +168,20 @@ Note: `ReportSchema` uses `.passthrough()` at the top level and makes most sub-f
 - `data/memory.json` — v2 schema: `short_term` (7-day) + `long_term` (30-day promotion), `topics` (frequency tracking), `narrative_arcs` (multi-day patterns), `predictions` (with status tracking)
 - `data/reports/YYYY-MM-DD.json` — committed daily reports; changes to `data/reports/**` trigger the CI deploy via the workflow's paths filter. 11ty reads this directory to generate archive pages via pagination.
 - `data/feeds-snapshot.json` — committed condensed snapshot that CI can read without `tmp/`.
+- `data/staging/` — Stage 1 output consumed by Stage 2: 4 condensed JSON files + `metadata.json` (validated against `StagingMetadataSchema`).
 
 ## Environment
 
 Required:
 - `GITHUB_TOKEN` — PAT with `Contents: read/write` scope. Used by Octokit fetchers AND as the commit/push credential inside the container (see `src/lib/commit.js`, which rewrites `origin` to `https://x-access-token:$GITHUB_TOKEN@github.com/...`). On the VM, stored in `~/.ai-daily-report.env`. Locally, loaded from `.env`.
-- **Claude Code subscription** — `claude -p` in `src/lib/synthesize.js` draws from the Max subscription (not API billing). Credentials live in `~/.claude` and are bind-mounted into the container.
+- **Claude Code subscription** — `claude -p` in `scripts/analyze.sh` draws from the Max subscription (not API billing). Credentials live in `~/.claude` and are bind-mounted into the container.
 - **RSSHub** — `config.json → sources.rsshub_url`, defaults to `https://rsshub.pseudoyu.com`. Fallback: `https://rsshub.rssforever.com`.
 
 Optional:
 - `RSSHUB_URL` — env var override for the RSSHub URL (otherwise read from `config.json`).
 - `REPORT_TIMEZONE` — default `Asia/Taipei`.
-- `CLAUDE_MODEL` — override the model passed to `claude -p`; default `claude-sonnet-4-6`.
-- `DRY_RUN=1` / `SKIP_PUSH=1` — behaviour flags for `src/pipeline.js`, also accessible as `--dry-run` / `--skip-push` CLI flags.
+- `CLAUDE_MODEL` — override the model passed to `claude -p`; default `claude-opus-4-6`.
+- `SKIP_PUSH=1` — skip `git push` in both stages; also accessible as `--skip-push` CLI flag on `src/collect.js`.
 
 See `.env.example` for all variables.
 
@@ -181,7 +197,7 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Notes
 
-- **Scheduling**: production runs happen on the homelab VM via cron at 04:00 Asia/Taipei. Crontab uses `TZ=Asia/Taipei 0 4 * * * scripts/cron-run.sh >> /var/log/ai-daily-report.log 2>&1`.
+- **Scheduling**: production runs happen on the homelab VM via systemd timer at 04:00 Asia/Taipei. Timer has `Persistent=true` (catches up after reboot) and `OnFailure=` (triggers alert). Logs: `journalctl -u ai-daily-report`.
 - **Schema-first**: when changing report sections, update `src/schemas/report.js` first, then the agent prompt, then the templates. This catches mismatches at validate time.
 - **Git push auth** — `src/lib/commit.js` embeds `$GITHUB_TOKEN` into the push URL (`https://x-access-token:TOKEN@github.com/...`). Unlike the previous host-helper approach, this works inside the Docker container without needing gh CLI or SSH keys. The old `.env GITHUB_TOKEN is ignored for push` caveat no longer applies.
 - **External RSSHub dependency** — the pipeline points at `https://rsshub.pseudoyu.com`. If it goes down, fall back to `https://rsshub.rssforever.com` by updating `config.json → sources.rsshub_url` (or pass `RSSHUB_URL`). `src/fetchers/all.js` tolerates 1 of 4 fetchers failing.
@@ -190,7 +206,7 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Quality bar
 
-- All `data/*.json` validate against Zod schemas at the end of `src/pipeline.js`. Schema drift aborts the run before any commit.
+- All `data/*.json` validate against Zod schemas — staging metadata in `src/collect.js`, report + memory in `scripts/analyze.sh`. Schema drift aborts the run before any commit.
 - All JS/JSON formatted with Biome (`npm run lint` on every CI run).
 - Vitest schema tests run on `npm test` and in CI.
 - Conventional commits encouraged.

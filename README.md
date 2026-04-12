@@ -13,14 +13,12 @@ AI-powered daily creative tech brief for AI engineers who build. A Claude Code a
 
 ```mermaid
 flowchart LR
-  Sched[CCR schedule @ 04:00 Asia/Taipei] --> CCR
+  Timer[systemd timer<br/>04:00 Asia/Taipei] --> Docker[Docker container]
 
-  subgraph CCR["ANTHROPIC CLOUD RUNTIME"]
-    Fetch[fetch.sh<br/>parallel fetchers]
-    Fetch --> Validate1[Zod validate]
-    Validate1 --> Agent[Claude Opus agent<br/>via subscription]
-    Agent --> Validate2[Zod validate reports/YYYY-MM-DD.json]
-    Validate2 --> Push[git push main]
+  subgraph Docker["GCP e2-micro VM"]
+    S1[Stage 1: collect.js<br/>fetch → condense → commit staging]
+    S1 --> S2[Stage 2: analyze.sh<br/>claude -p with tools<br/>Read/Write]
+    S2 --> Push[git push main]
   end
 
   Push --> GHA[GitHub Actions]
@@ -33,7 +31,7 @@ flowchart LR
   Deploy --> Pages[🌐 bolin8017.github.io/ai-daily-report]
 ```
 
-**Why this architecture?** The daily pipeline runs on Anthropic Cloud Runtime (CCR) — a scheduled Claude Code session on Anthropic's cloud — so there's zero local machine dependency. CCR sessions count against the Claude Code Max subscription (not API billing), preserving the Opus-quality / no-daily-quota advantage. Build and deploy stay in GitHub Actions because they're deterministic, free, and keep the deploy path push-driven. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full design rationale.
+**Why this architecture?** The pipeline runs on a GCP e2-micro VM via systemd timer. Stage 1 (pure Node.js) fetches and condenses data. Stage 2 invokes `claude -p` with tool access — the agent reads staged data via Read tool, analyzes, and writes report + memory via Write tool. This avoids the subprocess hang that blocked the old single-process design. Build and deploy stay in GitHub Actions because they're deterministic, free, and keep the deploy path push-driven. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full design rationale.
 
 ## Report sections
 
@@ -46,14 +44,13 @@ flowchart LR
 
 ## Scheduled deployment
 
-The pipeline runs as a single Node process (`src/pipeline.js`) inside a Docker container, scheduled by cron on a Google Cloud e2-micro VM (always-free tier). Every day at 04:00 Asia/Taipei:
+The pipeline runs in two stages inside a Docker container on a Google Cloud e2-micro VM (always-free tier), triggered daily by a systemd timer at 04:00 Asia/Taipei:
 
-1. Host cron fires `scripts/cron-run.sh`, which `docker run`s `ai-daily-report:latest` with `--memory=600m` and the host's `~/.claude` + `GITHUB_TOKEN` bind-mounted in
-2. Container entrypoint `git pull`s the latest `main` into a persistent workspace volume and runs `node src/pipeline.js`
-3. The pipeline fetches 4 sources in parallel, calls `claude -p` twice (report, then memory update), validates against Zod schemas, and `git push`es
-4. GitHub Actions picks up the push and deploys to Pages
-
-**Why VM + cron instead of Anthropic Cloud Runtime**: an earlier iteration tried to run the agent inside CCR but hit two dead ends — nested `claude -p` subprocesses deadlocked on SSE keepalive, and the 10K-token Read-tool limit made a merged digest file unusable. A bare VM has neither constraint. See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full rationale.
+1. **systemd timer** fires `scripts/cron-run.sh`, which `docker run`s `ai-daily-report:latest` with `--memory=600m` and the host's `~/.claude` + `GITHUB_TOKEN` bind-mounted in
+2. **Stage 1** — `collect.js` fetches 4 sources in parallel, condenses them, and commits staging data to git
+3. **Stage 2** — `analyze.sh` invokes `claude -p` (Opus 4.6) with `--allowedTools` for Read/Write access; the agent reads staged data, writes `data/reports/YYYY-MM-DD.json` + `data/memory.json`, validates against Zod schemas, and commits
+4. **git push** sends both commits to `origin main`
+5. **GitHub Actions** picks up the push and deploys to Pages
 
 **External dependency:** RSSHub instance at `https://rsshub.pseudoyu.com` (public, community-maintained by [@pseudoyu](https://github.com/pseudoyu)). Fallback: `https://rsshub.rssforever.com`.
 
@@ -81,17 +78,20 @@ cp .env.example .env
 # One-time Claude Code login (only needed for --full runs)
 claude    # then /login in the REPL
 
-# Fetch + snapshot + condense only (no LLM call, no commit)
+# Stage 1 only — fetch + condense + snapshot (no LLM call, no push)
 npm start
 
-# Full pipeline including claude -p (requires Claude login, uses Max quota)
+# Stage 1 + Stage 2 — full pipeline including claude -p (requires Claude login)
 bash scripts/run.sh --full
 
 # Full pipeline but skip git push — useful for prompt iteration
 bash scripts/run.sh --skip-push
+
+# Stage 2 only — analyze existing staging data (assumes Stage 1 already ran)
+bash scripts/run.sh --analyze
 ```
 
-`--full` runs both `claude -p` calls and git-pushes at the end; `--skip-push` does the LLM calls but leaves the result uncommitted. Default `npm start` is the dry run (no LLM, no push) — use this while iterating on fetchers or templates.
+`npm start` runs Stage 1 only (collect, no push) — use this while iterating on fetchers or templates. `--full` runs both stages and git-pushes at the end. `--skip-push` does both stages but leaves the result unpushed. `--analyze` skips collection and runs Stage 2 directly against existing staging data.
 
 ## Project structure
 
@@ -99,18 +99,20 @@ See [CLAUDE.md](./CLAUDE.md) for the full file-by-file guide.
 
 ```
 src/
-  pipeline.js       # Main entry — fetch → condense → synthesize → validate → commit
+  collect.js        # Stage 1 — fetch → condense → snapshot → commit staging
   fetchers/         # Dual-mode JS fetchers (feeds, trending, search, developers)
-  schemas/          # Zod schemas — single source of truth
-  lib/              # condense, snapshot, synthesize (claude -p wrapper), commit
+  schemas/          # Zod schemas — single source of truth (including staging contract)
+  lib/              # condense, snapshot, commit
 scripts/
+  analyze.sh        # Stage 2 — assemble prompt → claude -p → validate → commit
   run.sh            # Local dev wrapper
-  cron-run.sh       # Host cron entry (VM)
-  docker-entrypoint.sh  # Inside-container entry
-  setup-vm.sh       # One-time VM install
+  cron-run.sh       # Docker invocation (used by systemd service)
+  docker-entrypoint.sh  # Inside-container entry (collect/analyze/both)
+  setup-vm.sh       # One-time VM install (Docker + systemd timer)
+systemd/            # Timer + service + failure notification units
 Dockerfile          # node:22-slim + git + claude CLI
 site/               # 11ty templates (Nunjucks)
-data/               # Committed state (reports/, memory.json, feeds-snapshot.json)
+data/               # Committed state (reports/, staging/, memory.json)
 tests/              # Vitest unit tests
 ```
 
@@ -128,10 +130,10 @@ npm run serve            # 11ty dev server with live reload
 
 | Concern | Tool | Why |
 |---|---|---|
-| **Scheduling runtime** | Google Cloud e2-micro VM (always-free) + cron + Docker | Zero monthly cost, full control, no nested-claude problem |
-| **LLM call** | `claude -p` against the Max subscription | No API billing; Claude Code CLI ships a headless print mode that fits nicely inside a container entry script |
+| **Scheduling runtime** | GCP e2-micro VM (always-free) + systemd timer + Docker | Zero monthly cost, full control, reliable scheduling with failure notifications |
+| **LLM call** | `claude -p` with `--allowedTools` for agent-style tool access | No API billing; the agent reads staged data via Read tool and writes report + memory via Write tool |
 | **Data aggregation (HN, Dev.to)** | Public [RSSHub](https://github.com/DIYgod/RSSHub) instance at `rsshub.pseudoyu.com` | Community-maintained, covers hundreds of sources, no self-hosting |
-| **AI analysis** | Claude Sonnet 4.6 via `claude -p` | Best price/performance for the report workload; Max subscription covers usage |
+| **AI analysis** | Claude Opus 4.6 via `claude -p` | Best quality for senior-analyst synthesis; Max subscription covers usage |
 | **Static site build** | [11ty](https://github.com/11ty/eleventy) | Mature, fast, JS-native, perfect for daily content |
 | **Schema validation** | [Zod](https://github.com/colinhacks/zod) | TypeScript-first, the standard |
 | **Linting + formatting** | [Biome](https://github.com/biomejs/biome) | Replaces ESLint+Prettier with one fast tool |
@@ -139,7 +141,7 @@ npm run serve            # 11ty dev server with live reload
 | **Deploy** | [actions/deploy-pages](https://github.com/actions/deploy-pages) | Official GitHub Pages OIDC deploy |
 | **HTML scraping** | [cheerio](https://github.com/cheeriojs/cheerio) | Used in `github-trending.js` instead of regex |
 | **GitHub API** | [Octokit](https://github.com/octokit/octokit.js) | Bundles retry + throttling plugins by default |
-| **Self-maintained** | Agent prompt · 11ty templates · CSS theme · Zod schemas · `src/pipeline.js` orchestration | The IP that makes this differentiated |
+| **Self-maintained** | Agent prompt · 11ty templates · CSS theme · Zod schemas · `collect.js` + `analyze.sh` orchestration | The IP that makes this differentiated |
 
 ## License
 

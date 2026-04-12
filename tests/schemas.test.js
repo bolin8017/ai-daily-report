@@ -7,6 +7,7 @@ import { ConfigSchema } from '../src/schemas/config.js';
 import { FeedItemSchema } from '../src/schemas/feed-item.js';
 import { MemorySchema } from '../src/schemas/memory.js';
 import { ReportSchema } from '../src/schemas/report.js';
+import { StagingMetadataSchema } from '../src/schemas/staging.js';
 
 const json = (p) => JSON.parse(readFileSync(p, 'utf8'));
 
@@ -38,6 +39,15 @@ describe('schemas', () => {
     if (!result.success) console.error(result.error.issues);
     expect(result.success).toBe(true);
   });
+
+  it.skipIf(!existsSync('data/staging/metadata.json'))(
+    'data/staging/metadata.json passes StagingMetadataSchema',
+    () => {
+      const result = StagingMetadataSchema.safeParse(json('data/staging/metadata.json'));
+      if (!result.success) console.error(result.error.issues);
+      expect(result.success).toBe(true);
+    },
+  );
 });
 
 describe('feed item shape', () => {
