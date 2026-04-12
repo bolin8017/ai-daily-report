@@ -54,6 +54,7 @@ docker run --rm \
   -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-6}" \
   -v "$VOLUME":/workspace \
   -v "$CLAUDE_HOST_DIR":/root/.claude \
+  -v "${HOME}/.claude.json":/root/.claude.json:ro \
   "$IMAGE"
 
 echo "[cron-run] $(ts) === run complete ==="
