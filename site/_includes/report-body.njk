@@ -89,8 +89,8 @@
     <ol class="shipped-list">
       {%- for item in report.pulse.curated %}
       <li class="source-rss">
+        <span class="curated-source" data-source="{{ item.source | safeSlug }}">{{ item.source }}</span>
         {% if item.url %}<a href="{{ item.url }}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
-        <span class="rss-feed-tag">{{ item.source }}</span>
         {% if item.relevance %}<span class="relevance-tag">{{ item.relevance }}</span>{% endif %}
         {% if item.severity %}<span class="severity severity-{{ item.severity }}">{{ item.severity }}</span>{% endif %}
         <span class="takeaway">{{ item.takeaway }}</span>
