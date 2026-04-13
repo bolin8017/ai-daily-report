@@ -1,0 +1,99 @@
+name: Build and deploy to GitHub Pages
+
+# This workflow only consumes trusted inputs:
+# - actions/checkout (no untrusted code execution)
+# - npm ci against committed package-lock.json
+# - 11ty build against committed templates
+# No github.event.*, no PR/issue body parsing, no untrusted user input.
+
+# Opt into Node.js 24 for the bundled JavaScript actions (checkout,
+# setup-node, upload-pages-artifact, deploy-pages). GitHub will force
+# this from 2026-06-02 and remove Node 20 from runners on 2026-09-16;
+# setting it now silences the deprecation warnings and exercises the
+# new runtime ahead of the cutover.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/reports/**'
+      - 'data/feeds-snapshot.json'
+      - 'site/**'
+      - 'eleventy.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm test
+
+      - name: Validate data files against schemas
+        run: |
+          set -euo pipefail
+          node src/lib/validate.js config config.json
+          LATEST=$(ls -1 data/reports/*.json 2>/dev/null | sort -r | head -1 || true)
+          if [ -n "$LATEST" ]; then
+            node src/lib/validate.js report "$LATEST"
+          fi
+          node src/lib/validate.js memory data/memory.json
+
+      - name: Build site with 11ty
+        run: npx @11ty/eleventy
+
+      - name: Verify build artifacts
+        env:
+          REPORT_TZ: ${{ vars.REPORT_TIMEZONE || 'Asia/Taipei' }}
+        run: |
+          set -euo pipefail
+          test -s _site/index.html || { echo "11ty produced empty index.html"; exit 1; }
+          LATEST=$(ls -1 data/reports/*.json 2>/dev/null | sort -r | head -1 || true)
+          if [ -n "$LATEST" ]; then
+            REPORT_DATE=$(jq -r '.date' "$LATEST")
+            TODAY=$(TZ="$REPORT_TZ" date +%Y-%m-%d)
+            if [ "$REPORT_DATE" != "$TODAY" ]; then
+              echo "::warning::report date ($REPORT_DATE) does not match CI day ($TODAY)"
+            fi
+          fi
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
