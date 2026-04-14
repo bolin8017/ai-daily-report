@@ -45,8 +45,11 @@ jobs:
 
       - name: Hydrate data/ from data branch
         run: |
+          set -euo pipefail
           git fetch --depth=1 origin data
-          git checkout origin/data -- data/
+          # 11ty only needs reports + memory + snapshot; staging stays
+          # internal to the pipeline (avoids 1MB+ leak into Pages artifact).
+          git checkout origin/data -- data/reports data/memory.json data/feeds-snapshot.json
           test -d data/reports || { echo "data branch missing data/reports/"; exit 1; }
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
