@@ -1,20 +1,37 @@
 // Git commit + push for the daily report pipeline.
 //
-// Auth strategy: if `GITHUB_TOKEN` is set, embeds it in the push URL via
+// Bot-produced artifacts (reports, memory, feeds snapshot, staging)
+// live on the `data` orphan branch so `main` stays a record of
+// human-authored code changes. Commits are built with git plumbing
+// (read-tree into an isolated GIT_INDEX_FILE, write-tree, commit-tree)
+// so main's working tree and index are never touched.
+//
+// Dual mode:
+//   - importable: `import { commitAndPush } from './lib/commit.js'`
+//   - CLI:        `node src/lib/commit.js <date> <message> <path>...`
+//
+// Auth: if `GITHUB_TOKEN` is set, embeds it in the push URL via
 // `x-access-token:TOKEN@github.com`. Otherwise relies on the host's
 // configured credential helper or SSH keys.
 //
-// Commit only runs if data/reports/, data/memory.json, or data/feeds-snapshot.json
-// actually changed. `git push origin HEAD:main` is used instead of `main` so
-// detached-HEAD clones (e.g., a fresh container clone) work too.
+// Bootstrap: if `origin/data` doesn't exist (new deployment, disaster
+// recovery), builds an orphan commit (no parent) instead of failing.
 
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const REMOTE_URL = 'https://github.com/bolin8017/ai-daily-report.git';
+const DATA_BRANCH = 'data';
 
-function git(args, { reject = true, env } = {}) {
+function git(args, { reject = true, env, cwd } = {}) {
   return new Promise((resolve, rejectPromise) => {
-    const proc = spawn('git', args, { env: { ...process.env, ...(env ?? {}) } });
+    const proc = spawn('git', args, {
+      env: { ...process.env, ...(env ?? {}) },
+      cwd,
+    });
     let stdout = '';
     let stderr = '';
     proc.stdout.on('data', (c) => {
@@ -51,7 +68,6 @@ async function ensureGitAuthor() {
 }
 
 function tokenizedRemoteUrl(token) {
-  // x-access-token is GitHub's convention for PAT-based Basic auth
   return REMOTE_URL.replace('https://', `https://x-access-token:${token}@`);
 }
 
@@ -61,44 +77,136 @@ function sanitizeToken(str) {
 }
 
 /**
- * Commit data changes and push to origin main.
+ * Commit data changes to the `data` branch and push, without touching
+ * the caller's working tree or index. Uses git plumbing end-to-end.
+ *
+ * On push the commit is protected by `--force-with-lease` pinned to
+ * the parent we read-tree'd from, so a concurrent push to `data`
+ * causes this one to abort rather than clobber.
+ *
  * @param {object} opts
- * @param {string} opts.date - YYYY-MM-DD for the commit message
- * @param {string} [opts.message] - custom commit message (default: "report: {date} daily creative brief")
- * @param {string[]} [opts.paths] - files/dirs to git-add (default: report + memory + snapshot)
+ * @param {string} opts.date - YYYY-MM-DD (for logging only)
+ * @param {string} [opts.message] - commit message (default: "report: {date} daily creative brief")
+ * @param {string[]} [opts.paths] - paths to include (default: reports + memory + snapshot)
  * @returns {Promise<{ pushed: boolean, sha: string | null }>}
  */
 export async function commitAndPush({ date, message, paths }) {
   await ensureGitAuthor();
 
-  const addPaths = paths ?? ['data/reports/', 'data/memory.json', 'data/feeds-snapshot.json'];
-  await git(['add', ...addPaths]);
-
-  const diff = await git(['diff', '--cached', '--quiet'], { reject: false });
-  // exit 0 = no diff, exit 1 = diff present
-  if (diff.code === 0) {
-    console.error('[commit] no changes to commit — skipping push');
-    return { pushed: false, sha: null };
-  }
-
+  const addPaths = paths ?? ['data/reports', 'data/memory.json', 'data/feeds-snapshot.json'];
   const commitMsg = message ?? `report: ${date} daily creative brief`;
-  await git(['commit', '-m', commitMsg]);
+  const explicitPaths = Array.isArray(paths);
 
   if (process.env.GITHUB_TOKEN) {
     await git(['remote', 'set-url', 'origin', tokenizedRemoteUrl(process.env.GITHUB_TOKEN)]);
   }
+
   try {
-    await git(['push', 'origin', 'HEAD:main']);
+    // Fetch the data branch. Missing-on-remote is legitimate (first-run
+    // bootstrap); anything else is a real error we should surface.
+    const fetchResult = await git(
+      ['fetch', 'origin', `${DATA_BRANCH}:refs/remotes/origin/${DATA_BRANCH}`],
+      { reject: false },
+    );
+    const isBootstrap = fetchResult.code !== 0;
+    if (isBootstrap && !/couldn't find remote ref/i.test(fetchResult.stderr)) {
+      throw new Error(sanitizeToken(`[commit] fetch failed: ${fetchResult.stderr}`));
+    }
+    if (isBootstrap) {
+      console.error(`[commit] origin/${DATA_BRANCH} missing — creating orphan commit`);
+    }
+
+    // Build the commit in an isolated index so we never touch the
+    // caller's working tree or index. mkdtempSync gives a unique dir
+    // per invocation so concurrent / crashed prior runs don't collide.
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ai-daily-report-'));
+    const tmpIndex = path.join(tmpDir, 'index');
+    const env = { GIT_INDEX_FILE: tmpIndex };
+
+    try {
+      if (!isBootstrap) {
+        await git(['read-tree', `refs/remotes/origin/${DATA_BRANCH}`], { env });
+      }
+
+      // Stage paths. -f bypasses main's .gitignore which excludes data/.
+      // If the caller passed explicit paths (analyze.sh for a specific
+      // report file) a missing file is a real bug, not a benign skip.
+      for (const p of addPaths) {
+        if (!fs.existsSync(p)) {
+          if (explicitPaths) {
+            throw new Error(`[commit] explicit path missing on disk: ${p}`);
+          }
+          console.error(`[commit] default path missing (skipping): ${p}`);
+          continue;
+        }
+        await git(['add', '--force', '--', p], { env });
+      }
+
+      const newTree = (await git(['write-tree'], { env })).stdout;
+
+      // Skip the push if the tree matches the parent — no net change.
+      // (Only meaningful when we have a parent; bootstrap always pushes.)
+      let parent = null;
+      if (!isBootstrap) {
+        const parentTree = (await git(['rev-parse', `refs/remotes/origin/${DATA_BRANCH}^{tree}`]))
+          .stdout;
+        if (newTree === parentTree) {
+          console.error('[commit] no changes to commit — skipping push');
+          return { pushed: false, sha: null };
+        }
+        parent = (await git(['rev-parse', `refs/remotes/origin/${DATA_BRANCH}`])).stdout;
+      }
+
+      const commitArgs = parent
+        ? ['commit-tree', newTree, '-p', parent, '-m', commitMsg]
+        : ['commit-tree', newTree, '-m', commitMsg];
+      const commit = (await git(commitArgs)).stdout;
+
+      // Push. With --force-with-lease tied to our known parent the push
+      // aborts if the remote ref moved between fetch and push, so we
+      // never silently clobber a concurrent update.
+      const pushArgs = ['push', 'origin'];
+      if (parent) {
+        pushArgs.push(`--force-with-lease=refs/heads/${DATA_BRANCH}:${parent}`);
+      }
+      pushArgs.push(`${commit}:refs/heads/${DATA_BRANCH}`);
+      await git(pushArgs);
+
+      const shortSha = commit.slice(0, 7);
+      console.error(`[commit] pushed ${shortSha} to origin/${DATA_BRANCH}`);
+      return { pushed: true, sha: shortSha };
+    } finally {
+      try {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } catch (e) {
+        console.error(`[commit] tmp index cleanup warning: ${e.message}`);
+      }
+    }
   } finally {
-    // Always scrub token from git config, even on push failure
     if (process.env.GITHUB_TOKEN) {
-      await git(['remote', 'set-url', 'origin', REMOTE_URL], { reject: false });
+      const scrub = await git(['remote', 'set-url', 'origin', REMOTE_URL], { reject: false });
+      if (scrub.code !== 0) {
+        console.error(
+          `[commit] WARN: token scrub failed (${scrub.code}) — token may linger in .git/config`,
+        );
+      }
     }
   }
+}
 
-  const sha = (await git(['rev-parse', '--short', 'HEAD'])).stdout;
-  console.error(`[commit] pushed ${sha} to origin/main`);
-  return { pushed: true, sha };
+// CLI: `node src/lib/commit.js <date> <message> <path> [path ...]`
+const isMain =
+  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMain) {
+  const [date, message, ...paths] = process.argv.slice(2);
+  if (!date || !message || paths.length === 0) {
+    console.error('usage: commit.js <date> <message> <path> [path ...]');
+    process.exit(2);
+  }
+  commitAndPush({ date, message, paths }).catch((err) => {
+    console.error(`[commit] FATAL: ${err.message ?? err}`);
+    process.exit(1);
+  });
 }
 
 // Exported for tests

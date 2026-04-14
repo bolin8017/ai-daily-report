@@ -14,10 +14,19 @@ For the public-facing overview and quick start, see [README.md](./README.md). Fo
 
 The pipeline is split into **two independent stages**, both running inside a Docker container on the VM:
 
-- **Stage 1** (`src/collect.js`): pure Node.js — fetches 4 sources in parallel, condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`, commits + pushes.
-- **Stage 2** (`scripts/analyze.sh`): invokes `claude -p --allowedTools Read Write Bash Grep Glob` — the agent reads staged data via Read tool, analyzes per `.claude/agents/daily-report.md`, writes report + memory via Write tool. The script then validates against Zod schemas, commits + pushes.
+- **Stage 1** (`src/collect.js`): pure Node.js — fetches 4 sources in parallel, condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`, then commits it to the `data` branch via plumbing in `src/lib/commit.js`.
+- **Stage 2** (`scripts/analyze.sh`): invokes `claude -p --allowedTools Read Write Bash Grep Glob` — the agent reads staged data via Read tool, analyzes per `.claude/agents/daily-report.md`, writes report + memory via Write tool. The script then validates against Zod schemas and commits to the `data` branch (again via `src/lib/commit.js`).
 
-GitHub Actions picks up the push and deploys the 11ty site to Pages.
+GitHub Actions picks up either push (main for code, data for daily artifacts) and deploys the 11ty site to Pages.
+
+## Branch layout
+
+Two long-lived branches with distinct roles:
+
+- **`main`**: human-authored source — code, templates, CI, scripts, config. Bot never pushes here.
+- **`data`** (orphan branch, no shared history with `main`): bot-produced artifacts — `data/reports/`, `data/memory.json`, `data/feeds-snapshot.json`, `data/staging/`. Every Stage 1 / Stage 2 commit lands here.
+
+`src/lib/commit.js` builds commits using git plumbing (`read-tree` into an isolated `GIT_INDEX_FILE`, `write-tree`, `commit-tree`, then `push commit:refs/heads/data`) — never checks out the data branch, never touches main's working tree or index. In CI the build job checks out `main` for code, then `git fetch` + `git checkout refs/remotes/origin/data -- data/` to pull in the report archive before running 11ty.
 
 **Production runtime**: a Google Cloud e2-micro VM (always-free tier, us-west1) runs both stages daily at 04:00 Asia/Taipei via **systemd timer** → `scripts/cron-run.sh` → `docker run ai-daily-report:latest`. The Docker image contains Node 22, git, and the Claude Code CLI; the repo is cloned into a persistent Docker volume at `/workspace` and refreshed via `git pull` on each run.
 
@@ -30,7 +39,7 @@ GitHub Actions picks up the push and deploys the 11ty site to Pages.
 | **Swap** | 2GB file at `/swapfile` | e2-micro has limited RAM. LLM synthesis peaks need headroom to avoid OOM. |
 | **Docker image** | `ai-daily-report:latest`, built locally from `Dockerfile` | Contains Node 22 + git + `@anthropic-ai/claude-code` CLI. No project code baked in — code flows via `git pull` on each run. |
 | **Docker volume** | `ai-daily-report-workspace` | Persists the cloned repo + `node_modules` between runs so cold starts stay <10s. |
-| **Claude auth** | Bind mount `~/.claude` from host → `/home/pipeline/.claude:ro` in container | One-time interactive `claude /login` inside the container creates credentials that persist across timer invocations. |
+| **Claude auth** | Bind mount `~/.claude` from host → `/home/pipeline/.claude` in container (read-write) | One-time interactive `claude /login` inside the container creates credentials that persist across timer invocations. Mount must be writable so the CLI can refresh the OAuth token before expiry — a read-only mount deadlocks the pipeline (see commit `faea48e` "fix(docker): let claude cli refresh oauth token" for the failure mode). |
 | **Secrets** | `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh`, injected into container via `-e GITHUB_TOKEN`. |
 | **Memory limits** | `docker run --memory=600m --memory-swap=1g` | Caps the pipeline so an OOM never kills the host's other services. |
 | **Scheduling** | systemd timer (`systemd/ai-daily-report.timer`) | `Persistent=true` catches up after VM reboots; `OnFailure=` triggers alert on crash; logs go to `journalctl -u ai-daily-report`. |
@@ -41,13 +50,13 @@ GitHub Actions picks up the push and deploys the 11ty site to Pages.
 |---|---|
 | `npm start` | Local dev: runs `scripts/run.sh` → Stage 1 only (fetch + snapshot + condense, no push, no LLM). |
 | `bash scripts/run.sh --full` | Stage 1 + Stage 2 (requires host Claude Code login). |
-| `bash scripts/run.sh --skip-push` | Stage 1 + Stage 2 but without `git push`, useful for prompt iteration. |
-| `bash scripts/run.sh --analyze` | Stage 2 only (assumes `data/staging/` exists from a prior Stage 1 run). |
+| `bash scripts/run.sh --skip-push` | Stage 1 + Stage 2; writes outputs to local `data/` but skips both commit and push. Inspect the result by reading the files directly (e.g. `jq . data/reports/$(date +%F).json`). |
+| `bash scripts/run.sh --analyze` | Stage 2 only (assumes `data/staging/` is populated — run Stage 1 first, or hydrate from `data` branch: `git fetch origin data && git checkout origin/data -- data/`). |
 | `npm run collect` / `npm run collect:dry` | Direct invocation of `node src/collect.js` with or without `--skip-push`. |
 | `npm run analyze` | Direct invocation of `bash scripts/analyze.sh`. |
 | `node src/fetchers/feeds.js` | Any single fetcher can still be run standalone; all 4 fetchers are dual-mode (importable + CLI). |
 | `node src/lib/condense.js` | Standalone mode reads `tmp/*.json`, writes `tmp/*-condensed.json` — useful for debugging the condense budget. |
-| `npm run build` | Rebuild the static site from committed `data/reports/*.json`. |
+| `npm run build` | Rebuild the static site. Requires `data/` populated locally — either run Stage 1 first, or `git fetch origin data && git checkout origin/data -- data/`. |
 | `npm run serve` | 11ty dev server with live reload. |
 | `npm test` | Vitest unit tests for schemas + condense. |
 | `npm run lint` / `npm run format` | Biome check / format --write. |
@@ -103,8 +112,8 @@ GitHub Actions picks up the push and deploys the 11ty site to Pages.
 │   └── archive.njk              # Archive pages via 11ty pagination
 ├── tests/
 │   └── schemas.test.js           # Vitest smoke tests for all Zod schemas (including staging contract)
-├── data/                         # Committed state — triggers CI deploy on change
-│   ├── reports/                  # Daily reports (YYYY-MM-DD.json, git-tracked, dated-only)
+├── data/                         # .gitignored on main; all files live on the `data` branch
+│   ├── reports/                  # Daily reports (YYYY-MM-DD.json)
 │   ├── staging/                  # Stage 1 output consumed by Stage 2 (condensed data + metadata)
 │   ├── memory.json               # v2 cross-day state
 │   └── feeds-snapshot.json       # Condensed snapshot for 11ty templates
@@ -166,9 +175,11 @@ Note: `ReportSchema` uses `.passthrough()` at the top level and makes most sub-f
 
 ## State Management
 
-- `data/memory.json` — v2 schema: `short_term` (7-day) + `long_term` (30-day promotion), `topics` (frequency tracking), `narrative_arcs` (multi-day patterns), `predictions` (with status tracking)
-- `data/reports/YYYY-MM-DD.json` — committed daily reports; changes to `data/reports/**` trigger the CI deploy via the workflow's paths filter. 11ty reads this directory to generate archive pages via pagination.
-- `data/feeds-snapshot.json` — committed condensed snapshot that CI can read without `tmp/`.
+All of these live on the `data` branch (not `main`). Hydrated into the working tree by `scripts/docker-entrypoint.sh` on each container run, and by `.github/workflows/deploy.yml` on each CI build.
+
+- `data/memory.json` — v2 schema: `short_term` (7-day) + `long_term` (30-day promotion), `topics` (frequency tracking), `narrative_arcs` (multi-day patterns), `predictions` (with status tracking).
+- `data/reports/YYYY-MM-DD.json` — daily reports; any update to this tree on the `data` branch triggers CI deploy via the workflow's paths filter. 11ty reads this directory to generate archive pages via pagination.
+- `data/feeds-snapshot.json` — condensed snapshot for 11ty templates (sources status + community feeds).
 - `data/staging/` — Stage 1 output consumed by Stage 2: 4 condensed JSON files + `metadata.json` (validated against `StagingMetadataSchema`).
 
 ## Environment
@@ -190,7 +201,7 @@ See `.env.example` for all variables.
 
 | Workflow | Trigger | Job |
 |---|---|---|
-| `.github/workflows/deploy.yml` | push to `main` that touches `data/reports/**`, `data/feeds-snapshot.json`, `site/**`, `eleventy.config.js`, `package.json`, or `package-lock.json` | Lint + tests + schema validation + 11ty build → `upload-pages-artifact` → `deploy-pages` OIDC |
+| `.github/workflows/deploy.yml` | push to `main` or `data` that touches `data/**`, `site/**`, `eleventy.config.js`, `package.json`, `package-lock.json`, or `.github/workflows/deploy.yml` | Checkout `main` → hydrate `data/` from `data` branch → lint + tests + schema validation + 11ty build → `upload-pages-artifact` → `deploy-pages` OIDC |
 
 GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-pages` branch.
 

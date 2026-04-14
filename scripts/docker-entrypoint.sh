@@ -56,6 +56,30 @@ else
   git reset --hard origin/main
 fi
 
+# Hydrate data/ from the `data` orphan branch. It holds the archived
+# reports, memory.json, feeds-snapshot.json, and staging files. Main
+# only tracks code, so without this step Stage 2 has no memory and
+# the 11ty templates have no past reports.
+#
+# Distinguish three cases so a real failure (network, auth, disk)
+# doesn't silently degrade into an empty data/ + missing memory:
+#   - branch missing on remote (legitimate first run)   → log + continue
+#   - fetch fails for any other reason                   → FATAL exit
+#   - fetch ok but checkout fails                        → FATAL exit
+echo "[entrypoint] hydrating data/ from data branch..."
+if git fetch origin "data:refs/remotes/origin/data" --quiet; then
+  if ! git checkout refs/remotes/origin/data -- data/; then
+    echo "[entrypoint] FATAL: data branch fetched but checkout failed" >&2
+    exit 1
+  fi
+elif git ls-remote --exit-code origin data >/dev/null 2>&1; then
+  echo "[entrypoint] FATAL: data branch exists on remote but fetch failed" >&2
+  exit 1
+else
+  echo "[entrypoint] data branch not found on remote — first-run bootstrap"
+fi
+mkdir -p data/reports data/staging
+
 # Scrub auth token from persisted git config so it does not
 # linger in the Docker volume between runs.
 git remote set-url origin "$REPO_URL"
