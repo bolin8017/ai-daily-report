@@ -19,8 +19,11 @@ Type=oneshot
 User=__USER__
 ExecStart=__REPO_DIR__/scripts/cron-run.sh
 
-# 30 min max for Stage 1 (fetch ~1 min) + Stage 2 (LLM ~10 min)
-TimeoutStartSec=1800
+# No start-timeout: Stage 2 (claude -p) runtime varies widely with
+# model + prompt size. Capping it at 30 min caused SIGTERM kills on
+# slow days. OnFailure still fires for genuine crashes, and the timer
+# itself ensures we never overlap runs.
+TimeoutStartSec=infinity
 
 # Pipeline timezone — determines the report date (YYYY-MM-DD)
 Environment=TZ=Asia/Taipei
