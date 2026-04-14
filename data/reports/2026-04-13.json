@@ -1,0 +1,442 @@
+{
+  "date": "2026-04-13",
+  "lead": {
+    "html": "<p><em>Launch Edition — 這是本日報的第一期。沒有歷史記憶可以回溯，所有觀察從今天的原始訊號開始。</em></p>\n\n<h3>OpenAI 收購 Astral：你的 Python linter 現在屬於一家 AI 公司</h3>\n\n<h4>發生了什麼</h4>\n<p>Astral 加入 OpenAI。Astral 開發了 Ruff（用 Rust 寫的 Python linter/formatter，速度是 Flake8 的 10-100 倍）和 uv（同樣用 Rust 寫的 Python package manager，速度是 pip 的 10-100 倍）。Changelog 的標題寫得直白：「Astral is joining OpenAI, which says a lot about where the center of gravity is.」</p>\n<p>同一天 Anthropic 連發三則公告：跟 Google 和 Broadcom 簽下「multiple gigawatts」等級的下一代運算合約、投入 $100M 成立 Claude Partner Network、跟澳洲政府簽 AI 安全研究 MOU。三則公告在 48 小時內發出，節奏像是刻意排程。</p>\n<p>GitHub Trending 這邊，NousResearch/hermes-agent 以 65,566★ 佔據第一，shiyu-coder/Kronos（金融市場 foundation model）15,607★ 排第二。GitHub Search 的 30 天新 repo 裡，MemPalace（AI memory system）衝到 43,194★，JuliusBrussee/caveman（Claude Code token 減量 skill，號稱砍 65% token 用量）21,181★。</p>\n<p>Berkeley RDI 發了一篇 HN 472 分的研究：〈Exploiting the most prominent AI agent benchmarks〉。結論是目前主流的 agent benchmark 存在系統性可被 exploit 的漏洞。</p>\n\n<h4>為什麼重要</h4>\n<p>Astral 收購案的直接衝擊很具體：如果你的 CI 跑 <code>ruff check</code>，如果你的 Dockerfile 裡有 <code>pip install uv</code>，你的 build 依賴鏈現在多了一個 OpenAI 節點。Ruff 和 uv 都是 MIT/Apache-2.0 授權，fork 權利不會消失——但 roadmap 的優先序會變。OpenAI 買 Astral 的動機不是繼續做 Python tooling 公益，是把這些工具整合進 Codex 和 ChatGPT 的開發者體驗裡。這意味著 Ruff 的 rule set 未來可能優先支援 Codex 產生的 code pattern，uv 的 resolver 可能優先跟 OpenAI 的 package index 整合。</p>\n<p>Anthropic 的三則公告指向一個不同但平行的策略。OpenAI 往下游走（抓住開發者每天碰的 linter 和 package manager），Anthropic 往上游走（鎖住運算 capacity 和通路夥伴）。為什麼兩家同一天做這件事？我的判斷：不是巧合，是 Anthropic 刻意在 Astral 收購消息出來的同一個新聞週期裡搶注意力。$100M partner network 的公告時機太精準了。</p>\n<p>Berkeley 的 benchmark exploit 論文讓這張圖更完整。如果 benchmark 數字可以被 game，那「模型好」就不是護城河——可被複製的 benchmark 分數不能鎖住客戶。護城河在別的地方：tooling（OpenAI 的路線）和 compute access（Anthropic 的路線）。這三件事在同一天出現，不是三條獨立新聞，是同一場基礎設施爭奪戰的三個切面。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 今天有一篇 393 分的〈Anthropic downgraded cache TTL on March 6th〉（github.com/anthropics/claude-code/issues/46829），社群在抱怨 Anthropic 偷偷降低了 prompt cache 的 TTL。一邊簽 gigawatt 級運算合約，一邊在現有用戶身上省 cache 成本——這個對比本身就是故事的一部分。Anthropic 的 capacity 是真的不夠，還是在重新分配 capacity 給更高價值的企業客戶？HN 的 40 則留言傾向後者。</p>\n<p>Lobsters 今天的頭條（85 分，top 5%）是〈No one owes you supply-chain security〉，38 則留言。在 OpenAI 剛收購了大半個 Python 社群每天用的工具之後，這個標題讀起來像是預言：你的 linter 換老闆了，沒有人欠你一個不變的 supply chain。</p>\n<p>HN 另一個 467 分的帖子：〈docker pull fails in Spain due to football Cloudflare block〉。西班牙因為足球轉播的 Cloudflare 封鎖，連帶擋掉了 Docker Hub 的流量。36 則留言裡的共識：基礎設施的脆弱性不是假設，是日常。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 CI 依賴 Ruff 或 uv，這週做兩件事：（1）鎖死版本號（<code>ruff==0.x.y</code>、<code>uv==0.x.y</code>），別用 latest；（2）在 repo 新增一個 <code>vendor-assumptions.md</code>，紀錄你目前依賴的 Ruff rule set 和 uv resolver 行為。Astral 被收購後這些東西的 default 可能會變，你需要一個 diff baseline。</p>\n<p>如果你正在用 benchmark 數字選 agent framework（SWE-bench、WebArena、OSWorld），先讀 Berkeley RDI 的論文再做決定。具體來說：拿你實際的 task distribution 跑 eval，別只看 leaderboard 數字。MemPalace 宣稱是「highest-scoring AI memory system ever benchmarked」——在 benchmark 可被 exploit 的語境下，這個 claim 需要你自己驗證。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "apfel × caveman：完全離線的 Mac code review agent",
+      "projects": [
+        { "name": "Arthur-Ficial/apfel", "url": "https://github.com/Arthur-Ficial/apfel", "note": "on-device Mac LLM via Apple Intelligence, 4,284★" },
+        { "name": "JuliusBrussee/caveman", "url": "https://github.com/JuliusBrussee/caveman", "note": "Claude Code token 減量 skill，砍 65% token" }
+      ],
+      "description": "apfel 把 Apple Intelligence 的 on-device model 包成 OpenAI-compatible API server + CLI。caveman 用極簡語法壓縮 prompt token 用量達 65%。把兩者接起來：caveman 的壓縮策略套用在 code diff 上，餵給 apfel 的 local model 做 review。結果是一個完全不碰網路的 code review agent，跑在你的 Mac 上，latency 在 local inference 的速度。限制很明確：Apple Intelligence 的 on-device model 能力遠不如 Claude Opus 或 GPT-4o，複雜的架構級 review 它做不了。但對 style check、明顯 bug、naming convention 這類 surface-level review，夠了。",
+      "use_case": "你是 freelance 開發者，接了一個簽了 NDA 的企業專案，合約明確禁止把 source code 傳到第三方 API。你手上有一台 M3 MacBook Pro 36GB。你需要一個 code review 助手，但不能用 Copilot、不能用 Claude API、不能用任何 cloud service。apfel + caveman 讓你在 local 跑一個堪用的 review loop。",
+      "tech_stack": "Swift (apfel) + Python (caveman) + shell script 串接",
+      "hardware": "Apple Silicon Mac，建議 16GB+ unified memory",
+      "skill_level": "熟悉 CLI 工具串接，不需要 ML 背景",
+      "dependencies": "macOS 15+ with Apple Intelligence enabled，完全免費",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/Arthur-Ficial/apfel && swift build && ./apfel serve --port 8080",
+      "market_evidence": "HN 上「NDA code review」相關討論每季出現 2-3 次，每次都有人問「有沒有不上雲的 review 工具」。apfel 發布 30 天內 4,284★ 說明 on-device inference 需求是真的。"
+    },
+    {
+      "format": "remix",
+      "title": "Berkeley benchmark exploit 框架 × MemPalace：adversarial agent eval harness",
+      "projects": [
+        { "name": "Berkeley RDI benchmark exploit 研究", "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/" },
+        { "name": "MemPalace/mempalace", "url": "https://github.com/MemPalace/mempalace", "note": "AI memory system, 43,194★" }
+      ],
+      "description": "Berkeley 的論文列出了 agent benchmark 的具體 exploit 向量（task contamination、metric gaming、shortcut exploitation）。MemPalace 宣稱是 benchmark 最高分的 memory system，但它的 eval methodology 沒有公開對抗測試。把 Berkeley 的 exploit 方法論包成一個 eval harness，自動對任何 agent memory system 跑 adversarial perturbation：故意插入 misleading context、測試 memory retrieval 在 noisy input 下的 degradation curve。這不是另一個 benchmark——是一個 benchmark 的 stress test。",
+      "use_case": "你是一個 4 人 ML 團隊的 lead，正在評估要用 MemPalace 還是自建 memory layer 接進你的 RAG agent。老闆要你下週交一份技術選型報告。你不信任任何 self-reported benchmark 數字（Berkeley 的論文讓你有理由不信），你需要自己跑 eval。這個 harness 讓你在 2 天內對 candidate systems 跑完 adversarial stress test。",
+      "tech_stack": "Python + pytest + 任意 LLM API（用來生成 adversarial perturbation）",
+      "hardware": "純 CPU 可跑，LLM API 呼叫費用約 $5-10 per eval run",
+      "skill_level": "需要理解 information retrieval 基本 metrics（recall@k、MRR），讀過 Berkeley 論文",
+      "dependencies": "OpenAI 或 Anthropic API key（生成 adversarial test case），月費約 $10",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "讀 Berkeley 論文的 Section 4（exploit taxonomy），列出你要測試的 3 個 attack vector",
+      "market_evidence": "Berkeley 論文 HN 472 分（top 10%）說明社群對 benchmark integrity 的焦慮是真的。MemPalace 30 天 43K★ 說明 agent memory 是熱門賽道，但沒有人在做 adversarial eval。"
+    },
+    {
+      "format": "solo",
+      "title": "FluidCAD：用 JavaScript 寫可參數化的 3D 列印配件",
+      "projects": [
+        { "name": "FluidCAD", "url": "https://fluidcad.io/", "note": "Parametric CAD with JavaScript, HN 151 分" }
+      ],
+      "description": "FluidCAD 讓你用 JavaScript 語法定義參數化 3D 模型，export STL 直接送進 slicer 列印。跟 OpenSCAD 的差別：JavaScript 生態系的 npm packages 可以直接用（數學函式庫、CSV parser 讀取測量數據）。一個週末可以做的 project：寫一個 CLI 工具讀取你桌面設備的尺寸（螢幕、鍵盤、滑鼠）, 自動產生客製化的桌面配件 STL 檔（螢幕架、線材整理槽、手機架）。參數化的好處：換螢幕的時候改一個變數重新 generate，不用重新建模。",
+      "use_case": "你有一台 3D printer 放在角落積灰塵，因為每次要印東西都得打開 Fusion 360 從頭建模。你寫 JavaScript 比拖拉 GUI 快 10 倍。FluidCAD 讓你把 CAD 變成 code——version control、parameterize、iterate 全用你熟悉的 workflow。",
+      "tech_stack": "JavaScript + FluidCAD + 任意 slicer（PrusaSlicer / Cura）",
+      "hardware": "任意 3D printer（FDM 即可），電腦不限",
+      "skill_level": "會寫 JavaScript 就行，不需要 CAD 經驗",
+      "dependencies": "FluidCAD 免費，3D printer 耗材成本約 $0.5/件",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "打開 https://fluidcad.io/ 的線上 editor，照 tutorial 做一個帶圓角的盒子",
+      "market_evidence": "HN 151 分、17 則留言，多數留言在比較它跟 OpenSCAD / CadQuery 的優劣。「code-first CAD」這個 niche 有穩定的小眾需求，Thingiverse 上 parametric 標籤的模型下載量長期高於固定尺寸模型。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Astral 加入 OpenAI",
+      "url": "https://changelog.com/news/184",
+      "desc": "Ruff（最快 Python linter）和 uv（最快 Python package manager）的母公司被 OpenAI 收購。Python 開發者的 CI toolchain 換了一個新的上游股東。",
+      "source": "Changelog",
+      "repo_age": "Astral 成立於 2023 年"
+    },
+    {
+      "name": "Anthropic × Google × Broadcom 運算合約",
+      "url": "https://www.anthropic.com/news/google-broadcom-partnership-compute",
+      "desc": "Anthropic 跟 Google 和 Broadcom 簽了「multiple gigawatts」等級的下一代運算合約。具體數字沒公布，但 gigawatt 級意味著至少數十萬張 TPU/GPU。",
+      "source": "Anthropic News"
+    },
+    {
+      "name": "Claude Partner Network ($100M)",
+      "url": "https://www.anthropic.com/news/claude-partner-network",
+      "desc": "Anthropic 投入 $100M 成立合作夥伴計畫，對象是 system integrator 和 consulting firm。分潤模式和技術整合細節尚未公開。",
+      "source": "Anthropic News"
+    },
+    {
+      "name": "NousResearch/hermes-agent",
+      "url": "https://github.com/NousResearch/hermes-agent",
+      "desc": "NousResearch 的 AI agent framework，「The agent that grows with you」。Python 寫的，支援多模型後端。",
+      "source": "GitHub Trending #1",
+      "stars": 65566,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "shiyu-coder/Kronos",
+      "url": "https://github.com/shiyu-coder/Kronos",
+      "desc": "金融市場 foundation model。不是另一個 GPT wrapper——是從 financial time series 原生訓練的模型，專門處理 tick data、order book、financial language。",
+      "source": "GitHub Trending #2",
+      "stars": 15607,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "rustfs/rustfs",
+      "url": "https://github.com/rustfs/rustfs",
+      "desc": "Rust 寫的 S3-compatible object storage。聲稱 4KB payload 比 MinIO 快 2.3x。如果你的 RAG pipeline 有大量小檔 embedding chunks 要存取，這個數字有意義。",
+      "source": "GitHub Trending #11",
+      "stars": 25119,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "coleam00/Archon",
+      "url": "https://github.com/coleam00/Archon",
+      "desc": "開源 AI coding harness builder。目標是讓 AI coding 的行為 deterministic 和 repeatable——不是另一個 agent，是 agent 的測試框架。",
+      "source": "GitHub Trending #6",
+      "stars": 16947,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "Berkeley RDI: Exploiting AI agent benchmarks",
+      "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/",
+      "desc": "Berkeley 研究團隊示範如何系統性 exploit 主流 AI agent benchmark。如果你正在用 benchmark 數字選 agent framework，先讀這篇。",
+      "source": "HN 472分",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Google Gemini API: Flex 和 Priority 推理層級",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference/",
+      "desc": "Gemini API 新增兩個 inference tier：Flex（低成本、高延遲）和 Priority（高成本、低延遲）。讓你按 task 的 latency 需求選價位。",
+      "source": "Google AI Blog"
+    },
+    {
+      "name": "Faithful GRPO: VLM 空間推理的 constrained policy optimization",
+      "url": "https://arxiv.org/abs/2604.08476",
+      "desc": "用 constrained policy optimization 改善 multimodal reasoning model 的空間推理。比 standard GRPO 在 spatial reasoning benchmark 上提升 8-15%。如果你在做 VLM 的 fine-tuning，這個方法直接可用。",
+      "source": "HuggingFace Daily Papers"
+    },
+    {
+      "name": "SQLite 3.53.0",
+      "url": "https://simonwillison.net/2026/Apr/11/sqlite/#atom-everything",
+      "desc": "Simon Willison 報導 SQLite 新版。SQLite 是幾乎所有 local-first app 和 embedded system 的底層——新版的 changelog 值得掃一眼。",
+      "source": "Simon Willison"
+    },
+    {
+      "name": "MemPalace/mempalace",
+      "url": "https://github.com/MemPalace/mempalace",
+      "desc": "宣稱是「benchmark 最高分的 AI memory system」。Python 寫的，支援 MCP protocol。30 天內 43K★ 的成長速度值得注意，但 benchmark claim 需要自行驗證（見 Berkeley 論文）。",
+      "source": "topic:llm · 43194★ · ≤30d",
+      "stars": 43194,
+      "repo_age": "30 天內新建"
+    },
+    {
+      "name": "JuliusBrussee/caveman",
+      "url": "https://github.com/JuliusBrussee/caveman",
+      "desc": "Claude Code skill，用極簡語法重寫 prompt 來減少 65% token 用量。原理很粗暴：把自然語言壓縮成 caveman-style 短句，犧牲可讀性換 token 節省。實測有效但 code generation 品質可能下降。",
+      "source": "topic:llm · 21181★ · ≤30d",
+      "stars": 21181,
+      "repo_age": "30 天內新建"
+    },
+    {
+      "name": "JackChen-me/open-multi-agent",
+      "url": "https://github.com/JackChen-me/open-multi-agent",
+      "desc": "TypeScript multi-agent framework，一個 runTeam() call 從目標到結果。自動 task decomposition + parallel execution。",
+      "source": "topic:llm · 5662★ · ≤30d",
+      "stars": 5662,
+      "repo_age": "30 天內新建"
+    },
+    {
+      "name": "Arthur-Ficial/apfel",
+      "url": "https://github.com/Arthur-Ficial/apfel",
+      "desc": "Mac 上的免費 on-device LLM 工具。CLI + OpenAI-compatible server + interactive chat，全部透過 Apple Intelligence 在本機跑。Swift 寫的。",
+      "source": "topic:llm · 4284★ · ≤30d",
+      "stars": 4284,
+      "repo_age": "30 天內新建"
+    },
+    {
+      "name": "holaboss-ai/holaOS",
+      "url": "https://github.com/holaboss-ai/holaOS",
+      "desc": "Agent 的長期執行環境，支援 persistent memory、self-evolution、MCP server。TypeScript 寫的。跟一般的 agent framework 的差別：它模擬的不是 single task，是 agent 的「作業系統」。",
+      "source": "topic:agent · 1926★ · ≤30d",
+      "stars": 1926,
+      "repo_age": "30 天內新建"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Exploiting the most prominent AI agent benchmarks",
+        "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/",
+        "score": 472,
+        "source": "HN",
+        "takeaway": "主流 agent benchmark 可以被系統性 exploit。你用來選 framework 的數字可能不可靠。",
+        "action": "在做 agent 技術選型時，跑自己的 eval，別只看 leaderboard。"
+      },
+      {
+        "title": "No one owes you supply-chain security",
+        "url": "https://purplesyringa.moe/blog/no-one-owes-you-supply-chain-security/",
+        "score": 85,
+        "source": "Lobsters",
+        "takeaway": "開源 maintainer 沒有義務替你維護供應鏈安全。在 Astral 被收購的今天，這篇特別有共鳴。",
+        "action": "audit 你的 dependency tree，列出 bus factor = 1 的關鍵依賴。"
+      },
+      {
+        "title": "Anthropic downgraded cache TTL on March 6th",
+        "url": "https://github.com/anthropics/claude-code/issues/46829",
+        "score": 393,
+        "source": "HN",
+        "takeaway": "Anthropic 在 3 月 6 日偷偷降低了 prompt cache TTL，影響 Claude Code 使用者的成本和速度。",
+        "action": "如果你的 Claude API 成本最近莫名上升，檢查你的 cache hit rate。"
+      },
+      {
+        "title": "Google Gemini API: Flex 和 Priority 推理層級",
+        "url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference/",
+        "source": "Google AI Blog",
+        "takeaway": "Gemini API 現在可以按 latency 需求選價位。batch job 用 Flex 省錢，real-time 用 Priority。"
+      },
+      {
+        "title": "Faithful GRPO: VLM 空間推理突破",
+        "url": "https://arxiv.org/abs/2604.08476",
+        "source": "HuggingFace Daily Papers",
+        "takeaway": "Constrained policy optimization 在 VLM spatial reasoning 上比 standard GRPO 高 8-15%。如果你在 fine-tune VLM，值得試。"
+      }
+    ],
+    "hn": [
+      { "title": "I run multiple $10K MRR companies on a $20/month tech stack", "url": "https://stevehanov.ca/blog/how-i-run-multiple-10k-mrr-companies-on-a-20month-tech-stack", "score": 707, "comments": 87 },
+      { "title": "Show HN: Pardonned.com – A searchable database of US Pardons", "url": "https://news.ycombinator.com/item?id=47727960", "score": 476, "comments": 37 },
+      { "title": "Exploiting the most prominent AI agent benchmarks", "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/", "score": 472, "comments": 29 },
+      { "title": "Tell HN: docker pull fails in Spain due to football Cloudflare block", "url": "https://news.ycombinator.com/item?id=47738883", "score": 467, "comments": 36 },
+      { "title": "Anthropic downgraded cache TTL on March 6th", "url": "https://github.com/anthropics/claude-code/issues/46829", "score": 393, "comments": 40 },
+      { "title": "Seven countries now generate 100% of their electricity from renewable energy", "url": "https://www.the-independent.com/tech/renewable-energy-solar-nepal-bhutan-iceland-b2533699.html", "score": 367, "comments": 18 },
+      { "title": "Bring Back Idiomatic Design", "url": "https://essays.johnloeber.com/p/4-bring-back-idiomatic-design", "score": 309, "comments": 40 },
+      { "title": "Happy Map", "url": "https://pudding.cool/2026/02/happy-map/", "score": 169, "comments": 13 },
+      { "title": "Phyphox – Physical Experiments Using a Smartphone", "url": "https://phyphox.org/", "score": 154, "comments": 15 },
+      { "title": "Show HN: FluidCAD – Parametric CAD with JavaScript", "url": "https://fluidcad.io/", "score": 151, "comments": 17 },
+      { "title": "Building a SaaS in 2026 Using Only EU Infrastructure", "url": "https://eualternative.eu/guides/building-saas-eu-stack/", "score": 151, "comments": 10 },
+      { "title": "JVM Options Explorer", "url": "https://chriswhocodes.com/vm-options-explorer.html", "score": 145, "comments": 9 }
+    ],
+    "lobsters": [
+      { "title": "No one owes you supply-chain security", "url": "https://purplesyringa.moe/blog/no-one-owes-you-supply-chain-security/", "score": 85, "comments": 38, "tags": ["security"] },
+      { "title": "I Just Want Simple S3", "url": "https://blog.feld.me/posts/2026/04/i-just-want-simple-s3/", "score": 64, "comments": 21, "tags": ["osdev", "scaling"] },
+      { "title": "Brocards for vulnerability triage", "url": "https://blog.yossarian.net/2026/04/11/Brocards-for-vulnerability-triage", "score": 49, "comments": 9, "tags": ["security"] },
+      { "title": "Rust is Just a Tool", "url": "https://lewiscampbell.tech/blog/260204.html", "score": 29, "comments": 28, "tags": ["culture"] },
+      { "title": "IrDA", "url": "https://computer.rip/2026-04-11-IrDA.html", "score": 22, "comments": 3, "tags": ["historical", "networking"] },
+      { "title": "How I run multiple $10K MRR companies on a $20/month tech stack", "url": "https://stevehanov.ca/blog/how-i-run-multiple-10k-mrr-companies-on-a-20month-tech-stack", "score": 18, "comments": 10, "tags": ["practices", "vibecoding"] },
+      { "title": "Surely there must be a way to make container secrets less dangerous?", "url": "https://dalmatian.life/2026/04/11/surely-there-must-be-a-way-to-make-container-secrets-less-dangerous/", "score": 17, "comments": 18, "tags": ["devops", "security"] }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "audreyt",
+        "followers": 8830,
+        "repo": "audreyt/gbrain",
+        "url": "https://github.com/audreyt/gbrain",
+        "language": null,
+        "hours_ago": 24,
+        "description": "Garry's Opinionated OpenClaw/Hermes Agent Brain — agent 行為設定檔。",
+        "local_context": "🇹🇼 唐鳳開始玩 Hermes Agent 生態系，跟 NousResearch/hermes-agent 今天衝上 GitHub Trending #1 的時間點吻合。"
+      },
+      {
+        "developer": "cw1997",
+        "followers": 1221,
+        "repo": "cw1997/gemini-operator",
+        "url": "https://github.com/cw1997/gemini-operator",
+        "language": null,
+        "hours_ago": 3,
+        "description": "Gemini Operator 相關工具（剛建立 3 小時，內容待觀察）。",
+        "local_context": "🇹🇼 台灣開發者開始碰 Google Gemini 的 operator 層，跟 Google 今天發布 Flex/Priority inference tier 的時間點吻合。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 814,
+        "repo": "strategist922/agent-skills",
+        "url": "https://github.com/strategist922/agent-skills",
+        "language": null,
+        "hours_ago": 7,
+        "description": "Production-grade engineering skills for AI coding agents。",
+        "local_context": "🇹🇼 台灣社群持續投入 AI coding agent 的 skill 層開發。"
+      },
+      {
+        "developer": "zonble",
+        "followers": 690,
+        "repo": "zonble/lite-edit",
+        "url": "https://github.com/zonble/lite-edit",
+        "language": null,
+        "hours_ago": 6,
+        "description": "純 Swift + AppKit 寫的輕量 macOS code editor。",
+        "local_context": "🇹🇼 zonble 長期在 macOS native 開發圈，這次跳進 code editor 領域。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "addyosmani",
+        "followers": 46410,
+        "repo": "addyosmani/agentic-seo",
+        "url": "https://github.com/addyosmani/agentic-seo",
+        "language": "JavaScript",
+        "hours_ago": 22,
+        "description": "Agentic SEO / Agentic Engine Optimization (AEO) tools — 當 AI agent 取代 Google crawler 成為流量來源，SEO 也要跟著變。"
+      },
+      {
+        "developer": "vercel",
+        "followers": 27423,
+        "repo": "vercel/computesdk",
+        "url": "https://github.com/vercel/computesdk",
+        "language": null,
+        "hours_ago": 58,
+        "description": "「A free and open-source toolkit for running other people's code in your applications」——Vercel 悄悄上線了一個 sandboxed code execution SDK。0★，但 Vercel 做 sandbox 這件事本身是大信號。"
+      },
+      {
+        "developer": "rasbt",
+        "followers": 37235,
+        "repo": "rasbt/workflow-understanding-LLM-architectures",
+        "url": "https://github.com/rasbt/workflow-understanding-LLM-architectures",
+        "language": "Jupyter Notebook",
+        "hours_ago": 49,
+        "description": "Sebastian Raschka 的 LLM 架構理解教程。Raschka 是《Machine Learning with PyTorch and Scikit-Learn》的作者。"
+      },
+      {
+        "developer": "antfu",
+        "followers": 39079,
+        "repo": "antfu/tsnapi",
+        "url": "https://github.com/antfu/tsnapi",
+        "language": "TypeScript",
+        "hours_ago": 65,
+        "description": "Library public API snapshot testing — 對 runtime exports 和 type declarations 做 snapshot test。解決的問題：package 升版時意外 break public API。"
+      },
+      {
+        "developer": "bradtraversy",
+        "followers": 75716,
+        "repo": "bradtraversy/graphify",
+        "url": "https://github.com/bradtraversy/graphify",
+        "language": null,
+        "hours_ago": 56,
+        "description": "AI coding assistant skill，支援 Claude Code、Codex、OpenCode、Cursor、Gemini CLI、OpenClaw、Factory Droid、Trae。把任意格式轉成 graph 視覺化。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Claude Code 生態系爆發：skill、plugin、逆向分析同步井噴",
+      "body": "今天的 GitHub data 裡有 6 個以上跟 Claude Code 直接相關的 repo 同時在 trending 或 search 前列：claude-mem（49,402★，session memory plugin）、claude-code-best-practice（38,753★）、andrej-karpathy-skills（15,821★，Karpathy 觀察衍生的 CLAUDE.md）、claude-code-book（2,596★，42 萬字架構剖析）、how-claude-code-works（1,771★，source code 逆向）、claude-reviews-claude（1,286★）。這不是一個 repo 紅了帶動周邊——是六個獨立的 repo 同時在不同的 topic search 裡浮上來。upstream cause：Claude Code 在 3 月底開放了 skill system 和更多 extension API，開發者開始把過去的 hack 正式化成 distributable packages。",
+      "evidence": "6 個 Claude Code 相關 repo 同時在 GitHub Trending + Search 前列，總星數超過 109,000。bradtraversy（75K followers）的 graphify skill 支援 7 個不同的 AI coding assistant，顯示 skill 格式正在跨平台標準化。",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "source_links": [
+        { "platform": "GitHub Trending", "title": "thedotmack/claude-mem", "url": "https://github.com/thedotmack/claude-mem", "score": 49402 },
+        { "platform": "GitHub Search", "title": "lintsinghua/claude-code-book", "url": "https://github.com/lintsinghua/claude-code-book" },
+        { "platform": "GitHub Developers", "title": "bradtraversy/graphify", "url": "https://github.com/bradtraversy/graphify" }
+      ],
+      "product_opportunity": "Claude Code skill 的 discovery 和 distribution 層還不存在。類比 VS Code extension marketplace——做一個 skill registry + search + one-click install 的工具，現在切入時機剛好。"
+    },
+    {
+      "title": "AI 公司從 model 層延伸到基礎設施層：tooling + compute + distribution 三線推進",
+      "body": "OpenAI 收購 Astral（Python tooling），Anthropic 簽 gigawatt 運算合約 + $100M partner network，Google 推 Gemini API 的分級定價。三家公司同一天的動作指向同一個方向：model API 的競爭已經不在 model 本身。OpenAI 選了 developer tooling layer（Ruff / uv 是每個 Python dev 的 CI 裡都有的東西），Anthropic 選了 compute + distribution layer（gigawatt 合約鎖住 capacity，partner network 鎖住 channel），Google 選了 pricing layer（Flex/Priority 讓你按 task 分配預算）。upstream cause：model quality 在 frontier 已經趨近同質化（Berkeley 的 benchmark exploit 論文從另一個角度驗證了這一點——如果 benchmark 可以被 game，benchmark 分數差異就不是真正的差異化）。",
+      "evidence": "同一天：OpenAI 收購 Astral（Changelog 報導），Anthropic 發三則公告（compute + $100M partner + Australia MOU），Google 發 Gemini API 分級定價。Berkeley benchmark exploit 論文 HN 472 分。",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 4,
+      "percentile": "top 5%",
+      "source_links": [
+        { "platform": "Changelog", "title": "Astral has been acquired by OpenAI", "url": "https://changelog.com/news/184" },
+        { "platform": "Anthropic News", "title": "Google Broadcom partnership compute", "url": "https://www.anthropic.com/news/google-broadcom-partnership-compute" },
+        { "platform": "Google AI Blog", "title": "Flex and Priority inference", "url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference/" },
+        { "platform": "HN", "title": "Exploiting AI agent benchmarks", "url": "https://rdi.berkeley.edu/blog/trustworthy-benchmarks-cont/", "score": 472 }
+      ],
+      "product_opportunity": "做一個 dependency provenance tracker：自動掃描 Python project 的依賴鏈，標記哪些 package 的 upstream owner 是 AI 公司、最近有沒有 governance 變動。Astral 收購是第一波，不會是最後一波。"
+    },
+    {
+      "title": "Agent memory 成為獨立賽道：從 RAG 的附屬功能變成 standalone product",
+      "body": "MemPalace（43,194★）、claude-mem（49,402★）、holaOS（1,926★，定位是 agent 的 OS-level persistent memory）三個 repo 同時在前列，各自用不同架構解決 agent 的跨 session 記憶問題。MemPalace 用 benchmark-driven 的方式做 memory retrieval optimization，claude-mem 做 session log 的壓縮和回放，holaOS 試圖做一個完整的 agent runtime environment 包含 memory layer。這三個產品的共同假設：agent 需要的 memory 不是 RAG 的子問題，是一個獨立的系統設計問題。",
+      "evidence": "MemPalace 43,194★（30 天內）、claude-mem 49,402★（GitHub Trending #9）、holaOS 1,926★（跨 llm/agent/mcp 三個 topic）。三者在 GitHub Search 裡各自獨立出現，不是同一個 org 的產品。",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "source_links": [
+        { "platform": "GitHub Search", "title": "MemPalace/mempalace", "url": "https://github.com/MemPalace/mempalace", "score": 43194 },
+        { "platform": "GitHub Trending", "title": "thedotmack/claude-mem", "url": "https://github.com/thedotmack/claude-mem", "score": 49402 },
+        { "platform": "GitHub Search", "title": "holaboss-ai/holaOS", "url": "https://github.com/holaboss-ai/holaOS", "score": 1926 }
+      ],
+      "product_opportunity": "做一個 agent memory 的 interop layer：讓不同 memory system（MemPalace / claude-mem / holaOS）之間可以 export/import memory state。類比 container image format 之於容器——memory format 標準化是下一步。"
+    }
+  ],
+  "sleeper": {
+    "name": "vercel/computesdk",
+    "url": "https://github.com/vercel/computesdk",
+    "description": "Vercel 悄悄建了一個 repo：「A free and open-source toolkit for running other people's code in your applications」。0 星、58 小時前建立、連 README 都還沒寫完。",
+    "why_asymmetric": "Vercel 有 27,423 GitHub followers 和一個成熟的 serverless 平台。如果 computesdk 是他們的 sandboxed code execution 解決方案，它會直接跟 E2B、Modal、Fly Machines 競爭。但 Vercel 的差異化是 developer experience——他們把 Next.js deploy 做到一鍵，如果把「跑別人的 code」也做到一鍵，agent 開發者就有了一個不需要管 infra 的 sandbox 平台。",
+    "body": "這個 repo 現在什麼都沒有，但 Vercel 建 repo 不是隨便建的。他們的 track record（Next.js、Turbopack、v0）顯示這大概率會變成一個正式產品。0 星的 asymmetric upside 在於：如果你現在就開始在它上面 prototype，等它正式推出時你已經是 early adopter。",
+    "commercial_path": "Vercel 的商業模式是 freemium platform。computesdk 開源，但 managed version 會在 Vercel 平台上以 usage-based pricing 收費。類比：Next.js 免費，但 deploy 在 Vercel 上要付錢。",
+    "stars": 0,
+    "repo_age": "58 小時前建立"
+  },
+  "contrarian": {
+    "claim": "Claude Code skill / plugin 生態系是 2026 年的 Chrome Extension 泡沫——90% 的 repo 會在 6 個月內停止維護",
+    "body": "今天有 6+ 個 Claude Code 相關 repo 同時在 trending，星數加起來超過 10 萬。看起來像是一個蓬勃的生態系。但仔細看：claude-mem、claude-code-best-practice、andrej-karpathy-skills 這些 repo 的共同特徵是（1）repo owner 不是 Anthropic 員工，（2）依賴 Claude Code 的 internal API 和行為，（3）沒有 backward compatibility 保證。Claude Code 每次大版本更新都可能 break 這些 plugin。Chrome Extension 生態系在 Manifest V3 遷移時有大量 extension 死亡，Claude Code 的 skill system 還沒有 stable API——遷移風暴只是時間問題。",
+    "rationale": "歷史 precedent：VS Code extension marketplace 上只有約 15% 的 extension 在發布一年後仍有活躍維護。Chrome Extension 在 Manifest V2 → V3 遷移時約 30% 的 extension 停止更新。Claude Code 的 skill system 比這兩個都更 early-stage，沒有 stable API contract，break 的頻率會更高。",
+    "prediction": "到 2026-10-31，今天 GitHub Trending 上的 6 個 Claude Code 生態系 repo（claude-mem, claude-code-best-practice, andrej-karpathy-skills, claude-code-book, how-claude-code-works, claude-reviews-claude）中，至少 4 個的最後一次 commit 會超過 60 天前。",
+    "resolution_date": "2026-10-31"
+  },
+  "predictions": [
+    {
+      "id": "pred-astral-ruff-openai-integration",
+      "text": "Ruff 的 default rule set 會在 2026-12-31 前新增至少一條跟 OpenAI Codex code generation pattern 相關的 lint rule。",
+      "status": "pending",
+      "resolution_date": "2026-12-31",
+      "source": "Astral 被 OpenAI 收購"
+    },
+    {
+      "id": "pred-berkeley-benchmark-revision",
+      "text": "Berkeley 的 benchmark exploit 論文會在 2026-09-30 前導致 SWE-bench、WebArena、OSWorld 至少一個發布 v2 修訂版（明確 patch exploit vector）。",
+      "status": "pending",
+      "resolution_date": "2026-09-30",
+      "source": "Berkeley RDI benchmark exploit 論文"
+    },
+    {
+      "id": "pred-vercel-computesdk-launch",
+      "text": "Vercel computesdk 在 2026-08-31 前會有官方 documentation site 且 GitHub stars 超過 3,000。",
+      "status": "pending",
+      "resolution_date": "2026-08-31",
+      "source": "vercel/computesdk repo 建立"
+    },
+    {
+      "id": "pred-claude-code-skill-attrition",
+      "text": "到 2026-10-31，今天 trending 的 6 個 Claude Code 生態系 repo 中，至少 4 個最後一次 commit 會超過 60 天前。",
+      "status": "pending",
+      "resolution_date": "2026-10-31",
+      "source": "Claude Code skill 生態系觀察"
+    },
+    {
+      "id": "pred-mempalace-stars",
+      "text": "MemPalace 在 2026-07-31 前 GitHub stars 會超過 80,000。",
+      "status": "pending",
+      "resolution_date": "2026-07-31",
+      "source": "MemPalace 30 天內 43K★ 的成長速度"
+    },
+    {
+      "id": "pred-agent-memory-interop",
+      "text": "到 2026-12-31 前，至少一個主流 agent framework（LangChain、CrewAI、AutoGen）會新增 standardized memory import/export format。",
+      "status": "pending",
+      "resolution_date": "2026-12-31",
+      "source": "Agent memory 獨立賽道的多 repo 同步出現"
+    }
+  ]
+}
