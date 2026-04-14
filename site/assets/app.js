@@ -11,6 +11,30 @@
 // Filter clicks are scoped to the .tab-panel containing the clicked button
 // so activating a filter in one tab doesn't affect sibling tabs.
 
+// Auto-reload when a newer daily report is available.
+// GitHub Pages serves HTML with Cache-Control: max-age=600 which we can't
+// override (no _headers support on github.io; <meta http-equiv="Cache-Control">
+// is ignored by modern browsers). Detect staleness client-side: if the rendered
+// report date is before today (Asia/Taipei) and today's archive exists, reload
+// once. sessionStorage keyed by today guards against reload loops when the
+// browser still serves the stale copy after the first reload.
+(() => {
+  if (location.pathname.includes('/archive/')) return;
+  const pageDate = document.querySelector('time[datetime]')?.dateTime;
+  if (!pageDate) return;
+  const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
+  if (pageDate >= today) return;
+  const guardKey = `ai-daily-report.reloaded-for-${today}`;
+  if (sessionStorage.getItem(guardKey)) return;
+  fetch(`/ai-daily-report/archive/${today}.html`, { method: 'HEAD', cache: 'no-store' })
+    .then((res) => {
+      if (!res.ok) return;
+      sessionStorage.setItem(guardKey, '1');
+      location.reload();
+    })
+    .catch(() => {});
+})();
+
 (() => {
   const tabs = Array.from(document.querySelectorAll('[role="tab"]'));
   const panels = document.querySelectorAll('.tab-panel');
