@@ -1,10 +1,16 @@
-name: Build and deploy to GitHub Pages
+name: CI / Deploy to Pages
 
+# Two responsibilities in one workflow:
+#   - on pull_request: validate the change (lint + test + schema + 11ty
+#     build) before merge so we don't find out at deploy time
+#   - on push to main or data: validate, then actually deploy to Pages
+#
 # This workflow only consumes trusted inputs:
 # - actions/checkout (no untrusted code execution)
 # - npm ci against committed package-lock.json
 # - 11ty build against committed templates
 # No github.event.*, no PR/issue body parsing, no untrusted user input.
+# (PRs from forks are not a concern — single-owner repo.)
 
 # Opt into Node.js 24 for the bundled JavaScript actions (checkout,
 # setup-node, upload-pages-artifact, deploy-pages). GitHub will force
@@ -24,6 +30,21 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy.yml'
+  pull_request:
+    # Wider net than `push`: also include source/test/script paths so
+    # PR-only changes that don't affect deploy still get validated.
+    paths:
+      - 'data/**'
+      - 'site/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - 'eleventy.config.js'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'biome.json'
+      - 'config.json'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -32,8 +53,11 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: false
+  # push: serialize all deploys against the shared `pages` group
+  # pull_request: per-PR group so a new commit on the PR cancels the
+  # in-flight validation instead of queueing
+  group: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || 'pages' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
@@ -95,12 +119,17 @@ jobs:
           fi
 
       - name: Upload Pages artifact
+        # Skip on PR — nothing downstream consumes it
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
           path: _site
 
   deploy:
     needs: build
+    # Only deploy on push events (main or data branch). PR validation
+    # ends after build job — no Pages publish from a feature branch.
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
