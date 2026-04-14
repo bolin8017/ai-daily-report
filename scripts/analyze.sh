@@ -94,31 +94,17 @@ node src/lib/validate.js report "$REPORT_FILE"
 echo "[analyze] validating memory..."
 node src/lib/validate.js memory data/memory.json
 
-# ── Commit + push ─────────────────────────────────────────────────
-
-echo "[analyze] committing..."
-git add "$REPORT_FILE" data/memory.json
-
-if git diff --cached --quiet; then
-  echo "[analyze] no changes to commit"
-  echo "[analyze] $(date -Iseconds) — done"
-  exit 0
-fi
-
-git commit -m "report: ${DATE} daily creative brief"
+# ── Commit + push to data branch ──────────────────────────────────
+# src/lib/commit.js builds the commit with git plumbing so main's
+# working tree and index are never touched. Bot artifacts live on
+# the `data` orphan branch.
 
 if [ "$SKIP_PUSH" = "1" ]; then
-  echo "[analyze] SKIP_PUSH — committed locally, skipping push"
-elif [ -n "${GITHUB_TOKEN:-}" ]; then
-  # Use git remote URL (already set to authenticated URL by docker-entrypoint.sh)
-  # to avoid exposing GITHUB_TOKEN in process args
-  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/bolin8017/ai-daily-report.git"
-  git push origin HEAD:main || { git remote set-url origin "https://github.com/bolin8017/ai-daily-report.git"; exit 1; }
-  # Scrub auth token from persisted git config
-  git remote set-url origin "https://github.com/bolin8017/ai-daily-report.git"
-  echo "[analyze] pushed $(git rev-parse --short HEAD) to origin/main"
+  echo "[analyze] SKIP_PUSH — skipping commit and push"
 else
-  echo "[analyze] GITHUB_TOKEN not set — committed locally, skipping push"
+  echo "[analyze] committing report to data branch..."
+  node src/lib/commit.js "$DATE" "report: ${DATE} daily creative brief" \
+    "$REPORT_FILE" "data/memory.json"
 fi
 
 echo "[analyze] $(date -Iseconds) — done"
