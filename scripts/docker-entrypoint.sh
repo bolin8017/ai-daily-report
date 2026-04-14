@@ -56,6 +56,16 @@ else
   git reset --hard origin/main
 fi
 
+# Hydrate data/ from the `data` orphan branch. It holds the archived
+# reports, memory.json, feeds-snapshot.json, and staging files. Main
+# only tracks code, so without this step Stage 2 has no memory and
+# the 11ty templates have no past reports.
+echo "[entrypoint] hydrating data/ from data branch..."
+if git fetch origin "data:refs/remotes/origin/data" --quiet 2>/dev/null; then
+  git checkout refs/remotes/origin/data -- data/ 2>/dev/null || true
+fi
+mkdir -p data/reports data/staging
+
 # Scrub auth token from persisted git config so it does not
 # linger in the Docker volume between runs.
 git remote set-url origin "$REPO_URL"

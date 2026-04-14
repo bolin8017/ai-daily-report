@@ -16,14 +16,14 @@ env:
 
 on:
   push:
-    branches: [main]
+    branches: [main, data]
     paths:
-      - 'data/reports/**'
-      - 'data/feeds-snapshot.json'
+      - 'data/**'
       - 'site/**'
       - 'eleventy.config.js'
       - 'package.json'
       - 'package-lock.json'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:
@@ -40,6 +40,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: main
+
+      - name: Hydrate data/ from data branch
+        run: |
+          git fetch --depth=1 origin data
+          git checkout origin/data -- data/
+          test -d data/reports || { echo "data branch missing data/reports/"; exit 1; }
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
