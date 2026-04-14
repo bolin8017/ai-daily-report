@@ -39,7 +39,7 @@ Two long-lived branches with distinct roles:
 | **Swap** | 2GB file at `/swapfile` | e2-micro has limited RAM. LLM synthesis peaks need headroom to avoid OOM. |
 | **Docker image** | `ai-daily-report:latest`, built locally from `Dockerfile` | Contains Node 22 + git + `@anthropic-ai/claude-code` CLI. No project code baked in — code flows via `git pull` on each run. |
 | **Docker volume** | `ai-daily-report-workspace` | Persists the cloned repo + `node_modules` between runs so cold starts stay <10s. |
-| **Claude auth** | Bind mount `~/.claude` from host → `/home/pipeline/.claude` in container (read-write) | One-time interactive `claude /login` inside the container creates credentials that persist across timer invocations. Mount must be writable so the CLI can refresh the OAuth token before expiry; read-only mount deadlocks the pipeline (see `fix(docker)` in git log). |
+| **Claude auth** | Bind mount `~/.claude` from host → `/home/pipeline/.claude` in container (read-write) | One-time interactive `claude /login` inside the container creates credentials that persist across timer invocations. Mount must be writable so the CLI can refresh the OAuth token before expiry — a read-only mount deadlocks the pipeline (see commit `faea48e` "fix(docker): let claude cli refresh oauth token" for the failure mode). |
 | **Secrets** | `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh`, injected into container via `-e GITHUB_TOKEN`. |
 | **Memory limits** | `docker run --memory=600m --memory-swap=1g` | Caps the pipeline so an OOM never kills the host's other services. |
 | **Scheduling** | systemd timer (`systemd/ai-daily-report.timer`) | `Persistent=true` catches up after VM reboots; `OnFailure=` triggers alert on crash; logs go to `journalctl -u ai-daily-report`. |
@@ -50,7 +50,7 @@ Two long-lived branches with distinct roles:
 |---|---|
 | `npm start` | Local dev: runs `scripts/run.sh` → Stage 1 only (fetch + snapshot + condense, no push, no LLM). |
 | `bash scripts/run.sh --full` | Stage 1 + Stage 2 (requires host Claude Code login). |
-| `bash scripts/run.sh --skip-push` | Stage 1 + Stage 2 but without `git push`, useful for prompt iteration. |
+| `bash scripts/run.sh --skip-push` | Stage 1 + Stage 2; writes outputs to local `data/` but skips both commit and push. Inspect the result by reading the files directly (e.g. `jq . data/reports/$(date +%F).json`). |
 | `bash scripts/run.sh --analyze` | Stage 2 only (assumes `data/staging/` is populated — run Stage 1 first, or hydrate from `data` branch: `git fetch origin data && git checkout origin/data -- data/`). |
 | `npm run collect` / `npm run collect:dry` | Direct invocation of `node src/collect.js` with or without `--skip-push`. |
 | `npm run analyze` | Direct invocation of `bash scripts/analyze.sh`. |
