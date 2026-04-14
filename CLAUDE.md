@@ -201,7 +201,7 @@ See `.env.example` for all variables.
 
 | Workflow | Trigger | Job |
 |---|---|---|
-| `.github/workflows/deploy.yml` | push to `main` or `data` that touches `data/**`, `site/**`, `eleventy.config.js`, `package.json`, `package-lock.json`, or `.github/workflows/deploy.yml` | Checkout `main` → hydrate `data/` from `data` branch → lint + tests + schema validation + 11ty build → `upload-pages-artifact` → `deploy-pages` OIDC |
+| `.github/workflows/deploy.yml` | (a) push to `main` or `data` matching the deploy paths, OR (b) pull_request matching the wider validation paths (`src/**`, `tests/**`, `scripts/**`, configs included), OR (c) manual `workflow_dispatch` | `build` job runs always: checkout `main` → hydrate `data/` from `data` branch → lint + tests + schema validation + 11ty build. `deploy` job runs only on `push` events: `upload-pages-artifact` → `deploy-pages` OIDC. PR validation ends after `build`. Concurrency group is per-PR (cancel-in-progress) for PRs and shared `pages` for pushes. |
 
 GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-pages` branch.
 
