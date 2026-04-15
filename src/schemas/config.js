@@ -35,7 +35,10 @@ const FeedSourceSchema = z.discriminatedUnion('type', [
 
 export const ConfigSchema = z.object({
   sources: z.object({
-    rsshub_url: z.url(),
+    // Ordered list — feeds.js tries URLs in order, falling through to the
+    // next on any error (timeout, 5xx, network). At least one entry required;
+    // extra entries are used only when earlier ones fail per request.
+    rsshub_urls: z.array(z.url()).min(1),
     feeds: z.array(FeedSourceSchema),
     github_topics: z.object({
       enabled: z.boolean(),
