@@ -187,7 +187,7 @@ All of these live on the `data` branch (not `main`). Hydrated into the working t
 Required:
 - `GITHUB_TOKEN` — PAT with `Contents: read/write` scope. Used by Octokit fetchers AND as the commit/push credential inside the container (see `src/lib/commit.js`, which rewrites `origin` to `https://x-access-token:$GITHUB_TOKEN@github.com/...`). On the VM, stored in `~/.ai-daily-report.env`. Locally, loaded from `.env`.
 - **Claude Code subscription** — `claude -p` in `scripts/analyze.sh` draws from the Max subscription (not API billing). Credentials live in `~/.claude` and are bind-mounted into the container.
-- **RSSHub** — `config.json → sources.rsshub_urls` is an ordered list. `src/fetchers/feeds.js` tries each URL in order per request, falling through on any error (timeout, 5xx, network). Default order: `https://rsshub.pseudoyu.com`, `https://rsshub.rssforever.com`.
+- **RSSHub** — `config.json → sources.rsshub_urls` is an ordered list of public instances. `src/fetchers/feeds.js` tries each URL in order per request, falling through on `5xx` / timeout / network error. `4xx` is treated as a route-level error (no retry). See `config.json` for the authoritative list.
 
 Optional:
 - `RSSHUB_URL` — env var override. Forces a single URL and **disables the fallback list** — intended for local debugging against a private instance. Production should leave this unset and let `config.json` provide the ordered list.

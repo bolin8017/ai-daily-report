@@ -56,22 +56,35 @@ async function fetchRSSHubJSON(route, limit) {
   let lastError;
   for (let i = 0; i < RSSHUB_URLS.length; i++) {
     const base = RSSHUB_URLS[i];
+    const fullUrl = `${base}${suffix}`;
     try {
-      const res = await fetch(`${base}${suffix}`, {
+      const res = await fetch(fullUrl, {
         signal: AbortSignal.timeout(TIMEOUT),
         headers: { 'User-Agent': 'ai-daily-report/1.0' },
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
       const feed = await res.json();
       if (i > 0) console.error(`[feeds] fallback ${base} recovered ${route}`);
       return feed.items || [];
     } catch (err) {
       lastError = err;
+      // 4xx means the route is broken (not the instance down) — retrying
+      // on the next URL wastes time and produces misleading "trying next"
+      // logs. Surface the real error immediately.
+      if (err.status >= 400 && err.status < 500) {
+        console.error(`[feeds] ${fullUrl} returned HTTP ${err.status} — route error, not retrying`);
+        throw err;
+      }
       if (i < RSSHUB_URLS.length - 1) {
-        console.error(`[feeds] ${base}${route} failed (${err.message}); trying next URL`);
+        console.error(`[feeds] ${fullUrl} failed (${err.message}); trying next URL`);
       }
     }
   }
+  console.error(`[feeds] all ${RSSHUB_URLS.length} RSSHub URLs exhausted for ${route}`);
   throw lastError;
 }
 
