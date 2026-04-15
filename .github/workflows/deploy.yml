@@ -3,7 +3,11 @@ name: CI / Deploy to Pages
 # Two responsibilities in one workflow:
 #   - on pull_request: validate the change (lint + test + schema + 11ty
 #     build) before merge so we don't find out at deploy time
-#   - on push to main or data: validate, then actually deploy to Pages
+#   - on push to main, scheduled cron (21:00 UTC daily), or manual
+#     workflow_dispatch: validate, then deploy to Pages. The daily cron
+#     is the primary auto-deploy path — pushes to the `data` orphan
+#     branch cannot themselves fire this workflow (no .github/workflows/
+#     tree on that branch). See the `schedule:` block below for detail.
 #
 # This workflow only consumes trusted inputs:
 # - actions/checkout (no untrusted code execution)
@@ -22,7 +26,11 @@ env:
 
 on:
   push:
-    branches: [main, data]
+    # `data` is intentionally omitted: the orphan branch has no
+    # .github/workflows/ tree, so pushes there never reach Actions.
+    # The `schedule:` trigger below is how `data`-branch artifacts
+    # get picked up instead.
+    branches: [main]
     paths:
       - 'data/**'
       - 'site/**'
@@ -46,6 +54,13 @@ on:
       - 'config.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
+  schedule:
+    # 21:00 UTC = 05:00 Asia/Taipei — ~1h after the VM pipeline starts
+    # its daily run at 04:00 Asia/Taipei. Primary auto-deploy path:
+    # pushes to the `data` orphan branch cannot trigger workflows
+    # (no .github/workflows/ tree on that branch), so we poll on cron
+    # and pull whatever reports are currently on `data`.
+    - cron: '0 21 * * *'
 
 permissions:
   contents: read
@@ -127,9 +142,11 @@ jobs:
 
   deploy:
     needs: build
-    # Only deploy on push events (main or data branch). PR validation
-    # ends after build job — no Pages publish from a feature branch.
-    if: github.event_name == 'push'
+    # Deploy on everything except PRs. PR validation ends after build
+    # (no Pages publish from a feature branch); all other events —
+    # push to main, the daily schedule cron, and manual
+    # workflow_dispatch recovery — should actually publish.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
