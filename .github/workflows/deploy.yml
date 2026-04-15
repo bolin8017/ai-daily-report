@@ -3,7 +3,11 @@ name: CI / Deploy to Pages
 # Two responsibilities in one workflow:
 #   - on pull_request: validate the change (lint + test + schema + 11ty
 #     build) before merge so we don't find out at deploy time
-#   - on push to main or data: validate, then actually deploy to Pages
+#   - on push to main, scheduled cron (21:00 UTC daily), or manual
+#     workflow_dispatch: validate, then deploy to Pages. The daily cron
+#     is the primary auto-deploy path — pushes to the `data` orphan
+#     branch cannot themselves fire this workflow (no .github/workflows/
+#     tree on that branch). See the `schedule:` block below for detail.
 #
 # This workflow only consumes trusted inputs:
 # - actions/checkout (no untrusted code execution)
@@ -22,7 +26,11 @@ env:
 
 on:
   push:
-    branches: [main, data]
+    # `data` is intentionally omitted: the orphan branch has no
+    # .github/workflows/ tree, so pushes there never reach Actions.
+    # The `schedule:` trigger below is how `data`-branch artifacts
+    # get picked up instead.
+    branches: [main]
     paths:
       - 'data/**'
       - 'site/**'

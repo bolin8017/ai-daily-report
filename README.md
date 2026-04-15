@@ -13,8 +13,8 @@ An automated daily tech brief for **AI engineers who build** — RAG, VLM, fine-
 systemd timer → Docker container (GCP e2-micro)
   ├── Stage 1: Node.js fetchers → condense → commit staging data
   └── Stage 2: claude -p (Opus 4.6) → read staging → write report → commit
-                                                          ↓
-                                              GitHub Actions → Pages deploy
+
+GitHub Actions cron (daily 21:00 UTC) → pull from `data` branch → 11ty → Pages
 ```
 
 **Stage 1** fetches GitHub Trending, GitHub topic search, Hacker News, Lobsters, Dev.to, HuggingFace Daily Papers, and ~10 RSS sources in parallel, then condenses each to fit the LLM context budget.

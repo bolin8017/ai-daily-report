@@ -48,16 +48,20 @@ flowchart TD
   end
 
   Timer --> CronRun
-  CommitReport --> GHA[GitHub Actions: deploy.yml]
+  CommitReport --> DataBranch[(data branch<br/>orphan, bot-only)]
+
+  GHACron[scheduled cron<br/>21:00 UTC daily] --> GHA[GitHub Actions: deploy.yml]
 
   subgraph GHACI["GITHUB ACTIONS — hosted, free"]
-    GHA --> Lint[lint + test]
+    GHA --> Hydrate[hydrate data/ from<br/>`data` branch]
+    Hydrate --> Lint[lint + test]
     Lint --> RevValidate[schema re-validation]
     RevValidate --> Build[npx @11ty/eleventy → _site/]
     Build --> Upload[upload-pages-artifact]
     Upload --> Deploy[actions/deploy-pages OIDC]
   end
 
+  DataBranch -.-> Hydrate
   Deploy --> Pages[🌐 GitHub Pages CDN]
 ```
 
@@ -121,7 +125,8 @@ sequenceDiagram
   AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema + MemorySchema
   AnalyzeSh->>Git: commit + push report & memory (x-access-token URL)
 
-  Git->>GHA: webhook
+  Note over GHA: GHA cron fires independently<br/>at 21:00 UTC daily (not caused<br/>by the Stage 2 push)
+  GHA->>Git: fetch + checkout origin/data -- data/
   GHA->>GHA: lint + test + validate + 11ty build
   GHA->>Pages: actions/deploy-pages OIDC
   Pages-->>Timer: live in ~30s
@@ -306,7 +311,7 @@ The timer unit (`ai-daily-report.timer`) fires `ai-daily-report.service`, which 
 2. Invoke `claude -p --allowedTools Read,Write --model claude-opus-4-6` — the agent reads staging files via the Read tool, synthesizes the report, and writes `data/reports/YYYY-MM-DD.json` + `data/memory.json` directly via the Write tool
 3. Validate outputs: `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
 4. `commitAndPush({ date })` — stages the report and memory files, commits as `report: <date> daily creative brief`, pushes to `HEAD:main` using `x-access-token:$GITHUB_TOKEN` URL rewrite
-5. GHA picks up the push and deploys to Pages
+5. GHA's daily 21:00 UTC cron hydrates `data/` from the `data` branch and deploys to Pages. The cron is independent of the Stage 2 push — the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow.
 
 **Why systemd timer instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing you onto `ANTHROPIC_API_KEY` (paid, defeats the Max advantage) or OAuth secret juggling. A VM with a one-time interactive `claude /login` sidesteps both — the login token persists in `~/.claude` and every subsequent timer invocation just works.
 
