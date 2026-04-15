@@ -15,11 +15,15 @@ import { runAsStandalone } from './_dispatch.js';
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const config = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config.json'), 'utf8'));
 
-const RSSHUB_URL = (
-  process.env.RSSHUB_URL ||
-  config.sources.rsshub_url ||
-  'https://rsshub.pseudoyu.com'
-).replace(/\/$/, '');
+// RSSHub has no single canonical public instance, so we keep an ordered
+// list and fall through on per-request failure (timeout, 5xx, network).
+// Env var override is explicit single-URL intent (no fallback) — used
+// for local debugging against a private instance.
+const RSSHUB_URLS = (
+  process.env.RSSHUB_URL
+    ? [process.env.RSSHUB_URL]
+    : config.sources.rsshub_urls || ['https://rsshub.pseudoyu.com']
+).map((u) => u.replace(/\/$/, ''));
 const TIMEOUT = 30_000;
 
 // --- Helpers ---
@@ -48,14 +52,27 @@ function extractHref(html, linkText) {
 // --- Fetchers ---
 
 async function fetchRSSHubJSON(route, limit) {
-  const url = `${RSSHUB_URL}${route}?format=json&limit=${limit || 30}`;
-  const res = await fetch(url, {
-    signal: AbortSignal.timeout(TIMEOUT),
-    headers: { 'User-Agent': 'ai-daily-report/1.0' },
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const feed = await res.json();
-  return feed.items || [];
+  const suffix = `${route}?format=json&limit=${limit || 30}`;
+  let lastError;
+  for (let i = 0; i < RSSHUB_URLS.length; i++) {
+    const base = RSSHUB_URLS[i];
+    try {
+      const res = await fetch(`${base}${suffix}`, {
+        signal: AbortSignal.timeout(TIMEOUT),
+        headers: { 'User-Agent': 'ai-daily-report/1.0' },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const feed = await res.json();
+      if (i > 0) console.error(`[feeds] fallback ${base} recovered ${route}`);
+      return feed.items || [];
+    } catch (err) {
+      lastError = err;
+      if (i < RSSHUB_URLS.length - 1) {
+        console.error(`[feeds] ${base}${route} failed (${err.message}); trying next URL`);
+      }
+    }
+  }
+  throw lastError;
 }
 
 async function fetchNativeRSS(feedUrl, limit) {

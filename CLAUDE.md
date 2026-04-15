@@ -130,7 +130,7 @@ Two long-lived branches with distinct roles:
 ## Data Sources
 
 ### `src/fetchers/feeds.js` (RSSHub + native APIs)
-Via RSSHub (public instance `https://rsshub.pseudoyu.com`, fallback `https://rsshub.rssforever.com`):
+Via RSSHub (public instances tried in order: `https://rsshub.pseudoyu.com` → `https://rsshub.rssforever.com` on any per-request failure):
 - **Hacker News** — front page + Show HN, enriched with Algolia API for scores/comments
 - **Dev.to** — top articles of the week
 - **Anthropic News**, **HuggingFace Daily Papers** — RSSHub routes
@@ -187,10 +187,10 @@ All of these live on the `data` branch (not `main`). Hydrated into the working t
 Required:
 - `GITHUB_TOKEN` — PAT with `Contents: read/write` scope. Used by Octokit fetchers AND as the commit/push credential inside the container (see `src/lib/commit.js`, which rewrites `origin` to `https://x-access-token:$GITHUB_TOKEN@github.com/...`). On the VM, stored in `~/.ai-daily-report.env`. Locally, loaded from `.env`.
 - **Claude Code subscription** — `claude -p` in `scripts/analyze.sh` draws from the Max subscription (not API billing). Credentials live in `~/.claude` and are bind-mounted into the container.
-- **RSSHub** — `config.json → sources.rsshub_url`, defaults to `https://rsshub.pseudoyu.com`. Fallback: `https://rsshub.rssforever.com`.
+- **RSSHub** — `config.json → sources.rsshub_urls` is an ordered list. `src/fetchers/feeds.js` tries each URL in order per request, falling through on any error (timeout, 5xx, network). Default order: `https://rsshub.pseudoyu.com`, `https://rsshub.rssforever.com`.
 
 Optional:
-- `RSSHUB_URL` — env var override for the RSSHub URL (otherwise read from `config.json`).
+- `RSSHUB_URL` — env var override. Forces a single URL and **disables the fallback list** — intended for local debugging against a private instance. Production should leave this unset and let `config.json` provide the ordered list.
 - `REPORT_TIMEZONE` — default `Asia/Taipei`.
 - `CLAUDE_MODEL` — override the model passed to `claude -p`; default `claude-opus-4-6`.
 - `SKIP_PUSH=1` — skip `git push` in both stages; also accessible as `--skip-push` CLI flag on `src/collect.js`.
@@ -212,7 +212,7 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 - **Scheduling**: production runs happen on the production VM via systemd timer at 04:00 Asia/Taipei. Timer has `Persistent=true` (catches up after reboot) and `OnFailure=` (triggers alert). Logs: `journalctl -u ai-daily-report`.
 - **Schema-first**: when changing report sections, update `src/schemas/report.js` first, then the agent prompt, then the templates. This catches mismatches at validate time.
 - **Git push auth** — `src/lib/commit.js` embeds `$GITHUB_TOKEN` into the push URL (`https://x-access-token:TOKEN@github.com/...`). Unlike the previous host-helper approach, this works inside the Docker container without needing gh CLI or SSH keys. The old `.env GITHUB_TOKEN is ignored for push` caveat no longer applies.
-- **External RSSHub dependency** — the pipeline points at `https://rsshub.pseudoyu.com`. If it goes down, fall back to `https://rsshub.rssforever.com` by updating `config.json → sources.rsshub_url` (or pass `RSSHUB_URL`). `src/fetchers/all.js` tolerates 1 of 4 fetchers failing.
+- **External RSSHub dependency** — `config.json → sources.rsshub_urls` lists public instances tried in order. `feeds.js` falls through automatically on any per-request error (timeout, 5xx, network), so a single instance going slow or down degrades one request, not the whole run. `src/fetchers/all.js` additionally tolerates 1 of 4 fetchers failing at the fetcher level. To add a new instance, append its URL to the list; to force one instance for debugging, set `RSSHUB_URL=...` (which bypasses the list).
 - **Fetcher dual-mode** — every fetcher (`src/fetchers/*.js`) exports an importable async function AND still works as a standalone CLI that writes JSON to stdout. `src/fetchers/_dispatch.js` is the shared helper that detects CLI mode and emits the envelope. Useful for ad-hoc debugging: `GITHUB_TOKEN=... node src/fetchers/github-trending.js | jq '.items | length'`.
 - Report sections (see `.claude/agents/daily-report.md`): `lead.html` (senior-analyst briefing with `h3` + 4 `h4` subsections), `ideas[]` (3 remix ideas, ≥1 non-AI), `shipped[]` (12-20 items mixing 4 fetchers, with 3-5 discovery picks from github-search), `pulse.curated/hn/lobsters`, `dev_watch.taiwan/global` (≤5 per region), `signals[]` (3-4 patterns with mechanism), `sleeper`, `contrarian` (binary falsifiable prediction), `predictions[]` (5-7 total, all binary).
 
