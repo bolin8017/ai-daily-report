@@ -1,0 +1,556 @@
+{
+  "date": "2026-04-16",
+  "lead": {
+    "html": "<h3>EFF 的調查揭示了一條 builder 都應該知道的設計原則：聯邦傳票比任何服務條款更有力</h3>\n<h4>發生了什麼</h4>\n<p>今天 HN 最高分文章（527分，30 則留言）來自電子前哨基金會（EFF）：Google 對移民及弱勢社群承諾過的位置資料保護，被 ICE 的聯邦傳票直接繞過。EFF 記錄的案例中，Google 在 2022–2023 年曾公開宣稱會對「計畫生育相關地點」的位置資料做特別處理——但 ICE 遞出聯邦傳票時，這份保護就消失了。資料交出去了。</p>\n<p>同一天，HN 第二高討論量（259分，45 則留言，同時在 Changelog 出現）是 strix.ai 的反駁文章：<em>Open Source Isn't Dead. Cal.com Just Learned the Wrong Lesson</em>。Cal.com 因 AI 競爭威脅關閉原始碼，社群炸開了。Changelog 同日也刊出 Astral 被 OpenAI 收購的回顧。</p>\n<p>三件事同一天：一個科技巨頭的隱私承諾被聯邦法律推翻、一個主流 OSS 工具宣布關閉商業使用、一個開發者工具公司被最大的 AI 實驗室收購。表面上無關，但指向同一個問題：你的 stack 裡每一個「有第三方可以改變訪問規則」的依賴，都是一個你不完全控制的風險點。</p>\n<h4>為什麼重要</h4>\n<p>Google 的服務條款是合約，不是法律屏障。美國聯邦傳票（federal subpoena）或 National Security Letter 可以要求 Google 交出特定用戶資料，且可附帶保密令——讓 Google 連「我收到了」都不能告知你或你的用戶。如果你用 Firebase Firestore、Google Workspace 或 BigQuery 存任何用戶 PII，你有責任讓用戶知道這份資料可能受美國聯邦法律管轄。但你能不能在第一時間知道、告知，取決於 Google 是否收到保密令。EFF 今天記錄的不是假設情境，是已發生的案例。</p>\n<p>Cal.com 的故事在另一個層面驗證了同樣邏輯：你依賴的開源工具的維護者，有權在任何時候改變存取規則——關閉原始碼、修改授權、停止更新。OpenAI 收購 Astral（Ruff / uv 的母公司）也是同一個模式：你今天用的 OSS 工具，明天可能屬於競爭對手。</p>\n<h4>社群怎麼看</h4>\n<p>EFF 文章 527分、30 則留言，今日 HN 最高分。Cal.com 文章 259分、45 則留言——留言數反而更多，代表後者觸發的爭議更深。Lobsters 今日 #4 是〈Saying Goodbye to Agile〉（標籤包含 vibecoding），社群對流程和工具的控制感正在被同步重新評估。LWN 同日刊出〈Forking Vim to avoid LLM-generated code〉：Vim 社群有人在 fork 一個明確拒絕 LLM 生成貢獻的版本。同一天，三個不同的開發者社群，對「工具控制權」做出了三種不同方向的回應。</p>\n<h4>行動建議</h4>\n<p>如果你的產品有以下任一情況，這週在 architecture decision record 裡加一個「data residency」節點：（a）存任何用戶 PII 在 Google 服務上；（b）服務對象包括移民、醫療、法律諮詢、或記者；（c）主要 OSS 依賴在過去 12 個月更換過授權條款。具體做法：把 README 裡「我們用 Firebase 存資料」這類描述換成實際的 data processing agreement 連結，並在 onboarding flow 加一句「你的資料存放在美國，可能受美國聯邦法律管轄」——這不是 legal boilerplate，是讓用戶有機會做知情決定。如果你的 Cal.com 依賴還沒鎖定版本，這週 pin 到最後一個授權開放的 release，然後把 booking flow 包進一個抽象層或 MCP tool，讓未來換 provider 不需要改業務邏輯。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "用 Gemini 3.1 Flash TTS 替換 voicebox 的 synthesis 引擎，打造零成本 tutorial 語音製作流水線",
+      "projects": [
+        {
+          "name": "jamiepine/voicebox",
+          "url": "https://github.com/jamiepine/voicebox",
+          "note": "開源語音合成 studio，Trending #8，18,082★，TypeScript"
+        },
+        {
+          "name": "Gemini 3.1 Flash TTS",
+          "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-tts/",
+          "note": "Google 今日正式上線，Simon Willison 當日發布兩篇記錄"
+        }
+      ],
+      "description": "voicebox 是一個 OSS 語音合成 studio，提供錄音剪輯、靜音段移除、片段拼接、音量正規化等後製工具；它目前的 synthesis backend 是可替換的。Gemini 3.1 Flash TTS 今天正式上線，Simon Willison 在同一天記錄了兩次——對他來說極少見，代表他認為這個 API 的表達能力確實跨過了某個品質門檻。把 voicebox 的 synthesis provider 換成 Gemini 3.1 Flash TTS API，然後在 voicebox 的 UI 裡加一個「batch narrate」模式：輸入帶時間戳記的腳本文字，輸出一批時序對齊的音訊片段，讓 screencaster 可以把 AI 合成的 narration 精確貼進 screen recording 的時間軸。",
+      "use_case": "你是一個做技術 screencasts 的開發者倡導者（developer advocate）或獨立技術 YouTuber。你每週需要為 3-5 部影片配音，現有的 TTS 工具要麼太貴（ElevenLabs Creator 方案 $22/月起，Murf.ai $19/月起），要麼表達力不夠（聲音單調，讀到 'kubectl apply -f' 之類的指令時停頓不對）。Gemini 3.1 Flash TTS 剛上線，Google AI Studio tier 提供免費額度，而 voicebox 已經有你需要的所有後製工具——你只需要把 synthesis 這一層換掉。",
+      "hardware": "雲端 API 即可，不需 GPU",
+      "skill_level": "熟悉 TypeScript + REST API 呼叫即可",
+      "dependencies": "Google AI Studio API key（目前有免費額度，超額後約 $0.5/100萬 token）；voicebox 為 TypeScript / Node.js 專案",
+      "difficulty": 2,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/jamiepine/voicebox && npm install，找到 src/providers/ 目錄看現有 synthesis backend 的介面，再用 curl 測試 Gemini 3.1 Flash TTS API 的回傳格式是否可以直接對接",
+      "market_evidence": "ElevenLabs Creator 方案 $22/月、Murf.ai Standard $19/月、Descript Overdub 屬於企業方案——TTS 工具市場存在但定價對獨立創作者偏高。Google 今天上線 Gemini 3.1 Flash TTS，Simon Willison 當日記錄兩次，代表表達品質已超過他的關注門檻。voicebox 在 GitHub Trending #8、18,082★，說明有足夠大的社群在找 OSS 替代方案。"
+    },
+    {
+      "format": "solo",
+      "title": "Cal.com 關源前建一層 MCP 日曆抽象：讓你的 agent 不再綁死在任何一個 scheduling provider",
+      "projects": [
+        {
+          "name": "Cal.com",
+          "url": "https://github.com/calcom/cal.com",
+          "note": "今日宣布關閉商業使用，HN 259分，45 則留言"
+        },
+        {
+          "name": "jxnxts/mcp-brasil",
+          "url": "https://github.com/jxnxts/mcp-brasil",
+          "note": "MCP Server 包裝 41 個公共 API 的實作參考，topic:mcp · 1,374★"
+        }
+      ],
+      "description": "Cal.com 今天宣布限制商業使用（HN 259分）——這是一個有 30K+ stars 的主流 OSS scheduling 工具走向閉源的明確信號。如果你的產品有 booking、appointment、或 calendar scheduling 功能，你現在的依賴風險比昨天高了一個量級。解法不是找下一個 OSS scheduling 工具然後再次直接依賴——解法是在 business logic 和 scheduling provider 之間加一層 MCP tool 抽象。建一個 MCP server，暴露 create_booking / list_available_slots / cancel_booking / get_calendar 四個 tool，backend 先接 Cal.com v3 API（或最後一個開放版本的自架 fork），之後換 Calendly、Nylas、或自架 Postgres-based 排程引擎都不需要改 agent 的呼叫邏輯。jxnxts/mcp-brasil（1,374★）示範了用同一個 MCP server 包裝 41 個異質 API 的做法，結構可以直接參考。",
+      "use_case": "你是一個 B2B SaaS 的 CTO，產品有一個「客戶預約 demo」功能，底層用 Cal.com 的嵌入式元件。今天 Cal.com 宣布商業使用需要付費授權。你有 60 天的過渡期，但更大的問題是：你的 AI agent 直接呼叫 Cal.com REST API，如果 30 天後他們改 API 或下架免費 endpoint，你要改的地方散在 10 個地方。現在加一層 MCP 抽象，下次換 provider 只需要改 MCP server 的實作，agent 不用動。",
+      "hardware": "純 CPU 可跑（Node.js 或 Python MCP server）",
+      "skill_level": "熟悉 REST API 設計 + MCP protocol 基礎即可（官方 SDK 有 TypeScript 和 Python 版）",
+      "dependencies": "@modelcontextprotocol/sdk（MIT 授權）；Cal.com v3 API key（目前免費額度仍存在）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "npm create @modelcontextprotocol/server@latest scheduling-mcp，定義 create_booking / list_slots / cancel_booking 三個 tool 的 inputSchema，先用 hardcoded response 驗證 MCP 呼叫鏈正常，再接真實的 Cal.com API",
+      "market_evidence": "Cal.com 關源新聞 HN 259分、45 則留言（今日留言數最多），代表社群已在密集討論替代方案。MCP 過去 30 天在 GitHub 的 topic-filtered 搜尋出現 9 個新 repo，說明 MCP server 包裝第三方 API 的模式正在社群裡快速擴散。"
+    },
+    {
+      "format": "solo",
+      "title": "用 QCalEval 的方法論，為你的科學領域建立第一個 VLM benchmark",
+      "projects": [
+        {
+          "name": "NVIDIA/QCalEval",
+          "url": "https://github.com/NVIDIA/QCalEval",
+          "note": "NVIDIA 65 小時前發布，量子運算 VLM 評估腳本，4★"
+        }
+      ],
+      "description": "NVIDIA 的 QCalEval 做了一件對任何 STEM 領域都有價值的事：建立了一套「拿領域專用視覺符號（量子電路圖、量子位元密度矩陣表示、酉矩陣運算）去問 VLM、對照 ground truth 打分」的評估框架。這個方法論本身完全領域無關。你可以把 QCalEval 的 eval runner 結構複製過來，把量子運算的 question templates 換成你自己的領域（PCR 膠體電泳圖判讀、HPLC 色譜峰識別、電路圖 netlist 提取、材料 SEM 圖像粒徑估算），定義你自己的 ground truth，然後對比 GPT-4V / Gemini Vision / Claude Sonnet 在你的 domain 上的真實準確率。這是「LLM 在我的領域到底能不能用」問題的最直接回答方式。",
+      "use_case": "你在一家生技公司的 AI 團隊，老闆問「我們能不能用 GPT-4V 自動判讀 Western blot 結果」。你現在的回答是「感覺可以」。建一個 domain-specific eval harness（100 張帶 ground truth 標注的 Western blot 圖像，10 種標準 question templates），跑完之後你的回答會變成「在蛋白質 band 位置識別上準確率 73%，在 relative expression 估算上 41%，建議在 band 位置這條線上自動化，其他繼續人工確認」。NVIDIA 做 QCalEval 的原因正是這個：量子運算研究者問「這個 VLM 看不看得懂我的電路圖」，NVIDIA 的工程師覺得這個問題值得認真回答。你的領域可能有同樣值得認真回答的問題。",
+      "hardware": "GPU 可選——主要工作是對 cloud VLM API（OpenAI / Google / Anthropic）發請求，不需要本地 GPU",
+      "skill_level": "需熟悉 Python + 你的領域的 ground truth 知識（通常需要領域專家合作標注 100-300 張圖像）",
+      "dependencies": "OpenAI / Google / Anthropic API key；QCalEval 本身 MIT 授權；ground truth 標注工具（Label Studio 免費自架）",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP（ground truth dataset 的設計和標注是瓶頸，不是程式碼）",
+      "first_step": "git clone https://github.com/NVIDIA/QCalEval && python scripts/evaluate.py --help，看 question template 和 eval runner 的結構，再列出你的領域裡最常見的 5 種視覺判斷任務，寫出對應的 question templates",
+      "market_evidence": "NVIDIA 投入工程資源做量子運算 VLM eval，代表科學 domain 對 VLM 品質評估的需求已達到值得正式投入的門檻。同樣的需求存在於每個有專業視覺 notation 的 STEM 領域：生醫影像、材料科學、電路設計、化學結構式。目前市場上缺乏的不是 VLM，而是幫你量化「VLM 在我這個 domain 到底有多好」的 eval 工具。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Google Broke Its Promise to Me. Now ICE Has My Data",
+      "url": "https://www.eff.org/deeplinks/2026/04/google-broke-its-promise-me-now-ice-has-my-data",
+      "desc": "EFF 記錄 Google 在聯邦傳票下交出承諾保護的移民位置資料。任何存 PII 在 Google 服務的 SaaS 應即刻審視資料存放架構。",
+      "source": "HN 527分",
+      "repo_age": "報告 2026-04-16"
+    },
+    {
+      "name": "Open Source Isn't Dead. Cal.com Just Learned the Wrong Lesson",
+      "url": "https://www.strix.ai/blog/cal-com-is-closing-its-code-due-to-ai-threats",
+      "desc": "Cal.com 宣布因 AI 競爭威脅關閉商業使用原始碼；strix.ai 發布反駁，HN + Changelog 雙源交匯。主流 OSS scheduling 工具授權翻轉的第一例。",
+      "source": "HN 259分 · Changelog",
+      "repo_age": "公告 2026-04-16"
+    },
+    {
+      "name": "Gemini 3.1 Flash TTS",
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-tts/",
+      "desc": "Google 正式上線表達力增強的多語言 TTS 模型，可透過 Google AI Studio API 直接呼叫。Simon Willison 當日記錄兩次——對他而言罕見，代表品質跨過了某個門檻。",
+      "source": "Google AI Blog · Simon Willison ×2",
+      "repo_age": "上線 2026-04-15"
+    },
+    {
+      "name": "forrestchang/andrej-karpathy-skills",
+      "url": "https://github.com/forrestchang/andrej-karpathy-skills",
+      "desc": "GitHub Trending 連續第三天 #1。單一 CLAUDE.md 檔案，萃取 Karpathy 的 LLM coding 觀察。42,023★，較昨日 +5,726（+15.8%）。",
+      "source": "GitHub Trending #1",
+      "stars": 42023,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "thedotmack/claude-mem",
+      "url": "https://github.com/thedotmack/claude-mem",
+      "desc": "Claude Code plugin，自動壓縮並留存每次 coding session 的上下文。57,528★，仍在 GitHub Trending #3。",
+      "source": "GitHub Trending #3",
+      "stars": 57528,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "obra/superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "desc": "agentic skills framework + 軟體開發方法論，Shell 為主。154,038★，Trending #7。Jesse Vincent（kbd.io 創辦人）的作品。",
+      "source": "GitHub Trending #7",
+      "stars": 154038,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "jamiepine/voicebox",
+      "url": "https://github.com/jamiepine/voicebox",
+      "desc": "開源語音合成 studio：剪輯、靜音移除、片段拼接、音量正規化，TypeScript。18,082★，今日 Trending #8 初登場。",
+      "source": "GitHub Trending #8",
+      "stars": 18082,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "pascalorg/editor",
+      "url": "https://github.com/pascalorg/editor",
+      "desc": "3D 建築專案的建立與分享工具，TypeScript。12,497★，Trending #2。非 AI 工具但進入前三，說明 3D 協作設計工具需求持續。",
+      "source": "GitHub Trending #2",
+      "stars": 12497,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "Donchitos/Claude-Code-Game-Studios",
+      "url": "https://github.com/Donchitos/Claude-Code-Game-Studios",
+      "desc": "把 Claude Code 變成完整遊戲開發 studio：49 個 AI agents、72 個 workflow skills、完整的 agent 協調系統。10,234★，Trending #13。",
+      "source": "GitHub Trending #13",
+      "stars": 10234,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "vercel-labs/open-agents",
+      "url": "https://github.com/vercel-labs/open-agents",
+      "desc": "Vercel 出品的 cloud agent 建構模板，TypeScript 開源。2,514★，Trending #10。Vercel 同日另有一個空 repo（bash-video）出現——兩個信號同天值得注意。",
+      "source": "GitHub Trending #10",
+      "stars": 2514,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "Gemini Robotics-ER 1.6",
+      "url": "https://deepmind.google/blog/gemini-robotics-er-1-6/",
+      "desc": "Google DeepMind 發布 Gemini Robotics-ER 1.6，強化機器人具身推理。HN 177分。",
+      "source": "HN 177分",
+      "repo_age": "發布 2026-04-15"
+    },
+    {
+      "name": "KnowRL: Boosting LLM Reasoning via RL with Minimal-Sufficient Knowledge Guidance",
+      "url": "https://arxiv.org/abs/2604.12627",
+      "desc": "提出在 RLVR 訓練中注入最少必要知識引導，改善 LLM 推理表現。HuggingFace Daily Papers #1。對在做 RL fine-tuning pipeline 的 builder 直接相關。",
+      "source": "HuggingFace Daily Papers #1",
+      "repo_age": "論文 2026-04-16"
+    },
+    {
+      "name": "Zig 0.16.0",
+      "url": "https://ziglang.org/download/0.16.0/release-notes.html",
+      "desc": "Zig 重大新版本，Lobsters 143分今日第三高分。延續昨日 systems 底層發布密集的 pattern。",
+      "source": "Lobsters 143分",
+      "repo_age": "發布 2026-04-15"
+    },
+    {
+      "name": "Forking Vim to avoid LLM-generated code",
+      "url": "https://lwn.net/Articles/1067007/",
+      "desc": "LWN 報導：Vim 社群出現 fork 提案，明確目標是拒絕接受 LLM 生成的 commit。Systems 圈對 LLM 的制度化回應進入下一步：從 blog 文章到實際 fork。",
+      "source": "LWN",
+      "repo_age": "報告 2026-04-16"
+    },
+    {
+      "name": "JackChen-me/open-multi-agent",
+      "url": "https://github.com/JackChen-me/open-multi-agent",
+      "desc": "TypeScript multi-agent 框架，一個 runTeam() 呼叫從目標到結果，支援自動任務分解和並行執行。5,714★。",
+      "source": "topic:llm · 5714★ · ≤30d",
+      "stars": 5714,
+      "repo_age": "30 天內建立"
+    },
+    {
+      "name": "rohitg00/ai-engineering-from-scratch",
+      "url": "https://github.com/rohitg00/ai-engineering-from-scratch",
+      "desc": "從零開始學 AI 工程的結構化課程：Learn it. Build it. Ship it。2,831★，同時出現在 llm 和 mcp 兩個 topic 搜尋。",
+      "source": "topic:llm · 2831★ · ≤30d",
+      "stars": 2831,
+      "repo_age": "30 天內建立"
+    },
+    {
+      "name": "nesquena/hermes-webui",
+      "url": "https://github.com/nesquena/hermes-webui",
+      "desc": "Hermes Agent 的 Web UI，支援手機和桌面使用。2,127★。NousResearch/hermes-agent（86,210★）的前端生態系開始成型。",
+      "source": "topic:agent · 2127★ · ≤30d",
+      "stars": 2127,
+      "repo_age": "30 天內建立"
+    },
+    {
+      "name": "openedclaude/claude-reviews-claude",
+      "url": "https://github.com/openedclaude/claude-reviews-claude",
+      "desc": "Claude 閱讀自己的原始碼——17 章對 Claude Code v2.1.88 的架構深度剖析，中英文雙語。1,314★。從逆向工程到「讓 AI 讀自己的架構」，這個方向持續演進。",
+      "source": "topic:agent · 1314★ · ≤30d",
+      "stars": 1314,
+      "repo_age": "30 天內建立"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Google Broke Its Promise to Me. Now ICE Has My Data",
+        "url": "https://www.eff.org/deeplinks/2026/04/google-broke-its-promise-me-now-ice-has-my-data",
+        "score": 527,
+        "comments": 30,
+        "source": "HN",
+        "takeaway": "Google 在聯邦傳票下交出了承諾保護的位置資料。「服務條款保護隱私」是合約保護，不是法律屏障——任何 SaaS 在 Google 基礎設施上存用戶 PII 都需要明確告知用戶這一點。",
+        "action": "在你的 architecture decision record 裡加一個「data residency」節點，列出哪些用戶資料存放在哪個 jurisdiction。"
+      },
+      {
+        "title": "Open Source Isn't Dead. Cal.com Just Learned the Wrong Lesson",
+        "url": "https://www.strix.ai/blog/cal-com-is-closing-its-code-due-to-ai-threats",
+        "score": 259,
+        "comments": 45,
+        "source": "HN · Changelog",
+        "takeaway": "Cal.com 關閉商業使用授權。strix.ai 的反駁論點：關源不能阻止 AI 競爭，因為 AI 不需要你的 source code 也能複製你的產品功能。關源只是移除了你的社群護城河。",
+        "action": "如果你依賴 Cal.com，這週 pin 版本並把 booking flow 包進抽象層。"
+      },
+      {
+        "title": "Gemini 3.1 Flash TTS",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-tts/",
+        "source": "Google AI Blog · Simon Willison ×2",
+        "takeaway": "Google 正式上線表達力增強的 TTS 模型，Simon Willison 在同一天記錄兩次。對在做語音 AI、tutorial 製作、或任何 TTS pipeline 的 builder，今天起有一個新的 backend 選項值得評估。",
+        "action": "在 Google AI Studio 建立一個測試請求，對你現有 TTS 使用場景跑一個基準對比。"
+      },
+      {
+        "title": "Forking Vim to avoid LLM-generated code",
+        "url": "https://lwn.net/Articles/1067007/",
+        "source": "LWN",
+        "takeaway": "Vim 社群出現 fork 運動，明確拒絕 LLM 生成的 commit。Systems 圈對 AI 工具的回應從 blog 文章進化到實際 fork——這是制度化反應的開始，不是個人意見。"
+      },
+      {
+        "title": "I Ran 500 More Agent Memory Experiments. The Real Problem Wasn't Recall. It Was Binding.",
+        "url": "https://dev.to/marcosomma/i-ran-500-more-agent-memory-experiments-the-real-problem-wasnt-recall-it-was-binding-24kc",
+        "source": "Dev.to Top #4",
+        "takeaway": "做了 500 次 agent memory 實驗後的結論：瓶頸不是 recall（能不能取出記憶），而是 binding（知不知道現在應該取出哪條記憶、把它附加到哪個 context）。MemPalace / claude-mem 解決的是前者，後者還沒有人解得好。",
+        "action": "如果你的 RAG / agent memory pipeline 在多步驟任務上 recall 好但表現差，問題可能在 binding——試試在 retrieval 之前加一個「what memory is relevant to THIS specific subtask」的 explicit routing 步驟。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Google Broke Its Promise to Me. Now ICE Has My Data",
+        "url": "https://www.eff.org/deeplinks/2026/04/google-broke-its-promise-me-now-ice-has-my-data",
+        "score": 527,
+        "comments": 30
+      },
+      {
+        "title": "Want to Write a Compiler? Just Read These Two Papers (2008)",
+        "url": "https://prog21.dadgum.com/30.html",
+        "score": 396,
+        "comments": 31
+      },
+      {
+        "title": "God Sleeps in the Minerals",
+        "url": "https://wchambliss.wordpress.com/2026/03/03/god-sleeps-in-the-minerals/",
+        "score": 365,
+        "comments": 34
+      },
+      {
+        "title": "Good Sleep, Good Learning (2012)",
+        "url": "https://super-memory.com/articles/sleep.htm",
+        "score": 301,
+        "comments": 25
+      },
+      {
+        "title": "Open Source Isn't Dead. Cal.com Just Learned the Wrong Lesson",
+        "url": "https://www.strix.ai/blog/cal-com-is-closing-its-code-due-to-ai-threats",
+        "score": 259,
+        "comments": 45
+      },
+      {
+        "title": "Fixing a 20-year-old bug in Enlightenment E16",
+        "url": "https://iczelia.net/posts/e16-20-year-old-bug/",
+        "score": 243,
+        "comments": 28
+      },
+      {
+        "title": "Anna's Archive loses $322M Spotify piracy case without a fight",
+        "url": "https://torrentfreak.com/annas-archive-loses-322-million-spotify-piracy-case-without-a-fight/",
+        "score": 215,
+        "comments": 34
+      },
+      {
+        "title": "Wacli – WhatsApp CLI",
+        "url": "https://github.com/steipete/wacli",
+        "score": 213,
+        "comments": 22
+      },
+      {
+        "title": "The Future of Everything Is Lies, I Guess: New Jobs",
+        "url": "https://aphyr.com/posts/419-the-future-of-everything-is-lies-i-guess-new-jobs",
+        "score": 209,
+        "comments": 19
+      },
+      {
+        "title": "Gemini Robotics-ER 1.6",
+        "url": "https://deepmind.google/blog/gemini-robotics-er-1-6/",
+        "score": 177,
+        "comments": 15
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Zig 0.16.0 Release Notes",
+        "url": "https://ziglang.org/download/0.16.0/release-notes.html",
+        "score": 143,
+        "comments": 40,
+        "tags": ["zig"]
+      },
+      {
+        "title": "KeePassχ - a KeePassXC fork",
+        "url": "https://codeberg.org/keepasschi",
+        "score": 67,
+        "comments": 47,
+        "tags": ["security"]
+      },
+      {
+        "title": "It's OK to compare floating-points for equality",
+        "url": "https://lisyarus.github.io/blog/posts/its-ok-to-compare-floating-points-for-equality.html",
+        "score": 55,
+        "comments": 18,
+        "tags": ["compsci", "programming"]
+      },
+      {
+        "title": "I don't care that it's X times faster",
+        "url": "https://tinkering.xyz/faster/",
+        "score": 49,
+        "comments": 12,
+        "tags": ["performance", "rant"]
+      },
+      {
+        "title": "Retrofitting JIT Compilers into C Interpreters",
+        "url": "https://tratt.net/laurie/blog/2026/retrofitting_jit_compilers_into_c_interpreters.html",
+        "score": 39,
+        "comments": 9,
+        "tags": ["compilers"]
+      },
+      {
+        "title": "Saying Goodbye to Agile",
+        "url": "https://lewiscampbell.tech/blog/260414.html",
+        "score": 33,
+        "comments": 17,
+        "tags": ["practices", "vibecoding"]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "goodjack",
+        "followers": 661,
+        "repo": "goodjack/job104_cli",
+        "url": "https://github.com/goodjack/job104_cli",
+        "language": null,
+        "hours_ago": 64,
+        "description": "台灣 104 人力銀行命令列工具，僅供實驗與個人查詢使用",
+        "local_context": "🇹🇼 把台灣本土服務（104人力銀行）包成 CLI，讓 AI agent 可以搜尋職缺——這個模式在台灣開發者社群正在低調擴散：把既有平台封裝成 agent-friendly 介面，而不是重建平台。"
+      },
+      {
+        "developer": "kkdai",
+        "followers": 1665,
+        "repo": "kkdai/tech_blog_preview",
+        "url": "https://github.com/kkdai/tech_blog_preview",
+        "language": "HTML",
+        "hours_ago": 6,
+        "description": "技術部落格預覽工具",
+        "local_context": "🇹🇼 kkdai 是台灣最活躍的 Go 開發者之一，新建 HTML 工具而非 Go——可能是在測試 AI-generated frontend workflow 的邊界。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "bradtraversy",
+        "followers": 75731,
+        "repo": "bradtraversy/typesmith",
+        "url": "https://github.com/bradtraversy/typesmith",
+        "language": "Python",
+        "hours_ago": 47,
+        "description": "Typo-free terminal recordings for tutorial creators — paste, focus your terminal, and it types the command cleanly"
+      },
+      {
+        "developer": "dhh",
+        "followers": 24685,
+        "repo": "dhh/impala",
+        "url": "https://github.com/dhh/impala",
+        "language": null,
+        "hours_ago": 45,
+        "description": "TUI for managing WiFi on Linux"
+      },
+      {
+        "developer": "apple",
+        "followers": 36198,
+        "repo": "apple/ml-videoflextok",
+        "url": "https://github.com/apple/ml-videoflextok",
+        "language": "Jupyter Notebook",
+        "hours_ago": 47,
+        "description": "VideoFlexTok: Flexible-Length Coarse-to-Fine Video Tokenization — Apple ML 研究，可變長度視訊 tokenization"
+      },
+      {
+        "developer": "google-deepmind",
+        "followers": 23409,
+        "repo": "google-deepmind/ddgc",
+        "url": "https://github.com/google-deepmind/ddgc",
+        "language": null,
+        "hours_ago": 3,
+        "description": "空 repo，無說明、無檔案、無 README。3 小時前建立。google-deepmind 正常發布都會附 README——這個沒有。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "開源授權危機：AI 讓「OSS + 付費雲端」商業模式的地基動搖",
+      "body": "Cal.com 今天宣布關閉商業使用原始碼（HN 259分，45 則留言），理由是 AI 競爭威脅。這不是第一次——但這是第一個有 30K+ stars、被主流 SaaS 廣泛嵌入的 OSS 工具走向授權翻轉。同一天，LWN 報導 Vim 社群在 fork 一個明確拒絕 LLM 生成 commit 的版本。兩件事指向同一個 upstream cause：LLM 工具普及正在讓「以 OSS 換社群、以付費雲端換收入」的商業模式在多個層面同時承壓。Cal.com 的反應是關閉（防止被複製）；Vim fork 的反應是排除（防止被污染）。下一個授權翻轉的候選對象，是任何有相對簡單資料模型、且 AI 可以直接複製其核心功能的 OSS SaaS：booking 系統、form builder、webhook 管理器、基本 CRM。",
+      "evidence": "Cal.com HN 259分（今日第五高），45 則留言（今日最多）；Changelog 同日刊出 Astral 被 OpenAI 收購回顧；LWN Vim fork 報導同日出現",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "product_opportunity": "建一個「OSS 依賴風險追蹤器」：掃描你的 package.json / pyproject.toml，找出哪些套件的商業模式是「OSS + 付費雲端」，標記過去 12 個月有授權變更歷史的，輸出風險評分報告。",
+      "source_links": [
+        { "platform": "HN", "title": "Open Source Isn't Dead. Cal.com Just Learned the Wrong Lesson", "url": "https://www.strix.ai/blog/cal-com-is-closing-its-code-due-to-ai-threats", "score": 259 },
+        { "platform": "LWN", "title": "Forking Vim to avoid LLM-generated code", "url": "https://lwn.net/Articles/1067007/" },
+        { "platform": "Changelog", "title": "Astral has been acquired by OpenAI", "url": "https://changelog.com/news/184" }
+      ]
+    },
+    {
+      "title": "Google 的音訊 AI 反攻：Gemini 3.1 Flash TTS 三源交匯",
+      "body": "Gemini 3.1 Flash TTS 今天上線：Google AI Blog 正式公告、Simon Willison 當日記錄兩次（同一天發兩篇記錄同一個工具，對他幾乎不曾發生）。Simon 的重複記錄是比 HN 分數更可信的信號——他不轉貼他不認為值得的東西。這件事的 builder 意義：在 TTS 市場裡，ElevenLabs 和 Murf.ai 在表達力上建立了護城河，OpenAI TTS 在生態系整合上有優勢，Google 一直在做追趕。Gemini 3.1 Flash TTS 如果 Simon 評估是真實的品質提升，那這是 Google 音訊 AI 在表達力這個維度第一次真正具有競爭力的產品。同日，jamiepine/voicebox（OSS 語音合成 studio）出現在 GitHub Trending #8 並積累至 18,082★——市場在同一天給出了兩個信號：新 API + 新 OSS 後製工具。",
+      "evidence": "Google AI Blog 正式公告；Simon Willison 當日兩篇記錄（極為罕見）；jamiepine/voicebox 18,082★ 同日 Trending #8",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "product_opportunity": "把 Gemini 3.1 Flash TTS 接進 voicebox，做一個面向 tutorial 創作者的「零成本 AI 語音製作 studio」——參見今日 ideas 第一項。",
+      "source_links": [
+        { "platform": "Google AI Blog", "title": "Gemini 3.1 Flash TTS: the next generation of expressive AI speech", "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-tts/" },
+        { "platform": "Simon Willison", "title": "Gemini 3.1 Flash TTS", "url": "https://simonwillison.net/2026/Apr/15/gemini-31-flash-tts/#atom-everything" }
+      ]
+    },
+    {
+      "title": "Claude Code 生態系進入第四波：從個人工具到 studio 系統",
+      "body": "前三天（2026-04-13 到 2026-04-15）的模式是個人工具爆炸：CLAUDE.md 技巧、單一 plugin、逆向工程文件。今天出現了質的轉變：Donchitos/Claude-Code-Game-Studios（10,234★，Trending #13）把 49 個 AI agents 和 72 個 workflow skills 整合成一個完整的遊戲開發 studio 系統——這不是單一工具，這是一個完整的 agent 協調框架，只是恰好以「遊戲開發」為應用場景。forrestchang/andrej-karpathy-skills 連續第三天 Trending #1，從 36,297 到 42,023 星（+15.8%），加速度略減但仍在快速增長。claude-mem 57,528★ 穩定在 Trending #3。這個生態系已經從「個人使用技巧」進化到「可以把 Claude Code 變成特定行業工作室」的系統性工具。",
+      "evidence": "Donchitos/Claude-Code-Game-Studios 10,234★ Trending #13（初登場）；forrestchang/andrej-karpathy-skills +5,726★（+15.8%）連續三天 Trending #1；openedclaude/claude-reviews-claude 1,314★（新進 topic:agent 搜尋）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 4,
+      "product_opportunity": "把「Claude Code Game Studios」的協調框架模式移植到其他行業：法律文件審查 studio（12 個 agent 角色：合約分析師 / 風險評估員 / 條款建議員）或 data engineering studio（ETL agent / 品質檢查 agent / 文件生成 agent）。",
+      "source_links": [
+        { "platform": "GitHub Trending", "title": "Donchitos/Claude-Code-Game-Studios", "url": "https://github.com/Donchitos/Claude-Code-Game-Studios" },
+        { "platform": "GitHub Trending", "title": "forrestchang/andrej-karpathy-skills", "url": "https://github.com/forrestchang/andrej-karpathy-skills" }
+      ]
+    },
+    {
+      "title": "Systems 圈的制度化回應：從個人文章到組織性行動",
+      "body": "三天前（2026-04-14）是 Cantrill 的 blog 文章和 Servo 0.1.0；昨天是 Zig 0.16.0 + OpenSSL 4.0.0 的 systems 底層密集發布；今天進了下一步：LWN 報導有人在 fork Vim 以明確排除 LLM 生成的 commit，Lobsters #2 是 KeePassXC fork（KeePassχ，67分，47 則留言），Lobsters #5 是〈I don't care that it's X times faster〉（49分）——對 AI 工具效能宣傳的反駁。Lobsters 今天沒有一篇直接讚揚 LLM 工具的文章進前六。Systems 圈的集體姿態，正在從「我們不用 LLM」的個人聲明，進化成「我們用 fork 來制度性地把 LLM 排除在工具鏈之外」的組織性行動。這不是意識形態，這是程式碼貢獻管理的具體政策。",
+      "evidence": "LWN Vim fork 報導；Lobsters 今日前六無一篇正面 LLM 工具文章；KeePassXC fork（KeePassχ）67分 47則留言；Zig 0.16.0 143分（連續兩日高分）",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 3,
+      "product_opportunity": "為 OSS 專案建一個「contribution policy generator」：根據專案的語言、授權、維護者姿態（保守 / 中立 / 積極擁抱 AI），自動生成 CONTRIBUTING.md 裡關於 LLM 生成 code 的政策條款——涵蓋「必須全部披露」到「完全禁止」的五個等級。",
+      "source_links": [
+        { "platform": "LWN", "title": "Forking Vim to avoid LLM-generated code", "url": "https://lwn.net/Articles/1067007/" },
+        { "platform": "Lobsters", "title": "Zig 0.16.0 Release Notes", "url": "https://ziglang.org/download/0.16.0/release-notes.html", "score": 143 }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "bradtraversy/typesmith",
+    "url": "https://github.com/bradtraversy/typesmith",
+    "stars": 5,
+    "description": "Typo-free terminal recordings for tutorial creators: paste the command, focus the terminal, typesmith types it cleanly. Python，47 小時前建立，目前 5★。",
+    "body": "bradtraversy（75,731 followers，業界最大的 tutorial 創作者之一）在同一週有 Gemini 3.1 Flash TTS 上線、voicebox 18K★ 的情況下，選擇做一個「terminal typing 精準化」工具。這個判斷值得注意：他做 tutorial 超過十年，他知道 TTS 不夠用，你還需要精準的 terminal 操作錄製。typesmith 解決的問題是「screencaster 在教學錄影裡打錯字、要重來」——目前 0 個競爭者，且是有需求但沒人系統性解決的小市場。",
+    "why_asymmetric": "bradtraversy 本人就是目標市場，他做這個工具是因為自己需要——這是最好的 product-market fit 信號。如果他在自己的 tutorial 裡開始用 typesmith，75,731 個 followers 會在幾週內看到它。目前 5★ 在 47 小時前建立，asymmetric upside 極高。",
+    "commercial_path": "tutorial 創作者平台（Udemy / LinkedIn Learning / YouTube 課程創作者）有大量需求做「無錯誤 terminal demo」。typesmith 加上 Gemini 3.1 Flash TTS 的 narration，可以形成一個完整的「AI-assisted technical tutorial production kit」，走向付費 SaaS 版本。"
+  },
+  "contrarian": {
+    "claim": "Cal.com 關閉原始碼不能阻止 AI 競爭，只是移除了它自己的社群護城河",
+    "body": "Cal.com 宣布關源的理由是「AI 可以用我們的開源代碼複製我們的產品」——這個推理有一個根本性的錯誤：AI 不需要你的 source code 就能複製你的 booking SaaS。GPT-4 或 Claude 可以從你的 UI 截圖、API 文件、競爭對手的 OSS 版本重建一個功能等效的排程系統。Cal.com 的 source code 對 AI 競爭者來說是 nice-to-have，不是必需品。關閉原始碼真正移除的，是讓 Cal.com 有 30K+ stars 的那個東西：社群的信任、貢獻者的勞動、以及「如果 Cal.com 掛了我還能自己跑」的保證。Cal.com 用一個保護不了自己的武器，換掉了自己最有效的防禦——社群黏性。",
+    "rationale": "Lobsters 今日最高分的對話（KeePassXC fork，67分，47 則留言）說明了社群的反應：當原工具改變讓人不舒服，社群 fork。Cal.com 的關源會產生至少一個有競爭力的 OSS fork，繼續提供免費的 self-hosted 選項——但 Cal.com 自己已經失去了維護這個 fork 的社群。",
+    "prediction": "到 2026-10-31，GitHub 上至少一個以 Cal.com fork 或 Cal.com 開源替代品為明確定位的 repo，GitHub stars 超過 5,000。"
+  },
+  "predictions": [
+    {
+      "id": "pred-vercel-computesdk-launch",
+      "text": "Vercel computesdk 在 2026-08-31 前有官方 documentation site 且 GitHub stars 超過 3,000。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-08-31"
+    },
+    {
+      "id": "pred-claude-code-skill-attrition",
+      "text": "到 2026-10-31，2026-04-13 trending 的 6 個 Claude Code 生態系 repo 中，至少 4 個最後一次 commit 會超過 60 天前。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-mempalace-stars",
+      "text": "MemPalace 在 2026-07-31 前 GitHub stars 超過 80,000（2026-04-16：46,504★）。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-claude-code-re-wave",
+      "text": "到 2026-08-31，lorryjovens-hub/claude-code-rust、lintsinghua/claude-code-book、openedclaude/claude-reviews-claude 三者中至少一個會突破 10,000 stars。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-08-31"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-superpowers-portability",
+      "text": "到 2026-10-31，obra/superpowers 的 GitHub contributors 低於 50 人，且 issues 裡搜尋 'windows' 結果超過 20 個。",
+      "status": "pending",
+      "created": "2026-04-15",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-calcom-fork",
+      "text": "到 2026-10-31，GitHub 上至少一個以 Cal.com fork 或 Cal.com 開源替代品為明確定位的 repo，GitHub stars 超過 5,000。",
+      "status": "pending",
+      "created": "2026-04-16",
+      "resolution_date": "2026-10-31"
+    }
+  ]
+}
