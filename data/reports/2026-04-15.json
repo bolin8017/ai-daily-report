@@ -1,0 +1,442 @@
+{
+  "date": "2026-04-15",
+  "lead": {
+    "html": "<h3>Gary Marcus 說 Claude Code 是「LLM 以來最大進展」——這比任何 benchmark 都值得你停下來想一下</h3>\n\n<h4>發生了什麼</h4>\n<p>Gary Marcus 在 Substack 發了一篇標題叫〈The biggest advance in AI since the LLM〉的文章，副標是「Why Claude Code changes everything」。這件事本身就是訊號。Marcus 是 AI 領域最知名的懷疑論者之一，他的 substack 標題通常是「為什麼 LLM 做不到 X」。他這次不是在表揚 Claude Code 的功能列表——他在說，AI coding agent 讓他更新了對「LLM 可以幹什麼」的底層信念。同一週，同樣是 Gary Marcus，另一篇〈Claude Mythos, evaluated〉在評估 Anthropic 最近的 safety 聲明有多少是行銷話術。兩篇同時存在：他既承認 Claude Code 作為 tool 的實質進展，又對 Anthropic 的 safety narrative 繼續保持懷疑。這個分裂本身值得記錄。</p>\n\n<p>同一天，Changelog 的 news feed 提到「Opus 4.5 changed everything」——一個在 GitHub Copilot 工作的工程師 Burke Holland 描述 Claude 如何改變他用 agent 寫 code 的方式。Changelog 在上一期也記錄了 Astral（Ruff/uv）被 OpenAI 收購。這兩條訊息放在一起：OpenAI 在吃掉 Python tooling 層，而 Anthropic 的 coding agent 卻在 Pythonista 社群以外的地方贏得心智份額（Marcus 本人不是 Python 開發者）。</p>\n\n<p>GitHub Trending 今天的數字更具體：<code>forrestchang/andrej-karpathy-skills</code> 昨天 23,860 顆星，今天 36,297 顆星，一天 +52%。這個 repo 的內容只是一份 <code>CLAUDE.md</code>，整理了 Karpathy 觀察到的 LLM coding 常見陷阱。它不是一個工具，它是一份說明書——說明書比工具本身跑更快。同時 <code>JuliusBrussee/caveman</code>（把 Claude Code instruction 用 caveman 英文重寫、砍掉 65% token）從 25,598 漲到 30,506（+19%）。<code>obra/superpowers</code> 以 152,822 顆星登上 Trending，是目前為止最大的 agent skill framework repo。</p>\n\n<h4>為什麼重要</h4>\n<p>這些數字指向一件具體的事：開發者正在積極優化 <em>如何跟 Claude Code 說話</em>，而不只是 <em>用</em> Claude Code。這是 prompt engineering 的第二次浪潮，但方向相反——第一波是讓模型更聰明，這一波是讓你的指令更精準、更便宜、更可維護。對你的 agent pipeline 最直接的影響：你 CLAUDE.md 裡的每一句話都是 latency 跟 cost 的函數。如果你還沒有版本控制你的 system prompt，今天起應該開始。</p>\n\n<p>Gary Marcus 的背書還有一個技術含義值得注意：他不是在說 Claude Code 的推理能力有多強，他是在說 <em>agentic loop + tool use 這個架構</em> 讓 LLM 在他之前認為困難的任務類型上表現出了不同的行為。這跟近期 <code>holaboss-ai/holaOS</code>、<code>MemPalace/mempalace</code> 這類「給 agent 加持久記憶」的 repo 持續獲得星數的方向一致：真正的進展不在模型本身，在 loop 的架構。</p>\n\n<h4>社群怎麼看</h4>\n<p>Lobsters 今天的焦點不在 AI，而在 Zig 0.16.0（111 分，28 留言）和 OpenSSL 4.0.0（LWN 同步）。這個對比有意思：HN 因為 timeout 今天沒有資料，但從 Lobsters 的節奏來看，systems 圈正在一個跟 AI 圈不同的軌道上運作——Zig 0.16.0 的〈Juicy Main〉release notes 標題說明這個社群依然有自己的興奮感，跟 Claude Code 生態系無關。Lobsters 上關於 Lean prover bug 的文章（70 分：「Lean 證明了這段程式正確；然後我發現了一個 bug」）也在提醒：formal verification 不等於 bug-free，這對當前 AI coding agent 信任討論有直接的平行含義。</p>\n\n<h4>行動建議</h4>\n<p>如果你現在的 agent 或 Claude Code workflow 有一個超過 500 行的 CLAUDE.md，這週可以做兩件事：第一，clone <code>forrestchang/andrej-karpathy-skills</code>，用它的 checklist 審一遍你自己的 CLAUDE.md，把違反的項目改掉；第二，在你的 repo 加一個 <code>prompts/</code> 目錄並加進 git history，這樣你可以 diff 每次改動對 token count 跟任務成功率的影響。如果你在用 <code>apfel</code>（Apple Intelligence CLI）或任何 on-device model 做 local inference，<code>caveman</code> 的壓縮策略在 context window 受限的 on-device 場景裡收益更大——先在小任務上測 recall@5 確認品質不掉。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "CLAUDE.md Optimizer：把你的 agent 指令壓縮 50%，同時跑在本機",
+      "projects": [
+        { "name": "JuliusBrussee/caveman", "url": "https://github.com/JuliusBrussee/caveman", "note": "caveman-style token 壓縮，-65% tokens" },
+        { "name": "Arthur-Ficial/apfel", "url": "https://github.com/Arthur-Ficial/apfel", "note": "Apple Intelligence on-device CLI，OpenAI-compatible server" }
+      ],
+      "description": "你是一個在 MacBook Pro M3 上跑 local AI workflow 的工程師，CLAUDE.md 已經超過 800 行，每次 agent loop 都在燒 context window。caveman 的核心機制是把冗餘的英文說明句壓縮成最小 token 集合（「do not use console.log」→「no console.log」）而不失語意。apfel 把 Apple Intelligence 包成 OpenAI-compatible server，讓本機 7B 模型可以接受標準 chat/completion API 呼叫。把這兩個結合：寫一個 CLI 工具，吃進你的 CLAUDE.md / system prompt，先用 caveman 策略壓縮（可以用 GPT-4o-mini 或 apfel 的 on-device model 執行轉換），再把壓縮後的版本路由到 apfel server 做 local pre-validation（讓本機模型確認指令語意沒有歧義）。輸出：壓縮版 CLAUDE.md + diff + token 省下多少。技術路線：caveman 的規則集是一個 Python dict，可以直接 import；apfel 的 server 是 Swift，跑在 localhost:11434，你的壓縮器對它發一個 chat/completions 請求做 smoke test 即可。",
+      "use_case": "MacBook 上跑 Claude Code 的工程師，CLAUDE.md token 過多造成每次 loop 成本偏高",
+      "hardware": "Apple Silicon Mac（M1/M2/M3），apfel 需要 Apple Intelligence 支援（macOS 15.2+）",
+      "skill_level": "Python 入門即可，Swift 不需要（只呼叫 apfel REST API）",
+      "dependencies": "apfel 本機安裝（免費）、caveman pip install（免費）、選用 OpenAI API key 做比對測試",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "pip install caveman && git clone https://github.com/Arthur-Ficial/apfel",
+      "market_evidence": "forrestchang/andrej-karpathy-skills 一天內從 23.8K 漲到 36.3K（+52%），說明 builder 對「如何優化給 Claude Code 的指令」有強烈需求且願意 star 任何能幫到的工具"
+    },
+    {
+      "format": "remix",
+      "title": "Zig MCP Server：給 airgapped / 嵌入式部署的 zero-dependency agent tool runtime",
+      "projects": [
+        { "name": "Zig 0.16.0", "url": "https://ziglang.org/download/0.16.0/release-notes.html", "note": "LLVM-free stage3 自托管，cross-compile 單一二進位" },
+        { "name": "obra/superpowers", "url": "https://github.com/obra/superpowers", "note": "agent skills framework，Shell-based，152K★" }
+      ],
+      "description": "你在一家做工業控制或醫療設備的公司，需要在無網路、無 LLVM 的嵌入式 Linux 上跑 LLM agent tool-use。superpowers 的設計是「每個 skill 是一個 shell script」，讓 MCP server 知道怎麼 dispatch。問題是 Node.js 或 Python runtime 在某些嵌入式環境裡是 banned dependency。Zig 0.16.0 的 stage3 self-hosted compiler 意味著你可以把整個 compiler + runtime 打成單一靜態二進位（無 LLVM、無 libc 依賴，zig build 輸出一個 ~2MB ELF）。目標：用 Zig 寫一個最小 MCP JSON-RPC server（實作 tools/list 和 tools/call 兩個 endpoint），把 superpowers 風格的 shell skill 包進來，整個 server 編譯成 10MB 以下的靜態二進位，可以在 ARM64 / RISC-V Linux 上直接執行。這讓你在沒有網路的生產環境裡也能有 tool-use 能力，且 binary 可以做完整的 reproducible build 審計。技術風險：Zig 的 HTTP server stdlib 在 0.16.0 還在 std.http.Server 重寫中，需要評估 API 穩定性；JSON-RPC parsing 需要自己處理或用 zig-json。",
+      "use_case": "需要在 airgapped / 嵌入式 Linux 上部署 LLM tool-use 的工業 / 醫療 / 國防場景",
+      "hardware": "目標平台：ARM64 / RISC-V Linux（無網路環境）；開發機：任何有 Zig 0.16.0 的機器",
+      "skill_level": "需要熟悉 Zig 基礎語法 + 了解 JSON-RPC；MCP spec 閱讀約 2 小時",
+      "dependencies": "Zig 0.16.0（免費）、MCP spec（公開文件）；不需要 LLVM、Node、Python",
+      "difficulty": 4,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "curl https://ziglang.org/download/0.16.0/zig-linux-x86_64-0.16.0.tar.xz | tar xJ && ./zig/zig init",
+      "market_evidence": "Lobsters 上 Zig 0.16.0 以 111 分拿下 #1（28 留言）；嵌入式 / 安全場景對 dependency-free binary 的需求在 Phoronix 的 ROCm + Linux 7.1 系列報導中持續出現"
+    },
+    {
+      "format": "remix",
+      "title": "Stacked PR 安全稽核助手：在 merge 前自動標出 crypto 依賴版本變動",
+      "projects": [
+        { "name": "OpenSSL 4.0.0", "url": "https://lwn.net/Articles/1067622/", "note": "重大版本升級，API 有 breaking change" },
+        { "name": "GitHub Stacked PRs", "url": "https://github.github.com/gh-stack/", "note": "Lobsters 84 分，GitHub 官方 stacked PR 工具" }
+      ],
+      "description": "你是一個 platform 工程師，團隊用 stacked PR 流程（一個功能 PR 疊在另一個 PR 上）開發。OpenSSL 4.0.0 帶來 breaking API change（EVP_MD_CTX 等核心 API 改變），如果你的 stack base 還在 3.x 而中間某個 PR 悄悄 bump 了一個 dependency，這個不一致可能在 stack 的末端才被發現，造成 downstream 全部重新 rebase。目標：寫一個 GitHub Actions workflow，在每個 PR（特別是 stacked PR chain 裡的每一層）觸發，自動掃描 <code>Cargo.toml</code> / <code>requirements.txt</code> / <code>package.json</code> 裡的 crypto 相關 dependency（openssl, ring, rustls, cryptography, pyca 等），比對 PR base 跟 head 之間的版本 diff，如果有 major version bump 或已知 CVE（查 OSV.dev API），在 PR review 留下 comment 並標記 <code>crypto-change</code> label。技術路線：GitHub Actions + Python，用 OSV.dev 的 /v1/query endpoint（免費 REST API），解析 lockfile（poetry.lock / Cargo.lock / package-lock.json）而非 manifest（更精確）。這是一個純公民科技 / 開源工具，整個 action 可以打包成 composite action 發到 GitHub Marketplace。",
+      "use_case": "用 stacked PR 開發的 platform / security 工程師，需要在 merge 前確認 crypto dependency 一致性",
+      "hardware": "純雲端，GitHub Actions 免費額度足夠",
+      "skill_level": "Python 中級 + 了解 GitHub Actions；不需要密碼學知識",
+      "dependencies": "OSV.dev API（免費）、GitHub API（免費）、無其他外部依賴",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "gh repo create crypto-stack-guard --public && mkdir -p .github/workflows",
+      "market_evidence": "OpenSSL 4.0.0 release（LWN）+ GitHub Stacked PRs 官方工具發布（Lobsters 84 分）這兩個在同一天出現；供應鏈安全在前兩天的記憶中已是 hit_count=2 的持續話題"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Zig 0.16.0 「Juicy Main」",
+      "url": "https://ziglang.org/download/0.16.0/release-notes.html",
+      "desc": "8 個月開發，stage3 self-hosted compiler 成熟，LLVM 依賴降低；新增 async I/O 改進、comptime 邊界修正、cross-compile 體驗優化。Simon Willison 專文轉載。",
+      "source": "Lobsters #1 · 111分",
+      "repo_age": "本週發布",
+      "stars": null
+    },
+    {
+      "name": "OpenSSL 4.0.0",
+      "url": "https://lwn.net/Articles/1067622/",
+      "desc": "首個新主版本，支援多項新 TLS extension、重寫部分 EVP API；breaking change 需要留意 crypto dependency 的 major version bump。",
+      "source": "LWN",
+      "repo_age": "本週發布",
+      "stars": null
+    },
+    {
+      "name": "AMD ROCm 7.2.2",
+      "url": "https://www.phoronix.com/news/AMD-ROCm-7.2.2",
+      "desc": "帶來 Ryzen AI / RDNA 3.5 硬體的 optimization guide；對在 AMD GPU 上跑 local LLM inference 的人是可以直接套用的 perf tuning 文件。",
+      "source": "Phoronix",
+      "repo_age": "本週發布",
+      "stars": null
+    },
+    {
+      "name": "Google Gemini Flex & Priority 推理分級",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference/",
+      "desc": "Gemini API 新增 Flex（低成本、高延遲容忍）和 Priority（低延遲、高可靠）兩個推理層。影響你 agent pipeline 的 cost/latency tradeoff 設計。",
+      "source": "Google AI Blog",
+      "repo_age": "本週發布",
+      "stars": null
+    },
+    {
+      "name": "GitHub Stacked PRs（gh-stack）",
+      "url": "https://github.github.com/gh-stack/",
+      "desc": "GitHub 官方發布的 stacked PR 工具，讓大型功能可以拆成多層 PR 逐層 review 再合併，降低 review 負擔。",
+      "source": "Lobsters #13 · 84分",
+      "repo_age": "本週發布",
+      "stars": null
+    },
+    {
+      "name": "Linux 7.1：開始移除 Intel i486 支援",
+      "url": "https://www.phoronix.com/news/Linux-7.1-Begins-Removing-i486",
+      "desc": "Linus Torvalds 合併了移除 i486 的首批 patch，Linux 7.0 於 4/12 發布後，7.1 merge window 開啟。",
+      "source": "Phoronix",
+      "repo_age": "本週",
+      "stars": null
+    },
+    {
+      "name": "MemPalace/mempalace",
+      "url": "https://github.com/MemPalace/mempalace",
+      "desc": "benchmark 最高的開源 AI memory system，跨 session 持久記憶。今日 46,100★（昨 44,693★，+3.1%）。",
+      "source": "topic:llm · 46100★ · 30d以內",
+      "repo_age": "近 30 天",
+      "stars": 46100
+    },
+    {
+      "name": "JuliusBrussee/caveman",
+      "url": "https://github.com/JuliusBrussee/caveman",
+      "desc": "把 Claude Code skill 指令壓縮 65% token，方法是把複雜英文句改寫成穴居人式最小表達。今日 30,506★（昨 25,598★，+19%）。",
+      "source": "topic:llm · 30506★ · 30d以內",
+      "repo_age": "近 30 天",
+      "stars": 30506
+    },
+    {
+      "name": "Arthur-Ficial/apfel",
+      "url": "https://github.com/Arthur-Ficial/apfel",
+      "desc": "免費 on-device AI，把 Apple Intelligence 包成 CLI + OpenAI-compatible server，支援 Mac 本機推理。4,585★。",
+      "source": "topic:llm · 4585★ · 30d以內",
+      "repo_age": "近 30 天",
+      "stars": 4585
+    },
+    {
+      "name": "holaboss-ai/holaOS",
+      "url": "https://github.com/holaboss-ai/holaOS",
+      "desc": "Agent 長期工作環境，支援 continuity 跨 session + self-evolution 機制。TypeScript，2,593★。",
+      "source": "topic:agent · 2593★ · 30d以內",
+      "repo_age": "近 30 天",
+      "stars": 2593
+    },
+    {
+      "name": "calesthio/OpenMontage",
+      "url": "https://github.com/calesthio/OpenMontage",
+      "desc": "開源 agentic 影片製作系統，12 個 pipeline、52 個工具、500+ agent skill，可把 AI coding agent 的輸出轉成影片內容。1,701★。",
+      "source": "topic:agent · 1701★ · 30d以內",
+      "repo_age": "近 30 天",
+      "stars": 1701
+    },
+    {
+      "name": "apple/ml-videoflextok",
+      "url": "https://github.com/apple/ml-videoflextok",
+      "desc": "Apple 新發布的 VLM 研究：Flexible-Length Coarse-to-Fine Video Tokenization，Jupyter Notebook 形式開源。",
+      "source": "GitHub Developers · apple · 34h前",
+      "repo_age": "本週新增",
+      "stars": 4
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Gary Marcus：Claude Code 是 LLM 以來最大的 AI 進展",
+        "url": "https://garymarcus.substack.com/p/the-biggest-advance-in-ai-since-the",
+        "source": "Gary Marcus",
+        "takeaway": "懷疑論者的背書通常比支持者的更有信號量。Marcus 的論點不是功能讚美，而是說 agentic loop 架構改變了 LLM 的行為邊界。",
+        "action": "讀完後對照你自己 agent 的 loop 設計，問：你的 loop 有沒有讓 LLM 做到它單次 inference 做不到的事？"
+      },
+      {
+        "title": "Zig 0.16.0 Release Notes：「Juicy Main」",
+        "url": "https://ziglang.org/download/0.16.0/release-notes.html",
+        "source": "Lobsters · 111分",
+        "takeaway": "stage3 self-hosted compiler 成熟，LLVM 依賴進一步降低。對需要 reproducible build 或 embedded deployment 的人是具體的 infrastructure upgrade 機會。",
+        "action": "如果你有任何 Zig 0.14/0.15 的專案，先跑 zig fmt --check 看有哪些 syntax breaking change，再決定 upgrade 時機。"
+      },
+      {
+        "title": "OpenSSL 4.0.0 released",
+        "url": "https://lwn.net/Articles/1067622/",
+        "source": "LWN",
+        "takeaway": "首個新主版本帶來 EVP API breaking change。如果你的 dependency tree 裡有 OpenSSL，現在是審查 lockfile 的時機，不要等到被動升級。",
+        "action": "grep -r 'openssl\\|libssl\\|pyca' requirements.txt Cargo.toml package.json，標出需要測試的版本邊界。"
+      },
+      {
+        "title": "Google Gemini Flex / Priority 推理分級正式上線",
+        "url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference/",
+        "source": "Google AI Blog",
+        "takeaway": "Flex tier 適合 batch / async job，Priority tier 適合互動式 agent loop。這對你的 pipeline 架構有直接影響：不同的 task type 應該路由到不同 tier。",
+        "action": "把你 agent pipeline 裡的任務按 latency sensitivity 分類，考慮把 background embedding / summarization 改路由到 Flex tier。"
+      },
+      {
+        "title": "Lean proved this program was correct; then I found a bug",
+        "url": "https://kirancodes.me/posts/log-who-watches-the-watchers.html",
+        "source": "Lobsters · 70分",
+        "takeaway": "formal verification 工具的 correctness 本身也可能有 bug——這跟「LLM 說這段 code 正確」的信任問題是同一個 meta-level 問題。對當前 AI coding agent 的信任邊界有直接的比較價值。",
+        "action": "在你的 agent-generated code review checklist 裡加一條：驗證工具本身的假設有沒有被實際測試覆蓋。"
+      }
+    ],
+    "hn": [],
+    "lobsters": [
+      {
+        "title": "Zig 0.16.0 Release Notes",
+        "url": "https://ziglang.org/download/0.16.0/release-notes.html",
+        "score": 111,
+        "comments": 28,
+        "tags": ["zig"]
+      },
+      {
+        "title": "GitHub Stacked PRs",
+        "url": "https://github.github.com/gh-stack/",
+        "score": 84,
+        "comments": 54,
+        "tags": ["vcs"]
+      },
+      {
+        "title": "Lean proved this program was correct; then I found a bug",
+        "url": "https://kirancodes.me/posts/log-who-watches-the-watchers.html",
+        "score": 70,
+        "comments": 24,
+        "tags": ["formalmethods", "plt", "security", "vibecoding"]
+      },
+      {
+        "title": "Rust should have stable tail calls",
+        "url": "https://trifectatech.org/blog/tail-calls-project-goal/",
+        "score": 46,
+        "comments": 22,
+        "tags": ["rust"]
+      },
+      {
+        "title": "KeePassχ - a KeePassXC fork",
+        "url": "https://codeberg.org/keepasschi",
+        "score": 40,
+        "comments": 21,
+        "tags": ["security"]
+      },
+      {
+        "title": "Dependency cooldowns turn you into a free-rider",
+        "url": "https://calpaterson.com/deps.html",
+        "score": 23,
+        "comments": 25,
+        "tags": ["security"]
+      },
+      {
+        "title": "It's NOT OK to compare floating-points using epsilons",
+        "url": "https://lisyarus.github.io/blog/posts/its-ok-to-compare-floating-points-for-equality.html",
+        "score": 30,
+        "comments": 6,
+        "tags": ["compsci", "programming"]
+      },
+      {
+        "title": "5NF and Database Design",
+        "url": "https://kb.databasedesignbook.com/posts/5nf/",
+        "score": 19,
+        "comments": 9,
+        "tags": ["databases"]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "goodjack",
+        "followers": 661,
+        "repo": "goodjack/job104_cli",
+        "url": "https://github.com/goodjack/job104_cli",
+        "language": null,
+        "hours_ago": 50,
+        "description": "Taiwan 104 Job Bank 的 CLI 工具，支援個人查詢與實驗性用途",
+        "local_context": "🇹🇼 台灣開發者把日常工具 CLI 化的趨勢持續：104 人力銀行 CLI 可以作為 agent 工具鏈的 HR data source，搭配 MCP server 做本地職缺分析。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "bradtraversy",
+        "followers": 75724,
+        "repo": "bradtraversy/typesmith",
+        "url": "https://github.com/bradtraversy/typesmith",
+        "language": "Python",
+        "hours_ago": 33,
+        "description": "無錯字的 terminal 錄製工具，讓 tutorial 創作者可以貼上指令讓它自動乾淨地打字，避免直播打錯字的尷尬"
+      },
+      {
+        "developer": "apple",
+        "followers": 36186,
+        "repo": "apple/ml-videoflextok",
+        "url": "https://github.com/apple/ml-videoflextok",
+        "language": "Jupyter Notebook",
+        "hours_ago": 34,
+        "description": "VideoFlexTok：彈性長度 coarse-to-fine 影片 tokenization 研究，Apple ML 團隊新作，可用於 video VLM 預訓練"
+      },
+      {
+        "developer": "dhh",
+        "followers": 24682,
+        "repo": "dhh/impala",
+        "url": "https://github.com/dhh/impala",
+        "language": null,
+        "hours_ago": 32,
+        "description": "Linux wifi 管理的 TUI 工具，DHH 在 Linux 日常使用中填補 GUI wifi manager 的空缺"
+      },
+      {
+        "developer": "NVIDIA",
+        "followers": 24687,
+        "repo": "NVIDIA/QCalEval",
+        "url": "https://github.com/NVIDIA/QCalEval",
+        "language": "Python",
+        "hours_ago": 52,
+        "description": "QCalEval benchmark：評估 VLM 在量子電路（quantum circuit）圖表理解上的能力，補足 VLM 在科學視覺推理的評測缺口"
+      },
+      {
+        "developer": "google-deepmind",
+        "followers": 23387,
+        "repo": "google-deepmind/egg",
+        "url": "https://github.com/google-deepmind/egg",
+        "language": null,
+        "hours_ago": 10,
+        "description": "空 repo，無 README，無描述，10 小時前建立。DeepMind 的 stealth repo pattern——名稱 'egg' 可能暗示某個孵化中的新專案，值得追蹤。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Claude Code 生態系進入第三波：從使用工具到優化如何跟工具說話",
+      "body": "連續三天，Claude Code 相關 repo 在 GitHub Trending 前列占據多席。今天的模式有別：trending 焦點從「功能 repo」轉向「指令優化 repo」。forrestchang/andrej-karpathy-skills（一份 CLAUDE.md，無代碼）一天 +52% 星數；caveman（把指令壓縮 65% token）+19%。這說明 builder 開始把 prompt engineering 當成 engineering discipline 對待——有版本控制、有 benchmark（token count）、有 methodology（karpathy 的 checklist）。這是工具採用的成熟標誌：使用者從「學會用」進入「優化用法」。",
+      "evidence": "forrestchang/andrej-karpathy-skills: 23,860→36,297★（+52%/day）；caveman: 25,598→30,506★（+19%/day）；obra/superpowers: 152,822★ Trending #6",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%",
+      "arc_ref": "Claude Code 生態系從 skill 擴張到 runtime 重寫",
+      "day_count": 3,
+      "product_opportunity": "能幫 builder 自動 benchmark 其 CLAUDE.md（token count × task success rate × latency）並建議優化的 SaaS 工具，收費模型可以是 per-optimization-run。",
+      "source_links": [
+        { "platform": "GitHub Trending", "title": "forrestchang/andrej-karpathy-skills", "url": "https://github.com/forrestchang/andrej-karpathy-skills" },
+        { "platform": "GitHub Search", "title": "JuliusBrussee/caveman", "url": "https://github.com/JuliusBrussee/caveman" },
+        { "platform": "GitHub Trending", "title": "obra/superpowers", "url": "https://github.com/obra/superpowers" }
+      ]
+    },
+    {
+      "title": "Systems 語言有具體發布的一天：Zig 0.16 + OpenSSL 4.0 同日",
+      "body": "Zig 0.16.0 和 OpenSSL 4.0.0 在同一天 release 並登上 LWN、Lobsters。這不是巧合製造的趨勢，但對 builder 來說是一個具體的「需要更新 dependency 審查」信號。兩個 release 都有 breaking change：Zig 的 compiler API 細節、OpenSSL 的 EVP 介面。任何在 Cargo.toml 或 requirements.txt 裡依賴這兩者的 project 在接下來 4 週都會有 CI 噪音需要處理。Linux 7.0 release + 7.1 merge window 同時展開（i486 移除）進一步放大了這個「systems 底層同步更新」的信號。",
+      "evidence": "Zig 0.16.0（Lobsters 111分）+ OpenSSL 4.0.0（LWN）+ Linux 7.0 release + Linux 7.1 i486 removal（Phoronix）— 4 個 systems release 同一天",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "product_opportunity": "一個訂閱服務，監控你的 lockfile（Cargo.lock / package-lock.json / poetry.lock）並在上游有 major release 時主動通知 + 自動開 draft PR，市場上有 Renovate / Dependabot 但都沒有針對 major breaking change 的特別 escalation 路徑。",
+      "source_links": [
+        { "platform": "Lobsters", "title": "Zig 0.16.0 Release Notes", "url": "https://ziglang.org/download/0.16.0/release-notes.html", "score": 111 },
+        { "platform": "LWN", "title": "OpenSSL 4.0.0 released", "url": "https://lwn.net/Articles/1067622/" },
+        { "platform": "Phoronix", "title": "Linux 7.1 i486 removal", "url": "https://www.phoronix.com/news/Linux-7.1-Begins-Removing-i486" }
+      ]
+    },
+    {
+      "title": "AI 推理成本進入分級定價時代：Gemini Flex/Priority 是第一個顯式的 two-tier API",
+      "body": "Google 的 Flex（低成本、高延遲容忍）和 Priority（低延遲）分級是 API provider 首次把「我知道你的 workload 有不同的 SLA 需求」做成顯式的 infrastructure 選項，而不是靠 model size 差異間接表達。對 agent pipeline builder 的直接影響：你的 pipeline 裡的每一個 LLM 呼叫現在都需要一個明確的 tier 分類決策。背景 summarization / embedding → Flex；interactive loop step → Priority。這會把 agent 架構設計從「選 model」擴展到「選 model × tier × routing logic」。",
+      "evidence": "Google AI Blog 正式公告（2026-04-15）；Anthropic 前兩天也在推 gigawatt compute 合約——兩家都在往 infrastructure 層延伸",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "day_count": 3,
+      "product_opportunity": "一個 agent pipeline middleware，自動根據任務類型（interactive vs batch）路由到不同 tier/provider，類似 LiteLLM 但加上 tier-awareness 和成本 attribution。",
+      "source_links": [
+        { "platform": "Google AI Blog", "title": "Flex and Priority Inference", "url": "https://blog.google/innovation-and-ai/technology/developers-tools/introducing-flex-and-priority-inference/" }
+      ]
+    },
+    {
+      "title": "DeepMind 今天開了一個叫 'egg' 的空 repo：stealth 訊號值得追蹤",
+      "body": "google-deepmind 在 10 小時前建立了一個名為 'egg' 的 repo，無 README、無 description、0 stars。DeepMind 的 GitHub 歷史上，空 repo 通常有兩種結局：一是幾天內填入 paper companion code（對應某個即將 arxiv 的論文）；二是被刪掉（false start）。'egg' 這個名字可能是縮寫（E.G.G.？）也可能只是 codename。它不足以構成今天的 lead，但符合 Step 2 的 anomaly scan：大型 lab 的 stealth repo pattern 在過去 24h 出現。值得每天 ping 一次直到有內容。",
+      "evidence": "google-deepmind/egg：0★、0 commits、created 10h ago、no description（2026-04-15 資料）",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 50%",
+      "product_opportunity": "無直接商業機會，但作為情報信號：如果 egg 在 7 天內有 commit，值得追蹤其 topic。",
+      "source_links": [
+        { "platform": "GitHub Developers", "title": "google-deepmind/egg", "url": "https://github.com/google-deepmind/egg" }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "calesthio/OpenMontage",
+    "url": "https://github.com/calesthio/OpenMontage",
+    "stars": 1701,
+    "why": "「開源 agentic 影片製作系統」這個定位目前競爭者很少。12 個 pipeline、52 個工具的設計說明作者在認真思考 video production 的工作流程拆解，而不只是包一個 API。目前 1,701★，但影片創作工具的社群（YouTubers、教程創作者）跟 GitHub 社群幾乎不重疊——這個 repo 還沒被真正的目標用戶發現。",
+    "commercial_path": "把 OpenMontage 的 agent pipeline 包成一個 self-hosted SaaS，讓 YouTube 教程創作者可以用自然語言描述要做的影片，agent 自動切片、加字幕、做 A/B thumbnail——月費 $29，比 Descript 便宜，比 Opus Clip 更可控。"
+  },
+  "contrarian": {
+    "claim": "obra/superpowers 的 152,822 顆星與其實際使用量不成比例",
+    "why": "「Shell-based agent skills framework」這個類別在過去 18 個月內出現了至少 20 個競品（smol-tools、AgentKit、superpowers 本身），大部分的 GitHub star 都是一次性探索性 star，不反映 production 使用。obra/superpowers 的 Shell-first 設計在 cross-platform agent deployment 上有明顯的 portability 限制（Windows 支援程度、shell quoting 邊界 case）。",
+    "prediction": "到 2026-10-31，obra/superpowers 的 GitHub contributors 會低於 50 人，且 issues 裡 'windows' 相關 ticket 會超過 20 個（代表 portability 問題尚未解決）。",
+    "resolution_metric": "GitHub contributors 數（公開）< 50 AND open/closed issues 搜尋 'windows' > 20，截止 2026-10-31。"
+  },
+  "predictions": [
+    {
+      "id": "pred-berkeley-benchmark-revision",
+      "text": "Berkeley 的 benchmark exploit 論文會在 2026-09-30 前導致 SWE-bench、WebArena、OSWorld 至少一個發布 v2 修訂版。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-mempalace-stars",
+      "text": "MemPalace 在 2026-07-31 前 GitHub stars 會超過 80,000（今日 46,100★）。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-claude-code-re-wave",
+      "text": "到 2026-08-31，lorryjovens-hub/claude-code-rust、lintsinghua/claude-code-book、Windy3f3f3f3f/how-claude-code-works 三者中至少一個會突破 10,000 stars。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-08-31"
+    },
+    {
+      "id": "pred-servo-crates-downloads",
+      "text": "到 2026-12-31，servo crate 的 crates.io monthly downloads 低於 50,000，且使用 servo crate 的 non-Mozilla 已發布產品 ≤ 3。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作會在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-superpowers-portability",
+      "text": "到 2026-10-31，obra/superpowers 的 GitHub contributors 低於 50 人，且 issues 裡搜尋 'windows' 結果超過 20 個。",
+      "status": "pending",
+      "created": "2026-04-15",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-gemini-flex-adoption",
+      "text": "到 2026-09-30，至少 3 個主流 agent framework（LangChain / LlamaIndex / CrewAI / AutoGen 任意三個）的官方文件會有針對 Gemini Flex tier 的 cost-routing 說明或範例。",
+      "status": "pending",
+      "created": "2026-04-15",
+      "resolution_date": "2026-09-30"
+    }
+  ]
+}
