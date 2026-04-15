@@ -46,6 +46,13 @@ on:
       - 'config.json'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
+  schedule:
+    # 21:00 UTC = 05:00 Asia/Taipei — ~1h after the VM pipeline starts
+    # its daily run at 04:00 Asia/Taipei. Primary auto-deploy path:
+    # pushes to the `data` orphan branch cannot trigger workflows
+    # (no .github/workflows/ tree on that branch), so we poll on cron
+    # and pull whatever reports are currently on `data`.
+    - cron: '0 21 * * *'
 
 permissions:
   contents: read
@@ -127,9 +134,11 @@ jobs:
 
   deploy:
     needs: build
-    # Only deploy on push events (main or data branch). PR validation
-    # ends after build job — no Pages publish from a feature branch.
-    if: github.event_name == 'push'
+    # Deploy on everything except PRs. PR validation ends after build
+    # (no Pages publish from a feature branch); all other events —
+    # push to main, the daily schedule cron, and manual
+    # workflow_dispatch recovery — should actually publish.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
