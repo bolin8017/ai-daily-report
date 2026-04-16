@@ -1,0 +1,572 @@
+{
+  "date": "2026-04-17",
+  "lead": {
+    "html": "<h3>Qwen3.6 在 Simon Willison 的筆電上畫出比 Claude Opus 4.7 更好的鵜鶘</h3>\n\n<h4>發生了什麼</h4>\n<p>Claude Opus 4.7 今天上線（HN 1091 分，今日最高），同一天 Simon Willison 跑了一個具體測試：讓 Qwen3.6-35B-A3B 和 Opus 4.7 分別畫一隻 SVG 鵜鶘。Qwen3.6 贏了。他的貼文標題沒有修飾：「Qwen3.6-35B-A3B on my laptop drew me a better pelican than Claude Opus 4.7」。</p>\n<p>這不是隨機的 benchmark 比較。Simon Willison 是寫 Datasette 的那個人——他跑這種測試的方式是「我坐在 Mac 前面，跑一遍，貼結果」，不是在 leaderboard 上找最高分的 screenshot。Qwen3.6 的架構是 MoE（混合專家），35B 參數但每次 forward pass 只啟動 3B，讓它在筆電 RAM 可及的範圍內跑起來。HN 697 分（今日第三），評論裡主要在討論「這東西能在 M2/M3 Pro 上跑多快」和「open weights + local = 資料完全不離機器」。</p>\n<p>同一天還有另一個對照組：OpenAI 的 Codex「for almost everything」（HN 377 分），以及 Codex 被用來 hack 三星電視的文章（HN 174 分）。今天有兩家公司的 frontier model 出了新東西，然後一個開放權重模型在創意任務上把它們的其中一個比下去。</p>\n\n<h4>為什麼重要</h4>\n<p>「本地跑的模型不如 API」這個假設，長期以來是 RAG pipeline 設計的隱性前提——你用 embedding 把資料拉到本地，但 generation 還是走 Anthropic / OpenAI，因為本地模型能力差一截。Qwen3.6 今天的具體示範是：這個差距在創意生成任務上已經消失，或者說已經反轉。</p>\n<p>對你的 pipeline 的直接影響：如果你的 use case 包含「在用戶裝置上生成內容、但不想資料離開裝置」（FERPA 合規的教育平台、醫療資訊摘要、法律文件草稿），今天起你有一個具體的本地 generation 選項，可以用來替換掉 API call 裡最敏感的那一層。不是「本地模型作為 fallback」——是本地模型作為主力，API 作為 fallback。</p>\n<p>背後的 mechanism 是 MoE 的 active-parameter 效率：Qwen3.6 的 3B 有效參數在創意任務上跑出相當於更大模型的結果，因為創意任務的 token distribution 比推理任務更集中——MoE 的 expert routing 在這個任務類型上特別有優勢。推理任務（如數學、代碼調試）的差距可能仍在；Willison 測的是 SVG 生成，不是 SWE-bench。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 的 Qwen3.6 thread（697 分）裡，top comment 的方向不是「AI 太強了」，而是工程性的：「has anyone run this through llama.cpp / ollama on M3 Max yet, what's the token/s?」第二個方向是「這是 Alibaba/Qwen team 嗎，如果是，怎麼信任資料不被送回去」——model provenance 的疑慮在本地推理的討論裡已經是標配問題。Lobsters 今天沒有 Qwen 相關文章，說明這個話題主要在 HN 的 AI 受眾，systems 圈還沒跟進。</p>\n<p>Simon Willison 的第二篇文章是 datasette.io 的 preview，跟 Qwen3.6 文章同天發，說明他今天在 ship 東西不是在打廣告——這讓他的 Qwen 評測可信度更高。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 RAG pipeline 目前在生成層走 Claude Sonnet 4.6 / Opus 4.7 API，而你的文件屬於「不應該離開本地」的類型（法律、醫療、學生資料），這週可以拉 Qwen3.6-35B-A3B 的 GGUF 量化版跑一次你自己的任務——不是 SVG 鵜鶘，是你的實際 prompt。用 <code>llama.cpp</code> 或 <code>ollama pull qwen3.6:35b-a3b-q4_K_M</code>，跑三個你平常給 Claude 的 prompt，計時，對比輸出品質。如果結果可接受，你就有了一個「generation 層不出機器」的路線。如果不可接受，你多一個數據點說明你的任務為什麼需要 API。兩個結果都比什麼都不試有用。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "本地推理路由器：依文件敏感度自動選擇 Qwen3.6（本地）或 Claude（API）",
+      "projects": [
+        {
+          "name": "Qwen3.6-35B-A3B",
+          "url": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+          "note": "MoE 架構，3B active params，可在筆電跑"
+        },
+        {
+          "name": "Darkbloom",
+          "url": "https://darkbloom.dev/",
+          "note": "私人推理，idle Mac 節點，FERPA/HIPAA 合規"
+        }
+      ],
+      "description": "你是一家法律科技 startup 的工程師，手上有 2000 份客戶合約，分析任務需要 LLM 生成，但合約保密條款不允許資料傳到第三方 API。今天有兩個選項同時成立：Qwen3.6-35B-A3B 可在 M3 MacBook Pro 上跑，Darkbloom 可把 Mac 閒置時段變成私人推理節點。你需要一個路由層：收到一個文件 + 任務類型，先跑 PII detector（用 spacy 的 NER 或 Presidio）分類敏感度，低敏感度（公開合約範本、法規條文摘要）走 Claude API，高敏感度（含姓名 / 帳號 / 診斷碼的文件）走本地 Qwen3.6 或 Darkbloom。路由決策記錄在 audit log，讓合規審查可追蹤。",
+      "use_case": "法律科技或醫療 SaaS：每天處理 200+ 份含 PII 的文件，LLM 生成是核心功能，但資料合規要求不允許全部走雲端 API。",
+      "tech_stack": "Python + Presidio（PII detection）+ llama.cpp / Ollama（本地推理）+ Anthropic SDK（雲端路由）+ SQLite audit log",
+      "hardware": "本地節點需 Apple Silicon M2/M3 Pro 以上（Qwen3.6 Q4 量化需約 22GB RAM）；雲端路由只需 API key",
+      "skill_level": "熟悉 Python 非同步處理，了解基本 NLP pipeline；不需要 ML 訓練背景",
+      "dependencies": "Anthropic API key（月費 ~$30）；Presidio 完全免費自架；Ollama 免費",
+      "difficulty": 2,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "ollama pull qwen3.6:35b-a3b-q4_K_M && pip install presidio-analyzer",
+      "market_evidence": "HIPAA / FERPA 合規的醫療和教育 SaaS 在 GitHub Issues 裡反覆出現「can we self-host the LLM」的請求；Darkbloom HN thread 60 條評論裡 top comment 直接問合規場景。"
+    },
+    {
+      "format": "remix",
+      "title": "Agent 意圖漂移偵測器：當 Claude Code 跑偏時告訴你",
+      "projects": [
+        {
+          "name": "antfu/intenttracker",
+          "url": "https://github.com/antfu/intenttracker",
+          "note": "antfu（39K followers）今天新建，track project intent across AI agent sessions"
+        },
+        {
+          "name": "AI Assistance Reduces Persistence (arxiv 2604.04721)",
+          "url": "https://arxiv.org/pdf/2604.04721",
+          "note": "實驗測量：用 AI 的開發者面對難題時放棄更快，拿走 AI 後表現更差"
+        }
+      ],
+      "description": "你在用 Claude Code 或 openai/openai-agents-python 跑一個需要 40+ tool calls 的長任務：重構一個 3000 行的模組，同時加測試、更新 API 文件、修 3 個已知 bug。任務跑到第 25 個 tool call 時，agent 開始修第 4 個不在原始 spec 裡的 bug，因為它在看代碼時「發現」了新問題。這就是漂移。antfu 今天建的 intenttracker 是這個問題的手動解法；你可以把它做成自動化的：在每個 tool call 之前，用一個輕量 embedding 比較「目前行動的 rationale」和「原始任務描述」的 cosine similarity，低於 0.65 就觸發 drift alert，讓用戶確認是否繼續。把這個做成 MCP server，讓任何支援 MCP 的 agent runtime 都能插入。",
+      "use_case": "在跑 Claude Code 長任務（>20 tool calls）的工程師，任務裡有清楚的 done criteria，但擔心 agent 在過程中自作主張擴大 scope。",
+      "tech_stack": "Python + MCP SDK（server 端）+ sentence-transformers（輕量 embedding，不需 GPU）+ SQLite 記錄每個 tool call 的 rationale 向量",
+      "hardware": "純 CPU 可跑（sentence-transformers all-MiniLM-L6-v2，90MB）",
+      "skill_level": "熟悉 MCP server 開發或 Claude Code plugin 架構；需要讀過 MCP spec",
+      "dependencies": "完全免費自架；sentence-transformers 本地跑",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/antfu/intenttracker && 閱讀 README 理解 intent snapshot 的資料結構，以此為基礎設計 MCP tool schema",
+      "market_evidence": "arxiv 2604.04721（Lobsters 49 分）實測：AI 輔助工程師對難問題的堅持度比控制組低 23%；antfu 今天建 intenttracker 說明生態系頭部開發者也感受到這個問題，不只是學術現象。"
+    },
+    {
+      "format": "remix",
+      "title": "IPv6 原生 Agent 直連通道：市政 IoT 感測器網路的免中繼資料路由",
+      "projects": [
+        {
+          "name": "IPv6 traffic crosses 50%",
+          "url": "https://www.google.com/intl/en/ipv6/statistics.html",
+          "note": "HN 722 分 + Lobsters 61 分，Google 統計 IPv6 流量首次超過 50%"
+        },
+        {
+          "name": "Cloudflare Email for Agents",
+          "url": "https://blog.cloudflare.com/email-for-agents/",
+          "note": "HN 342 分，Cloudflare 給 agent 提供 email 地址，建立 agent 持久身份"
+        }
+      ],
+      "description": "你在幫一個台灣縣市政府的智慧城市團隊建空氣品質監測系統：200 個 PM2.5 感測器節點分布在各行政區，每個節點需要把資料傳到市政資料中心的分析 agent，目前靠 AWS IoT Core 中繼，每月費用 $800，而且 PDPA 個資法規要求資料不出縣市。IPv6 超過 50% 代表電信商的 6rd 或 dual-stack 網路已覆蓋這些節點所在的住宅和商業地址。做法：每個感測器節點用 link-local IPv6 + Cloudflare Tunnel（免費方案）建立從節點到市政資料中心的直連通道；節點用 Cloudflare Email 地址上報異常（高 PM2.5 觸發郵件告警），分析 agent 用同一個 Cloudflare tunnel 接收資料流。移除 AWS IoT Core 中繼，資料路徑縮短兩跳，月費降至接近零。",
+      "use_case": "台灣或東南亞地方政府的智慧城市工程師：有現成的 IoT 感測器網路，受 PDPA / 個資法約束不能走境外雲，需要找到低成本替代路由方案。",
+      "tech_stack": "Raspberry Pi / ESP32（節點端）+ cloudflared tunnel + IPv6 socket（Python 或 Rust）+ Cloudflare Email Workers（告警）+ InfluxDB（資料中心端）",
+      "hardware": "每個節點需支援 IPv6 的 4G/WiFi 模組；資料中心需一台靜態 IPv6 地址的 Linux server",
+      "skill_level": "熟悉 Linux 網路設定、基礎 IPv6 概念；不需要 ML 背景",
+      "dependencies": "Cloudflare 免費方案（tunnel + email）；IPv6 連線由 ISP 提供；無月費雲端依賴",
+      "difficulty": 3,
+      "dev_time": "1 個月+",
+      "first_step": "在一台 Raspberry Pi 上設定 cloudflared tunnel + IPv6 socket，確認能從外部用 IPv6 直連，再設計節點 → 資料中心的 data frame 格式",
+      "market_evidence": "台灣環保署 2025 年已部署 3000+ 個空氣品質感測器，數據合規與雲端成本是公開討論的問題；IPv6 普及至 50% 是這個方案從「理論可行」到「實際可用」的臨界點。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Claude Opus 4.7",
+      "url": "https://www.anthropic.com/news/claude-opus-4-7",
+      "desc": "Anthropic 新 frontier model，今日上線，HN 1091 分今日最高。Anthropic News 伺服器 503，細節待官網確認。",
+      "source": "HN 1091分",
+      "repo_age": "今日上線",
+      "stars": null
+    },
+    {
+      "name": "Qwen3.6-35B-A3B",
+      "url": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+      "desc": "Alibaba/Qwen team 開放權重 MoE 模型，35B 參數但 3B active，筆電可跑，Simon Willison 實測 SVG 生成勝過 Claude Opus 4.7。",
+      "source": "HN 697分",
+      "repo_age": "今日發布",
+      "stars": null
+    },
+    {
+      "name": "Darkbloom",
+      "url": "https://darkbloom.dev/",
+      "desc": "閒置 Mac 組成的私人推理網格，支援 FERPA/HIPAA 合規場景，Apple Neural Engine 加速。HN 444 分 60 條評論。",
+      "source": "HN 444分",
+      "repo_age": "近期上線",
+      "stars": null
+    },
+    {
+      "name": "Cloudflare Email for Agents",
+      "url": "https://blog.cloudflare.com/email-for-agents/",
+      "desc": "Cloudflare 給 agent 提供 email 地址，讓 agent 擁有持久郵件身份，可收發郵件，無需自建 SMTP 基礎設施。",
+      "source": "HN 342分",
+      "repo_age": "今日上線",
+      "stars": null
+    },
+    {
+      "name": "OpenAI Codex（新版）",
+      "url": "https://openai.com/index/codex-for-almost-everything/",
+      "desc": "OpenAI 發布「Codex for almost everything」，HN 377 分，同日有人用 Codex hack 了三星電視（HN 174分）——實際能力驗證發布同天就出現。",
+      "source": "HN 377分",
+      "repo_age": "今日上線",
+      "stars": null
+    },
+    {
+      "name": "Rust 1.95.0",
+      "url": "https://blog.rust-lang.org/2026/04/16/Rust-1.95.0/",
+      "desc": "Rust 1.95.0 正式發布，包含 async fn in traits 穩定化相關改進。Lobsters 25 分 + LWN 報導，雙源交匯。",
+      "source": "Lobsters 25分 + LWN",
+      "repo_age": "今日發布",
+      "stars": null
+    },
+    {
+      "name": "Forgejo 15.0",
+      "url": "https://lwn.net/Articles/1068001/",
+      "desc": "Gitea fork Forgejo 發布 15.0，LWN 報導。去中心化 Git 協作平台持續迭代，在 Gitea 商業化後吸引系統圈遷移。",
+      "source": "LWN",
+      "repo_age": "今日發布",
+      "stars": null
+    },
+    {
+      "name": "antfu/intenttracker",
+      "url": "https://github.com/antfu/intenttracker",
+      "desc": "antfu（39K followers，Vue/Vite 生態系核心貢獻者）17 小時前新建：跨 AI agent session 追蹤 project intent。0 stars，但作者的 follow-up 項目幾乎都會快速累積關注。",
+      "source": "GitHub Developers · global",
+      "repo_age": "今日新建（17h）",
+      "stars": 9
+    },
+    {
+      "name": "rohitg00/ai-engineering-from-scratch",
+      "url": "https://github.com/rohitg00/ai-engineering-from-scratch",
+      "desc": "從零開始學 AI engineering 的系統化教程，2992★，涵蓋 RAG、agent、fine-tuning 整個技術棧。",
+      "source": "topic:llm · 2992★",
+      "repo_age": "近期建立",
+      "stars": 2992
+    },
+    {
+      "name": "lintsinghua/claude-code-book",
+      "url": "https://github.com/lintsinghua/claude-code-book",
+      "desc": "《御舆：解码 Agent Harness》42 萬字中文深度剖析 Claude Code v2.1.88 架構，15 章從對話循環到自建 Agent Harness。2771★，同時出現在 topic:llm / agent / mcp 搜尋。",
+      "source": "topic:agent · 2771★",
+      "repo_age": "近期建立",
+      "stars": 2771
+    },
+    {
+      "name": "calesthio/OpenMontage",
+      "url": "https://github.com/calesthio/OpenMontage",
+      "desc": "宣稱第一個開源 agentic 影片製作系統：12 個 pipeline、52 個工具、500+ agent skills。2288★。",
+      "source": "topic:agent · 2288★",
+      "repo_age": "近期建立",
+      "stars": 2288
+    },
+    {
+      "name": "HKUDS/Vibe-Trading",
+      "url": "https://github.com/HKUDS/Vibe-Trading",
+      "desc": "香港大學出品的個人交易 agent，1980★，同時出現在 topic:llm 和 topic:mcp。學術團隊出品的金融 agent 少見有 MCP 整合。",
+      "source": "topic:mcp · 1980★",
+      "repo_age": "近期建立",
+      "stars": 1980
+    },
+    {
+      "name": "ghostwright/phantom",
+      "url": "https://github.com/ghostwright/phantom",
+      "desc": "有自己電腦的 AI 同事：自我演化、持久記憶、MCP server、安全憑證管理、電子郵件整合。1273★，TypeScript。",
+      "source": "topic:mcp · 1273★",
+      "repo_age": "近期建立",
+      "stars": 1273
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "IPv6 流量首次突破 50%（Google 統計）",
+        "url": "https://www.google.com/intl/en/ipv6/statistics.html",
+        "score": 722,
+        "comments": 78,
+        "takeaway": "Google 統計顯示 IPv6 流量剛越過 50% 門檻，HN 722 分 + Lobsters 61 分雙源交匯。對 builder 的影響：你的 socket bind 如果還在 0.0.0.0，現在改成 :: 的時機到了；每個服務都加一個 IPv6-only 測試環境。",
+        "action": "在你的 Docker compose 裡加 ipv6: true，跑 curl -6 https://your-service 確認 IPv6 路徑正常"
+      },
+      {
+        "title": "AI Assistance Reduces Persistence and Hurts Independent Performance",
+        "url": "https://arxiv.org/pdf/2604.04721",
+        "score": 49,
+        "comments": 18,
+        "takeaway": "Lobsters 49 分，實驗組（有 AI 輔助的工程師）面對難題時放棄速度比控制組快，拿走 AI 後的獨立表現下滑。這不是「AI 不好用」的論點，而是「長期依賴改變行為模式」的測量。antfu 今天建的 intenttracker 可能正是這個問題的工程回應。",
+        "action": "在你的 Claude Code workflow 裡刻意留幾個任務完全不用 AI，追蹤自己一個月後的 baseline 變化"
+      },
+      {
+        "title": "Cloudflare's AI Platform: an inference layer designed for agents",
+        "url": "https://blog.cloudflare.com/ai-platform/",
+        "score": 183,
+        "comments": 14,
+        "takeaway": "Cloudflare 同天發布 Email for Agents（HN 342分）和 AI Platform（HN 183分）。加上過去幾個月的 Workers AI、D1、R2——Cloudflare 在邊緣層組裝 agent 執行環境的每一塊積木。如果你的 agent 需要低延遲接近用戶部署，Cloudflare Workers 現在是完整的選項，不只是「前端加速」。",
+        "action": "跑 wrangler deploy 把一個現有的 Python agent wrapper 移植到 Workers，測量 p99 latency 差異"
+      },
+      {
+        "title": "Retrofitting JIT Compilers into C Interpreters",
+        "url": "https://tratt.net/laurie/blog/2026/retrofitting_jit_compilers_into_c_interpreters.html",
+        "score": 75,
+        "comments": 21,
+        "takeaway": "Lobsters 75 分，Laurie Tratt 寫的實作層文章，說明如何在不改動現有 C interpreter 主體的情況下插入 JIT。對在做 agentic tool execution sandbox 的人：這是「在現有執行環境上加速而不重寫」的 concrete technique。"
+      },
+      {
+        "title": "Gemini 3.1 Flash TTS 上線",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-tts/",
+        "takeaway": "Google AI Blog 公告，Gemini 3.1 Flash TTS 現在跨 Google 產品部署。Flash 系列在 TTS 的出現說明 Google 在 audio AI 的成本路線：Flash = 低延遲低成本優先，不是旗艦品質優先。如果你在建語音 pipeline，Flash TTS 的 API 價格應該比 Gemini Pro TTS 低一截。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Claude Opus 4.7",
+        "url": "https://www.anthropic.com/news/claude-opus-4-7",
+        "score": 1091,
+        "comments": 137
+      },
+      {
+        "title": "IPv6 traffic crosses the 50% mark",
+        "url": "https://www.google.com/intl/en/ipv6/statistics.html",
+        "score": 722,
+        "comments": 78
+      },
+      {
+        "title": "Qwen3.6-35B-A3B: Agentic coding power, now open to all",
+        "url": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+        "score": 697,
+        "comments": 44
+      },
+      {
+        "title": "Darkbloom – Private inference on idle Macs",
+        "url": "https://darkbloom.dev/",
+        "score": 444,
+        "comments": 60
+      },
+      {
+        "title": "Codex for almost everything",
+        "url": "https://openai.com/index/codex-for-almost-everything/",
+        "score": 377,
+        "comments": 37
+      },
+      {
+        "title": "The future of everything is lies, I guess",
+        "url": "https://aphyr.com/posts/420-the-future-of-everything-is-lies-i-guess-where-do-we-go-from-here",
+        "score": 376,
+        "comments": 38
+      },
+      {
+        "title": "Cloudflare Email for Agents",
+        "url": "https://blog.cloudflare.com/email-for-agents/",
+        "score": 342,
+        "comments": 48
+      },
+      {
+        "title": "ChatGPT for Excel",
+        "url": "https://chatgpt.com/apps/spreadsheets/",
+        "score": 308,
+        "comments": 39
+      },
+      {
+        "title": "Cloudflare's AI Platform",
+        "url": "https://blog.cloudflare.com/ai-platform/",
+        "score": 183,
+        "comments": 14
+      },
+      {
+        "title": "Codex Hacked a Samsung TV",
+        "url": "https://blog.calif.io/p/codex-hacked-a-samsung-tv",
+        "score": 174,
+        "comments": 17
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "You cannot use the GNU (A)GPL to take software freedom away",
+        "url": "https://www.fsf.org/blogs/licensing/agpl-is-not-a-tool-for-taking-freedom-away",
+        "score": 87,
+        "comments": 21,
+        "tags": ["law"]
+      },
+      {
+        "title": "Retrofitting JIT Compilers into C Interpreters",
+        "url": "https://tratt.net/laurie/blog/2026/retrofitting_jit_compilers_into_c_interpreters.html",
+        "score": 75,
+        "comments": 21,
+        "tags": ["compilers"]
+      },
+      {
+        "title": "The age of snarky UI",
+        "url": "https://thoughtbot.com/blog/the-age-of-snarky-ui",
+        "score": 70,
+        "comments": 33,
+        "tags": ["design", "rant"]
+      },
+      {
+        "title": "Things you didn't know about indexes",
+        "url": "https://jon.chrt.dev/2026/04/15/things-you-didnt-know-about-indexes.html",
+        "score": 63,
+        "comments": 26,
+        "tags": ["databases"]
+      },
+      {
+        "title": "IPv6 traffic crosses the 50% mark",
+        "url": "https://www.google.com/intl/en/ipv6/statistics.html",
+        "score": 61,
+        "comments": 23,
+        "tags": ["networking"]
+      },
+      {
+        "title": "AI Assistance Reduces Persistence and Hurts Independent Performance",
+        "url": "https://arxiv.org/pdf/2604.04721",
+        "score": 49,
+        "comments": 18,
+        "tags": ["practices"]
+      },
+      {
+        "title": "Announcing Rust 1.95.0",
+        "url": "https://blog.rust-lang.org/2026/04/16/Rust-1.95.0/",
+        "score": 25,
+        "comments": 6,
+        "tags": ["release", "rust"]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "strategist922",
+        "followers": 815,
+        "repo": "strategist922/claude-dispatch",
+        "url": "https://github.com/strategist922/claude-dispatch",
+        "language": null,
+        "hours_ago": 5,
+        "description": "Auto-route Claude Code tasks to the right model — keep Opus sharp by routing only tasks that need it.",
+        "local_context": "🇹🇼 台灣開發者開始做 Claude Code 的 model routing 層，與整個生態系從「使用工具」到「優化工具使用策略」的第四波轉型吻合。"
+      },
+      {
+        "developer": "kkdai",
+        "followers": 1665,
+        "repo": "kkdai/tech_blog_preview",
+        "url": "https://github.com/kkdai/tech_blog_preview",
+        "language": "HTML",
+        "hours_ago": 30,
+        "description": "技術部落格 preview 工具。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "antfu",
+        "followers": 39106,
+        "repo": "antfu/intenttracker",
+        "url": "https://github.com/antfu/intenttracker",
+        "language": "TypeScript",
+        "hours_ago": 17,
+        "description": "Track project intent across AI agent sessions — antfu 回應長任務 agent 漂移問題的工程解法。"
+      },
+      {
+        "developer": "apple",
+        "followers": 36214,
+        "repo": "apple/ml-videoflextok",
+        "url": "https://github.com/apple/ml-videoflextok",
+        "language": "Jupyter Notebook",
+        "hours_ago": 71,
+        "description": "VideoFlexTok：彈性長度的粗到細影片 tokenization，Apple ML Research 論文代碼。"
+      },
+      {
+        "developer": "google-deepmind",
+        "followers": 23458,
+        "repo": "google-deepmind/beneath-the-surface",
+        "url": "https://github.com/google-deepmind/beneath-the-surface",
+        "language": "Python",
+        "hours_ago": 23,
+        "description": "空 repo，無說明。繼 egg（4/15）、ddgc（4/16）之後，DeepMind 第三個連續出現的 stealth 空 repo——名字「beneath-the-surface」暗示深層評估框架，可能是新 benchmark 或 evaluation suite 的先行動作。"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 117645,
+        "repo": "microsoft/amplifier-bundle-chat-completions",
+        "url": "https://github.com/microsoft/amplifier-bundle-chat-completions",
+        "language": "Python",
+        "hours_ago": 18,
+        "description": "Amplifier 項目的 Chat Completions bundle，Microsoft 官方帳號，18 小時前建立，0 stars。'Amplifier' 這個名字和 chat completions 的組合暗示 Azure AI 的推理加速層，尚未公開宣布。"
+      },
+      {
+        "developer": "bradtraversy",
+        "followers": 75746,
+        "repo": "bradtraversy/typesmith",
+        "url": "https://github.com/bradtraversy/typesmith",
+        "language": "Python",
+        "hours_ago": 71,
+        "description": "Tutorial 創作者用的無錯別字 terminal 錄製工具：貼上指令，聚焦 terminal，它幫你打得乾淨。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "本地推理品質門檻突破：MoE 效率讓 3B active params 在創意任務上追平 frontier API",
+      "body": "Simon Willison 今天的具體測試是量化指標，不是感覺：Qwen3.6-35B-A3B 在 SVG 生成任務上的輸出品質勝過 Claude Opus 4.7，而 Qwen3.6 跑在他的筆電上。這個訊號為什麼現在出現：MoE 架構的 routing efficiency 在 2025 年下半年大幅成熟，Qwen3.6 的 3B active params 代表推理延遲和記憶體需求已降到筆電可接受的範圍，而創意任務（生成、風格、排版）本來就比推理任務（數學、代碼正確性）對參數規模的敏感度低。這兩個條件同時成立，才讓今天的結果成為可能。對你的 RAG pipeline：generation 層的架構選擇現在多了一條路線，不只是「選哪個 API」。",
+      "evidence": "HN 697 分（今日第三）；Simon Willison 部落格實測；Qwen3.6 MoE 架構 35B 參數 / 3B active",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 1,
+      "product_opportunity": "合規優先的 RAG 部署商：「generation 層不出機器」從要求變成可達成的設計選項，面向法律、醫療、教育 SaaS 的合規推理方案現在有了可行的本地 generation 後端。",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Qwen3.6-35B-A3B: Agentic coding power, now open to all",
+          "url": "https://qwen.ai/blog?id=qwen3.6-35b-a3b",
+          "score": 697
+        },
+        {
+          "platform": "Simon Willison",
+          "title": "Qwen3.6-35B-A3B on my laptop drew me a better pelican than Claude Opus 4.7",
+          "url": "https://simonwillison.net/2026/Apr/16/qwen-beats-opus/#atom-everything"
+        }
+      ]
+    },
+    {
+      "title": "DeepMind stealth repo 連續第三天：egg → ddgc → beneath-the-surface",
+      "body": "google-deepmind/beneath-the-surface 今天出現（23h ago，1 star，無說明），是過去三天 DeepMind 第三個空 repo：4/15 的 egg、4/16 的 ddgc、4/17 的 beneath-the-surface。命名序列有意思：egg 是「還沒孵出來的東西」，ddgc 是縮寫（猜測是 Deep Generative Capability 或類似），beneath-the-surface 字面是「表面之下」——可能是新 evaluation / benchmark suite 的 pre-launch staging。DeepMind 過去在論文發布前幾天會建空 repo 占位，這個三天序列可能指向本週或下週的公告。對 benchmark 跑分有興趣的人：watch 這三個 repo 的 commit 活動。",
+      "evidence": "google-deepmind/beneath-the-surface：23h ago，1★；google-deepmind/ddgc：4/16 出現；google-deepmind/egg：4/15 出現",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "anomaly-class",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 3,
+      "product_opportunity": "Benchmark 追蹤服務：自動 watch 大型 AI 研究組織的 GitHub 帳號，偵測空 repo + commit 爆發的 pattern，在論文公告前 24-48 小時通知訂閱者。",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google-deepmind/beneath-the-surface",
+          "url": "https://github.com/google-deepmind/beneath-the-surface"
+        }
+      ]
+    },
+    {
+      "title": "Cloudflare 在邊緣層組裝 agent 執行環境的完整積木",
+      "body": "今天 Cloudflare 同時發布 Email for Agents（HN 342 分）和 AI Platform（HN 183 分）。加上過去幾個月已有的 Workers AI（推理）、D1（SQLite 邊緣資料庫）、R2（物件儲存）、Queues（訊息佇列），Cloudflare 現在有一個 agent 需要的完整基礎設施清單：計算、狀態、通訊（email）、推理——全部跑在邊緣。這和 AWS Lambda / GCP Cloud Run 的差異是：Cloudflare 的每個節點跑在 200+ 個城市，冷啟動在毫秒級。對在設計 agent deployment 架構的人：如果你的 agent 需要低延遲回應用戶請求（聊天、即時工具呼叫），Workers 現在是一個值得嚴肅評估的選項，不只是「我沒有 AWS 帳號時的替代」。",
+      "evidence": "Cloudflare Email for Agents HN 342 分；Cloudflare AI Platform HN 183 分；雙文章同日發布",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 2,
+      "product_opportunity": "邊緣優先的 agent SaaS 基礎設施：用 Cloudflare Workers + D1 + Email 建一個「不需要 AWS 帳號、5 分鐘部署 agent 到 200 個城市」的 scaffold，面向需要低延遲但不想管 DevOps 的 agent builder。",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Cloudflare Email for Agents",
+          "url": "https://blog.cloudflare.com/email-for-agents/",
+          "score": 342
+        },
+        {
+          "platform": "HN",
+          "title": "Cloudflare's AI Platform",
+          "url": "https://blog.cloudflare.com/ai-platform/",
+          "score": 183
+        }
+      ]
+    },
+    {
+      "title": "OSS 授權危機的反向聲音：FSF 說 AGPL 不能用來限制軟體自由",
+      "body": "Lobsters 今天最高分（87 分）是 FSF 的一篇文章：「You cannot use the GNU (A)GPL to take software freedom away」。這篇文章的時機和 4/16 的 Cal.com 授權翻轉事件直接相關——Cal.com 宣布關閉商業使用之後，有人嘗試用更嚴格的 Copyleft（AGPL）條款來限制 AI 競爭對手使用代碼。FSF 的立場是：AGPL 的本意是強制開放源碼，不是限制使用者。這個論點如果成立，意味著 OSS 作者沒有一個合法的 Copyleft 工具可以明確排除 AI 競爭對手——AGPL 反而會強迫 AI 公司把修改後的代碼也開源。兩個後果：一是授權創新的壓力（SSPL / BSL 類的商業授權會繼續增加），二是純 Copyleft 路線的防禦效果有限。",
+      "evidence": "Lobsters 87 分（今日第一）；FSF 官方部落格；Cal.com 授權事件（HN 259分，4/16）",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 5% (Lobsters)",
+      "arc_ref": "oss-licensing-ai-pressure",
+      "day_count": 2,
+      "product_opportunity": "OSS 授權合規工具：自動掃描你的 dependency tree，標出哪些依賴用的是 AGPL / BSL / SSPL，以及你的商業用途是否觸發授權限制——面向不想被授權翻轉突襲的 SaaS 創業團隊。",
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "You cannot use the GNU (A)GPL to take software freedom away",
+          "url": "https://www.fsf.org/blogs/licensing/agpl-is-not-a-tool-for-taking-freedom-away",
+          "score": 87
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "ghostwright/phantom",
+    "url": "https://github.com/ghostwright/phantom",
+    "stars": 1273,
+    "description": "有自己電腦的 AI 同事：自我演化記憶、MCP server、安全憑證管理、email 整合，TypeScript，1273★，近期建立。",
+    "why_asymmetric": "phantom 把今天三個獨立趨勢同時囊括：MCP 整合（topic:mcp 搜尋出現）、persistent memory（agent memory arc）、email 身份（Cloudflare Email for Agents 今天的方向）。它不是三個分開的工具，而是一個把這三件事整合在一起的 runtime。如果 Cloudflare Email for Agents 真的成為標準 agent identity 方案，phantom 是目前最早把 email 做進 agent runtime 的開源實作之一。",
+    "commercial_path": "從開源 agent runtime 到「AI 員工 SaaS」：用戶付月費租一個 phantom agent，預配好電腦、email、MCP tools，開箱即用，不需要自己組裝 tech stack。類似 Replit 從 IDE 到 cloud hosting 的轉型路線。"
+  },
+  "contrarian": {
+    "claim": "Claude Opus 4.7 今天是 HN 最高分，但真正的模型能力比較是 Qwen3.6 在 Simon Willison 的筆電上贏了它——Anthropic 今天的故事是一個局部敗退，不是勝利。",
+    "body": "Anthropic 發布 Opus 4.7 的同一天，開放權重的 Qwen3.6-35B-A3B 在一個具體創意任務上（SVG 生成）明確勝過它，而且 Qwen3.6 跑在本地筆電。這件事的意義不在於「Qwen 比 Claude 好」——而在於「API-only 模型的能力護城河在創意任務上今天消失了一道口子」。Anthropic 的護城河現在剩下：coding benchmark（Opus 4.7 在 SWE-bench 上的數字今天還未見到）、推理（MoE 的 3B active 在數學任務上仍有差距）、API reliability、以及 Claude Code 生態系的 network effect。如果 Qwen 後續版本在 coding 任務上也追上來，Anthropic 的護城河就主要剩下最後一個。",
+    "prediction": "Qwen3.6 或後續 Qwen 系列在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 為準）。",
+    "resolution_date": "2026-09-30"
+  },
+  "predictions": [
+    {
+      "id": "pred-berkeley-benchmark-revision",
+      "text": "Berkeley 的 benchmark exploit 論文會在 2026-09-30 前導致 SWE-bench、WebArena、OSWorld 至少一個發布 v2 修訂版。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-claude-code-skill-attrition",
+      "text": "到 2026-10-31，2026-04-13 trending 的 6 個 Claude Code 生態系 repo 中，至少 4 個最後一次 commit 超過 60 天前。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-mempalace-stars",
+      "text": "MemPalace 在 2026-07-31 前 GitHub stars 超過 80,000（2026-04-16：46,504★）。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-calcom-fork",
+      "text": "到 2026-10-31，GitHub 上至少一個以 Cal.com fork 或 Cal.com 開源替代品為明確定位的 repo，GitHub stars 超過 5,000。",
+      "status": "pending",
+      "created": "2026-04-16",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 beneath-the-surface / ddgc / egg 這三個空 repo 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo 的 commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    }
+  ]
+}
