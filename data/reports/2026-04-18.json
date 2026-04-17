@@ -1,0 +1,488 @@
+{
+  "date": "2026-04-18",
+  "lead": {
+    "html": "<h3>Claude Opus 4.7 上線、Claude Design 公測：Anthropic 雙發布的背後，是一個新的 token 稅</h3>\n\n<h4>發生了什麼</h4>\n<p>2026-04-17 Anthropic 在同一天發布了兩件事：Claude Opus 4.7 全面 GA，以及 Claude Design（Anthropic Labs 旗下的設計工具產品）公測上線。Claude Design 在 HN 拿到 586 分（今日第一），Opus 4.7 的定價分析文章拿到 367 分（今日第二）。兩個故事同時登上 HN 前兩名，但社群討論的焦點幾乎完全落在後者——claudecodecamp.com 的 tokenizer 測量文章揭露：Opus 4.7 換了 tokenizer，同樣的 prompt 多 20-30% tokens，等價為每次 session 成本漲價 20-30%。</p>\n<p>Simon Willison 在同一天發布了兩條訊息：datasette 1.0a28 發布（工具更新），以及一個更有殺傷力的實測：在本機跑的 Qwen3.6-35B-A3B（MoE，active params 只有 3B）在 SVG pelican 繪製任務上，生成結果比 Claude Opus 4.7 更好。Simon 的結論是：Qwen3.6 是他目前在筆電上能跑的最好模型之一。</p>\n\n<h4>為什麼重要</h4>\n<p>tokenizer 換代的問題不是 hype，是 infrastructure change。如果你的服務用 Claude API 做任何形式的 prompt 模板——尤其是帶著 system prompt + few-shot examples 的 RAG pipeline——今天起每次呼叫的 input token count 都應該重新 benchmark，因為你的舊估算數字已經失效。llm-anthropic 0.25（Simon Willison 昨日更新）是 Python 端的配套更新；如果你的 codebase 用 llm CLI，今天升級才能準確追蹤實際 token 用量。</p>\n<p>Simon Willison 的 Qwen3.6 實測是一個具體的技術信號，而不是泛泛的「本地模型進步了」：MoE 架構讓 35B 參數模型在推理時只激活 3B，這意味著你不需要 full 35B VRAM，用 4-bit quant 可以在 32GB unified memory 的 Mac 上跑。SVG 生成是創意類任務，傳統上是 API 模型的強項——local 模型在這個任務上開始打平，代表 local inference 的品質天花板比一個月前高了。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 上 Opus 4.7 tokenizer 文章的 top comments 基本上是憤怒的工具書寫者：「這是在沒有任何公告的情況下悄悄提價」；「我的 cost estimator 全部要重新校準」；「這應該是 major version bump 不是 minor」。反方有人指出 tokenizer 效率提升可能讓某些 task 實際 token 更少，但主流情緒是「不透明的成本變化比漲價更糟糕，因為它偷偷改變了你的 budget assumption」。Lobsters 上〈The Claude Coding Vibes Are Getting Worse〉（41分）作者的論點是：Anthropic 最近的 product decision 讓人感覺 Claude 在被調教成 upsell 用戶，而不是 genuinely helpful。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 RAG pipeline 用 Claude API 而且 prompt 帶有 system + few-shot，這週做一件事：在你的 repo 加一個 <code>token-audit.py</code>，用 Anthropic 的 token counting endpoint 對你現有的 prompt templates 跑一次計數，把結果提交進 git 作為 baseline。如果數字比你預期高 20-30%，你要決定是否切到更便宜的 Haiku 4 tier 做 routing，或是用 caveman 風格的 prompt compression 把 input 壓縮回去。如果你正在評估 local 推理是否能替代 Opus 4.7 做創意任務，Simon Willison 的 Qwen3.6 pelican 實測是你現在就可以 clone 下來重現的基準：<a href=\"https://simonwillison.net/2026/Apr/16/qwen-beats-opus/\">simonwillison.net/2026/Apr/16/qwen-beats-opus/</a></p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "Claude session 成本可視化 overlay：把 tokenizer 差異變成 real-time 儀表板",
+      "projects": [
+        { "name": "ChromeDevTools/chrome-devtools-mcp", "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp", "note": "Chrome DevTools MCP 讓 agent 能讀寫 DevTools，包括 network、console、performance panels" },
+        { "name": "llm-anthropic 0.25", "url": "https://simonwillison.net/2026/Apr/16/llm-anthropic/", "note": "Simon Willison 的 llm CLI 配套更新，支援 Anthropic token counting API" }
+      ],
+      "description": "你是在維護一個用 Claude API 的 web app，每天有幾百次 LLM 呼叫。Opus 4.7 換了 tokenizer，你的 cost estimator 已經失效，但你不知道哪些 endpoint 是罪魁禍首。chrome-devtools-mcp 讓 AI agent 能直接讀取 DevTools 的 network panel；結合 Anthropic 的 token counting endpoint，你可以做一個 Chrome extension，在每次 fetch 到 Claude API 的 response 時自動 inject 一個 token cost badge——顯示 input tokens、output tokens、estimated USD cost，以及跟你上次相同 prompt 的 delta。技術路線：chrome-devtools-mcp 做 extension backend（MCP server 跑在 localhost），background script 攔截所有到 api.anthropic.com 的 request，用 tokenizer_count_tokens API 做 pre-call estimation，response 回來後用實際 usage 更新顯示。每個 API call 的 token breakdown 存進 IndexedDB，session 結束後可以 export 成 CSV 做 cost attribution。這個工具最大的差異化是它不需要改你現有的 codebase——任何用 browser 的人都可以直接裝 extension 開始追蹤。",
+      "use_case": "在瀏覽器裡 real-time 追蹤 Claude API 的 token 成本，不需要修改 app 程式碼",
+      "tech_stack": "TypeScript (Chrome Extension Manifest v3) + chrome-devtools-mcp (localhost MCP server) + Anthropic token counting API",
+      "hardware": "純 CPU，雲端 API 即可",
+      "skill_level": "需熟悉 Chrome Extension API + TypeScript；不需要 ML 知識",
+      "dependencies": "Anthropic API key（已有即可，token counting endpoint 免費）；chrome-devtools-mcp 在 localhost 跑",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/ChromeDevTools/chrome-devtools-mcp && npm install && npx @anthropic-ai/sdk 快速測試 token counting endpoint",
+      "market_evidence": "HN 上 Opus 4.7 tokenizer 文章 367 分，top comment 全在說「我的 cost estimator 壞了」；Anthropic 沒有官方提供 session-level cost breakdown 工具"
+    },
+    {
+      "format": "remix",
+      "title": "RAG pipeline 的語意漂移偵測器：讓 re-ranker 自動告訴你 document store 什麼時候過期了",
+      "projects": [
+        { "name": "facebookresearch/fresco", "url": "https://github.com/facebookresearch/fresco", "note": "Meta Research 49h 前新建的 benchmark repo：FRESCO — Re-rankers for Evolving Semantic Conflict in RAG" },
+        { "name": "EvoMap/evolver", "url": "https://github.com/EvoMap/evolver", "note": "GEP-Powered Self-Evolution Engine for AI Agents，Trending #1 今日" }
+      ],
+      "description": "你在維護一個公司內部知識庫的 RAG pipeline，文件每週更新，但 embedding 是一個月前跑的。用戶開始回報答案跟文件不一致，但你不知道是 retrieval 問題還是文件本身已經過時。facebookresearch/fresco 測的恰好是這個問題：當同一個 query 的 top-K 文件在不同時間點給出矛盾的答案時，re-ranker 應該怎麼處理「語意衝突」。它的 benchmark 設計——對比 stale doc vs fresh doc 的 re-ranking 行為——可以被借用來做一個 drift detector：定期對你的 query log 裡的 high-frequency queries 重跑 retrieval，把今天的 top-3 結果跟上週的 top-3 結果做 BM25 + semantic similarity 比對；如果 score 差距超過 threshold，觸發 re-embedding alert。EvoMap/evolver 的 GEP（Genome Evolution Protocol）概念——讓 agent 從一個 seed 程序自動演化新的 skill——可以借用來做 alert handler 的自動調參：當 pipeline 連續三次誤報時，讓 evolver 邏輯自動調高 threshold。這是一個真正可以在週末建 POC 的方向，因為 fresco repo 雖然剛建立（2★），但 paper 連結在 README 裡，benchmark dataset 設計可以直接借鑒。",
+      "use_case": "偵測 RAG document store 的語意漂移，在文件過期影響 recall 品質前主動告警",
+      "tech_stack": "Python + sentence-transformers + BM25 (rank_bm25) + 任何現有 vector DB",
+      "hardware": "純 CPU 可跑（embedding 用 bge-m3 或 nomic-embed）",
+      "skill_level": "需熟悉 Python + RAG 基本流程；不需要 GPU",
+      "dependencies": "fresco 的 benchmark data（公開）；sentence-transformers pip install；完全免費自架",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/facebookresearch/fresco && pip install sentence-transformers rank_bm25 && 看 benchmark 的 data format",
+      "market_evidence": "facebookresearch/fresco 在 49 小時前建立，針對 RAG re-ranking 的語意漂移問題做 benchmark；這個問題在 RAG 工程社群是已知痛點（Lobsters / HN 上 RAG recall 討論的常見 complaint）"
+    },
+    {
+      "format": "solo",
+      "title": "公民科技 × 地理位置保護：把 Lawfare 的精確地理位置禁售論文變成本地 app 的隱私稽核工具",
+      "projects": [
+        { "name": "Lawfare: It Is Time to Ban the Sale of Precise Geolocation", "url": "https://www.lawfaremedia.org/article/it-is-time-to-ban-the-sale-of-precise-geolocation", "note": "HN #9，435 分，24 則留言" },
+        { "name": "CadQuery", "url": "https://cadquery.github.io/", "note": "HN #28，206 分——Python parametric CAD，本題借用其「describe geometry programmatically」的設計哲學作為隱私區域定義的靈感" }
+      ],
+      "description": "你是在寫 iOS 或 Android app 的獨立開發者，你的 app 用到 CoreLocation 或 Android Location API 做某個功能（例如：顯示附近餐廳、記錄跑步路徑）。Lawfare 文章（HN 435分）提出的核心問題是：精確地理位置資料被第三方 SDK 默默採集然後賣給 data brokers。你的 app 可能在無意間成為這個供應鏈的一環。這個 idea 是做一個 CLI 工具，掃描你的 app bundle（iOS .ipa 或 Android .apk），找出所有呼叫精確位置 API 的 call site，標注哪些是你自己的 code（可控）、哪些是第三方 SDK（需要稽核）；對每個第三方 SDK 自動查詢已知的 location data broker 名單（從 EFF、AppCensus 等公開資料庫），輸出一份 privacy risk report。技術路線：iOS 用 class-dump + grep；Android 用 apktool + smali pattern matching。第三方 SDK 識別用 SHA256 hash 比對已知 SDK 的 class prefix 清單。這不需要 AI，完全靜態分析，但加一個 LLM layer 可以讓 report 變成人讀的繁體中文摘要。",
+      "use_case": "獨立 app 開發者的隱私稽核：掃描自己的 app 找出意外的精確位置資料採集",
+      "tech_stack": "Python + apktool (Android) / class-dump (iOS) + EFF 公開 SDK 黑名單資料庫",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "需熟悉 Python；iOS 版需要 macOS + Xcode tools；Android 版跨平台",
+      "dependencies": "apktool（免費）；EFF AppCensus 公開資料；完全免費自架",
+      "difficulty": "2",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "pip install androguard && python -c \"from androguard.misc import AnalyzeAPK; a,d,dx = AnalyzeAPK('test.apk'); [print(m.name) for m in dx.get_methods() if 'getLastKnownLocation' in str(m.name)]\"",
+      "market_evidence": "Lawfare 文章 HN 435 分（top 25%）；EFF 有公開的 mobile SDK 追蹤器資料庫；iOS app 開發者常在 Reddit r/iOSProgramming 問「如何知道我的第三方 SDK 在收集什麼」"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Claude Opus 4.7",
+      "url": "https://www.anthropic.com/news/claude-opus-4-7",
+      "desc": "Anthropic 最新旗艦模型 GA。新 tokenizer 讓相同 prompt 多 20-30% tokens——builder 需要重新 benchmark 現有 pipeline 的實際成本。",
+      "source": "Anthropic News + HN 367分",
+      "repo_age": "2026-04-17 上線",
+      "stars": null
+    },
+    {
+      "name": "Claude Design (Anthropic Labs)",
+      "url": "https://www.anthropic.com/news/claude-design-anthropic-labs",
+      "desc": "Anthropic Labs 旗下的設計工具，今日公測。HN 第一名 586 分。",
+      "source": "Anthropic News + HN 586分",
+      "repo_age": "2026-04-17 上線",
+      "stars": null
+    },
+    {
+      "name": "ChromeDevTools/chrome-devtools-mcp",
+      "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "desc": "Chrome DevTools 官方出品的 MCP server，讓 coding agent 能直接操作 DevTools（network、console、performance panels）。Google 第一方工具，不是社群 hack。",
+      "source": "GitHub Trending #15",
+      "repo_age": "本週新增",
+      "stars": 35770
+    },
+    {
+      "name": "Rust 1.95.0",
+      "url": "https://blog.rust-lang.org/2026/04/16/Rust-1.95.0/",
+      "desc": "Rust 正式版本更新。Lobsters 58 分。如果你的 build 環境在 CI 上 pin 了 rust version，這週更新 toolchain。",
+      "source": "Lobsters 58分",
+      "repo_age": "2026-04-16 發布",
+      "stars": null
+    },
+    {
+      "name": "lintsinghua/claude-code-book",
+      "url": "https://github.com/lintsinghua/claude-code-book",
+      "desc": "《御舆：解码 Agent Harness》42 萬字深度剖析 Claude Code 架構，15 章從對話循環到 Agent Harness 實作。中文社群今日最多人 star 的 Claude Code 深度內容。",
+      "source": "topic:agent · 2794★ · 搜尋發現",
+      "repo_age": "本月新增",
+      "stars": 2794
+    },
+    {
+      "name": "alvinreal/awesome-opensource-ai",
+      "url": "https://github.com/alvinreal/awesome-opensource-ai",
+      "desc": "精選的「真正開源」AI 專案清單——model、tooling、infrastructure。在 awesome 系列裡專門排除 BSL/SSPL 類半開源授權，在 OSS 授權危機背景下格外有參考價值。",
+      "source": "topic:rag · 2635★ · 搜尋發現",
+      "repo_age": "本月新增",
+      "stars": 2635
+    },
+    {
+      "name": "nesquena/hermes-webui",
+      "url": "https://github.com/nesquena/hermes-webui",
+      "desc": "NousResearch Hermes Agent 的 Web UI 前端，支援手機瀏覽。如果你在跑 hermes-agent 的本地 server，這是目前最快的前端選項。",
+      "source": "topic:agent · 2518★ · 搜尋發現",
+      "repo_age": "本月新增",
+      "stars": 2518
+    },
+    {
+      "name": "mnfst/awesome-free-llm-apis",
+      "url": "https://github.com/mnfst/awesome-free-llm-apis",
+      "desc": "整理免費 LLM API 端點的清單（附 API Key）。在 Opus 4.7 成本漲 20-30% 的背景下，本週搜尋量應該會上升。",
+      "source": "topic:llm · 2203★ · 搜尋發現",
+      "repo_age": "本月新增",
+      "stars": 2203
+    },
+    {
+      "name": "HKUDS/Vibe-Trading",
+      "url": "https://github.com/HKUDS/Vibe-Trading",
+      "desc": "香港大學 DS 組出品的個人 trading agent，LLM-driven。paper 連結在 README，是學術與工程雙軌的少見組合。",
+      "source": "topic:llm · 2087★ · 搜尋發現",
+      "repo_age": "本月新增",
+      "stars": 2087
+    },
+    {
+      "name": "IPv6 traffic crosses 50%",
+      "url": "https://www.google.com/intl/en/ipv6/statistics.html",
+      "desc": "Google 的 IPv6 adoption 統計首次突破 50%。Lobsters 87 分、44 則留言——今日 Lobsters 最高分，說明 networking/infra 社群認為這是里程碑事件。",
+      "source": "Lobsters 87分",
+      "stars": null
+    },
+    {
+      "name": "huggingface/context-course",
+      "url": "https://github.com/huggingface/context-course",
+      "desc": "HuggingFace 在 8 小時前建立的新 repo：「A course on context engineering with code agents」。目前內容未公開，但 HuggingFace 正式把 context engineering 當成一門獨立課程——這個方向的重要性已到達需要系統性教學的程度。",
+      "source": "GitHub Developers (61,946 followers · 8h ago)",
+      "repo_age": "今日新增",
+      "stars": 0
+    },
+    {
+      "name": "Simon Willison: llm-anthropic 0.25",
+      "url": "https://simonwillison.net/2026/Apr/16/llm-anthropic/",
+      "desc": "Simon Willison 的 llm CLI 配套 Anthropic 更新。如果你的 Python 環境用 llm CLI 追蹤 Claude token 用量，這個版本更新是 Opus 4.7 token counting 準確性的必要升級。",
+      "source": "Simon Willison",
+      "repo_age": "2026-04-16 發布",
+      "stars": null
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Claude Opus 4.7 新 tokenizer：同樣 prompt 多 20-30% tokens",
+        "url": "https://www.claudecodecamp.com/p/i-measured-claude-4-7-s-new-tokenizer-here-s-what-it-costs-you",
+        "score": 367,
+        "comments": 59,
+        "takeaway": "這不是 API 漲價公告，是一個 tokenizer 換代造成的隱性成本上漲。你的 cost estimator 需要重新校準，特別是 system prompt 較長的 pipeline。",
+        "action": "用 Anthropic token counting endpoint 對現有 prompt templates 跑一次計數，把結果存進 git 作為 baseline。"
+      },
+      {
+        "title": "IPv6 traffic crosses the 50% mark",
+        "url": "https://www.google.com/intl/en/ipv6/statistics.html?yzh=28197",
+        "score": 87,
+        "comments": 44,
+        "takeaway": "Lobsters 今日最高分。如果你的服務還在假設 IPv4-only，這個里程碑是一個明確的 infra 審計觸發點——不是「未來要處理」而是「現在有一半流量已經走 IPv6」。",
+        "action": "檢查你的 load balancer 設定和 webhook 回調 URL 是否支援 IPv6 dual-stack。"
+      },
+      {
+        "title": "Astral has been acquired by OpenAI",
+        "url": "https://changelog.com/news/184",
+        "takeaway": "Ruff 和 uv 的開發者 Astral 加入 OpenAI。短期內 Ruff/uv 仍然開源，但長期的授權和 roadmap 控制權轉移到 OpenAI。如果你的工具鏈深度依賴 Ruff 或 uv，這週應該在 repo 裡加一個 vendor-assumptions.md 記錄當前版本假設。",
+        "action": "在 pyproject.toml 或 .pre-commit-config.yaml 裡 pin Ruff 到特定版本，避免未來 OpenAI-driven breaking change 在你不知情的情況下入侵 CI。"
+      },
+      {
+        "title": "Qwen3.6-35B-A3B on my laptop drew me a better pelican than Claude Opus 4.7",
+        "url": "https://simonwillison.net/2026/Apr/16/qwen-beats-opus/",
+        "takeaway": "Simon Willison 的直接實測：本地 MoE 模型（3B active params）在 SVG 生成任務勝過 Opus 4.7。如果你有 32GB unified memory 的 Mac，這個實驗今天就可以重現。",
+        "action": "ollama pull qwen3.6:35b-moe-q4 並用你自己最常做的創意任務（SVG / HTML 生成）對比 Claude API，看差距是否在你的 use case 裡可接受。"
+      },
+      {
+        "title": "The Claude Coding Vibes Are Getting Worse",
+        "url": "https://blog.matthewbrunelle.com/the-claude-coding-vibes-are-getting-worse/",
+        "score": 41,
+        "comments": 11,
+        "takeaway": "Lobsters 41 分。作者的論點是 Claude 最近的輸出品質在常見 coding 任務上主觀感覺下滑，懷疑是 RLHF 調整方向的問題。這類主觀感受文章通常是早期 leading indicator，值得自己實測一次驗證。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Claude Design",
+        "url": "https://www.anthropic.com/news/claude-design-anthropic-labs",
+        "score": 586,
+        "comments": 81
+      },
+      {
+        "title": "Claude Opus 4.7 costs 20–30% more per session",
+        "url": "https://www.claudecodecamp.com/p/i-measured-claude-4-7-s-new-tokenizer-here-s-what-it-costs-you",
+        "score": 367,
+        "comments": 59
+      },
+      {
+        "title": "It Is Time to Ban the Sale of Precise Geolocation",
+        "url": "https://www.lawfaremedia.org/article/it-is-time-to-ban-the-sale-of-precise-geolocation",
+        "score": 435,
+        "comments": 24
+      },
+      {
+        "title": "Isaac Asimov: The Last Question (1956)",
+        "url": "https://hex.ooo/library/last_question.html",
+        "score": 511,
+        "comments": 51
+      },
+      {
+        "title": "Ada, its design, and the language that built the languages",
+        "url": "https://www.iqiipi.com/the-quiet-colossus.html",
+        "score": 224,
+        "comments": 29
+      },
+      {
+        "title": "CadQuery is an open-source Python library for building 3D CAD models",
+        "url": "https://cadquery.github.io/",
+        "score": 206,
+        "comments": 19
+      },
+      {
+        "title": "Show HN: MacMind – A transformer neural network in HyperCard on a 1989 Macintosh",
+        "url": "https://github.com/SeanFDZ/macmind",
+        "score": 144,
+        "comments": 9
+      },
+      {
+        "title": "NASA Force",
+        "url": "https://nasaforce.gov/",
+        "score": 128,
+        "comments": 37
+      },
+      {
+        "title": "A Python Interpreter Written in Python",
+        "url": "https://aosabook.org/en/500L/a-python-interpreter-written-in-python.html",
+        "score": 133,
+        "comments": 12
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "IPv6 traffic crosses the 50% mark",
+        "url": "https://www.google.com/intl/en/ipv6/statistics.html?yzh=28197",
+        "score": 87,
+        "comments": 44,
+        "tags": ["networking"]
+      },
+      {
+        "title": "Clojure: The Documentary",
+        "url": "https://www.youtube.com/watch?v=Y24vK_QDLFg",
+        "score": 64,
+        "comments": 5,
+        "tags": ["clojure", "video"]
+      },
+      {
+        "title": "Announcing Rust 1.95.0",
+        "url": "https://blog.rust-lang.org/2026/04/16/Rust-1.95.0/",
+        "score": 58,
+        "comments": 9,
+        "tags": ["release", "rust"]
+      },
+      {
+        "title": "Stop using JWTs (2019)",
+        "url": "https://gist.github.com/samsch/0d1f3d3b4745d778f78b230cf6061452",
+        "score": 48,
+        "comments": 26,
+        "tags": ["security"]
+      },
+      {
+        "title": "The Claude Coding Vibes Are Getting Worse",
+        "url": "https://blog.matthewbrunelle.com/the-claude-coding-vibes-are-getting-worse/",
+        "score": 41,
+        "comments": 11,
+        "tags": ["programming", "vibecoding"]
+      },
+      {
+        "title": "Okay, what actually uses Rust",
+        "url": "https://blog.goose.love/posts/what-actually-uses-rust/",
+        "score": 39,
+        "comments": 30,
+        "tags": ["rust"]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4353,
+        "repo": "doggy8088/Voca",
+        "url": "https://github.com/doggy8088/Voca",
+        "language": null,
+        "hours_ago": 3,
+        "description": "Voca — 本機語音複製助手，用 VoxCPM 驅動。3 小時前建立，最新的台灣 AI voice clone 工具。",
+        "local_context": "🇹🇼 台灣開發者在 Opus 4.7 發布當天建了本機語音工具，on-device audio AI 的方向跟 jamiepine/voicebox 趨勢一致。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 817,
+        "repo": "strategist922/autoskills",
+        "url": "https://github.com/strategist922/autoskills",
+        "language": null,
+        "hours_ago": 4,
+        "description": "One command. Your entire AI skill stack. Installed. — 自動安裝 AI skill 工具鏈的 CLI。",
+        "local_context": "🇹🇼 昨日的 claude-dispatch 作者今日繼續在 Claude Code skill 層建工具，呼應本週 Claude Code 生態系第六波的 meta-tooling 方向。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "antfu",
+        "followers": 39110,
+        "repo": "antfu/intenttracker",
+        "url": "https://github.com/antfu/intenttracker",
+        "language": "TypeScript",
+        "hours_ago": 40,
+        "description": "Track project intent across AI agent sessions. — 跨 session 的 AI agent 意圖追蹤工具。"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 61946,
+        "repo": "huggingface/context-course",
+        "url": "https://github.com/huggingface/context-course",
+        "language": "MDX",
+        "hours_ago": 8,
+        "description": "A course on context engineering with code agents. — 8 小時前建立，HuggingFace 正式把 context engineering 當成一門課程。"
+      },
+      {
+        "developer": "facebookresearch",
+        "followers": 35348,
+        "repo": "facebookresearch/fresco",
+        "url": "https://github.com/facebookresearch/fresco",
+        "language": "Python",
+        "hours_ago": 49,
+        "description": "FRESCO: Benchmarking and Optimizing Re-rankers for Evolving Semantic Conflict in RAG — Meta Research 針對 RAG re-ranking 語意衝突問題的 benchmark。"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 117720,
+        "repo": "microsoft/azure-finops-agent",
+        "url": "https://github.com/microsoft/azure-finops-agent",
+        "language": null,
+        "hours_ago": 6,
+        "description": "Azure FinOps Agent — 空 repo，6 小時前建立。Microsoft 正在建一個 Azure cost optimization agent，尚未公開內容。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "tokenizer 換代是一種隱形 API 漲價機制，builder 需要新的 cost accounting 工具",
+      "body": "Opus 4.7 的 tokenizer 換代讓相同 prompt 多 20-30% tokens，但這件事沒有出現在 Anthropic 的任何官方定價公告裡。HN 今日 #2 文章（367分）是社群自己發現並量測的。這個模式很值得注意：模型定價的實質改變越來越多透過技術細節（tokenizer、context window 計算方式、caching 策略）而不是定價頁面發生。對 builder 的意義是：你的 cost estimator 需要在 model 版本升級時自動重跑 benchmark，而不是假設 token 計算方式不變。這也是 token cost overlay 工具（chrome-devtools-mcp 方向）現在有真實市場需求的原因。",
+      "evidence": "HN 367分，59則留言，多條 top comment 提到需要重新校準 cost estimator；llm-anthropic 0.25 同日更新支援新 tokenizer",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "day_count": 6,
+      "source_links": [
+        { "platform": "HN", "title": "Claude Opus 4.7 costs 20–30% more per session", "url": "https://www.claudecodecamp.com/p/i-measured-claude-4-7-s-new-tokenizer-here-s-what-it-costs-you", "score": 367 },
+        { "platform": "Simon Willison", "title": "llm-anthropic 0.25", "url": "https://simonwillison.net/2026/Apr/16/llm-anthropic/" }
+      ],
+      "product_opportunity": "API cost attribution dashboard，特別是 per-prompt-template 的 token delta 追蹤——在 tokenizer 版本升級時自動告警。可以用 chrome-devtools-mcp 做 browser extension，不需要修改用戶 app 程式碼。"
+    },
+    {
+      "title": "Context engineering 從技巧變成課程：HuggingFace 8 小時前建了 context-course repo",
+      "body": "huggingface/context-course 在今天早上 8 小時前建立，description 是「A course on context engineering with code agents」。這個 repo 目前 0 stars、沒有內容，但它的出現本身是一個信號：HuggingFace 決定把 context engineering 當成一個需要系統性教學的獨立技能，而不是「prompt engineering 的子集」。結合 antfu/intenttracker（跨 session intent 追蹤）、lintsinghua/claude-code-book（42 萬字 agent harness 分析）、以及本週 Dev.to Notion MCP Challenge 的獲獎作品，context engineering 這個詞的重量在上週開始質變：從 senior engineer 的非正式技巧，轉向有 curriculum、有 benchmark、有工具鏈支撐的工程紀律。",
+      "evidence": "huggingface/context-course 建立 8 小時（HuggingFace 61,946 followers）；lintsinghua/claude-code-book 2794★（topic:agent + topic:llm + topic:mcp 三源）；antfu/intenttracker 40h ago（antfu 39,110 followers）",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "Claude Code 生態系從 skill 擴張到 runtime 重寫",
+      "day_count": 6,
+      "source_links": [
+        { "platform": "GitHub Developers", "title": "huggingface/context-course", "url": "https://github.com/huggingface/context-course" },
+        { "platform": "GitHub Search", "title": "lintsinghua/claude-code-book", "url": "https://github.com/lintsinghua/claude-code-book" }
+      ],
+      "product_opportunity": "context budget tracker：一個工具在 Claude Code session 進行中顯示剩餘 context window 百分比、分類標示哪部分是 system prompt / tool results / conversation history，幫助 builder 在 context cutoff 前知道該 compact 哪部分。"
+    },
+    {
+      "title": "自演化 agent 兩個獨立實作同日 trending：GEP 和 skill tree 方向趨向收斂",
+      "body": "EvoMap/evolver（Trending #1，4,055★，GEP-Powered Self-Evolution Engine）和 lsdefine/GenericAgent（Trending #2，3,498★，self-evolving skill tree from 3.3K-line seed，6x less token consumption）在同一天佔據 GitHub Trending 前兩位，互不相關。兩個專案都在解決同一個問題：agent 如何在 runtime 自動獲取或演化新的能力，而不需要人手動撰寫 skill。GEP（Genome Evolution Protocol）和 skill tree seed 是兩種不同的機制，但目標收斂：讓 agent 的能力邊界可以自主擴張。這個方向在技術上仍然非常早期——兩個 repo 的文件深度和 production readiness 都不足——但作為訊號，它說明 agent framework 的 roadmap 正在從「給定工具集的最優執行」向「動態工具集獲取」移動。",
+      "evidence": "EvoMap/evolver Trending #1（4,055★）；lsdefine/GenericAgent Trending #2（3,498★）；兩者都是本週新增 repo",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "source_links": [
+        { "platform": "GitHub Trending", "title": "EvoMap/evolver", "url": "https://github.com/EvoMap/evolver" },
+        { "platform": "GitHub Trending", "title": "lsdefine/GenericAgent", "url": "https://github.com/lsdefine/GenericAgent" }
+      ],
+      "product_opportunity": "self-evolution 的 safety wrapper：在 agent skill acquisition 的過程中插入一個 approval layer，讓 human-in-the-loop 在 agent 嘗試執行新 skill 前先看到 skill definition 和預期的副作用。防止自演化 agent 在 production 環境出現意料之外的行為。"
+    },
+    {
+      "title": "DeepMind stealth repo 序列：第四天——beneath-the-surface 仍無說明",
+      "body": "昨日 observation 記錄了 google-deepmind/beneath-the-surface 出現（Python，1★，23h ago，無 README）。今日的 developers.json 沒有新的 DeepMind 空 repo 出現，但 beneath-the-surface 本身沒有更新（仍然空的）。pred-deepmind-stealth-reveal 預測的 resolution date 是 2026-04-30，目前距離還有 12 天。序列是 egg → ddgc → beneath-the-surface，命名暗示深層評估框架。沉默本身也是一個信號：DeepMind 過去空 repo 到公告的週期大概是 3-7 天，第四天仍無說明可能代表公告還在準備中。",
+      "evidence": "google-deepmind/beneath-the-surface 建立 47h+，仍 1★，無 README；pred-deepmind-stealth-reveal pending",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 50%",
+      "arc_ref": "DeepMind 空 repo 預告序列：egg → ddgc → beneath-the-surface",
+      "day_count": 4,
+      "source_links": [
+        { "platform": "GitHub Developers", "title": "google-deepmind/beneath-the-surface", "url": "https://github.com/google-deepmind/beneath-the-surface" }
+      ],
+      "product_opportunity": "如果 beneath-the-surface 是 evaluation framework，最快的商業化路徑是在 paper 發布後 24 小時內做一個 hosted version——讓 model 開發者不需要自己 deploy 就能跑評估。"
+    }
+  ],
+  "sleeper": {
+    "name": "facebookresearch/fresco",
+    "url": "https://github.com/facebookresearch/fresco",
+    "stars": 2,
+    "age": "49 小時前建立",
+    "why": "RAG re-ranking 的語意漂移問題是業界已知痛點，但幾乎沒有公開的 benchmark 工具。FRESCO 是 Meta Research 針對這個問題出品的第一個結構化 benchmark——測量 re-ranker 在文件版本衝突時的行為。2★ 是因為剛建，不是因為無人問津。",
+    "commercial_path": "FRESCO 的 benchmark 框架可以包成 SaaS：接受用戶的 document store（URL 或 API），定期用 FRESCO 風格的對抗性 query 測試 re-ranker 是否能正確處理版本衝突，輸出 drift score 和 re-embedding 建議。定價可以按 document store 大小，目標客戶是維護大型知識庫的企業 RAG 系統。"
+  },
+  "contrarian": {
+    "claim": "Claude Design 不是 Figma 殺手，也不是下一個 major Anthropic 收入來源",
+    "body": "Claude Design（HN 586分，今日第一）的討論熱度很高，但如果看留言，大部分讚揚都是「wow, the output quality is impressive」而不是「I'm switching from Figma/Framer」。設計工具的護城河不是生成品質，是版本控制（設計師需要和工程師協作）、component library 整合、和 handoff 流程。Claude Design 目前是一個獨立工具，沒有 Figma plugin、沒有 Framer export、沒有 Storybook integration。它的用戶是「想快速出 mock-up 的 non-designer」，不是專業設計師。除非 Anthropic 在 6 個月內發布這些整合，否則 Claude Design 的實際用戶留存率會低於市場預期。",
+    "prediction": "到 2026-10-31，Claude Design 的 GitHub/AppStore/Web 分析（或 Anthropic 官方案例文章）顯示其用戶的 median session duration 低於 Figma Community 的基準，或 Anthropic 主動下線 / 轉向定位這個產品。（以 Anthropic 官方公告或主要科技媒體的分析文章為準。）",
+    "resolution_date": "2026-10-31"
+  },
+  "predictions": [
+    {
+      "id": "pred-berkeley-benchmark-revision",
+      "text": "Berkeley 的 benchmark exploit 論文會在 2026-09-30 前導致 SWE-bench、WebArena、OSWorld 至少一個發布 v2 修訂版。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-mempalace-stars",
+      "text": "MemPalace 在 2026-07-31 前 GitHub stars 超過 80,000（今日：47,507★）。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-calcom-fork",
+      "text": "到 2026-10-31，GitHub 上至少一個以 Cal.com fork 或 Cal.com 開源替代品為明確定位的 repo，GitHub stars 超過 5,000。",
+      "status": "pending",
+      "created": "2026-04-16",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 beneath-the-surface / ddgc / egg 這三個空 repo 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo 的 commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-claude-design-retention",
+      "text": "到 2026-10-31，Anthropic 主動調整 Claude Design 的定位（下線、改名、或官方將目標用戶從「專業設計師」改為「non-designer mock-up 工具」），或有主要科技媒體報導其用戶留存低於競品。",
+      "status": "pending",
+      "created": "2026-04-18",
+      "resolution_date": "2026-10-31"
+    }
+  ]
+}
