@@ -11,28 +11,18 @@
 //   - Import: `import { fetchDevelopers } from './github-developers.js'`
 //   - Standalone: `node src/fetchers/github-developers.js > tmp/github-developers.json`
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { Octokit } from 'octokit';
-import { stripControlChars } from '../lib/text-utils.js';
+import config from '../lib/config.js';
+import { getReadmeExcerpt, makeOctokit } from '../lib/github.js';
 import { runAsStandalone } from './_dispatch.js';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const config = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config.json'), 'utf8'));
-
+const LOG_PREFIX = 'github-developers';
 const DEV_CONFIG = config.sources.github_developers;
 const GLOBAL_LIMIT = DEV_CONFIG.global_limit ?? 100;
 const GLOBAL_MIN_FOLLOWERS = DEV_CONFIG.global_min_followers ?? 1000;
 const NEW_REPO_WINDOW_HOURS = DEV_CONFIG.new_repo_window_hours ?? 48;
 const REGIONS = DEV_CONFIG.regions ?? [];
 
-// Octokit is created lazily inside fetchDevelopers so importing this module
-// does not require GITHUB_TOKEN to be set.
-let octokit;
-let cutoffMs;
-
-async function searchUsers(query, perPage) {
+async function searchUsers(octokit, query, perPage) {
   try {
     const { data } = await octokit.rest.search.users({
       q: query,
@@ -42,12 +32,12 @@ async function searchUsers(query, perPage) {
     });
     return (data.items || []).map((u) => ({ login: u.login }));
   } catch (err) {
-    console.error(`[github-developers] search failed for "${query}": ${err.message}`);
+    console.error(`[${LOG_PREFIX}] search failed for "${query}": ${err.message}`);
     return [];
   }
 }
 
-async function getNewestRepo(login) {
+async function getNewestRepo(octokit, login) {
   try {
     const { data } = await octokit.rest.repos.listForUser({
       username: login,
@@ -57,45 +47,32 @@ async function getNewestRepo(login) {
     });
     return data[0] || null;
   } catch (err) {
-    console.error(`[github-developers] getNewestRepo(${login}) failed: ${err.message}`);
+    console.error(`[${LOG_PREFIX}] getNewestRepo(${login}) failed: ${err.message}`);
     return null;
   }
 }
 
-async function getReadmeExcerpt(owner, repo) {
-  try {
-    const { data } = await octokit.rest.repos.getReadme({
-      owner,
-      repo,
-      mediaType: { format: 'raw' },
-    });
-    return stripControlChars(String(data)).slice(0, 500);
-  } catch (err) {
-    console.error(`[github-developers] getReadmeExcerpt(${owner}/${repo}) failed: ${err.message}`);
-    return '';
-  }
-}
-
-async function getFollowerCount(login) {
+async function getFollowerCount(octokit, login) {
   try {
     const { data } = await octokit.rest.users.getByUsername({ username: login });
     return data.followers || 0;
   } catch (err) {
-    console.error(`[github-developers] getFollowerCount(${login}) failed: ${err.message}`);
+    console.error(`[${LOG_PREFIX}] getFollowerCount(${login}) failed: ${err.message}`);
     return 0;
   }
 }
 
-async function processUser(login, region) {
-  const repo = await getNewestRepo(login);
+async function processUser(octokit, cutoffMs, login, region) {
+  const repo = await getNewestRepo(octokit, login);
   if (!repo?.created_at) return null;
 
   const repoMs = new Date(repo.created_at).getTime();
   if (Number.isNaN(repoMs) || repoMs < cutoffMs) return null;
 
-  const followers = await getFollowerCount(login);
+  const followers = await getFollowerCount(octokit, login);
   const [owner, name] = (repo.full_name || '').split('/');
-  const readmeExcerpt = owner && name ? await getReadmeExcerpt(owner, name) : '';
+  const readmeExcerpt =
+    owner && name ? await getReadmeExcerpt(octokit, owner, name, LOG_PREFIX) : '';
 
   return {
     source: 'github-developers',
@@ -119,21 +96,18 @@ export async function fetchDevelopers() {
     return { ok: true, items: [] };
   }
 
-  if (!process.env.GITHUB_TOKEN) {
-    throw new Error('GITHUB_TOKEN is required for github-developers fetcher');
-  }
-
-  octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN,
-    userAgent: 'ai-daily-report/1.0',
-  });
-  cutoffMs = Date.now() - NEW_REPO_WINDOW_HOURS * 60 * 60 * 1000;
+  const octokit = makeOctokit({ requireAuth: true });
+  const cutoffMs = Date.now() - NEW_REPO_WINDOW_HOURS * 60 * 60 * 1000;
 
   const seen = new Set();
   const queue = []; // { login, region }
 
   // Step 1a: global top developers by followers
-  const globalUsers = await searchUsers(`followers:>${GLOBAL_MIN_FOLLOWERS}`, GLOBAL_LIMIT);
+  const globalUsers = await searchUsers(
+    octokit,
+    `followers:>${GLOBAL_MIN_FOLLOWERS}`,
+    GLOBAL_LIMIT,
+  );
   for (const u of globalUsers) {
     if (seen.has(u.login)) continue;
     seen.add(u.login);
@@ -146,7 +120,11 @@ export async function fetchDevelopers() {
     const limit = region.limit ?? 50;
     for (const location of region.locations || []) {
       if (!location) continue;
-      const users = await searchUsers(`followers:>${minFollowers} location:${location}`, limit);
+      const users = await searchUsers(
+        octokit,
+        `followers:>${minFollowers} location:${location}`,
+        limit,
+      );
       for (const u of users) {
         if (seen.has(u.login)) continue;
         seen.add(u.login);
@@ -162,7 +140,9 @@ export async function fetchDevelopers() {
   const BATCH = 5;
   for (let i = 0; i < queue.length; i += BATCH) {
     const batch = queue.slice(i, i + BATCH);
-    const results = await Promise.all(batch.map((e) => processUser(e.login, e.region)));
+    const results = await Promise.all(
+      batch.map((e) => processUser(octokit, cutoffMs, e.login, e.region)),
+    );
     for (const r of results) if (r) items.push(r);
   }
 

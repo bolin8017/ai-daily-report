@@ -6,14 +6,11 @@
 //   - Import: `import { fetchTrending } from './github-trending.js'`
 //   - Standalone: `node src/fetchers/github-trending.js > tmp/github-trending.json`
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import * as cheerio from 'cheerio';
-import { Octokit } from 'octokit';
+import { getReadmeExcerpt, makeOctokit } from '../lib/github.js';
 import { runAsStandalone } from './_dispatch.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const SCRIPT_NAME = path.basename(__filename);
+const LOG_PREFIX = 'github-trending';
 
 // GitHub's trending page typically shows 25 repos. We scrape all of them and let
 // the agent pick what matters. Not config-driven — if you want fewer, slice later.
@@ -21,10 +18,6 @@ const LIMIT = 25;
 const TIMEOUT = 30_000;
 const USER_AGENT =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
-const octokit = process.env.GITHUB_TOKEN
-  ? new Octokit({ auth: process.env.GITHUB_TOKEN, userAgent: 'ai-daily-report/1.0' })
-  : new Octokit({ userAgent: 'ai-daily-report/1.0' });
 
 async function scrapeTrendingRepos() {
   const res = await fetch('https://github.com/trending', {
@@ -50,21 +43,11 @@ async function scrapeTrendingRepos() {
   return [...new Set(repos)].slice(0, LIMIT);
 }
 
-async function enrichRepo(fullName, rank) {
+async function enrichRepo(octokit, fullName, rank) {
   const [owner, repo] = fullName.split('/');
   try {
     const { data } = await octokit.rest.repos.get({ owner, repo });
-    let readmeExcerpt = '';
-    try {
-      const readmeRes = await octokit.rest.repos.getReadme({
-        owner,
-        repo,
-        mediaType: { format: 'raw' },
-      });
-      readmeExcerpt = String(readmeRes.data).slice(0, 500);
-    } catch (err) {
-      console.error(`[github-trending] README fetch for ${fullName} failed: ${err.message}`);
-    }
+    const readmeExcerpt = await getReadmeExcerpt(octokit, owner, repo, LOG_PREFIX);
 
     return {
       source: 'github-trending',
@@ -81,7 +64,7 @@ async function enrichRepo(fullName, rank) {
       rank,
     };
   } catch (err) {
-    console.error(`[github-trending] enrichRepo(${fullName}) failed: ${err.message}`);
+    console.error(`[${LOG_PREFIX}] enrichRepo(${fullName}) failed: ${err.message}`);
     // Repo lookup failed (deleted, private, rate-limited) — return minimal entry
     return {
       source: 'github-trending',
@@ -99,6 +82,7 @@ async function enrichRepo(fullName, rank) {
 }
 
 export async function fetchTrending() {
+  const octokit = makeOctokit();
   const repos = await scrapeTrendingRepos();
 
   if (repos.length === 0) {
@@ -109,7 +93,9 @@ export async function fetchTrending() {
   const items = [];
   for (let i = 0; i < repos.length; i += 5) {
     const batch = repos.slice(i, i + 5);
-    const enriched = await Promise.all(batch.map((name, j) => enrichRepo(name, i + j + 1)));
+    const enriched = await Promise.all(
+      batch.map((name, j) => enrichRepo(octokit, name, i + j + 1)),
+    );
     items.push(...enriched);
   }
 
@@ -118,7 +104,7 @@ export async function fetchTrending() {
   const ok = failed < items.length * 0.5;
   if (!ok) {
     console.error(
-      `[${SCRIPT_NAME}] ${failed}/${items.length} enrichments failed — likely auth/rate issue`,
+      `[${LOG_PREFIX}] ${failed}/${items.length} enrichments failed — likely auth/rate issue`,
     );
   }
 

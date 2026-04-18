@@ -88,6 +88,9 @@ Two long-lived branches with distinct roles:
 │   │   ├── report.js
 │   │   └── staging.js            # Stage 1 → Stage 2 contract (metadata shape)
 │   └── lib/
+│       ├── config.js             # Validated config singleton (ConfigSchema.parse at import)
+│       ├── github.js             # Shared Octokit factory + getReadmeExcerpt helper
+│       ├── text-utils.js         # stripControlChars — sanitize README excerpts
 │       ├── validate.js           # CLI schema validator
 │       ├── snapshot.js           # Committed feeds-snapshot.json builder (dual-mode)
 │       ├── condense.js           # Per-source ≤8500-token condenser (dual-mode)
