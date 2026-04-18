@@ -21,7 +21,10 @@ fi
 DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%Y-%m-%d)
 MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
 SKIP_PUSH="${SKIP_PUSH:-0}"
-ANALYZE_STARTED_MS=$(date +%s%3N)
+# node -p "Date.now()" is portable across Linux and macOS — BSD date on
+# macOS does not recognize %3N and would emit a literal "%3N" that breaks
+# the subsequent arithmetic.
+ANALYZE_STARTED_MS=$(node -p "Date.now()")
 
 # ── Preflight checks ──────────────────────────────────────────────
 
@@ -78,7 +81,7 @@ if [ "$CLAUDE_EXIT" -ne 0 ]; then
   exit "$CLAUDE_EXIT"
 fi
 
-ANALYZE_FINISHED_MS=$(date +%s%3N)
+ANALYZE_FINISHED_MS=$(node -p "Date.now()")
 ANALYZE_DURATION_MS=$((ANALYZE_FINISHED_MS - ANALYZE_STARTED_MS))
 echo "[analyze] $(date -Iseconds) — claude session complete (${ANALYZE_DURATION_MS}ms)"
 
@@ -107,7 +110,7 @@ node -e '
   const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
   if (!staging.run_id || !staging.pipeline_version) {
     console.error("[analyze] staging lacks run_id/pipeline_version — skipping meta injection");
-    return;
+    process.exit(0);
   }
   report.meta = {
     run_id: staging.run_id,
