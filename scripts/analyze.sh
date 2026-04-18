@@ -21,6 +21,7 @@ fi
 DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%Y-%m-%d)
 MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
 SKIP_PUSH="${SKIP_PUSH:-0}"
+ANALYZE_STARTED_MS=$(date +%s%3N)
 
 # ── Preflight checks ──────────────────────────────────────────────
 
@@ -77,7 +78,9 @@ if [ "$CLAUDE_EXIT" -ne 0 ]; then
   exit "$CLAUDE_EXIT"
 fi
 
-echo "[analyze] $(date -Iseconds) — claude session complete"
+ANALYZE_FINISHED_MS=$(date +%s%3N)
+ANALYZE_DURATION_MS=$((ANALYZE_FINISHED_MS - ANALYZE_STARTED_MS))
+echo "[analyze] $(date -Iseconds) — claude session complete (${ANALYZE_DURATION_MS}ms)"
 
 # ── Validate output ───────────────────────────────────────────────
 
@@ -87,6 +90,37 @@ if [ ! -f "$REPORT_FILE" ]; then
   echo "[analyze] FATAL: ${REPORT_FILE} not created by agent" >&2
   exit 1
 fi
+
+# Inject observability metadata from staging + timing (before validation so
+# the schema check covers the meta block too). Staging metadata carries the
+# run_id and pipeline_version generated at Stage 1 start; analyze.sh adds
+# model + timings. Skips injection silently if the staging data predates the
+# observability upgrade (no run_id present) — meta is optional in the schema.
+echo "[analyze] injecting meta block..."
+ANALYZE_DURATION_MS="$ANALYZE_DURATION_MS" \
+MODEL="$MODEL" \
+REPORT_FILE="$REPORT_FILE" \
+node -e '
+  const fs = require("node:fs");
+  const staging = JSON.parse(fs.readFileSync("data/staging/metadata.json", "utf8"));
+  const reportPath = process.env.REPORT_FILE;
+  const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  if (!staging.run_id || !staging.pipeline_version) {
+    console.error("[analyze] staging lacks run_id/pipeline_version — skipping meta injection");
+    return;
+  }
+  report.meta = {
+    run_id: staging.run_id,
+    pipeline_version: staging.pipeline_version,
+    model: process.env.MODEL,
+    generated_at: new Date().toISOString(),
+    analyze_duration_ms: Number(process.env.ANALYZE_DURATION_MS),
+    source_health: staging.sources,
+    degraded_sources: staging.degraded || [],
+  };
+  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
+  console.error(`[analyze] meta injected: run_id=${report.meta.run_id.slice(0,8)} version=${report.meta.pipeline_version}`);
+'
 
 echo "[analyze] validating report..."
 node src/lib/validate.js report "$REPORT_FILE"
