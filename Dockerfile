@@ -4,7 +4,9 @@
 # code is baked in — the pipeline clones the repo into a persistent /workspace
 # volume at runtime so `git pull` updates flow without rebuilding the image.
 #
-# Claude Code auth state (~/.claude) is expected as a read-only bind-mount.
+# Claude Code auth state (~/.claude) is expected as a read-write bind-mount
+# so the CLI can refresh its OAuth token before expiry. A read-only mount
+# deadlocks the pipeline — see commit faea48e for the failure mode.
 
 # Pinned to digest for supply-chain immutability. Dependabot (see
 # .github/dependabot.yml) opens PRs to refresh the digest weekly.

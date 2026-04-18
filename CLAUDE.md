@@ -15,7 +15,7 @@ For the public-facing overview and quick start, see [README.md](./README.md). Fo
 The pipeline is split into **two independent stages**, both running inside a Docker container on the VM:
 
 - **Stage 1** (`src/collect.js`): pure Node.js — fetches 4 sources in parallel, condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`, then commits it to the `data` branch via plumbing in `src/lib/commit.js`.
-- **Stage 2** (`scripts/analyze.sh`): invokes `claude -p --allowedTools Read Write Bash Grep Glob` — the agent reads staged data via Read tool, analyzes per `.claude/agents/daily-report.md`, writes report + memory via Write tool. The script then validates against Zod schemas and commits to the `data` branch (again via `src/lib/commit.js`).
+- **Stage 2** (`scripts/analyze.sh`): invokes `claude -p --allowedTools Read Write Grep Glob` — the agent reads staged data via Read tool, analyzes per `.claude/agents/daily-report.md`, writes report + memory via Write tool. The script then validates against Zod schemas and commits to the `data` branch (again via `src/lib/commit.js`). Bash is intentionally excluded from the allowlist to shrink the blast radius of any prompt-injection in fetched content.
 
 GitHub Actions picks up either push (main for code, data for daily artifacts) and deploys the 11ty site to Pages.
 
