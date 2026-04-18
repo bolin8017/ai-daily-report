@@ -18,8 +18,67 @@ VOLUME="ai-daily-report-workspace"
 CLAUDE_HOST_DIR="${HOME}/.claude"
 MEMORY_LIMIT="${PIPELINE_MEMORY_LIMIT:-600m}"
 MEMORY_SWAP="${PIPELINE_MEMORY_SWAP:-1g}"
+REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 ts() { date -Iseconds; }
+
+# Keep the host clone current so Dependabot-merged changes to Dockerfile /
+# package-lock.json propagate into the image-rebuild check below. Without
+# this, image_needs_rebuild() would compare the image against a stale host
+# clone (the Docker volume's separate clone does pull, but that's too late —
+# the image is built from the host clone in this script).
+# --ff-only fails loudly if the operator has uncommitted work on main, so we
+# never silently discard local changes.
+sync_host_clone() {
+  if ! git -C "$REPO_DIR" fetch origin main --quiet 2>&1; then
+    echo "[cron-run] $(ts) WARN: git fetch failed — continuing with cached clone" >&2
+    return 0
+  fi
+  local local_sha remote_sha
+  local_sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || echo "")
+  remote_sha=$(git -C "$REPO_DIR" rev-parse origin/main 2>/dev/null || echo "")
+  if [ -n "$local_sha" ] && [ -n "$remote_sha" ] && [ "$local_sha" != "$remote_sha" ]; then
+    echo "[cron-run] $(ts) host clone ${local_sha:0:7} differs from origin/main ${remote_sha:0:7} — fast-forwarding"
+    if ! git -C "$REPO_DIR" merge --ff-only origin/main 2>&1; then
+      echo "[cron-run] $(ts) WARN: --ff-only failed (local divergence?) — continuing with current HEAD" >&2
+    fi
+  fi
+}
+
+# Rebuild the image if Dockerfile / package.json / package-lock.json have
+# changed since the image was last built. Avoids the "forgot to rebuild
+# after Dockerfile update" footgun now that Dependabot can land base-image
+# digest bumps automatically. Falls back to the existing image if build
+# fails — we'd rather run a stale image than skip the daily report.
+image_needs_rebuild() {
+  docker image inspect "$IMAGE" >/dev/null 2>&1 || return 0
+  local img_created_epoch
+  img_created_epoch=$(date -d "$(docker image inspect --format='{{.Created}}' "$IMAGE")" +%s 2>/dev/null || echo 0)
+  local f mtime
+  for f in Dockerfile package.json package-lock.json; do
+    [ -f "$REPO_DIR/$f" ] || continue
+    mtime=$(stat -c %Y "$REPO_DIR/$f")
+    if [ "$mtime" -gt "$img_created_epoch" ]; then
+      echo "[cron-run] $(ts) $f mtime newer than image — rebuild required"
+      return 0
+    fi
+  done
+  return 1
+}
+
+maybe_rebuild_image() {
+  if image_needs_rebuild; then
+    echo "[cron-run] $(ts) rebuilding $IMAGE from $REPO_DIR..."
+    if docker build -t "$IMAGE" "$REPO_DIR"; then
+      echo "[cron-run] $(ts) rebuild successful"
+    elif docker image inspect "$IMAGE" >/dev/null 2>&1; then
+      echo "[cron-run] $(ts) WARN: rebuild failed — falling back to existing image" >&2
+    else
+      echo "[cron-run] $(ts) FATAL: image build failed and no fallback available" >&2
+      exit 1
+    fi
+  fi
+}
 
 echo
 echo "[cron-run] $(ts) === starting run ==="
@@ -43,6 +102,11 @@ fi
 
 # Create the workspace volume if it doesn't exist (idempotent)
 docker volume inspect "$VOLUME" >/dev/null 2>&1 || docker volume create "$VOLUME" >/dev/null
+
+# Pull latest main into the host clone, then rebuild image if
+# Dockerfile/package-lock changed since last build
+sync_host_clone
+maybe_rebuild_image
 
 docker run --rm \
   --name ai-daily-report \

@@ -57,7 +57,8 @@ echo "[analyze] $(date -Iseconds) — starting analysis for ${DATE} (model: ${MO
 # Read tool, analyzes per Steps 2-7, and writes output via Write.
 
 PROMPT_FILE=$(mktemp /tmp/analyze-prompt-XXXXXX.txt)
-trap 'rm -f "$PROMPT_FILE"' EXIT
+CLAUDE_STDERR=$(mktemp /tmp/analyze-claude-stderr-XXXXXX.log)
+trap 'rm -f "$PROMPT_FILE" "$CLAUDE_STDERR"' EXIT
 
 {
   cat .claude/agents/daily-report.md
@@ -68,16 +69,53 @@ trap 'rm -f "$PROMPT_FILE"' EXIT
 } > "$PROMPT_FILE"
 
 # ── Invoke Claude ─────────────────────────────────────────────────
+# Claude runs in the background so we can attach a liveness watchdog
+# (scripts/watchdog.sh) that tracks /proc/$PID/io + CPU instead of using
+# a wall-clock timeout — LLM pipeline runtime varies too much for a
+# fixed cap to be safe. stderr is streamed live AND captured to a file
+# so the failure path can show a tail without forcing operators to open
+# journalctl.
 
-CLAUDE_EXIT=0
+# Run claude with stderr redirected to the capture file (stderr starts
+# empty to avoid tail racing with claude's first write).
+: > "$CLAUDE_STDERR"
 claude -p \
   --output-format text \
   --model "$MODEL" \
   --allowedTools Read Write Grep Glob \
-  < "$PROMPT_FILE" || CLAUDE_EXIT=$?
+  < "$PROMPT_FILE" 2> "$CLAUDE_STDERR" &
+CLAUDE_PID=$!
+
+# Stream stderr to our own stderr as it lands, so journalctl still sees
+# live progress. tail --pid=PID auto-exits when CLAUDE_PID dies.
+tail -F --pid="$CLAUDE_PID" -n +1 "$CLAUDE_STDERR" >&2 &
+TAIL_PID=$!
+
+# Watchdog: monitor claude's /proc/$PID/io + CPU ticks; kill claude with
+# SIGTERM if both stagnate for 15 minutes (configurable via env).
+bash "$(dirname "$0")/watchdog.sh" "$CLAUDE_PID" &
+WATCHDOG_PID=$!
+
+CLAUDE_EXIT=0
+wait "$CLAUDE_PID" || CLAUDE_EXIT=$?
+
+# Reap the helpers (tail should already be gone via --pid; defensive kill
+# is harmless if already exited).
+kill "$WATCHDOG_PID" 2>/dev/null || true
+wait "$WATCHDOG_PID" 2>/dev/null || true
+wait "$TAIL_PID" 2>/dev/null || true
 
 if [ "$CLAUDE_EXIT" -ne 0 ]; then
-  echo "[analyze] FATAL: claude -p exited with code ${CLAUDE_EXIT}" >&2
+  echo "═══════════════════════════════════════════════════════════════" >&2
+  case "$CLAUDE_EXIT" in
+    143) echo "[analyze] FATAL: claude -p killed by SIGTERM (exit 143) — likely watchdog liveness failure" >&2 ;;
+    137) echo "[analyze] FATAL: claude -p killed by SIGKILL (exit 137) — OOM or watchdog escalation" >&2 ;;
+    *)   echo "[analyze] FATAL: claude -p exited with code ${CLAUDE_EXIT}" >&2 ;;
+  esac
+  echo "[analyze] stderr tail (last 50 lines):" >&2
+  echo "───────────────────────────────────────────────────────────────" >&2
+  tail -n 50 "$CLAUDE_STDERR" >&2 || true
+  echo "═══════════════════════════════════════════════════════════════" >&2
   exit "$CLAUDE_EXIT"
 fi
 
