@@ -102,9 +102,27 @@ const DevWatchEntrySchema = z
   })
   .passthrough();
 
+// Observability block injected by scripts/analyze.sh after the agent finishes
+// writing. Not agent-authored — so these fields can be tightly validated
+// without risking the "LLM output drift" problem that forces .passthrough()
+// on sibling sections.
+const ReportMetaSchema = z.object({
+  run_id: z.string().uuid(),
+  pipeline_version: z.string(),
+  model: z.string(),
+  generated_at: z.string(),
+  analyze_duration_ms: z.number().int().nonnegative(),
+  source_health: z.record(
+    z.string(),
+    z.object({ ok: z.boolean(), count: z.number().int().nonnegative() }),
+  ),
+  degraded_sources: z.array(z.string()),
+});
+
 export const ReportSchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    meta: ReportMetaSchema.optional(),
     dashboard: z.object({}).passthrough().optional(),
     lead: z.object({
       html: z.string(),

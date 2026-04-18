@@ -7,6 +7,8 @@
 //
 // Pure Node.js — no LLM dependency.
 
+import { execFileSync } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { runFetchers } from './fetchers/all.js';
 import { commitAndPush } from './lib/commit.js';
@@ -17,17 +19,33 @@ import { StagingMetadataSchema } from './schemas/staging.js';
 const TZ = process.env.REPORT_TIMEZONE ?? 'Asia/Taipei';
 const SKIP_PUSH = process.env.SKIP_PUSH === '1' || process.argv.includes('--skip-push');
 
+const RUN_ID = randomUUID();
+const PIPELINE_VERSION = pipelineVersion();
+
 function todayIn(tz) {
   return new Date().toLocaleDateString('sv-SE', { timeZone: tz });
 }
 
+// execFileSync (args array, no shell) instead of execSync (shell string).
+// No user input flows here, but defense-in-depth is cheap.
+function pipelineVersion() {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
 function banner(msg) {
-  console.error(`\n[collect] ${new Date().toISOString()} — ${msg}`);
+  console.error(`\n[collect ${RUN_ID.slice(0, 8)}] ${new Date().toISOString()} — ${msg}`);
 }
 
 async function main() {
   const date = todayIn(TZ);
-  banner(`start ${date} (${TZ})`);
+  banner(`start ${date} (${TZ}) run_id=${RUN_ID} version=${PIPELINE_VERSION}`);
 
   // Phase 1 — fetch all 4 sources in parallel
   banner('fetching sources');
@@ -52,6 +70,8 @@ async function main() {
     'data/staging/developers.json': condensed.developers,
     'data/staging/metadata.json': {
       date,
+      run_id: RUN_ID,
+      pipeline_version: PIPELINE_VERSION,
       collected_at: new Date().toISOString(),
       timezone: TZ,
       sources: {
