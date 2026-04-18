@@ -49,6 +49,7 @@ docker run --rm \
   --memory="$MEMORY_LIMIT" \
   --memory-swap="$MEMORY_SWAP" \
   --cpus=2 \
+  --security-opt=no-new-privileges \
   --add-host metadata.google.internal:127.0.0.1 \
   --add-host metadata:127.0.0.1 \
   -e GITHUB_TOKEN \
