@@ -6,14 +6,9 @@
 //   - Import: `import { fetchFeeds } from './feeds.js'` → returns result object
 //   - Standalone: `node src/fetchers/feeds.js > tmp/unified-feeds.json`
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import RSSParser from 'rss-parser';
+import config from '../lib/config.js';
 import { runAsStandalone } from './_dispatch.js';
-
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const config = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config.json'), 'utf8'));
 
 // RSSHub has no single canonical public instance, so we keep an ordered
 // list and fall through on per-request failure (timeout, 5xx, network).

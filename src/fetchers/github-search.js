@@ -16,16 +16,11 @@
 //   - Import: `import { fetchSearch } from './github-search.js'`
 //   - Standalone: `node src/fetchers/github-search.js > tmp/github-search.json`
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { Octokit } from 'octokit';
-import { stripControlChars } from '../lib/text-utils.js';
+import config from '../lib/config.js';
+import { getReadmeExcerpt, makeOctokit } from '../lib/github.js';
 import { runAsStandalone } from './_dispatch.js';
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const config = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'config.json'), 'utf8'));
-
+const LOG_PREFIX = 'github-search';
 const TOPICS_CONFIG = config.sources.github_topics;
 const LIMIT = TOPICS_CONFIG.limit_per_topic ?? 10;
 const TOPICS = TOPICS_CONFIG.topics ?? [];
@@ -33,35 +28,16 @@ const MIN_STARS = 100;
 const CREATED_WINDOW_DAYS = 30;
 const README_BATCH_SIZE = 5;
 
-const octokit = new Octokit({
-  auth: process.env.GITHUB_TOKEN || undefined,
-  userAgent: 'ai-daily-report/1.0',
-});
-
 function createdSinceISO() {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() - CREATED_WINDOW_DAYS);
   return d.toISOString().slice(0, 10);
 }
 
-async function getReadmeExcerpt(owner, repo) {
-  try {
-    const { data } = await octokit.rest.repos.getReadme({
-      owner,
-      repo,
-      mediaType: { format: 'raw' },
-    });
-    return stripControlChars(String(data)).slice(0, 500);
-  } catch (err) {
-    console.error(`[github-search] getReadmeExcerpt(${owner}/${repo}) failed: ${err.message}`);
-    return '';
-  }
-}
-
 // Returns null on failure so main() can distinguish "topic had zero results"
 // from "topic errored out". This lets the ok field reflect real success rate
 // instead of always being true.
-async function searchTopic(topic, since) {
+async function searchTopic(octokit, topic, since) {
   const q = `topic:${topic} stars:>${MIN_STARS} created:>${since}`;
   try {
     const { data } = await octokit.rest.search.repos({
@@ -82,7 +58,8 @@ async function searchTopic(topic, since) {
       const enriched = await Promise.all(
         batch.map(async (r) => {
           const [owner, name] = (r.full_name || '').split('/');
-          const readmeExcerpt = owner && name ? await getReadmeExcerpt(owner, name) : '';
+          const readmeExcerpt =
+            owner && name ? await getReadmeExcerpt(octokit, owner, name, LOG_PREFIX) : '';
           return {
             source: 'github-search',
             topic,
@@ -104,7 +81,7 @@ async function searchTopic(topic, since) {
 
     return items;
   } catch (err) {
-    console.error(`[github-search] topic="${topic}" failed: ${err.message}`);
+    console.error(`[${LOG_PREFIX}] topic="${topic}" failed: ${err.message}`);
     return null;
   }
 }
@@ -114,6 +91,7 @@ export async function fetchSearch() {
     return { ok: true, items: [] };
   }
 
+  const octokit = makeOctokit();
   const since = createdSinceISO();
   const allItems = [];
   let topicsOk = 0;
@@ -124,7 +102,7 @@ export async function fetchSearch() {
   for (const topic of TOPICS) {
     if (!topic) continue;
     topicsTotal++;
-    const items = await searchTopic(topic, since);
+    const items = await searchTopic(octokit, topic, since);
     if (items !== null) {
       topicsOk++;
       allItems.push(...items);
