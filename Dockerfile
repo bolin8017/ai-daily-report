@@ -6,7 +6,9 @@
 #
 # Claude Code auth state (~/.claude) is expected as a read-only bind-mount.
 
-FROM node:22-slim
+# Pinned to digest for supply-chain immutability. Dependabot (see
+# .github/dependabot.yml) opens PRs to refresh the digest weekly.
+FROM node:22-slim@sha256:4f77a690f2f8946ab16fe1e791a3ac0667ae1c3575c3e4d0d4589e9ed5bfaf3d
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
