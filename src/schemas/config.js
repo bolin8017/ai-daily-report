@@ -1,6 +1,7 @@
-// Schema for config.json — validated by scripts/run.sh (Phase 1) and
-// `npm run validate:config`. Note: individual fetchers read config without
-// re-validating — the pipeline entry point is the single validation gate.
+// Schema for config.json. Validated once at import time by src/lib/config.js
+// (ConfigSchema.parse) — fetchers import that singleton and receive an
+// already-validated, frozen object, so no fetcher re-parses or re-validates.
+// Also available standalone via `npm run validate:config`.
 
 import { z } from 'zod';
 
