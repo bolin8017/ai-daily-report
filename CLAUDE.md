@@ -96,13 +96,14 @@ Two long-lived branches with distinct roles:
 │       ├── condense.js           # Per-source ≤8500-token condenser (dual-mode)
 │       └── commit.js             # git add/commit/push with GITHUB_TOKEN-based push auth
 ├── scripts/
-│   ├── analyze.sh                # Stage 2 — assemble prompt → claude -p → validate → commit
+│   ├── analyze.sh                # Stage 2 — claude -p (bg) + watchdog + stderr capture → validate → commit
 │   ├── run.sh                    # Local dev wrapper (default: Stage 1 only, --full for both)
-│   ├── cron-run.sh               # Docker invocation — used by systemd service
+│   ├── cron-run.sh               # Docker invocation — host git pull + image rebuild + docker run
 │   ├── docker-entrypoint.sh      # Inside-container entry: git pull + npm ci + collect/analyze/both
+│   ├── watchdog.sh               # /proc/$PID/io + CPU liveness monitor for claude -p
 │   └── setup-vm.sh               # One-time VM setup: swap + Docker + systemd timer + OAuth
 ├── systemd/                      # systemd units (installed by setup-vm.sh)
-│   ├── ai-daily-report.service   # Service: runs cron-run.sh with timeout + OnFailure
+│   ├── ai-daily-report.service   # Service: runs cron-run.sh (no wall-clock timeout; watchdog-based liveness)
 │   ├── ai-daily-report.timer     # Timer: daily 04:00 Asia/Taipei, Persistent=true
 │   └── ai-daily-report-notify@.service  # Failure alert (optional webhook)
 ├── Dockerfile                    # node:22-slim + git + tini + @anthropic-ai/claude-code (no project code)

@@ -22,6 +22,29 @@ REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 ts() { date -Iseconds; }
 
+# Keep the host clone current so Dependabot-merged changes to Dockerfile /
+# package-lock.json propagate into the image-rebuild check below. Without
+# this, image_needs_rebuild() would compare the image against a stale host
+# clone (the Docker volume's separate clone does pull, but that's too late —
+# the image is built from the host clone in this script).
+# --ff-only fails loudly if the operator has uncommitted work on main, so we
+# never silently discard local changes.
+sync_host_clone() {
+  if ! git -C "$REPO_DIR" fetch origin main --quiet 2>&1; then
+    echo "[cron-run] $(ts) WARN: git fetch failed — continuing with cached clone" >&2
+    return 0
+  fi
+  local local_sha remote_sha
+  local_sha=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || echo "")
+  remote_sha=$(git -C "$REPO_DIR" rev-parse origin/main 2>/dev/null || echo "")
+  if [ -n "$local_sha" ] && [ -n "$remote_sha" ] && [ "$local_sha" != "$remote_sha" ]; then
+    echo "[cron-run] $(ts) host clone ${local_sha:0:7} differs from origin/main ${remote_sha:0:7} — fast-forwarding"
+    if ! git -C "$REPO_DIR" merge --ff-only origin/main 2>&1; then
+      echo "[cron-run] $(ts) WARN: --ff-only failed (local divergence?) — continuing with current HEAD" >&2
+    fi
+  fi
+}
+
 # Rebuild the image if Dockerfile / package.json / package-lock.json have
 # changed since the image was last built. Avoids the "forgot to rebuild
 # after Dockerfile update" footgun now that Dependabot can land base-image
@@ -80,7 +103,9 @@ fi
 # Create the workspace volume if it doesn't exist (idempotent)
 docker volume inspect "$VOLUME" >/dev/null 2>&1 || docker volume create "$VOLUME" >/dev/null
 
-# Rebuild image if Dockerfile or npm deps have changed since last build
+# Pull latest main into the host clone, then rebuild image if
+# Dockerfile/package-lock changed since last build
+sync_host_clone
 maybe_rebuild_image
 
 docker run --rm \
