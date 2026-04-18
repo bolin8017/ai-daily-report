@@ -1,0 +1,571 @@
+{
+  "date": "2026-04-19",
+  "lead": {
+    "html": "<h3>每行代碼，貴了 45%：Claude Opus 4.7 的隱藏帳單</h3>\n\n<h4>發生了什麼</h4>\n<p>billchambers.me 的 tokenizer leaderboard 今天 HN 拿下 299 分；claudecodecamp.com 的詳細分析拿下 678 分。兩篇文章的作者互不相識，用不同方法、不同 prompt 集，量出同一個數字：把相同 prompt 從 Claude Opus 4.6 送進 Opus 4.7，token 數平均增加約 45%。Anthropic 沒有在 Opus 4.7 的技術公告裡明確說明 tokenizer 換代——這個數字是社群自己量出來的，不是從定價頁面讀來的。</p>\n\n<p>昨天（2026-04-18）已有一篇 HN 367 分的文章估算到 20–30% 的漲幅，那時候還是單一作者的經驗分享。今天兩位獨立作者交叉驗證出 45%，性質不同：這是量測事實，不是抱怨文。</p>\n\n<h4>為什麼重要</h4>\n<p>如果你的 RAG pipeline 在 Opus 4.6 上做過 cost-per-query 校準，升到 Opus 4.7 之後，在任何新功能帶給你收益之前，你的 token 成本就先漲了 45%。對在 Claude API 上建 SaaS 的人，這是毛利在一個 GA 公告內的瞬間壓縮。</p>\n\n<p>更根本的問題是透明度結構：Anthropic 的 tokenizer 更新沒有對應的 migration note，也沒有版本標記的 tokenizer 文件。OpenAI 在重大模型換代時通常有對應的 tokenizer 文件更新；Google Gemini Flex/Priority 定價分級用 blog post 公開。這次，知情路徑是「帳單倒推」。一次可以是例外，連續兩天（昨日 HN 367 分、今日兩篇獨立測量合計 977 分）就是資訊不對稱的系統性問題。</p>\n\n<h4>社群怎麼看</h4>\n<p>678 分文章的 83 則留言幾乎全是工程師在確認自己的 cost estimator 是否需要重建。55 則留言的 299 分文章裡，有人說他的 Opus 4.7 帳單是 4.6 的 1.6 倍：tokenizer inflation 乘上模型本身的定價差，雙重疊加。留言區有人提議建一個開源的「tokenizer drift leaderboard」，即時追蹤各家 LLM 供應商的分詞效率版本，讓 builder 在換模型前就能估算真實 cost impact。Lobsters 今天對這個話題沒有對應的討論，說明這是 Claude API 用戶的特定痛點，不是系統圈的普遍關切。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 pipeline 有 cost-per-query 估算（不論是自製 counter、LangSmith cost tracking、還是 Helicone），這週先做一件事：用 Anthropic 的 <code>count_tokens</code> API 重新測量你的 system prompt 加上最常用的兩個 retrieval template，把 token 數結果 commit 進 git。這個基準數字是你在下次 tokenizer 換代時唯一能比較的錨點。具體呼叫：<code>python -c \"import anthropic; c=anthropic.Anthropic(); r=c.messages.count_tokens(model='claude-opus-4-7', messages=[{'role':'user','content':'YOUR_SYSTEM_PROMPT'}]); print(r.input_tokens)\"</code>。如果你的 system prompt 在新 tokenizer 下超過 2,000 tokens，今天的 ideas 有一個 50 行 canary 方案，可以把這個檢查接進 CI。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "smolvm × 可拋棄 Agent 沙箱：每個 tool call 一個新 VM",
+      "projects": [
+        {
+          "name": "smol-machines/smolvm",
+          "url": "https://github.com/smol-machines/smolvm",
+          "note": "HN Show HN 429 分，號稱 <1 秒冷啟動可攜 VM"
+        }
+      ],
+      "description": "smolvm 宣稱可在 1 秒內冷啟動一個可移植虛擬機，任務完成後完全銷毀。把這個能力組進 agent 的 tool 執行層：每次 tool call 在全新 VM 裡跑，只把 stdout 和指定路徑的 files 回傳給 orchestrator，VM 即時銷毀。這消滅了整個「agent 執行了 rm -rf /」的風險類別，也讓每個 tool call 的執行環境完全確定——可 replay、可 audit。目前的替代方案是 Docker（冷啟動 2–5 秒，配置複雜）或沒有隔離（有副作用外洩的風險）。",
+      "use_case": "你在建一個讓使用者提交 Python 數據分析腳本的 agent（例如量化策略回測或自動化財報解析），需要跑不受信任的 user code，又不能讓每個請求多等 5 秒 Docker 啟動。smolvm 的 <1 秒冷啟動讓你在 agent 的每個 tool call 上都加 OS 層隔離，而不只是 Python subprocess 沙箱。",
+      "hardware": "需要支援 KVM 的 Linux host（x86 或 ARM，視 smolvm 平台支援而定——ARM 支援尚待社群驗證）",
+      "skill_level": "需熟悉 Rust 或 Go 基礎，加上 agent orchestration 的基本概念",
+      "dependencies": "smolvm（MIT，Rust）；任何 OpenAI-compatible LLM endpoint；注意 ARM 支援尚未在社群 benchmark 中確認",
+      "difficulty": 3,
+      "dev_time": "1–2 週 MVP",
+      "first_step": "gh repo clone smol-machines/smolvm && cargo build --release && ./target/release/smolvm --help",
+      "market_evidence": "E2B（沙箱 code 執行 SaaS）、Modal（serverless GPU/CPU）、Fly.io（快速 VM 平台）各自建成公司，說明隔離 code 執行有真實的付費需求。Anthropic 的 artifacts sandbox 也是同一問題的封閉式解法。"
+    },
+    {
+      "format": "solo",
+      "title": "把 tokenizer drift 接進 CI：50 行 Python 保護你的帳單",
+      "projects": [],
+      "description": "每次 Anthropic 改 tokenizer（或你升級模型），你的成本估算器就在無聲中失效。這個工具在 CI pipeline 加一個金絲雀步驟：固定一組「known expensive」prompt（system prompt + 兩個 retrieval template + 一個 few-shot example），每次 deploy 前用 Anthropic tokenizer API 測量 token 數，和 git commit 裡的基準值比較；超過 5% 就中斷 pipeline，輸出 diff 和受影響的 prompt 段落。邏輯約 50 行 Python。",
+      "use_case": "你是法律科技 startup 的工程師，用 Claude 做合約條款風險標註，每份合約定價 $0.05。這個數字在 Opus 4.6 上校準過。Opus 4.7 GA 之後，同樣 prompt 多了 45% tokens，毛利從 72% 縮到 59%，下月收到帳單才發現。這個 canary 會在下個 deploy 前 30 秒就攔截這個差距。",
+      "hardware": "純 CPU；一個 Anthropic API key 即可呼叫 count_tokens（不扣 token 配額）",
+      "skill_level": "Python 入門即可；50 行代碼，無需框架",
+      "dependencies": "anthropic>=0.30（count_tokens API）；pytest 或任何 CI runner",
+      "difficulty": 1,
+      "dev_time": "週末 POC",
+      "first_step": "pip install anthropic && python -c \"import anthropic; c=anthropic.Anthropic(); r=c.messages.count_tokens(model='claude-opus-4-7', messages=[{'role':'user','content':'test'}]); print(r.input_tokens)\"",
+      "market_evidence": "HN 678 分 + 299 分兩篇獨立測量，55 則留言中有多位 builder 說自己的 budget 壞掉了。LangSmith 和 Helicone 有 token tracking 但沒有跨版本 drift alert 功能，這是明確的 tooling gap。"
+    },
+    {
+      "format": "solo",
+      "title": "mcp-tw：台灣政府開放資料的 MCP 入口（公民科技）",
+      "projects": [
+        {
+          "name": "jxnxts/mcp-brasil",
+          "url": "https://github.com/jxnxts/mcp-brasil",
+          "note": "topic:mcp · 1,394★ · ≤30d，41 個巴西政府 API 的 MCP server，可作為 template"
+        }
+      ],
+      "description": "jxnxts/mcp-brasil 把 41 個巴西政府公開 API 包進一個 MCP server，讓 Claude Code 直接查詢巴西公司資料、法規、地理資料。台灣政府開放資料平台（data.gov.tw）有超過 40,000 個資料集，但沒有統一的 MCP 入口。把最常用的 20 個 API（公司登記查詢、環境監測、交通資訊、地震速報、裁判書查詢）包成 mcp-tw，讓任何 Claude Code 使用者能直接問「查台灣公司 ○○○ 的最新登記狀態」或「台北今天 PM2.5 超標幾個測站」。",
+      "use_case": "你是台灣金融科技 startup 的合規工程師，要自動化生成對應越南和泰國市場的盡職調查報告，需要串接台灣公司登記、財政部申報、和境外子公司的對應 API。目前你為每個 API 手動寫 auth 和格式轉換；mcp-tw 讓你的 agent 直接呼叫 company_query(id='12345678')，拿到標準化的 JSON 資料。",
+      "hardware": "純 CPU；台灣政府 API 大多不需要 API key",
+      "skill_level": "Python MCP SDK 基礎；HTTP client 和 JSON 解析；建議先看 mcp-brasil 的 server 結構",
+      "dependencies": "mcp-brasil（MIT）作為 template；MCP Python SDK；Python 3.10+",
+      "difficulty": 2,
+      "dev_time": "1 個月 MVP（從 5 個最常用 API 開始）",
+      "first_step": "git clone https://github.com/jxnxts/mcp-brasil && pip install mcp && cat server.py（把第一個 endpoint 換成 https://data.gcis.nat.gov.tw/od/data/api/）",
+      "market_evidence": "g0v 社群每年定期有跨政府 API 整合的 hackathon 專案，但全是一次性的非標準化 wrapper。MCP 標準讓這類工作可重用，且 mcp-brasil 已在巴西生態驗證這個方法可行。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "smol-machines/smolvm",
+      "url": "https://github.com/smol-machines/smolvm",
+      "desc": "subsecond coldstart 可攜 VM。Show HN 後 37 則留言，社群在要求 ARM benchmark 和 coldstart 重現步驟。agent 沙箱執行的技術路線候選。",
+      "source": "HN Show HN 429分",
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "WireGuard for Windows v1.0",
+      "url": "https://www.phoronix.com/news/WireGuard-For-Windows-1.0",
+      "desc": "開源 VPN 協議的 Windows stable 實作終於到 v1.0。任何 self-hosted agent infra 在 Windows 環境的網路層有了 open-source baseline，不再需要依賴商業 VPN 軟體。",
+      "source": "Phoronix",
+      "repo_age": "v1.0 本週首發"
+    },
+    {
+      "name": "thunderbird/thunderbolt",
+      "url": "https://github.com/thunderbird/thunderbolt",
+      "desc": "Thunderbird 的 model-agnostic AI assistant：可選模型、自主資料、無廠商鎖定。TypeScript。今日 Trending #1。",
+      "source": "GitHub Trending #1",
+      "stars": 1455,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "openai/openai-agents-python",
+      "url": "https://github.com/openai/openai-agents-python",
+      "desc": "OpenAI 官方輕量多 agent 工作流框架。22,235★，持續穩定成長。",
+      "source": "GitHub Trending #3",
+      "stars": 22235,
+      "repo_age": "2025 年建立"
+    },
+    {
+      "name": "deepseek-ai/DeepGEMM",
+      "url": "https://github.com/deepseek-ai/DeepGEMM",
+      "desc": "FP8 GEMM kernels with fine-grained scaling，clean CUDA implementation，針對 H100 推理效能優化。fine-tuning 和 inference 加速的底層候選。",
+      "source": "GitHub Trending #5",
+      "stars": 6493,
+      "repo_age": "2025 年建立"
+    },
+    {
+      "name": "EvoMap/evolver",
+      "url": "https://github.com/EvoMap/evolver",
+      "desc": "Genome Evolution Protocol 驅動的自演化 AI agent 引擎。用 GEP（Gene Expression Programming）做 agent code 自我修改。JavaScript。4,926★。",
+      "source": "GitHub Trending #4",
+      "stars": 4926,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "SimoneAvogadro/android-reverse-engineering-skill",
+      "url": "https://github.com/SimoneAvogadro/android-reverse-engineering-skill",
+      "desc": "Claude Code skill for Android APK 逆向工程。Shell。Claude Code skills 首次明確進入 security-adjacent 領域，進 Trending #9。",
+      "source": "GitHub Trending #9",
+      "stars": 3063,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "aaddrick/claude-desktop-debian",
+      "url": "https://github.com/aaddrick/claude-desktop-debian",
+      "desc": "Claude Desktop 的 Debian/Ubuntu 打包。Shell。讓 Linux builder 跳過手動解壓 Electron 的流程。3,437★。",
+      "source": "GitHub Trending #7",
+      "stars": 3437,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "datasette 1.0a28",
+      "url": "https://simonwillison.net/2026/Apr/17/datasette/#atom-everything",
+      "desc": "Simon Willison 的資料集探索和發布工具，alpha 28。每個 alpha 是 1.0 的里程碑，適合 RAG pipeline 的資料探索和發布階段。",
+      "source": "Simon Willison blog",
+      "repo_age": "2017 年建立，持續更新"
+    },
+    {
+      "name": "DR³-Eval",
+      "url": "https://arxiv.org/abs/2604.14683",
+      "desc": "深度研究 Agent 評估框架，針對長記憶力、多跳推理、和真實可重現的評測場景。如果你在建 deep research agent，這是目前最接近「真實可重現」的評估方法。",
+      "source": "HuggingFace Daily Papers",
+      "repo_age": "2026-04 preprint"
+    },
+    {
+      "name": "Windy3f3f3f3f/how-claude-code-works",
+      "url": "https://github.com/Windy3f3f3f3f/how-claude-code-works",
+      "desc": "Claude Code 架構逆向深度分析：agent loop、context engineering、tool dispatch。英/中雙語。不在 HN 或 Trending，只在 topic:llm 搜尋裡浮出來。",
+      "source": "topic:llm · 1920★ · ≤30d",
+      "stars": 1920,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "jxnxts/mcp-brasil",
+      "url": "https://github.com/jxnxts/mcp-brasil",
+      "desc": "MCP server 包裝 41 個巴西政府公開 API。MCP 標準化向非英語語系政府資料延伸的第一個明確案例。1,394★。",
+      "source": "topic:mcp · 1394★ · ≤30d",
+      "stars": 1394,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "samber/cc-skills-golang",
+      "url": "https://github.com/samber/cc-skills-golang",
+      "desc": "一組用 Go 寫的 Claude Code agentic skills 集合。samber 是多個 lo-dash/fp-go 系列 Go 函式庫的作者（個人 repo 總 stars 超過 80K）。",
+      "source": "topic:agent · 1281★ · ≤30d",
+      "stars": 1281,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "alvinreal/awesome-opensource-ai",
+      "url": "https://github.com/alvinreal/awesome-opensource-ai",
+      "desc": "真正開源（明確排除 BSL / SSPL 授權）的 AI 工具清單。在 OSS 授權不確定的背景下，成為 builder 在選 dependency 時的快速參考。2,660★。",
+      "source": "topic:rag · 2660★ · ≤30d",
+      "stars": 2660,
+      "repo_age": "本月新增"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Opus 4.7 to 4.6 Inflation is ~45%",
+        "url": "https://tokens.billchambers.me/leaderboard",
+        "score": 299,
+        "comments": 55,
+        "takeaway": "兩篇獨立測量交叉驗證：Claude Opus 4.7 的 tokenizer 比 4.6 對相同 prompt 多切出約 45% tokens。cost-per-query 估算器如果在 4.6 校準，升版之後就自動失效。",
+        "action": "用 Anthropic count_tokens API 重新測量 system prompt，結果 commit 進 git 作為基準。"
+      },
+      {
+        "title": "WireGuard for Windows reaches v1.0",
+        "url": "https://www.phoronix.com/news/WireGuard-For-Windows-1.0",
+        "takeaway": "開源 VPN 協議的 Windows stable 實作。self-hosted agent infra 在 Windows 環境的網路層有了不依賴商業軟體的 baseline。",
+        "action": "如果你的 agent infra 有 Windows server，評估把 WireGuard v1.0 納入 VPN 基礎設施替換舊版 OpenVPN 或商業方案。"
+      },
+      {
+        "title": "Migrating from DigitalOcean to Hetzner",
+        "url": "https://isayeter.com/posts/digitalocean-to-hetzner-migration/",
+        "score": 536,
+        "comments": 62,
+        "takeaway": "HN 今日第二名。62 則留言提供了完整的 managed service gap 清單（Postgres、Redis、object storage 的 Hetzner 替代方案）。agent infra 在成本壓力下的自主 host 趨勢延續。",
+        "action": "若你的 agent infra 月花費在 DigitalOcean 超過 $200，先讀留言區的 managed service gap 清單，確認哪些是你 stack 的 blockers 再決定是否遷移。"
+      },
+      {
+        "title": "I'm spending months coding the old way",
+        "url": "https://miguelconner.substack.com/p/im-coding-by-hand",
+        "score": 319,
+        "comments": 39,
+        "takeaway": "HN 319 分，39 則留言。一位工程師刻意回到不用 AI 的手動 coding。和 antfu/intenttracker 以及上週「AI assistance 降低工程師堅持度」的 arxiv 論文形成呼應——agent 輔助品質的反思在社群持續累積，不是孤立聲音。"
+      },
+      {
+        "title": "Gary Marcus: Claude Mythos, evaluated",
+        "url": "https://garymarcus.substack.com/p/claude-mythos-evaluated",
+        "takeaway": "Marcus（AI 最知名的結構性懷疑論者）評估「Claude 的神話」。他上週才稱 Claude Code 是「LLM 以來最大 AI 進展」，這篇標題顯示他在重新校準這個判斷——方向不明，但值得直接讀原文確認論點有沒有 mechanism。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Measuring Claude 4.7's tokenizer costs",
+        "url": "https://www.claudecodecamp.com/p/i-measured-claude-4-7-s-new-tokenizer-here-s-what-it-costs-you",
+        "score": 678,
+        "comments": 83
+      },
+      {
+        "title": "Migrating from DigitalOcean to Hetzner",
+        "url": "https://isayeter.com/posts/digitalocean-to-hetzner-migration/",
+        "score": 536,
+        "comments": 62
+      },
+      {
+        "title": "Show HN: Smol machines – subsecond coldstart, portable virtual machines",
+        "url": "https://github.com/smol-machines/smolvm",
+        "score": 429,
+        "comments": 37
+      },
+      {
+        "title": "All 12 moonwalkers had 'lunar hay fever' from dust smelling like gunpowder (2018)",
+        "url": "https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/The_toxic_side_of_the_Moon",
+        "score": 429,
+        "comments": 27
+      },
+      {
+        "title": "Michael Rabin has died",
+        "url": "https://en.wikipedia.org/wiki/Michael_O._Rabin",
+        "score": 331,
+        "comments": 13
+      },
+      {
+        "title": "I'm spending months coding the old way",
+        "url": "https://miguelconner.substack.com/p/im-coding-by-hand",
+        "score": 319,
+        "comments": 39
+      },
+      {
+        "title": "Opus 4.7 to 4.6 Inflation is ~45%",
+        "url": "https://tokens.billchambers.me/leaderboard",
+        "score": 299,
+        "comments": 55
+      },
+      {
+        "title": "State of Kdenlive",
+        "url": "https://kdenlive.org/news/2026/state-2026/",
+        "score": 270,
+        "comments": 20
+      },
+      {
+        "title": "Show HN: I made a calculator that works over disjoint sets of intervals",
+        "url": "https://victorpoughon.github.io/interval-calculator/",
+        "score": 268,
+        "comments": 25
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Deleteduser.com — a $15 PII Magnet",
+        "url": "https://mike-sheward.medium.com/deleteduser-com-a-15-pii-magnet-c4396eb21061",
+        "score": 98,
+        "comments": 29,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "Why is IPv6 so complicated?",
+        "url": "https://github.com/becarpenter/misc/blob/main/why6why.md",
+        "score": 49,
+        "comments": 29,
+        "tags": [
+          "networking"
+        ]
+      },
+      {
+        "title": "A simplified model of Fil-C",
+        "url": "https://www.corsix.org/content/simplified-model-of-fil-c",
+        "score": 41,
+        "comments": 6,
+        "tags": [
+          "c"
+        ]
+      },
+      {
+        "title": "It Is Time to Ban the Sale of Precise Geolocation Data",
+        "url": "https://www.lawfaremedia.org/article/it-is-time-to-ban-the-sale-of-precise-geolocation",
+        "score": 41,
+        "comments": 0,
+        "tags": [
+          "privacy"
+        ]
+      },
+      {
+        "title": "SQLite prefixes its temp files with etilqs_",
+        "url": "https://avi.im/blag/2026/etilqs/",
+        "score": 33,
+        "comments": 6,
+        "tags": [
+          "databases"
+        ]
+      },
+      {
+        "title": "Towards Trust in Emacs",
+        "url": "https://eshelyaron.com/posts/2026-04-15-towards-trust-in-emacs.html",
+        "score": 23,
+        "comments": 0,
+        "tags": [
+          "emacs"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4354,
+        "repo": "doggy8088/Voca",
+        "url": "https://github.com/doggy8088/Voca",
+        "language": null,
+        "hours_ago": 27,
+        "description": "Voca - Your local voice cloning assistant. Powered by VoxCPM",
+        "local_context": "🇹🇼 台灣開發者在 on-device 語音克隆領域有持續動作。VoxCPM 暗示 cross-platform voice processing 的底層嘗試，和近期本地推理品質提升的趨勢呼應。"
+      },
+      {
+        "developer": "cmhungsteve",
+        "followers": 617,
+        "repo": "cmhungsteve/EASI",
+        "url": "https://github.com/cmhungsteve/EASI",
+        "language": null,
+        "hours_ago": 36,
+        "description": "Holistic Evaluation of Multimodal LLMs on Spatial Intelligence",
+        "local_context": "🇹🇼 台灣學術界針對多模態 LLM 的空間推理能力做全面評測。VLM spatial benchmark 是目前研究空白帶，EASI 有先機。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "geohot",
+        "followers": 46342,
+        "repo": "geohot/factoring",
+        "url": "https://github.com/geohot/factoring",
+        "language": "Python",
+        "hours_ago": 19,
+        "description": "the search for a polynomial time factoring algorithm"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 61982,
+        "repo": "huggingface/context-course",
+        "url": "https://github.com/huggingface/context-course",
+        "language": "MDX",
+        "hours_ago": 32,
+        "description": "A course on context engineering with code agents. HuggingFace 以課程形式確認 context engineering 是可教學的工程紀律，不只是 prompt 技巧。"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 117781,
+        "repo": "microsoft/azure-finops-agent",
+        "url": "https://github.com/microsoft/azure-finops-agent",
+        "language": null,
+        "hours_ago": 30,
+        "description": "Azure 雲端成本管理 agent（0★，null description，30h ago）。在 tokenizer 成本通脹的週末悄悄出現，可能是 Microsoft 對 AI 成本管理需求的預先佈局。"
+      },
+      {
+        "developer": "antfu",
+        "followers": 39114,
+        "repo": "antfu/intentracker",
+        "url": "https://github.com/antfu/intentracker",
+        "language": "TypeScript",
+        "hours_ago": 64,
+        "description": "Track project intent across AI agent sessions. antfu 連續兩天（昨日 intenttracker，今天仍在 72h 視窗內）在 agent intent tracking 上持續投入。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "AI 定價透明度出現系統性問題：tokenizer 換代不公告",
+      "body": "今天兩篇 HN 文章（678 分 + 299 分）獨立量出同一件事：Claude Opus 4.7 的 tokenizer 比 4.6 對相同 prompt 多切出約 45% 的 tokens。這不是使用者抱怨，是兩位工程師分別跑了 cost benchmark 後的交叉驗證。Anthropic 沒有在 Opus 4.7 的公告裡說明 tokenizer 變動，知情路徑是「帳單倒推」。這個模式如果持續，cost-per-query 估算就永遠是滯後的。OpenAI 在重大模型換代時有對應的 tokenizer 文件更新；Google Gemini 定價分級用 blog post 公開。Anthropic 這次是例外還是新政策，是接下來 30 天值得觀察的信號。",
+      "evidence": "HN 678 分（83 則留言）+ HN 299 分（55 則留言），兩篇獨立測量同日發布；昨日（2026-04-18）已有 HN 367 分文章估算 20–30% 漲幅",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 7,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Measuring Claude 4.7's tokenizer costs",
+          "url": "https://www.claudecodecamp.com/p/i-measured-claude-4-7-s-new-tokenizer-here-s-what-it-costs-you",
+          "score": 678
+        },
+        {
+          "platform": "HN",
+          "title": "Opus 4.7 to 4.6 Inflation is ~45%",
+          "url": "https://tokens.billchambers.me/leaderboard",
+          "score": 299
+        }
+      ],
+      "product_opportunity": "跨供應商的 tokenizer 效率比較 dashboard：輸入你的 system prompt，輸出在 GPT-4o / Claude Opus / Gemini 各版本下的 token 數和預估成本。Helicone 有 per-request tracking 但沒有跨版本 drift alert，這是明確的 tooling gap。"
+    },
+    {
+      "title": "Claude Code skills 進入 security-adjacent 領域",
+      "body": "SimoneAvogadro/android-reverse-engineering-skill（GitHub Trending #9，3,063★）今天出現，這是第一個明確做 security-adjacent 任務的 Claude Code skill 進入 Trending。到今天為止，Claude Code skills 的 Trending 項目涵蓋了語言壓縮（caveman，37K★）、逆向架構文件（how-claude-code-works，1,920★）、Go 語言整合（cc-skills-golang，1,281★）、和 Android RE。生態系從「讓 Claude Code 寫代碼更快」演進到「讓 Claude Code 理解任意二進位系統」。下一個明顯空白是 iOS 應用逆向和韌體 RE。",
+      "evidence": "SimoneAvogadro/android-reverse-engineering-skill Trending #9（3,063★）；Windy3f3f3f3f/how-claude-code-works 1,920★（topic:llm）；samber/cc-skills-golang 1,281★（topic:agent）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 7,
+      "source_links": [
+        {
+          "platform": "GitHub Trending",
+          "title": "SimoneAvogadro/android-reverse-engineering-skill",
+          "url": "https://github.com/SimoneAvogadro/android-reverse-engineering-skill"
+        },
+        {
+          "platform": "GitHub Search",
+          "title": "Windy3f3f3f3f/how-claude-code-works",
+          "url": "https://github.com/Windy3f3f3f3f/how-claude-code-works"
+        },
+        {
+          "platform": "GitHub Search",
+          "title": "samber/cc-skills-golang",
+          "url": "https://github.com/samber/cc-skills-golang"
+        }
+      ],
+      "product_opportunity": "Claude Code skill marketplace，帶分類（productivity / security / language / infra）、兼容性標記（Claude Code 版本）、星評系統。官方 MCP registry 有 tool 搜尋但沒有 Claude Code skill 的垂直分類。"
+    },
+    {
+      "title": "Subsecond VM 冷啟動：agent 沙箱執行的新技術訊號",
+      "body": "smol-machines/smolvm（HN Show HN 429 分，37 則留言）號稱 <1 秒冷啟動可攜 VM。如果在不同 host 架構上可驗證，這改變了 agent tool call 沙箱執行的成本結構：目前的選項是 Docker（冷啟動 2–5 秒）、Firecracker（~125ms 但設定複雜）、或不隔離。單秒級冷啟動加上可攜性，讓「每個 tool call 一個全新 VM」的模式從「不可行」變成「待驗證的工程選項」。留言區的主要疑問是 host 平台支援廣度和 hypervisor 相依性。此處標弱訊號因為尚無第三方 benchmark 驗證。",
+      "evidence": "HN Show HN 429 分，37 則留言；社群在要求 ARM benchmark 和 coldstart 重現步驟",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 10%",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Show HN: Smol machines – subsecond coldstart, portable virtual machines",
+          "url": "https://github.com/smol-machines/smolvm",
+          "score": 429
+        }
+      ],
+      "product_opportunity": "把 smolvm 包進 agent tool execution 層的 open-source harness，讓任何 MCP server 能宣告「這個 tool 需要 VM 隔離」，orchestrator 自動 spin up / teardown VM。"
+    },
+    {
+      "title": "DeepMind 空 repo 序列延伸至第四彈：google-deepmind/proeval",
+      "body": "google-deepmind/proeval（0★，Python，20h ago）今天出現。前三彈是 egg（2026-04-15）、ddgc（2026-04-16）、beneath-the-surface（2026-04-17）。四個 repo 在 5 個自然日出現，間隔縮短，最近兩彈相距 20h。proeval 的命名最直白——probe evaluation，暗示一個能力探測評估框架。DeepMind 過去在論文公開前建空 repo 占位的模式已有記錄；這個序列如果在 2026-04-30 前有至少一個 repo 出現 paper link，預測就 confirm。",
+      "evidence": "google-deepmind/proeval（0★，Python，20h ago）；序列：egg（4/15）→ ddgc（4/16）→ beneath-the-surface（4/17）→ proeval（4/19）",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 50%",
+      "arc_ref": "deepmind-stealth-pre-launch",
+      "day_count": 5,
+      "source_links": [
+        {
+          "platform": "GitHub Developers",
+          "title": "google-deepmind/proeval",
+          "url": "https://github.com/google-deepmind/proeval"
+        }
+      ],
+      "product_opportunity": "如果 DeepMind 這個序列指向新的能力評估框架，第一個在此之上建「agent capability regression testing」SaaS 的人有先機。"
+    }
+  ],
+  "sleeper": {
+    "name": "geohot/factoring",
+    "url": "https://github.com/geohot/factoring",
+    "stars": 11,
+    "description": "the search for a polynomial time factoring algorithm",
+    "why_asymmetric": "geohot（tinygrad 和 comma.ai 建立者，46K followers）19 小時前建了這個 repo。多項式時間因式分解演算法若找到，RSA、DH、ECDH 等所有基於整數分解難度的公鑰密碼系統即刻失效——這是密碼學界最重要的未解問題之一。11 顆星說明幾乎沒有人注意到。geohot 以解出被認為不可能的工程問題為職業（PlayStation 3 越獄、首個 Tesla Autopilot 替代品），且這個 repo 名稱直白、用 Python 而非 C，說明是探索性研究，不是性能 hack。成功機率極低，但 asymmetric upside 極大。",
+    "commercial_path": "就算研究本身沒有成果（機率極高），geohot 在探索過程中發表的任何中間結果——新的分解下界、任何可計算的特殊結構——都對量子後加密遷移審計服務有直接商業價值。NIST 在 2024 年完成 CRYSTALS-Kyber / CRYSTALS-Dilithium 標準化，但企業 PKI 遷移的自動化審計工具市場幾乎還是空白。"
+  },
+  "contrarian": {
+    "name": "thunderbird/thunderbolt",
+    "url": "https://github.com/thunderbird/thunderbolt",
+    "body": "thunderbolt 今天 Trending #1（1,455★），slogan 是「AI You Control: Choose your models. Own your data. Eliminate vendor lock-in.」——這正是 tokenizer 通脹和 Anthropic 定價透明度爭議之後社群最想聽到的話。問題是，「model-agnostic 抽象層」在 LiteLLM（10K+★）、Open WebUI（60K+★）、llm CLI（Simon Willison，5K+★）三個項目都已做到，且各自有完善的 plugin 生態。Thunderbird 在 email client 領域有 20 年信任積累，但 builder 選 agent 工具不是看 email client 的血統。更關鍵的是：thunderbolt 目前沒有原生 tool use integration、沒有 MCP 協議支援、沒有 agent memory 層；在 agent-native 的時代，一個純粹的 chat UI wrapper 很快就是上一個問題的答案。",
+    "claim": "到 2026-09-30，thunderbird/thunderbolt GitHub stars 不超過 8,000（2026-04-19 基準 1,455★，即 5 個月內增長不超過 5,545★）。",
+    "rationale": "model-agnostic UI wrapper 市場已飽和，Open WebUI 一個 repo 就有 60K+★。Thunderbird 品牌不是 AI 工具選型的差異化因素。沒有 tool use / MCP / memory roadmap 的訊號讓長期留存空間受限。",
+    "prediction": "到 2026-09-30，thunderbird/thunderbolt GitHub stars 不超過 8,000（基準 1,455★，2026-04-19）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-mempalace-stars",
+      "text": "MemPalace 在 2026-07-31 前 GitHub stars 超過 80,000（2026-04-19：47,825★）。",
+      "status": "pending",
+      "created": "2026-04-13",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-calcom-fork",
+      "text": "到 2026-10-31，GitHub 上至少一個以 Cal.com fork 或 Cal.com 開源替代品為明確定位的 repo，GitHub stars 超過 5,000。",
+      "status": "pending",
+      "created": "2026-04-16",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 beneath-the-surface / ddgc / egg 這三個空 repo 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo 的 commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-claude-design-retention",
+      "text": "到 2026-10-31，Anthropic 主動調整 Claude Design 的定位（下線、改名、或官方將目標用戶從「專業設計師」改為「non-designer mock-up 工具」），或有主要科技媒體報導其用戶留存低於競品。",
+      "status": "pending",
+      "created": "2026-04-18",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-thunderbolt-ceiling",
+      "text": "到 2026-09-30，thunderbird/thunderbolt GitHub stars 不超過 8,000（2026-04-19 基準 1,455★）。",
+      "status": "pending",
+      "created": "2026-04-19",
+      "resolution_date": "2026-09-30"
+    }
+  ],
+  "meta": {
+    "run_id": "e261b5a6-f494-460e-a3d0-ad460a9e5863",
+    "pipeline_version": "7c2cfe8",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-18T20:27:27.264Z",
+    "analyze_duration_ms": 1560857,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 10
+      },
+      "search": {
+        "ok": true,
+        "count": 53
+      },
+      "developers": {
+        "ok": true,
+        "count": 17
+      }
+    },
+    "degraded_sources": []
+  }
+}
