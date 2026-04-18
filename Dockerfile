@@ -4,9 +4,13 @@
 # code is baked in — the pipeline clones the repo into a persistent /workspace
 # volume at runtime so `git pull` updates flow without rebuilding the image.
 #
-# Claude Code auth state (~/.claude) is expected as a read-only bind-mount.
+# Claude Code auth state (~/.claude) is expected as a read-write bind-mount
+# so the CLI can refresh its OAuth token before expiry. A read-only mount
+# deadlocks the pipeline — see commit faea48e for the failure mode.
 
-FROM node:22-slim
+# Pinned to digest for supply-chain immutability. Dependabot (see
+# .github/dependabot.yml) opens PRs to refresh the digest weekly.
+FROM node:22-slim@sha256:4f77a690f2f8946ab16fe1e791a3ac0667ae1c3575c3e4d0d4589e9ed5bfaf3d
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \

@@ -69,7 +69,7 @@ CLAUDE_EXIT=0
 claude -p \
   --output-format text \
   --model "$MODEL" \
-  --allowedTools Read Write Bash Grep Glob \
+  --allowedTools Read Write Grep Glob \
   < "$PROMPT_FILE" || CLAUDE_EXIT=$?
 
 if [ "$CLAUDE_EXIT" -ne 0 ]; then

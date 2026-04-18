@@ -17,7 +17,7 @@ paths:
 2. `.claude/daily-report-quality.md` (voice rules, slop test, anti-patterns, Chinese translation-smell checklist)
 3. Today's date injected at the end
 
-The concatenated prompt is piped to `claude -p` with `--allowedTools Read Write Bash Grep Glob`.
+The concatenated prompt is piped to `claude -p` with `--allowedTools Read Write Grep Glob`. Bash is intentionally excluded — no workflow step needs it, and including it would widen the prompt-injection blast radius.
 
 ## When editing prompts
 
