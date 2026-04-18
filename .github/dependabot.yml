@@ -29,3 +29,11 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    ignore:
+      # Pin node to the 22.x LTS line ("Jod", supported until 2027-04).
+      # Odd-numbered releases (23, 25, …) are "Current" — non-LTS, replaced
+      # every 6 months. A daily production pipeline should stay on LTS;
+      # Dependabot will still open PRs for digest updates inside 22.x.
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
