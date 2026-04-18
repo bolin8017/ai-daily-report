@@ -41,17 +41,28 @@ if [ -z "${GITHUB_TOKEN:-}" ]; then
   exit 1
 fi
 
-AUTH_URL="${REPO_URL/https:\/\//https:\/\/x-access-token:${GITHUB_TOKEN}@}"
+# Inject auth via GIT_CONFIG_COUNT (Git 2.31+) so the token is never
+# written to .git/config or the remote URL. A container crash between
+# git operations can no longer leave the token persisted in the volume.
+# This is the same mechanism GitHub's own actions/checkout uses.
+GITHUB_AUTH_HEADER=$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)
+export GIT_CONFIG_COUNT=1
+export GIT_CONFIG_KEY_0='http.https://github.com/.extraheader'
+export GIT_CONFIG_VALUE_0="Authorization: Basic ${GITHUB_AUTH_HEADER}"
+export GIT_TERMINAL_PROMPT=0
 
 cd "$WORKSPACE"
 git config --global --add safe.directory "$WORKSPACE"
 
 if [ ! -d .git ]; then
   echo "[entrypoint] cloning ${REPO_URL} into ${WORKSPACE}..."
-  git clone "$AUTH_URL" .
+  git clone "$REPO_URL" .
 else
   echo "[entrypoint] pulling latest main..."
-  git remote set-url origin "$AUTH_URL"
+  # If this volume was created by an earlier image that embedded the
+  # token in the remote URL, overwrite it with the plain URL. Harmless
+  # no-op on fresh volumes.
+  git remote set-url origin "$REPO_URL"
   git fetch origin main --quiet
   git reset --hard origin/main
 fi
@@ -79,10 +90,6 @@ else
   echo "[entrypoint] data branch not found on remote — first-run bootstrap"
 fi
 mkdir -p data/reports data/staging
-
-# Scrub auth token from persisted git config so it does not
-# linger in the Docker volume between runs.
-git remote set-url origin "$REPO_URL"
 
 # Install deps only if package-lock.json is newer than last install.
 # npm ci creates node_modules/.package-lock.json with the current timestamp,
