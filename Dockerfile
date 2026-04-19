@@ -10,7 +10,7 @@
 
 # Pinned to digest for supply-chain immutability. Dependabot (see
 # .github/dependabot.yml) opens PRs to refresh the digest weekly.
-FROM node:22-slim@sha256:4f77a690f2f8946ab16fe1e791a3ac0667ae1c3575c3e4d0d4589e9ed5bfaf3d
+FROM node:22-slim@sha256:f3a68cf41a855d227d1b0ab832bed9749469ef38cf4f58182fb8c893bc462383
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
