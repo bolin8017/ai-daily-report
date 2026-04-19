@@ -1,0 +1,648 @@
+{
+  "date": "2026-04-20",
+  "lead": {
+    "html": "<h3>Simon Willison 用 git diff 替 Claude 做了 Anthropic 沒寫的 changelog</h3>\n\n<h4>發生了什麼</h4>\n<p>Simon Willison 昨天發了兩篇文。第一篇把 Claude 歷代 system prompt 做成一條 git timeline，讓你用 <code>git log -p</code> 看每一次 system prompt 的逐行異動。第二篇逐段 diff Opus 4.6 跟 4.7 的 system prompt，列出哪些 tool calling 行為指引改了、哪些 safety boundary 措辭換了。Anthropic 的 Opus 4.7 技術公告裡沒有這些資訊。</p>\n\n<p>同一天，HN 出現一個 593 分（71 則留言）的匿名 token 比較排行榜，把 Opus 4.6 跟 4.7 的 request token 數公開攤在一起。這是繼前兩天兩篇獨立量測文（678+299 分）之後的第三組交叉驗證，三組量測收斂到同一個數字：約 45% token 膨脹。社群在三天內從「有人抱怨」走到「有人做公共工具讓所有人自己驗證」。</p>\n\n<p>同日，Vercel 確認內部系統遭入侵（HN #1，361 分，13 則留言）。Vercel 是 Next.js 部署的預設選擇——如果你的 AI agent 前端部署在那裡，供應鏈風險直接升高。</p>\n\n<p>Anthropic 這一週的官方動作是三連發：Opus 4.7 GA、Claude Design（Anthropic Labs 實驗產品）、前 Novartis CEO Vas Narasimhan 加入董事會。Gary Marcus 選在同一週加碼發「Claude Mythos, evaluated」跟「Peak absurdity, Part II」。Changelog 報導 OpenAI 收購 Astral（Ruff/uv 的開發團隊）。訊號密度高，但社群的注意力集中在 Anthropic 沒主動說的事，不在 Anthropic 主動說的事。</p>\n\n<h4>為什麼重要</h4>\n<p>system prompt 是你的 agent 行為的隱式依賴。Simon Willison 的 diff 揭示了一個工程問題：每次 model 換代，system prompt 在改，但改動不在任何 changelog、不在任何 migration guide、不在任何 deprecation notice 裡。對在寫 agent 的你，system prompt 的異動會影響 tool calling 的觸發邏輯、safety refusal 的邊界、output format 的微妙偏移。你的 regression test suite 今天沒有覆蓋這一層——而 Simon Willison 剛示範了怎麼覆蓋。</p>\n\n<p>token 膨脹 45% 加上 system prompt 無聲異動，兩件事的共同模式是：模型行為的重要變化通過技術實作細節發生，而非通過文件公告。一次是偶發，連續三天三組獨立驗證是結構。</p>\n\n<h4>社群怎麼看</h4>\n<p>593 分的 token 排行榜留言區幾乎全是工程師貼自己的量測數據，互相交叉驗證。有人指出 Opus 4.7 的 system prompt 本身就比 4.6 長，部分膨脹來自 Anthropic 在 system prompt 裡塞了更多行為指引——Simon Willison 的 diff 剛好驗證了這一點。Vercel breach 的 13 則留言調性一致：「又一個告訴你『我們很安全』然後被打穿的 platform」。Lobsters 今天第一名（136 分，47 則留言）是 Deleteduser.com 的 PII 安全事件——兩個社群在同一天聊 security fundamentals。OSChina 出現「嘗試 Gemini CLI 替代 Claude」的 JeecgBoot 團隊實測報告，結論是「基本通暢但遇致命問題」——中文社群開始認真試替代方案了。</p>\n\n<h4>行動建議</h4>\n<p>Simon Willison 的 system prompt git timeline 方法可以直接複製。做法：對你使用的每個 model version，用相同的 prompt 觸發一次 system prompt leak（Simon Willison 在文章裡示範了具體方法），把結果存進你 repo 的 <code>docs/model-prompts/</code> 目錄，每次 model 升級前 diff 一次。重點不是洩漏 system prompt——重點是追蹤你的 agent 的隱式行為依賴有沒有在你不知道的情況下改了。</p>\n<p>如果你部署在 Vercel：在 breach 細節公開前，先 rotate 一輪 environment variables 和 deployment tokens。Vercel 的公告寫「internal systems hit」但沒給 IOC——這意味著你不知道攻擊者碰了什麼。最低成本的防禦是假設最壞情況：你的 secrets 已經 exposed。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "paperless-ngx × VLM 文件智能：掃描進去的是紙，出來的是結構化資料",
+      "projects": [
+        {
+          "name": "paperless-ngx",
+          "url": "https://github.com/paperless-ngx/paperless-ngx",
+          "note": "GitHub Trending #6，38,778★，成熟的文件管理系統"
+        },
+        {
+          "name": "Claude Vision API",
+          "url": "https://docs.anthropic.com/en/docs/build-with-claude/vision",
+          "note": "Anthropic VLM endpoint"
+        }
+      ],
+      "description": "paperless-ngx 負責文件的掃描、索引、歸檔，但它的 OCR 停在「把圖片變文字」。接一個 VLM pipeline 在文件進入系統時做第二層處理：辨識文件類型（合約/發票/收據/信件）→ 抽取關鍵實體（金額/日期/當事人/條款）→ 寫進 paperless-ngx 的 custom field → 自動打 tag。paperless-ngx 已有完整的 REST API 和 webhook 機制，你不需要 fork 它，只需要寫一個 webhook consumer。",
+      "use_case": "你是一家 50 人會計事務所的 IT，每月要處理 3000 張掃描發票。paperless-ngx 已經幫你做了數位歸檔，但 consultant 還是要手動開每張發票看金額跟供應商名稱。你用 Claude Vision API 在文件進入 paperless-ngx 的瞬間就抽出「供應商: 台積電」「金額: NT$2,450,000」「發票日期: 2026-04-15」，直接寫進 custom field，consultant 只需要瀏覽列表而非開啟每份 PDF。",
+      "tech_stack": "Python + paperless-ngx REST API + Anthropic Vision API + FastAPI（webhook receiver）",
+      "hardware": "純 CPU 可跑（VLM 呼叫走 API）",
+      "skill_level": "Python 中級，會用 REST API 即可",
+      "dependencies": "paperless-ngx 實例（Docker 自架，免費）+ Anthropic API key（Vision API 每張發票約 $0.003）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "docker compose up -d paperless-ngx && curl http://localhost:8000/api/documents/ -H 'Authorization: Token YOUR_TOKEN'",
+      "market_evidence": "paperless-ngx 38,778★ 且持續 Trending 說明文件管理需求強勁；Rossum（AI 發票處理）2024 年 Series B $100M 驗證付費意願；但 Rossum 是 SaaS，你的資料要上雲——paperless-ngx 是 self-hosted 的替代路線"
+    },
+    {
+      "format": "solo",
+      "title": "Model Behavior Changelog：自動追蹤 LLM system prompt 異動",
+      "projects": [
+        {
+          "name": "Simon Willison's system prompt timeline",
+          "url": "https://simonwillison.net/2026/Apr/18/extract-system-prompts/#atom-everything",
+          "note": "Simon Willison 示範手動方法"
+        }
+      ],
+      "description": "Simon Willison 手動做的事情可以自動化：寫一個 cron job，每天對你使用的每個 model 版本（Claude Opus 4.6 / 4.7、GPT-4o、Gemini）送一組固定的探測 prompt，把回傳的 system prompt / behavior fingerprint 存進 git repo。任何 diff 觸發 GitHub Actions notification。不需要真的 leak system prompt——觀察 tool calling behavior、refusal boundary、output format 的變化就夠了。做法：固定 10 個 edge-case prompt（含 tool call / refusal trigger / JSON output），記錄每個 prompt 的回傳結構，存成 JSON snapshot，git diff 偵測漂移。",
+      "use_case": "你維護一個用 Claude tool calling 的 agent，有 15 個 tools。上週升級到 Opus 4.7 後，有兩個 tools 的觸發頻率下降了 30%，你花了兩天 debug 才發現是 system prompt 裡的 tool 選擇邏輯改了。這個 changelog 工具會在 model 換代當天就告訴你「tool selection behavior changed in these 3 scenarios」。",
+      "tech_stack": "Python + Anthropic SDK + OpenAI SDK + GitHub Actions",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "Python 入門 + 會設定 GitHub Actions",
+      "dependencies": "各家 LLM API key（用最低 tier 就夠，每天 10 個探測 prompt 的成本 < $0.01）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "建一個 probes/ 目錄，放 10 個 JSON 檔，每個定義一個 prompt + expected behavior schema",
+      "market_evidence": "Simon Willison 的兩篇文章在 24 小時內獲得大量轉發；HN 593 分的 token 排行榜留言區有多人提議建 model behavior tracking 工具——需求已經被公開表述"
+    },
+    {
+      "format": "solo",
+      "title": "CommunityCheck 瀏覽器擴充：在病毒貼文旁邊顯示真實民調數據",
+      "projects": [
+        {
+          "name": "audreyt/communitycheck",
+          "url": "https://github.com/audreyt/communitycheck",
+          "note": "唐鳳 19 小時前建立的設計規格 repo"
+        }
+      ],
+      "description": "audreyt（唐鳳，GitHub 8,835 followers）建了一份設計規格：定義如何把統計代表性的民調資料附加到病毒式傳播的社群貼文上。問題很精準：一則 viral post 的 10,000 個 like 不代表社會多數意見，但人類心理會把它 intuit 成多數。解法不是 AI——是 survey methodology + browser extension。在使用者瀏覽 Twitter/X 時，對符合條件的 viral post（按讚數超過某 threshold），從 YouGov / Pew Research 的公開 API 拉對應議題的民調結果，在貼文旁邊顯示一個小 badge：「這個觀點在全國民調中有 23% 的人同意」。",
+      "use_case": "你是一個關注假訊息議題的公民科技開發者，有基本的統計背景。你看到 Twitter/X 上一則「90% 的人支持 X 政策」的 viral post 有 50K like，但你知道 Pew Research 的最新民調數字是 34%。你想做一個工具，讓一般使用者不需要自己去查民調——browser extension 自動在 post 旁邊標示經過統計抽樣的數據。",
+      "tech_stack": "TypeScript + Chrome Extension Manifest V3 + REST API（YouGov / Pew Research / TVBS 民調中心）",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "會寫 Chrome extension + 基本 REST API 呼叫即可",
+      "dependencies": "Chrome Web Store 開發者帳號（$5 一次性費用）；部分民調 API 需要申請 access（YouGov 有免費學術方案）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "npm create chrome-extension@latest communitycheck && 閱讀 audreyt 的設計規格",
+      "market_evidence": "EU Digital Services Act 要求平台對 viral 內容提供 context；Twitter/X Community Notes 驗證了群眾標記機制的市場（Community Notes 覆蓋率不到 5% 的 viral posts，存在明確的 coverage gap）；台灣 2024 選舉期間假訊息查核需求暴增"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Claude Opus 4.7 GA",
+      "url": "https://www.anthropic.com/news/claude-opus-4-7",
+      "desc": "Anthropic 最新旗艦模型正式 GA。社群關注焦點不在新能力而在 tokenizer 換代造成的成本影響——token 比較排行榜（HN 593 分）是今天最高分的相關文章。",
+      "source": "Anthropic News",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Claude Design (Anthropic Labs)",
+      "url": "https://www.anthropic.com/news/claude-design-anthropic-labs",
+      "desc": "Anthropic Labs 實驗產品，定位設計工具。Labs 標籤意味著 Anthropic 自己也在測試 product-market fit。",
+      "source": "Anthropic News",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Opus 4.6 vs 4.7 Token Comparison Leaderboard",
+      "url": "https://tokens.billchambers.me/leaderboard",
+      "desc": "匿名 token 比較排行榜，讓任何人驗證 Opus 4.6 vs 4.7 的 token 膨脹。三天內第三組獨立量測，三組收斂到 ~45%。",
+      "source": "HN 593分",
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "Simon Willison: Claude system prompts as a git timeline",
+      "url": "https://simonwillison.net/2026/Apr/18/extract-system-prompts/#atom-everything",
+      "desc": "把 Claude 歷代 system prompt 做成 git repo，用 git log -p 追蹤每一版的逐行異動。附帶 Opus 4.6 vs 4.7 system prompt 逐段 diff。",
+      "source": "Simon Willison blog",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "smol-machines/smolvm",
+      "url": "https://github.com/smol-machines/smolvm",
+      "desc": "subsecond coldstart、portable 的輕量 VM。HN Show HN 從昨天 429 分升到今天 479 分，持續發酵。agent code execution sandbox 的 KVM-based 替代方案。",
+      "source": "HN Show HN 479分",
+      "stars": 479,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "Vercel 內部系統遭入侵",
+      "url": "https://decipher.sc/2026/04/19/vercel-says-internal-systems-hit-in-breach/",
+      "desc": "Vercel 確認 internal systems 被打穿。HN #1 位置。對部署在 Vercel 的 AI agent 前端，supply chain 風險直接升高。公告未提供 IOC。",
+      "source": "HN 361分",
+      "repo_age": "本週事件"
+    },
+    {
+      "name": "Astral 被 OpenAI 收購",
+      "url": "https://changelog.com/news/184",
+      "desc": "Ruff（Python linter）和 uv（package manager）的開發團隊加入 OpenAI。Changelog 的評論：「這說明了公司優先順序的方向」。",
+      "source": "Changelog",
+      "repo_age": "本週事件"
+    },
+    {
+      "name": "ruvnet/RuView",
+      "url": "https://github.com/ruvnet/RuView",
+      "desc": "WiFi 訊號做人體姿態估計（DensePose）+ 生命徵象監測。Rust 實作。47,402★ 但作為 WiFi pose estimation 的 niche 領域，star 數異常高，可能存在 star inflation。",
+      "source": "GitHub Trending #7",
+      "stars": 47402,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "paperless-ngx",
+      "url": "https://github.com/paperless-ngx/paperless-ngx",
+      "desc": "社群維護的文件管理系統：掃描、索引、歸檔。38,778★，成熟專案再次 Trending，說明 self-hosted document management 需求持續強勁。",
+      "source": "GitHub Trending #6",
+      "stars": 38778,
+      "repo_age": "2020 年建立"
+    },
+    {
+      "name": "openai/openai-agents-python",
+      "url": "https://github.com/openai/openai-agents-python",
+      "desc": "OpenAI 官方的輕量 multi-agent framework。23,046★，連續兩天 Trending。在 Astral 收購背景下，OpenAI 的 developer tooling 佈局正在加速。",
+      "source": "GitHub Trending #4",
+      "stars": 23046,
+      "repo_age": "2025 年建立"
+    },
+    {
+      "name": "thunderbird/thunderbolt",
+      "url": "https://github.com/thunderbird/thunderbolt",
+      "desc": "Thunderbird 團隊的 AI 產品，slogan 是「Choose your models. Own your data. Eliminate vendor lock-in.」從 1,455★ 漲到 2,116★（+45%），連續兩天 Trending。",
+      "source": "GitHub Trending #2",
+      "stars": 2116,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "EvoMap/evolver",
+      "url": "https://github.com/EvoMap/evolver",
+      "desc": "基於 Genome Evolution Protocol 的 AI agent 自演化引擎。5,438★，連續兩天 Trending。概念新穎但 GEP 的實際效果缺乏獨立 benchmark。",
+      "source": "GitHub Trending #8",
+      "stars": 5438,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "DR³-Eval: Deep Research 評估框架",
+      "url": "https://arxiv.org/abs/2604.14683",
+      "desc": "HuggingFace Daily Papers 今日第一。提出 Deep Research Agent 的可重現評估方法。如果你在建 research agent，這是第一個針對長期研究任務（非單次 QA）的標準化評估框架。",
+      "source": "HuggingFace Daily Papers #1"
+    },
+    {
+      "name": "mnfst/awesome-free-llm-apis",
+      "url": "https://github.com/mnfst/awesome-free-llm-apis",
+      "desc": "永久免費 LLM API 清單（含 API keys）。在 token 成本透明度危機的背景下，免費替代方案清單的價值上升。",
+      "source": "topic:llm · 2586★ · ≤30d",
+      "stars": 2586,
+      "repo_age": "30 天內新增"
+    },
+    {
+      "name": "HKUDS/Vibe-Trading",
+      "url": "https://github.com/HKUDS/Vibe-Trading",
+      "desc": "香港大學 DS lab 的個人交易 agent。用 LLM 做量化策略生成 + 回測 + 執行。連續兩天出現在 topic search。",
+      "source": "topic:llm · 2201★ · ≤30d",
+      "stars": 2201,
+      "repo_age": "30 天內新增"
+    },
+    {
+      "name": "jxnxts/mcp-brasil",
+      "url": "https://github.com/jxnxts/mcp-brasil",
+      "desc": "41 個巴西公共 API 包成 MCP server。Claude Code 生態系國際化的具體實例——MCP 開始進入非英語市場。",
+      "source": "topic:mcp · 1408★ · ≤30d",
+      "stars": 1408,
+      "repo_age": "30 天內新增"
+    },
+    {
+      "name": "ghostwright/phantom",
+      "url": "https://github.com/ghostwright/phantom",
+      "desc": "有自己電腦的 AI co-worker：persistent memory + MCP server + 安全的 credential 管理 + email 整合。agent 從工具走向完整的數位身份。",
+      "source": "topic:mcp · 1279★ · ≤30d",
+      "stars": 1279,
+      "repo_age": "30 天內新增"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Opus 4.6 vs 4.7 匿名 token 比較排行榜",
+        "url": "https://tokens.billchambers.me/leaderboard",
+        "score": 593,
+        "source": "HN",
+        "takeaway": "三天第三組獨立量測，三組收斂到 ~45% token 膨脹。不是抱怨文，是公共驗證工具。",
+        "action": "用你自己的 prompt 在排行榜上跑一次，跟你的 cost baseline 比對。"
+      },
+      {
+        "title": "Vercel 內部系統遭入侵",
+        "url": "https://decipher.sc/2026/04/19/vercel-says-internal-systems-hit-in-breach/",
+        "score": 361,
+        "source": "HN",
+        "takeaway": "HN #1 位置。公告未提供 IOC。如果你部署在 Vercel，secrets 可能已 exposed。",
+        "action": "立即 rotate environment variables 和 deployment tokens。"
+      },
+      {
+        "title": "smolvm: subsecond coldstart portable VMs",
+        "url": "https://github.com/smol-machines/smolvm",
+        "score": 479,
+        "source": "HN Show HN",
+        "takeaway": "KVM-based 輕量 VM，<1 秒冷啟動。agent code execution sandbox 的新選項。",
+        "action": "如果你的 agent 需要跑使用者提交的 code，用 smolvm 替代 Docker 做隔離。"
+      },
+      {
+        "title": "NIST 製造出可編程任意波長雷射",
+        "url": "https://www.nist.gov/news-events/news/2026/04/any-color-you-nist-scientists-create-any-wavelength-lasers-tiny-circuits",
+        "score": 400,
+        "source": "HN",
+        "takeaway": "在微型電路上實現任意波長雷射。光子計算和光通訊的基礎元件突破。",
+        "action": "如果你做光學感測或光子計算研究，追蹤 NIST 的後續 paper。"
+      },
+      {
+        "title": "Deleteduser.com: $15 的 PII 吸塵器",
+        "url": "https://mike-sheward.medium.com/deleteduser-com-a-15-pii-magnet-c4396eb21061",
+        "score": 136,
+        "source": "Lobsters",
+        "takeaway": "已刪除帳號的用戶名可被重新註冊，用來收集殘留在其他平台上的 PII。",
+        "action": "檢查你的 app 是否在使用者刪除帳號後仍然保留可公開查詢的 username reference。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Anonymous request-token comparisons from Opus 4.6 and Opus 4.7",
+        "url": "https://tokens.billchambers.me/leaderboard",
+        "score": 593,
+        "comments": 71
+      },
+      {
+        "title": "Why Japan has such good railways",
+        "url": "https://worksinprogress.co/issue/why-japan-has-such-good-railways/",
+        "score": 524,
+        "comments": 52
+      },
+      {
+        "title": "Show HN: Smol machines – subsecond coldstart, portable virtual machines",
+        "url": "https://github.com/smol-machines/smolvm",
+        "score": 479,
+        "comments": 38
+      },
+      {
+        "title": "Archive of BYTE magazine, starting with issue #1 in 1975",
+        "url": "https://archive.org/details/byte-magazine-1975-09",
+        "score": 469,
+        "comments": 34
+      },
+      {
+        "title": "College instructor turns to typewriters to curb AI-written work",
+        "url": "https://sentinelcolorado.com/uncategorized/a-college-instructor-turns-to-typewriters-to-curb-ai-written-work-and-teach-life-lessons/",
+        "score": 429,
+        "comments": 60
+      },
+      {
+        "title": "NIST scientists create 'any wavelength' lasers",
+        "url": "https://www.nist.gov/news-events/news/2026/04/any-color-you-nist-scientists-create-any-wavelength-lasers-tiny-circuits",
+        "score": 400,
+        "comments": 42
+      },
+      {
+        "title": "The electromechanical angle computer inside the B-52 bomber's star tracker",
+        "url": "https://www.righto.com/2026/04/B-52-star-tracker-angle-computer.html",
+        "score": 400,
+        "comments": 25
+      },
+      {
+        "title": "Vercel says internal systems hit in breach",
+        "url": "https://decipher.sc/2026/04/19/vercel-says-internal-systems-hit-in-breach/",
+        "score": 361,
+        "comments": 13
+      },
+      {
+        "title": "Game devs explain the tricks involved with letting you pause a game",
+        "url": "https://kotaku.com/video-game-devs-explain-how-pausing-works-and-sometimes-it-gets-weird-2000686339",
+        "score": 360,
+        "comments": 33
+      },
+      {
+        "title": "Show HN: I made a calculator that works over disjoint sets of intervals",
+        "url": "https://victorpoughon.github.io/interval-calculator/",
+        "score": 306,
+        "comments": 28
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Deleteduser.com — a $15 PII Magnet",
+        "url": "https://mike-sheward.medium.com/deleteduser-com-a-15-pii-magnet-c4396eb21061",
+        "score": 136,
+        "comments": 47,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "SQLite prefixes its temp files with etilqs_",
+        "url": "https://avi.im/blag/2026/etilqs/",
+        "score": 78,
+        "comments": 15,
+        "tags": [
+          "databases"
+        ]
+      },
+      {
+        "title": "Hello old new \"Projects\" directory",
+        "url": "https://blog.tenstral.net/2026/04/hello-projects-directory.html",
+        "score": 54,
+        "comments": 28,
+        "tags": [
+          "linux",
+          "programming"
+        ]
+      },
+      {
+        "title": "Yojam: a macOS default-browser shim that routes URLs through a rule engine",
+        "url": "https://github.com/fluffypony/yojam",
+        "score": 47,
+        "comments": 31,
+        "tags": [
+          "mac",
+          "release"
+        ]
+      },
+      {
+        "title": "waves & particles",
+        "url": "https://taylor.town/waves",
+        "score": 41,
+        "comments": 0,
+        "tags": [
+          "art"
+        ]
+      },
+      {
+        "title": "When compilers surprise you",
+        "url": "https://xania.org/202512/24-cunning-clang",
+        "score": 31,
+        "comments": 3,
+        "tags": [
+          "compilers"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "audreyt",
+        "followers": 8835,
+        "repo": "audreyt/communitycheck",
+        "url": "https://github.com/audreyt/communitycheck",
+        "language": "HTML",
+        "hours_ago": 19,
+        "description": "在病毒式傳播的社群貼文上附加具統計代表性的民調資料的設計規格",
+        "local_context": "🇹🇼 唐鳳離開數位部後持續推進公民科技規格，communitycheck 延續 vTaiwan 和 g0v 精神"
+      },
+      {
+        "developer": "doggy8088",
+        "followers": 4354,
+        "repo": "doggy8088/Voca",
+        "url": "https://github.com/doggy8088/Voca",
+        "language": null,
+        "hours_ago": 51,
+        "description": "本地語音複製助手，底層用 VoxCPM 模型",
+        "local_context": "🇹🇼 保哥（台灣 .NET / AI 社群 KOL）從 Claude Code skills 轉向語音合成方向"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 819,
+        "repo": "strategist922/browser-harness",
+        "url": "https://github.com/strategist922/browser-harness",
+        "language": null,
+        "hours_ago": 3,
+        "description": "讓 LLM 完成任意任務的自修復瀏覽器控制層",
+        "local_context": "🇹🇼 繼 claude-dispatch、autoskills 之後，台灣開發者在 Claude Code meta-tooling 方向的第三個專案"
+      },
+      {
+        "developer": "cmhungsteve",
+        "followers": 617,
+        "repo": "cmhungsteve/EASI",
+        "url": "https://github.com/cmhungsteve/EASI",
+        "language": null,
+        "hours_ago": 60,
+        "description": "多模態 LLM 空間智能評估基準（Holistic Evaluation of Multimodal LLMs on Spatial Intelligence）",
+        "local_context": "🇹🇼 台灣 AI 研究者在 VLM benchmark 方向的貢獻，EASI 填補空間理解評估的空白"
+      }
+    ],
+    "global": [
+      {
+        "developer": "geohot",
+        "followers": 46354,
+        "repo": "geohot/factoring",
+        "url": "https://github.com/geohot/factoring",
+        "language": "Python",
+        "hours_ago": 43,
+        "description": "搜索多項式時間因式分解演算法。17★，George Hotz（tinygrad 建立者、46K followers）的新研究方向，直接挑戰 RSA 的數學基礎假設。"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 62019,
+        "repo": "huggingface/context-course",
+        "url": "https://github.com/huggingface/context-course",
+        "language": "MDX",
+        "hours_ago": 56,
+        "description": "context engineering with code agents 的課程教材。連續兩天出現。HuggingFace 正在把 context engineering 從 blog 概念推進到課程紀律。"
+      },
+      {
+        "developer": "lucidrains",
+        "followers": 59085,
+        "repo": "lucidrains/pseudo-projector",
+        "url": "https://github.com/lucidrains/pseudo-projector",
+        "language": "Python",
+        "hours_ago": 4,
+        "description": "新的投影機制實作。lucidrains（59K followers，以 PyTorch paper 實作聞名）4 小時前建立，尚無 README。"
+      },
+      {
+        "developer": "google-deepmind",
+        "followers": 23508,
+        "repo": "google-deepmind/proeval",
+        "url": "https://github.com/google-deepmind/proeval",
+        "language": "Python",
+        "hours_ago": 44,
+        "description": "DeepMind 空 repo 序列第五個（egg → ddgc → beneath-the-surface → proeval），跨 6 天。proeval 命名最直白——probe evaluation 暗示能力探測評估框架。"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 117848,
+        "repo": "microsoft/documents",
+        "url": "https://github.com/microsoft/documents",
+        "language": "Python",
+        "hours_ago": 23,
+        "description": "Microsoft 23 小時前建立的 repo，無 description、無 README。Python 語言標記。名稱暗示文件處理工具，但可能只是內部佔位。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "AI 定價透明度危機：從個人抱怨到公共驗證工具",
+      "body": "三天三組獨立量測（兩篇 HN 文章合計 977 分 + 一個 593 分的排行榜工具）收斂到 Opus 4.7 token 膨脹 ~45%。Simon Willison 同日把 Claude 歷代 system prompt 做成 git timeline，讓 builder 用 diff 追蹤每一版的行為變化。這不再是「有人抱怨帳單」——社群已經開始自建透明度基礎設施，填補 vendor 沒主動提供的資訊空白。OSChina 上 JeecgBoot 團隊從 Claude 遷移到 Gemini CLI 的實測報告，是 token 成本壓力的直接行為反應。",
+      "evidence": "HN token 排行榜 593 分 + 前兩天 678+299 分 = 三天累計 1570 分的社群量測文。Simon Willison 兩篇 system prompt 分析文。OSChina Gemini CLI 實測報告。",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 4,
+      "percentile": "top 5%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 8,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Anonymous request-token comparisons from Opus 4.6 and Opus 4.7",
+          "url": "https://tokens.billchambers.me/leaderboard",
+          "score": 593
+        },
+        {
+          "platform": "Simon Willison",
+          "title": "Changes in the system prompt between Claude Opus 4.6 and 4.7",
+          "url": "https://simonwillison.net/2026/Apr/18/opus-system-prompt/#atom-everything"
+        },
+        {
+          "platform": "Simon Willison",
+          "title": "Claude system prompts as a git timeline",
+          "url": "https://simonwillison.net/2026/Apr/18/extract-system-prompts/#atom-everything"
+        },
+        {
+          "platform": "OSChina",
+          "title": "嘗試 Gemini CLI 替代 Claude",
+          "url": "https://www.oschina.net/news/433408"
+        }
+      ],
+      "product_opportunity": "跨 model provider 的 behavior changelog + token cost monitoring SaaS——在 model 換代時自動偵測 cost regression 和 behavior drift，通知 builder"
+    },
+    {
+      "title": "DeepMind 空 repo 序列第五彈：proeval",
+      "body": "google-deepmind/proeval（Python，0★，44h ago）是 DeepMind 空 repo 序列的第五個成員。序列跨 6 天：egg → ddgc → beneath-the-surface → proeval。前三個名稱隱晦，proeval 最直白——probe evaluation，明確指向能力探測評估框架。DeepMind 過去在 paper 發布前建空 repo 佔位的模式已被充分記錄。預測的 resolution date（2026-04-30）距今 10 天。",
+      "evidence": "google-deepmind/proeval 0★，Python，44h ago。序列第 5 個空 repo，跨 6 天。前 4 個：egg / ddgc / beneath-the-surface / proeval。",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "N/A（developer watch signal，不在社群討論中）",
+      "arc_ref": "deepmind-stealth-pre-launch",
+      "day_count": 6,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google-deepmind/proeval",
+          "url": "https://github.com/google-deepmind/proeval"
+        }
+      ],
+      "product_opportunity": "如果 proeval 是 evaluation framework，預先建構相容的 benchmark adapter 能在公開當天就跑自己的模型"
+    },
+    {
+      "title": "Platform trust 同步告警：Vercel breach + Deleteduser.com PII",
+      "body": "Vercel 確認內部系統遭入侵（HN #1，361 分），同日 Lobsters 第一名（136 分）是 Deleteduser.com 的 PII 安全事件。兩個社群在同一天的頭條都是 security fundamentals。Vercel 是 AI agent 前端部署的主流選擇；Deleteduser.com 揭露了帳號刪除後 PII 殘留的系統性問題。這兩件事不是同一個攻擊——但它們出現在同一天，說明 platform security 的 baseline 正在被多個方向同步測試。",
+      "evidence": "Vercel breach HN 361 分 #1 位置。Deleteduser.com PII Lobsters 136 分 #1 位置。兩個社群同日頭條均為 security 事件。",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Vercel says internal systems hit in breach",
+          "url": "https://decipher.sc/2026/04/19/vercel-says-internal-systems-hit-in-breach/",
+          "score": 361
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Deleteduser.com — a $15 PII Magnet",
+          "url": "https://mike-sheward.medium.com/deleteduser-com-a-15-pii-magnet-c4396eb21061",
+          "score": 136
+        }
+      ],
+      "product_opportunity": "self-hosted AI agent deployment toolkit（Caddy + systemd + Let's Encrypt），替代 Vercel 的 self-serve 方案，賣給不想 trust third-party platform 的 team"
+    },
+    {
+      "title": "Claude Code 生態系國際化：MCP server 進入非英語市場",
+      "body": "mcp-brasil（1,408★）把 41 個巴西公共 API 包成 MCP server。OSChina 報導 JeecgBoot 團隊從 Claude Code 遷移到 Gemini CLI 的實測。samber/cc-skills-golang（1,294★）把 Go 整合進 skill 生態。Claude Code 生態系從英語社群的工具和 skill 爆發，進入非英語市場的本地化和語言多樣化階段。同時，替代方案（Gemini CLI）的實測報告開始出現，說明 Claude Code 的市場地位已經大到值得其他 provider 認真追趕。",
+      "evidence": "mcp-brasil 1,408★（巴西 MCP）。cc-skills-golang 1,294★（Go skill 生態）。OSChina Gemini CLI 實測報告。Claude Code Game Studios 13,267★（+1,588★ vs 昨日 11,679★，+13.6%）。",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 8,
+      "source_links": [
+        {
+          "platform": "GitHub Search",
+          "title": "jxnxts/mcp-brasil",
+          "url": "https://github.com/jxnxts/mcp-brasil"
+        },
+        {
+          "platform": "GitHub Search",
+          "title": "samber/cc-skills-golang",
+          "url": "https://github.com/samber/cc-skills-golang"
+        },
+        {
+          "platform": "OSChina",
+          "title": "嘗試 Gemini CLI 替代 Claude",
+          "url": "https://www.oschina.net/news/433408"
+        }
+      ],
+      "product_opportunity": "Claude Code skill 的本地化 template + 翻譯工具鏈，讓非英語 builder 快速建立自己市場的 MCP server"
+    }
+  ],
+  "sleeper": {
+    "name": "audreyt/communitycheck",
+    "url": "https://github.com/audreyt/communitycheck",
+    "description": "唐鳳（前台灣數位部長，GitHub 8,835 followers）19 小時前建立的設計規格 repo：定義如何把統計代表性的民調資料附加到病毒式傳播的社群貼文上。1★，純 HTML spec。",
+    "body": "這個 repo 不是程式碼，是規格文件。但正是這一點讓它有不對稱的上漲空間：如果任何司法管轄區的 content moderation 法規開始要求平台在 viral 內容上標注「代表性民意」，這份 spec 會成為 reference implementation 的起點。Twitter/X Community Notes 證明群眾標記機制有市場，但 Notes 是 crowdsourced opinion，不是 statistically representative polling。communitycheck 解決的是 representativeness gap。",
+    "why_asymmetric": "唐鳳有把類似 spec 推進到政策層面的 track record（g0v、vTaiwan、Presidential Hackathon）。規格文件的 leverage 不在 stars 數——在於有沒有政策制定者採納。EU DSA 和台灣的數位中介法都在要求平台對 viral 內容提供 context，這份 spec 正好坐在這個需求的交匯點上。",
+    "commercial_path": "民調機構（YouGov / Pew / TVBS 民調中心）授權 API access 給瀏覽器擴充或社群平台。per-platform licensing model，年費制。"
+  },
+  "contrarian": {
+    "claim": "OpenAI 收購 Astral（Ruff / uv）是 talent acquisition，不是 product integration。12 個月內不會有把 Ruff/uv 整合進 AI coding workflow 的 GA 產品。",
+    "body": "社群的敘事是「OpenAI 擁有了 Python 最快的 linter 和 package manager，要跟 Claude Code 正面對決」。但 Ruff 是靜態分析工具，uv 是 dependency resolver。從 linting + dependency management 到 AI-powered development environment 的距離，跟從 TypeScript compiler 到 VS Code 的距離差不多。Google 買了 DeepMind 用了八年才把它整合進產品線。Microsoft 買了 GitHub 花兩年才推出 Copilot。OpenAI 的核心能力是 model training，不是 developer tooling——而 Astral 團隊的強項是 Rust 效能工程，不是 LLM-agent interaction design。",
+    "rationale": "acqui-hire 成功的前提是收購方有一個現成的產品 shell 讓被收購團隊插入。OpenAI 沒有 IDE、沒有 CLI coding tool、沒有 agent development framework（openai-agents-python 是一個 library，不是一個 dev environment）。Astral 團隊要從零建這些東西，同時還要維護 Ruff/uv 的開源社群——兩件事的 incentive 結構衝突。",
+    "prediction": "到 2027-04-20，OpenAI 不會推出將 Ruff/uv 整合進 AI-powered coding workflow 的 GA 產品（以 OpenAI 官方 blog 或產品頁面公告為準）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "pending",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-claude-design-retention",
+      "text": "到 2026-10-31，Anthropic 主動調整 Claude Design 的定位（下線、改名、或官方將目標用戶從「專業設計師」改為「non-designer mock-up 工具」），或有主要科技媒體報導其用戶留存低於競品。",
+      "status": "pending",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-thunderbolt-ceiling",
+      "text": "到 2026-09-30，thunderbird/thunderbolt GitHub stars 不超過 8,000（2026-04-20 基準 2,116★）。",
+      "status": "pending",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-astral-openai-integration",
+      "text": "到 2027-04-20，OpenAI 不會推出將 Ruff/uv 整合進 AI-powered coding workflow 的 GA 產品（以 OpenAI 官方 blog 或產品頁面公告為準）。",
+      "status": "pending",
+      "resolution_date": "2027-04-20"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "resolution_date": "2026-09-30"
+    }
+  ],
+  "meta": {
+    "run_id": "3844c4bd-5a74-4509-a8e4-900aff6615a6",
+    "pipeline_version": "bafd362",
+    "model": "claude-opus-4-6",
+    "generated_at": "2026-04-19T20:21:38.370Z",
+    "analyze_duration_ms": 1188689,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 10
+      },
+      "search": {
+        "ok": true,
+        "count": 53
+      },
+      "developers": {
+        "ok": true,
+        "count": 16
+      }
+    },
+    "degraded_sources": []
+  }
+}
