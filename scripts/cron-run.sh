@@ -118,7 +118,7 @@ docker run --rm \
   --add-host metadata:127.0.0.1 \
   -e GITHUB_TOKEN \
   -e REPORT_TIMEZONE="${REPORT_TIMEZONE:-Asia/Taipei}" \
-  -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-6}" \
+  -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}" \
   -v "$VOLUME":/workspace \
   -v "$CLAUDE_HOST_DIR":/home/pipeline/.claude \
   -v "${HOME}/.claude.json":/home/pipeline/.claude.json \
