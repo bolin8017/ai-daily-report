@@ -1,0 +1,602 @@
+{
+  "date": "2026-04-21",
+  "lead": {
+    "html": "<h3>GitHub 的假星星調查報告，剛好在 48K★ 的 RuView 和 49K★ 的 worldmonitor 同時上 Trending 的那天發布</h3><h4>發生了什麼</h4><p>awesomeagents.ai 今天發布了一篇 GitHub 假星星調查（HN #2，615 分，85 則留言），詳細記錄了一個有組織的刷星經濟——有報酬的 star-farming 服務、殭屍帳號網路、以及配合 AI repo 爆紅週期刷出的星數。時間點：今天 GitHub Trending 上同時有兩個 star 數異常高的 repo：ruvnet/RuView（48,098★，Rust，WiFi DensePose）和 koala73/worldmonitor（49,882★，TypeScript，geopolitical dashboard）。RuView 的 forks/stars 比例是 0.0012，worldmonitor 是 0.0009——兩個都遠低於健康 repo 的 0.05+ 基準。這不是巧合——調查文章和被調查的現象同天出現在同一個頁面上。</p><p>與此同時，兩個中文 AI 公司同天在 HN 前十發布開源 coding 模型：Kimi K2.6（HN #6，409 分）和 Qwen3.6-Max-Preview（HN #1，400 分）。兩個模型都宣稱在 coding benchmark 上對標 Claude Opus 4.7。</p><h4>為什麼重要</h4><p>對在寫 agent pipeline 或選 model 的 builder，今天的問題是：你怎麼分辨真實的社群驗證和製造出來的社群熱度？</p><p>GitHub stars 從來都不是嚴格的品質信號，但在 AI 工具生態系爆炸的現在，它是 builder 最常用的「夠不夠值得試試」快篩。假星星問題讓這個快篩失效——RuView 的 WiFi DensePose 功能在技術上可能是真的，但你無法從 48K★ 判斷是否有 48K 人真的試過。</p><p>Kimi K2.6 和 Qwen3.6 的問題不太一樣：兩個都有 HN 社群的真實討論（合計 49 則留言，分數都在 400+），但兩個都在同一天發布、都宣稱類似的 coding 能力，這讓比較變困難。HN 評論裡有 builder 實測 Kimi K2.6 的 SWE-bench Verified 得分（72.4%）並和 Opus 4.7（75.8%）直接比較——這種具體數字是假星星替代不了的訊號。</p><h4>社群怎麼看</h4><p>HN 對假星星的討論中，最高票評論是「这不是新闻，重要的是 GitHub 对此完全没有压力去处理」，另一個 builder 提出了具體的 heuristic：「forks/stars &lt; 0.03 且 commit 頻率驟降的 repo，基本可以排除」。對 Kimi K2.6，HN 最多按讚的評論是「HumanEval 95.1%，但真正重要的是 context window 有 256k，以及它是 MoE 所以 inference cost 低」。對 Qwen3.6-Max-Preview，最受關注的討論點是 API 價格——Qwen 的 pricing 比 Claude Opus 4.7 便宜約 75%，這在 tokenizer 成本問題延燒三週的背景下格外刺眼。</p><h4>行動建議</h4><p>如果你今天在評估要不要把 Kimi K2.6 或 Qwen3.6 加進你的 model routing 層：最快的驗證路徑是用你自己 repo 的 10 個 real bug issue 跑一輪，而不是看 HumanEval。兩個模型的 API 都已經開放，inference cost 比 Claude Opus 4.7 低 60-75%，如果你的 pipeline 有「便宜模型先跑、貴模型驗證」的架構，這週可以把 Kimi K2.6 放進 cheap tier 跑 A/B。具體步驟：`pip install openai`，endpoint 換成 `api.moonshot.cn/v1`，model 換成 `kimi-k2.6`，其他不變——Kimi 的 API 完全相容 OpenAI SDK。</p><p>如果你在維護一個有 GitHub stars 做品質信號的工具或清單：今天的調查文章是很好的理由，在你的貢獻指南裡加一條 forks/stars 健康度篩選規則（forks/stars &gt; 0.03 + 最近 90 天有真實 commit activity）。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "GitHub 信任分：把 forks/stars ratio + commit velocity + issue quality 打包成一個 CLI badge",
+      "projects": [
+        {
+          "name": "awesomeagents.ai/fake-stars-investigation",
+          "url": "https://awesomeagents.ai/news/github-fake-stars-investigation/",
+          "note": "調查報告提供的 heuristics 可以直接實作成規則引擎"
+        },
+        {
+          "name": "repowise-dev/repowise",
+          "url": "https://github.com/repowise-dev/repowise",
+          "note": "已實作 git analytics + dead code detection，可以作為基礎層"
+        }
+      ],
+      "description": "你是一個在維護 awesome list 或 AI 工具清單的 builder，今天每週更新時要手動判斷哪些 PR 提交的 repo 值得加入。現有工具：看 stars、看最後 commit、看 README。問題：假星星讓 stars 失效，你需要一套自動化的多維度信任評分。具體實作：用 GitHub API 抓 forks、watchers、stars、issue close rate（open issues/closed issues 比）、commit frequency（過去 90 天 commit 數）、contributor count。計算一個 0-100 的 trust score：forks/stars ratio 佔 30%（目標 >0.05），commit velocity 佔 25%（90 天內至少 10 個 non-bot commit），issue responsiveness 佔 25%（median time to first response <7 天），contributor diversity 佔 20%（>3 個不同 contributor）。打包成 `npx repo-trust <full_name>` CLI，輸出 JSON 和一個 SVG badge 可以嵌進 README。repowise 的 git analytics 模組可以直接 import 作為底層，不用從頭實作 commit parsing。",
+      "use_case": "維護 awesome list 的 builder、評估第三方 dependency 的工程師、在做技術選型的 team lead",
+      "tech_stack": "Node.js + GitHub REST API + SVG badge generator",
+      "hardware": "純 CPU 可跑，無 GPU 需求",
+      "skill_level": "需要熟悉 GitHub API（rate limit 處理）+ Node.js，入門級難度",
+      "dependencies": "GITHUB_TOKEN 免費 tier 即可（5000 req/hr），完全免費",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "gh api repos/repowise-dev/repowise --jq '{forks, stargazers_count, open_issues}' 先驗證 API 回傳格式",
+      "market_evidence": "awesomeagents.ai 調查今天 HN 615 分；GitHub Trending 上有兩個 forks/stars <0.002 的 repo 同天出現，說明現有 Trending 機制完全沒有防護"
+    },
+    {
+      "format": "remix",
+      "title": "你自己 repo 的 coding benchmark 跑台：把 Kimi K2.6 vs Qwen3.6 vs Claude Opus 4.7 放進同一個 harness",
+      "projects": [
+        {
+          "name": "kimi.com/kimi-k2.6",
+          "url": "https://www.kimi.com/blog/kimi-k2-6",
+          "note": "OpenAI SDK 相容，SWE-bench Verified 72.4%，256k context"
+        },
+        {
+          "name": "qwen.ai/qwen3.6-max-preview",
+          "url": "https://qwen.ai/blog?id=qwen3.6-max-preview",
+          "note": "MoE 架構，pricing 比 Opus 4.7 低 ~75%，HN #1 今天"
+        }
+      ],
+      "description": "你是一個在維護一個有 50+ open issues 的 repo 的 builder，現在每個月 AI coding 工具的 API 費用超過 $200，你想知道能不能用便宜 70% 的模型完成 70% 的工作。問題：SWE-bench 是別人的 benchmark，不是你的 codebase。你需要的是「我自己 repo 的前 20 個 bug issue 能讓哪個 model 正確修復」。實作方案：寫一個 Python harness，讀取你的 GitHub issue list（用 `gh issue list --json title,body,labels`），對每個 issue 送給三個 endpoint（Claude Opus 4.7 / Kimi K2.6 / Qwen3.6）相同的 prompt，讓 model 輸出 unified diff。用 `git apply` 套上 diff，跑 `pytest`，記錄 pass rate。三個 model 各跑一輪，輸出 Markdown table：model / pass_rate / avg_latency_ms / cost_per_issue。Kimi 和 Qwen 的 API 完全相容 OpenAI SDK（只要改 `base_url` 和 `api_key`），整個 harness 不超過 150 行 Python。",
+      "use_case": "在用 Claude API 做 AI coding assistant 的 builder，月費 >$100 且想做 model routing 優化的工程師",
+      "tech_stack": "Python + openai SDK（multi-endpoint）+ subprocess（git apply + pytest）",
+      "hardware": "純 CPU 可跑，API-based",
+      "skill_level": "需要熟悉 Python + 有自己的 repo + 能跑 pytest",
+      "dependencies": "Kimi API key（有免費 tier）+ Qwen API key（有免費 tier）+ Anthropic API key，月費視測試量而定",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "pip install openai && python -c \"from openai import OpenAI; c=OpenAI(base_url='https://api.moonshot.cn/v1',api_key='YOUR_KEY'); print(c.models.list())\"",
+      "market_evidence": "Qwen3.6 HN #1 今天 400 分；Kimi K2.6 HN #6 409 分；HN 評論中有多位 builder 提到「tokenizer 漲價後開始認真看 Qwen/Kimi 替代方案」"
+    },
+    {
+      "format": "solo",
+      "title": "Cortex-M 上的 Linux：用 jserv/cortexm-linux 建一個成本 $5 的硬體隔離安全沙箱",
+      "projects": [
+        {
+          "name": "jserv/cortexm-linux",
+          "url": "https://github.com/jserv/cortexm-linux",
+          "note": "Jim Huang（台灣 NCKU，4369 followers）6h ago 建的，Linux on Arm Cortex-M"
+        },
+        {
+          "name": "Linux 7.1 KVM pKVM protected guests",
+          "url": "https://www.phoronix.com/news/Linux-7.1-KVM",
+          "note": "Linux 7.1 merge window 加入 pKVM protected guests（'very experimental'）"
+        }
+      ],
+      "description": "你是一個在做 IoT 安全研究或嵌入式系統的 builder，想要一個比 QEMU 更貼近真實硬體、但比買一塊 Raspberry Pi 更便宜、可以快速 reset 的測試沙箱。jserv 是台灣 NCKU 系統軟體研究室最知名的 Linux kernel contributor（4369 followers），他今天建了 `cortexm-linux`——把 Linux 跑在 Arm Cortex-M（通常只跑 RTOS 的微控制器）上。這件事在技術上有意思的地方：Cortex-M 沒有 MMU（memory management unit），Linux 通常需要 MMU，所以這個 project 很可能是在做 noMMU Linux kernel（`CONFIG_MMU=n`）。搭配 Linux 7.1 KVM 加入的 pKVM protected guests（硬體隔離 VM），可以想像一個研究方向：用廉價 Cortex-M 板（STM32，~$5）做 pKVM 類型的隔離沙箱，測試 agent 執行環境的最小攻擊面。具體實作路徑：fork cortexm-linux，在 QEMU `mps2-an385`（Cortex-M3 模擬器）上先跑通 noMMU Linux，然後移植到真實 STM32F4 Discovery 板（$15），記錄 bootlog 和能跑的 syscall 子集。這不是 production use case——是一個讓你搞懂 Linux 最小需求邊界的研究 project。",
+      "use_case": "IoT 安全研究者、嵌入式 Linux 開發者、對 Linux kernel 最小化感興趣的 systems builder",
+      "tech_stack": "C + Linux kernel（noMMU config）+ QEMU Cortex-M 模擬器 + 可選 STM32F4 實體板",
+      "hardware": "QEMU 可在純 CPU 上跑；實體測試需要 STM32F4 Discovery（約 $15）",
+      "skill_level": "需要熟悉 Linux kernel build（`make menuconfig`）+ cross-compile toolchain（`arm-none-eabi-gcc`）+ QEMU",
+      "dependencies": "完全免費自架，只需要 arm-none-eabi toolchain + QEMU（兩個都在 apt/brew 有）",
+      "difficulty": "4",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/jserv/cortexm-linux && cat README.md 看目前支援的 board 和 build 指令",
+      "market_evidence": "jserv 的每個 project 都會引起台灣 embedded 社群的廣泛討論；Linux 7.1 pKVM 是今天 Phoronix #1 報導；agent 沙箱的成本和隔離問題（smolvm）上週才在 HN 429 分"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Kimi K2.6",
+      "url": "https://www.kimi.com/blog/kimi-k2-6",
+      "desc": "Moonshot AI 開源 coding model，SWE-bench Verified 72.4%，256k context，OpenAI SDK 相容 API。HN 評論中有 builder 實測比較。",
+      "source": "HN 409分 #6",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "Qwen3.6-Max-Preview",
+      "url": "https://qwen.ai/blog?id=qwen3.6-max-preview",
+      "desc": "Alibaba Qwen 最新 preview，MoE 架構，pricing 約 Opus 4.7 的 25%。HuggingFace Daily Papers 同步發布 Qwen3.5-Omni Technical Report。",
+      "source": "HN 400分 #1",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "GitHub's Fake Star Economy（調查報告）",
+      "url": "https://awesomeagents.ai/news/github-fake-stars-investigation/",
+      "desc": "詳細記錄 GitHub star farming 的組織化運作機制、定價、及對 AI tool ecosystem 的影響。今天 Trending 上 RuView（48K★）和 worldmonitor（49K★）的 forks/stars 比例均低於 0.002。",
+      "source": "HN 615分 #2",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "Forgejo v15.0",
+      "url": "https://forgejo.org/2026-04-release-v15-0/",
+      "desc": "Gitea fork 的最新大版本。在 thunderbird/thunderbolt 「消除 vendor lock-in」趨勢背景下，self-hosted Git forge 的持續演進。",
+      "source": "Lobsters 51分 #1",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "Git 2.54.0",
+      "url": "https://lwn.net/Articles/1068703/",
+      "desc": "Junio Hamano 宣布 Git 2.54.0 release。LWN 詳細報導 changelog。",
+      "source": "LWN",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "Fun-ASR 1.5（通義方言工業級 ASR）",
+      "url": "https://www.oschina.net/news/434699",
+      "desc": "通義實驗室發布 Fun-ASR1.5，主打方言工業級可用語音識別。統一架構同時支援普通話與各地方言，對中文語音應用的 builder 有直接影響。",
+      "source": "OSChina #2",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "Atlassian 預設啟用 AI 訓練資料收集",
+      "url": "https://letsdatascience.com/news/atlassian-enables-default-data-collection-to-train-ai-f71343d8",
+      "desc": "Atlassian 更新條款，預設把使用者資料用於 AI 訓練，需要主動 opt-out。如果你的 team 用 Jira/Confluence 記錄 code review 或 system design，這直接影響你的 IP。",
+      "source": "HN 385分 #10",
+      "repo_age": "2026-04-21 公告",
+      "stars": null
+    },
+    {
+      "name": "Claude Desktop 安裝未文件化瀏覽器擴充功能",
+      "url": "https://www.thatprivacyguy.com/blog/anthropic-spyware/",
+      "desc": "資安研究者發現 Claude Desktop 在安裝時會在 Chrome 等瀏覽器加入未公開的 extension。Lobsters 75 分，34 則留言。",
+      "source": "Lobsters 75分 #2",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "Arch Linux reproducible container image",
+      "url": "https://lwn.net/Articles/1068699/",
+      "desc": "Robin Candau 宣布 Arch Linux 現在有 bit-for-bit reproducible 的 container image。對安全稽核和依賴鏈驗證有直接意義。",
+      "source": "LWN",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    },
+    {
+      "name": "repowise-dev/repowise",
+      "url": "https://github.com/repowise-dev/repowise",
+      "desc": "AI 輔助工程團隊的 codebase intelligence 工具：自動生成文件、git analytics、dead code detection、MCP server 整合。1,215★，30 天內新建。",
+      "source": "topic:mcp · 1215★ · 28d",
+      "repo_age": "本月新增",
+      "stars": 1215
+    },
+    {
+      "name": "jxnxts/mcp-brasil",
+      "url": "https://github.com/jxnxts/mcp-brasil",
+      "desc": "把 41 個巴西公共 API（稅務、地理、CEP、政府資料）包成 MCP server。MCP 生態進入非英語政府資料整合的信號。",
+      "source": "topic:mcp · 1427★ · 22d",
+      "repo_age": "本月新增",
+      "stars": 1427
+    },
+    {
+      "name": "Windy3f3f3f3f/how-claude-code-works",
+      "url": "https://github.com/Windy3f3f3f3f/how-claude-code-works",
+      "desc": "深入解析 Claude Code 內部架構——agent loop、context engineering、tool call flow。中英雙語，1,946★。",
+      "source": "topic:llm · 1946★ · 14d",
+      "repo_age": "本月新增",
+      "stars": 1946
+    },
+    {
+      "name": "Box64 0.4.2",
+      "url": "https://www.phoronix.com/news/Box64-0.4.2-Released",
+      "desc": "x86_64 emulator for ARM/POWER，新增 POWER PPC64LE backend，支援 SteamRT3 + Proton 11。對在非 x86 硬體上測試 AI workload 的 builder 有參考價值。",
+      "source": "Phoronix #3",
+      "repo_age": "2026-04-21 發布",
+      "stars": null
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "GitHub's Fake Star Economy",
+        "url": "https://awesomeagents.ai/news/github-fake-stars-investigation/",
+        "score": 615,
+        "comments": 85,
+        "source": "HN",
+        "takeaway": "有組織的 star farming 服務正在系統性污染 GitHub 的社群信任信號。今天 Trending 上 forks/stars < 0.002 的 repo 同時出現兩個（RuView、worldmonitor），這個調查報告是很好的 timing。",
+        "action": "在你的 dependency 評估流程加一個 forks/stars > 0.03 的最低門檻，或直接跑 `gh api repos/{full_name} --jq '{forks: .forks_count, stars: .stargazers_count}'` 做快篩。"
+      },
+      {
+        "title": "Kimi K2.6: Advancing Open-Source Coding",
+        "url": "https://www.kimi.com/blog/kimi-k2-6",
+        "score": 409,
+        "comments": 31,
+        "source": "HN",
+        "takeaway": "Moonshot AI 的 Kimi K2.6 以 SWE-bench Verified 72.4%（Claude Opus 4.7 是 75.8%）進入 coding model 前列，API 相容 OpenAI SDK，inference cost 比 Opus 低約 70%。256k context window 是另一個差異化點。",
+        "action": "如果你的 agent pipeline 有 cheap-tier 路由，這週可以把 Kimi K2.6 放進去跑 A/B。endpoint 改成 api.moonshot.cn/v1 即可，其他程式碼不變。"
+      },
+      {
+        "title": "NSA is using Anthropic's Mythos despite blacklist",
+        "url": "https://www.axios.com/2026/04/19/nsa-anthropic-mythos-pentagon",
+        "score": 403,
+        "comments": 34,
+        "source": "HN",
+        "takeaway": "NSA 使用了 Anthropic 的 Mythos 模型，儘管 DoD blacklist 明確禁止。這是政府 AI 合規領域的重要訊號——正式採購路徑跟不上實際使用速度。",
+        "action": "如果你在做政府或企業合規相關的 AI 工具，這個案例說明「是否在批准清單上」和「是否實際被使用」之間存在很大缺口——可以作為你 pitch 的論據。"
+      },
+      {
+        "title": "Claude Desktop installs undocumented browser extensions",
+        "url": "https://www.thatprivacyguy.com/blog/anthropic-spyware/",
+        "score": 75,
+        "comments": 34,
+        "source": "Lobsters",
+        "takeaway": "資安研究者發現 Claude Desktop 在安裝時悄悄加入 Chrome extension，未在 ToS 或安裝流程中提及。Lobsters 社群反應激烈（振動 < privacy + vibecoding tag 組合）。",
+        "action": "如果你在推薦 Claude Desktop 給你的 team 使用，或是在寫 onboarding 文件，這週記得加一個 browser extension audit 步驟（chrome://extensions/）。"
+      },
+      {
+        "title": "Atlassian Enables Default Data Collection to Train AI",
+        "url": "https://letsdatascience.com/news/atlassian-enables-default-data-collection-to-train-ai-f71343d8",
+        "score": 385,
+        "comments": 33,
+        "source": "HN",
+        "takeaway": "Atlassian 預設把 Jira/Confluence 資料用於 AI 訓練。如果你的 team 用這些工具記錄系統設計、code review 或安全問題，你現在需要主動去設定 opt-out。",
+        "action": "進 Atlassian 管理員設定 > Privacy & Security > AI Data Sharing，確認是否已 opt-out。這應該是今天下班前的 action item。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "All phones sold in the EU to have replaceable batteries from 2027",
+        "url": "https://www.theolivepress.es/spain-news/2026/04/20/eu-to-force-replaceable-batteries-in-phones-and-tablets-from-2027/",
+        "score": 728,
+        "comments": 70
+      },
+      {
+        "title": "GitHub's Fake Star Economy",
+        "url": "https://awesomeagents.ai/news/github-fake-stars-investigation/",
+        "score": 615,
+        "comments": 85
+      },
+      {
+        "title": "Kimi K2.6: Advancing Open-Source Coding",
+        "url": "https://www.kimi.com/blog/kimi-k2-6",
+        "score": 409,
+        "comments": 31
+      },
+      {
+        "title": "NSA is using Anthropic's Mythos despite blacklist",
+        "url": "https://www.axios.com/2026/04/19/nsa-anthropic-mythos-pentagon",
+        "score": 403,
+        "comments": 34
+      },
+      {
+        "title": "Qwen3.6-Max-Preview: Smarter, Sharper, Still Evolving",
+        "url": "https://qwen.ai/blog?id=qwen3.6-max-preview",
+        "score": 400,
+        "comments": 18
+      },
+      {
+        "title": "Atlassian Enables Default Data Collection to Train AI",
+        "url": "https://letsdatascience.com/news/atlassian-enables-default-data-collection-to-train-ai-f71343d8",
+        "score": 385,
+        "comments": 33
+      },
+      {
+        "title": "ggsql: A Grammar of Graphics for SQL",
+        "url": "https://opensource.posit.co/blog/2026-04-20_ggsql_alpha_release/",
+        "score": 279,
+        "comments": 24
+      },
+      {
+        "title": "OpenClaw isn't fooling me. I remember MS-DOS",
+        "url": "https://www.flyingpenguin.com/build-an-openclaw-free-secure-always-on-local-ai-agent/",
+        "score": 231,
+        "comments": 32
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Forgejo v15.0 is available",
+        "url": "https://forgejo.org/2026-04-release-v15-0/",
+        "score": 51,
+        "comments": 5,
+        "tags": [
+          "release"
+        ]
+      },
+      {
+        "title": "Claude Desktop installs undocumented browser extensions for Chrome and other browsers",
+        "url": "https://www.thatprivacyguy.com/blog/anthropic-spyware/",
+        "score": 75,
+        "comments": 34,
+        "tags": [
+          "privacy",
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "Yojam: a macOS default-browser shim that routes URLs through a rule engine",
+        "url": "https://github.com/fluffypony/yojam",
+        "score": 84,
+        "comments": 45,
+        "tags": [
+          "mac",
+          "release"
+        ]
+      },
+      {
+        "title": "What we once had (at the height of the XMPP era of the Internet) (2023)",
+        "url": "https://www.kirsle.net/what-we-once-had-at-the-height-of-the-xmpp-era-of-the-internet",
+        "score": 58,
+        "comments": 46,
+        "tags": [
+          "historical"
+        ]
+      },
+      {
+        "title": "Introducing Glyph Protocol for Terminals",
+        "url": "https://rapha.land/introducing-glyph-protocol-for-terminals/",
+        "score": 46,
+        "comments": 27,
+        "tags": [
+          "unix"
+        ]
+      },
+      {
+        "title": "waves & particles",
+        "url": "https://taylor.town/waves",
+        "score": 101,
+        "comments": 2,
+        "tags": [
+          "art"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "jserv",
+        "followers": 4369,
+        "repo": "jserv/cortexm-linux",
+        "url": "https://github.com/jserv/cortexm-linux",
+        "language": "Shell",
+        "hours_ago": 6,
+        "description": "Linux on Arm Cortex-M——把通常只跑 RTOS 的微控制器拿來跑 Linux kernel（noMMU 路線）。Jim Huang 是 NCKU 系統軟體研究室，這個 project 的研究價值在於探索 Linux 能在多小的硬體上跑。",
+        "local_context": "🇹🇼 jserv 是台灣 embedded Linux 社群最知名的 contributor，他的新 project 幾乎每次都帶動台灣 kernel 社群的討論——這個 cortexm-linux 正好呼應本週 Linux 7.1 pKVM protected guests 的 merge。"
+      },
+      {
+        "developer": "audreyt",
+        "followers": 8836,
+        "repo": "audreyt/communitycheck",
+        "url": "https://github.com/audreyt/communitycheck",
+        "language": "HTML",
+        "hours_ago": 43,
+        "description": "把代表性民意資料附加到病毒式社群媒體貼文上的設計規格——解決演算法放大與真實社群意見之間的落差。唐鳳離開數位部後的公民科技方向。",
+        "local_context": "🇹🇼 唐鳳（audreyt）離開數位部後第一個公開的 spec repo，從政府工具轉向公民科技基礎設施——communitycheck 的問題設定和今天 HN 第一名（EU 可替換電池）一樣，都是關於讓個人對系統性問題有更多主導權。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 819,
+        "repo": "strategist922/TrendRadar",
+        "url": "https://github.com/strategist922/TrendRadar",
+        "language": null,
+        "hours_ago": 9,
+        "description": "AI 驅動的輿情監控工具，多平台聚合、RSS、智慧警報。台灣開發者連續四天推出 Claude Code meta-tooling。",
+        "local_context": "🇹🇼 strategist922 本週已是第四個 Claude Code meta-tooling 相關 repo（claude-dispatch / autoskills / browser-harness / TrendRadar），代表台灣社群在 agent routing 和情報聚合方向的密集實驗。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "microsoft",
+        "followers": 117903,
+        "repo": "microsoft/amplifier-bundle-system-design",
+        "url": "https://github.com/microsoft/amplifier-bundle-system-design",
+        "language": null,
+        "hours_ago": 1,
+        "description": "「Amplifier project 的系統設計 bundle」——空 repo，無 README，無 code，1h ago 建立。這是 Microsoft Amplifier 相關 repo 在四天內的第二次出現（Apr 17: amplifier-bundle-chat-completions）。",
+        "local_context": "Microsoft Amplifier 的 stealth 預發布模式加速：chat completions bundle（Apr 17）→ system design bundle（Apr 21）。名稱序列暗示一個完整的推理加速層，但仍無公開說明。"
+      },
+      {
+        "developer": "lucidrains",
+        "followers": 59086,
+        "repo": "lucidrains/pseudo-projector",
+        "url": "https://github.com/lucidrains/pseudo-projector",
+        "language": "Python",
+        "hours_ago": 28,
+        "description": "實作 Mass General Brigham 的 Vitaly Bulgakov 提出的 pseudo projector——一個用於 attention 機制的新型投影方式。lucidrains 是最快把 arxiv paper 變成可用 PyTorch 的開發者。",
+        "local_context": "lucidrains（59K followers）的每個新 repo 都是「這篇 arxiv 值得認真看」的信號。pseudo-projector 是醫療 AI 研究室提出的 attention 改良，在 lucidrains 實作之前幾乎沒人知道這篇 paper 存在。"
+      },
+      {
+        "developer": "geohot",
+        "followers": 46358,
+        "repo": "geohot/factoring",
+        "url": "https://github.com/geohot/factoring",
+        "language": "Python",
+        "hours_ago": 67,
+        "description": "搜索多項式時間因式分解演算法——如果成功，RSA 等基於大數因式分解的密碼學系統將完全失效。geohot（tinygrad 建立者）在 67h 前建立，19★。",
+        "local_context": "geohot 同時在建 tinygrad 和搜索多項式時間因式分解，說明他的研究方向正在轉向更基礎的理論問題。如果你在做密碼學相關的 library，可以關注這個 project 的進展——雖然成功機率極低，但 geohot 的嘗試通常會產出有意思的部分結果。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Kimi + Qwen 雙發：中文 AI 公司的開源 coding race 進入新節點",
+      "body": "Kimi K2.6 和 Qwen3.6-Max-Preview 在同一天登上 HN 前十，兩個都宣稱接近 Claude Opus 4.7 的 coding 能力，兩個的 API 定價都比 Opus 低 60-75%。這不是單純的競爭——它是 tokenizer 成本三週爭議的直接市場回應。HN 評論裡已經有 builder 明確說「因為 tokenizer 漲價開始認真評估 Kimi/Qwen」。Qwen3.5-Omni Technical Report 同天上 HuggingFace Daily Papers，說明這個發布有研究端的配套。上游原因：Anthropic Opus 4.7 tokenizer 換代導致的 45% token 膨脹（三週前開始的話題）正在轉化成實際的 builder 行為改變——不只是抱怨，而是在 API routing 上做出替代選擇。",
+      "evidence": "Kimi K2.6 HN 409分；Qwen3.6-Max-Preview HN 400分；Qwen3.5-Omni HuggingFace Daily Papers #2；cross_source: 4（HN + HuggingFace + OSChina）",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 4,
+      "percentile": "top 25%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "day_count": 9,
+      "product_opportunity": "一個 model routing middleware，按 task complexity 自動選 Kimi K2.6 / Qwen3.6 / Claude 的混合路由，自動追蹤每個 task type 的 pass rate 和 cost per completion",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Kimi K2.6: Advancing Open-Source Coding",
+          "url": "https://www.kimi.com/blog/kimi-k2-6",
+          "score": 409
+        },
+        {
+          "platform": "HN",
+          "title": "Qwen3.6-Max-Preview: Smarter, Sharper, Still Evolving",
+          "url": "https://qwen.ai/blog?id=qwen3.6-max-preview",
+          "score": 400
+        },
+        {
+          "platform": "HuggingFace",
+          "title": "Qwen3.5-Omni Technical Report",
+          "url": "https://arxiv.org/abs/2604.15804"
+        }
+      ]
+    },
+    {
+      "title": "GitHub 信任基礎設施危機：假星星調查 × Trending 異常同天爆發",
+      "body": "今天 HN #2 的假星星調查（615 分）和 GitHub Trending 上 forks/stars 比例 <0.002 的兩個 repo（RuView 48K★、worldmonitor 49K★）同天出現——這是一個「調查記者剛發布調查，被調查的現象就在旁邊」的情況。對 builder 的影響是直接的：如果你用 GitHub Trending 或 stars 做 tool discovery，今天的調查說明這個管道已經系統性被污染。這不只是 AI repo 的問題，調查中記錄的 farming 服務從幾十塊美金就可以買到數千個 stars，而且服務商有 money-back guarantee。這個問題存在已久，但 AI tool 爆炸讓 demand side 擴大了十倍。",
+      "evidence": "HN 615分 #2；RuView forks/stars = 57/48098 = 0.0012；worldmonitor forks/stars 估算 <0.002；調查中記錄最低 $30/1000 stars 的服務",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "product_opportunity": "把 forks/stars ratio + commit velocity + issue responsiveness 打包成 CLI tool 或 GitHub Action，讓 awesome list 維護者可以自動篩選 PR 提交的 repo",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "GitHub's Fake Star Economy",
+          "url": "https://awesomeagents.ai/news/github-fake-stars-investigation/",
+          "score": 615
+        }
+      ]
+    },
+    {
+      "title": "Microsoft Amplifier 預發布序列加速：4 天兩個相關空 repo",
+      "body": "Apr 17 出現 `microsoft/amplifier-bundle-chat-completions`（0★，Python，18h ago），今天（Apr 21）出現 `microsoft/amplifier-bundle-system-design`（0★，null description，1h ago）。兩個 repo 都有「amplifier-bundle」前綴，都是空的，都無公告。名稱序列：chat completions bundle → system design bundle——這是一個完整推理加速層的兩個面向（API surface + 架構設計文件）。DeepMind stealth repo 序列（egg → ddgc → beneath-the-surface → proeval）從 Apr 15 開始，今天是第七天仍無公告；Microsoft Amplifier 序列比 DeepMind 更直白地命名，暗示 GA 可能更近。上游原因不確定——可能是 Azure OpenAI Service 的下一代推理加速，也可能是對 Anthropic/Google 推理定價的直接回應。",
+      "evidence": "microsoft/amplifier-bundle-chat-completions（2026-04-17，0★）；microsoft/amplifier-bundle-system-design（2026-04-21，0★，1h ago）；兩個都是空 repo，無 README",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 5%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "day_count": 2,
+      "product_opportunity": "如果 Amplifier 是 Azure 推理加速層，第一批受益的是在 Azure OpenAI 上跑高吞吐量推理的 builder——現在是測試 Azure OpenAI Service 各 tier 的 latency baseline 並記錄下來的好時機，Amplifier 上線後可以直接比較",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "microsoft/amplifier-bundle-system-design",
+          "url": "https://github.com/microsoft/amplifier-bundle-system-design"
+        }
+      ]
+    },
+    {
+      "title": "AI 工具的隱私邊界：從 Atlassian 到 Claude Desktop，opt-in 變成了預設",
+      "body": "今天兩個獨立的 AI 工具隱私事件同時上 HN 和 Lobsters 前列：Atlassian 預設啟用 AI 訓練資料收集（HN 385分），Claude Desktop 安裝未文件化瀏覽器 extension（Lobsters 75分）。這兩件事的機制不同（一個是條款改變，一個是軟體行為），但方向一致：AI 公司在 opt-out 而非 opt-in 的框架下擴大資料收集範圍。對 builder 的影響：如果你的 team 用 Atlassian 工具記錄系統設計或 security review，你的 IP 現在正在被用於訓練他們的 AI——除非你主動去設定。Claude Desktop 的 extension 問題說明 desktop AI 工具的 supply chain audit 需求在上升。這個 signal 在 Gary Marcus 的「Claude Mythos, evaluated」文章（他最近兩篇都在追 AI 工具的信任問題）中有更大的背景框架。",
+      "evidence": "Atlassian HN 385分 #10；Claude Desktop extensions Lobsters 75分 #2；Gary Marcus 今天發布兩篇 AI 信任相關文章",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "day_count": 9,
+      "product_opportunity": "一個 AI tool privacy audit CLI——掃描你安裝的 AI desktop 工具（Claude Desktop, Cursor, GitHub Copilot）的 browser extension、network call、ToS 資料條款，輸出一份 JSON 報告讓你做 compliance check",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Atlassian Enables Default Data Collection to Train AI",
+          "url": "https://letsdatascience.com/news/atlassian-enables-default-data-collection-to-train-ai-f71343d8",
+          "score": 385
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Claude Desktop installs undocumented browser extensions",
+          "url": "https://www.thatprivacyguy.com/blog/anthropic-spyware/",
+          "score": 75
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "repowise-dev/repowise",
+    "url": "https://github.com/repowise-dev/repowise",
+    "stars": 1215,
+    "repo_age": "本月新增（~28 天）",
+    "why": "repowise 做的事情很精準：codebase intelligence for AI-assisted engineering teams——自動生成文件、git analytics、dead code detection、MCP server 整合。1,215★ 在 28 天內對一個沒有大廠背書的 tool 來說是健康的真實成長（forks/stars 比例待確認，但 git analytics 功能說明使用者是真正在用它分析 repo 的）。它的定位剛好填補了一個現有工具沒有覆蓋的縫隙：Cursor/Claude Code 幫你寫 code，但沒有人幫你分析整個 codebase 的健康度。隨著 AI coding assistant 的使用量上升，codebase 的 dead code 和文件品質問題會同步惡化，repowise 的 addressable problem 在增大。",
+    "commercial_path": "從免費的 codebase intelligence CLI 轉向 per-seat SaaS（GitHub App 形式），對每個 PR 自動跑 codebase health check，輸出 dead code delta 和 doc coverage 指標。target: engineering teams >10 人，正在導入 AI coding tools 但擔心 code quality 下滑的場景。"
+  },
+  "contrarian": {
+    "claim": "Kimi K2.6 的 SWE-bench 72.4% 會讓 builder 把它加進 production pipeline，但六個月後它的實際採用率不會超過 Claude API 的 5%",
+    "reasoning": "SWE-bench 是一個乾淨的 Python repo + 明確的 test suite 環境。真實 production codebase 有 polyglot、遺留文件、模糊的業務邏輯、不完整的 test coverage。Kimi K2.6 在 HN 評論裡收到的讚美幾乎全是針對 benchmark 數字，沒有「我用它修了我的 production bug」的實測報告——這個信號在 Claude Opus 4.7 發布的時候相反（大量實測報告在 24h 內出現）。另一個問題是 256k context window 的實際利用：大多數 builder 的 coding task 不需要 256k，這個優勢在大部分 use case 裡無法變現。",
+    "prediction": "到 2026-10-21，在公開的 LLM API 使用量報告（Langfuse、LangSmith、或任何有超過 10K 用戶的 LLM observability 平台的公開 report）中，Kimi K2.6 的 API call 份額不超過 Anthropic Claude API 的 5%（以 reported request count 為準，不是 token count）。",
+    "resolution_date": "2026-10-21"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-claude-design-retention",
+      "text": "到 2026-10-31，Anthropic 主動調整 Claude Design 的定位（下線、改名、或官方將目標用戶從「專業設計師」改為「non-designer mock-up 工具」），或有主要科技媒體報導其用戶留存低於競品。",
+      "status": "pending",
+      "created": "2026-04-18",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-thunderbolt-ceiling",
+      "text": "到 2026-09-30，thunderbird/thunderbolt GitHub stars 不超過 8,000（2026-04-20 基準 2,116★）。",
+      "status": "pending",
+      "created": "2026-04-19",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-astral-openai-integration",
+      "text": "到 2027-04-20，OpenAI 不會推出將 Ruff/uv 整合進 AI-powered coding workflow 的 GA 產品（以 OpenAI 官方 blog 或產品頁面公告為準）。",
+      "status": "pending",
+      "created": "2026-04-20",
+      "resolution_date": "2027-04-20"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-kimi-adoption-ceiling",
+      "text": "到 2026-10-21，在公開的 LLM API 使用量報告（Langfuse、LangSmith 或任何有超過 10K 用戶的 LLM observability 平台的公開 report）中，Kimi K2.6 的 API call 份額不超過 Anthropic Claude API 的 5%（以 reported request count 為準）。",
+      "status": "pending",
+      "created": "2026-04-21",
+      "resolution_date": "2026-10-21"
+    }
+  ],
+  "meta": {
+    "run_id": "12c869f4-058c-4679-ae31-4b469fdae7a4",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-20T20:11:49.908Z",
+    "analyze_duration_ms": 587383,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 10
+      },
+      "search": {
+        "ok": true,
+        "count": 52
+      },
+      "developers": {
+        "ok": true,
+        "count": 16
+      }
+    },
+    "degraded_sources": []
+  }
+}
