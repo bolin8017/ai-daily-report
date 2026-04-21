@@ -1,0 +1,569 @@
+{
+  "date": "2026-04-22",
+  "lead": {
+    "html": "<h3>Anthropic 鬆綁 AUP：第三方 Claude CLI 工具從灰色地帶走進合法生態</h3><h4>發生了什麼</h4><p>Anthropic 今天更新了 Acceptable Use Policy，明確允許以 OpenClaw 模式建構第三方 Claude CLI 工具——亦即，任何透過 Anthropic API 包裝 Claude 介面的工具，不再需要取得額外授權或擔心 AUP 違反。HN 以 442 分（top 5%）的熱度討論這件事，比任何一個新模型發布都更集中在「這對我的工具有什麼影響」。</p><p>同天，Anthropic 正式宣布 Claude Opus 4.7 GA 和 Claude Design（Anthropic Labs 的新實驗性設計工具），讓這個 AUP 鬆綁更像是一套組合動作：Opus 4.7 是 API 用戶的推力，AUP 鬆綁是 CLI 工具建構者的推力，Claude Design 是創意用戶的試水。</p><p>具體的政策變化：此前，OpenClaw（一個允許使用 Claude API 的開源 CLI 工具）的部分使用方式被認為違反 AUP 中「不得建立允許繞過 Anthropic 付費機制的工具」條款。現在 Anthropic 明確說：這個用法是允許的。</p><h4>為什麼重要</h4><p>這個政策逆轉的直接影響在你的 stack 裡：你在過去兩週 trending 的所有 Claude Code skills repo 現在處於明確合法的地位。更重要的是，這消除了一個持續壓抑社群建設意願的法律不確定性——有幾個知名的 Claude Code skill 作者在 HN 討論串裡提到他們曾因 AUP 疑慮而不敢開源某些功能。</p><p>從 stack 角度看這個 shift：你現在可以在 `claude-context`（Milvus MCP 代碼語意搜尋）、`hermes-webui`（web dashboard）這類工具上加功能、fork、重新包裝成你自己的工具鏈，而不需要先諮詢法務。這個政策鬆綁跟 OpenAI 收購 Astral（Ruff/uv）形成有趣對比：OpenAI 是把 OSS 工具吸進閉合生態，Anthropic 是把閉合 API 向外開放 OSS wrapper 空間。</p><p>Builder 的具體影響：如果你在做 MCP server、CLI wrapper、或任何把 Claude API 包裝成工具的東西，今天起 AUP 不再是你 README 裡需要加 disclaimer 的理由。</p><h4>社群怎麼看</h4><p>HN 討論（442 分，62 則留言）幾乎全是 builder 的實際問題，而非政策辯論。代表性留言：「我在六個月前就寫好了一個 Claude Code 的 Rust wrapper，一直沒敢開源因為不確定 AUP——今天要 push 了。」另一個方向的批評：「這個所謂的鬆綁其實什麼都沒變，AUP 原本也沒有明確禁止 OpenClaw——Anthropic 只是把已經容忍的東西寫成條文。」</p><p>後者有道理，但也有 builder 指出：模糊的默許和明確的條文，對決定是否開源一個 tool 的心理影響是完全不同的。</p><h4>行動建議</h4><p>如果你有一個包裝 Claude API 的工具或 CLI 腳本，但因為 AUP 不確定性而放在私有 repo 或沒有 publish，今天可以把它開源或發布到 npm/PyPI。具體動作：把你的 `package.json` 或 `setup.py` 的 `private: true` 改掉，加一個 README 段落說明「uses Anthropic API per Anthropic AUP」，然後 `npm publish` 或 `pip publish`。如果你還沒有工具但想試水，clone `zilliztech/claude-context`（Trending #3，6,475★），它是目前最完整的 MCP codebase search 工具，基於 Milvus，並且現在處於 AUP 明確允許的範圍。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "兩層 Agent 記憶：claude-context 做工作記憶，m_flow 做長期知識圖譜",
+      "projects": [
+        {
+          "name": "zilliztech/claude-context",
+          "url": "https://github.com/zilliztech/claude-context",
+          "note": "MCP 代碼語意搜尋，Milvus 向量索引整個 codebase"
+        },
+        {
+          "name": "FlowElement-ai/m_flow",
+          "url": "https://github.com/FlowElement-ai/m_flow",
+          "note": "仿海馬迴記憶整合的 Graph RAG，有時間衰減和重要性評分"
+        }
+      ],
+      "description": "你是一個在同一個大型 Python monorepo 工作了三個月的後端工程師。每次開 Claude Code session，你的 agent 都記得這次 session 討論過哪些 module，但從來不記得上週你發現的「auth service 有一個 token 過期 race condition」這類跨 session 的結構性認知。claude-context 解決「這個 session 裡我要查什麼」（工作記憶，向量搜尋 codebase），m_flow 解決「我在這個 repo 累積了什麼架構知識」（長期記憶，Graph RAG with decay）。缺的是一個 binding layer：session 結束時自動把 claude-context 的搜尋歷史和 agent 的結論推進 m_flow 的知識圖譜。做法：寫一個 `@memory-consolidate` slash command，在 session 結束時 (a) 讀 claude-context 搜尋記錄，(b) 用 Claude 從中抽取 N 個實體/關係，(c) upsert 到 m_flow 圖譜並標記 importance score。下次 session 開始時，先 query m_flow 把跨 session 架構知識注入 system prompt。",
+      "use_case": "在同一個大型 codebase 工作的後端工程師，需要跨 session 累積結構性認知，而不是每次都從頭問「這個 module 做什麼」",
+      "tech_stack": "Python + MCP SDK + Milvus OSS + m_flow graph API",
+      "hardware": "Milvus 本地跑（需 4GB RAM）或 Zilliz Cloud 免費層",
+      "skill_level": "Python 中級 + 熟悉 MCP protocol + 了解基本向量搜尋概念",
+      "dependencies": "Milvus OSS 免費自架 + Claude API（月費約 $5-10 for medium usage）",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/zilliztech/claude-context && git clone https://github.com/FlowElement-ai/m_flow && cd claude-context && npm install && npm run build",
+      "market_evidence": "claude-context 6,475★ 在不到 30 天內；m_flow 1,273★ topic:rag；HN 上多個 builder 抱怨 agent 跨 session 失憶問題的 threads 合計 200+ upvotes"
+    },
+    {
+      "format": "remix",
+      "title": "design-extract + Claude = 從競品網站一鍵生成 Tailwind 元件庫",
+      "projects": [
+        {
+          "name": "Manavarya09/design-extract",
+          "url": "https://github.com/Manavarya09/design-extract",
+          "note": "一條指令提取任何網站的完整設計系統，輸出 DTCG tokens，內建 MCP server"
+        }
+      ],
+      "description": "你是一個接案的前端工程師，客戶想要一個「看起來像 Linear」的 dashboard。以前你要手動打開 DevTools 一個個 inspect CSS 變數，或者付 Figma plugin 月費。design-extract 可以從任何 URL 一條指令提取 DTCG tokens（顏色、間距、字型、陰影）——輸出是標準格式，而且有內建 MCP server 讓 Claude Code 直接讀取。把這個接到 Claude Code 的 `/project:init` 命令：先 run `design-extract https://linear.app`，把 tokens 塞進 Claude 的 context，然後讓 Claude 生成對應的 Tailwind CSS 設計 token 配置和 shadcn/ui 主題。Anthropic 今天鬆綁 AUP 讓這個工作流可以直接包裝成 CLI 工具發布，不用再擔心灰色地帶。注意：design-extract 提取的是設計語言，不是複製 UI 元件——這是合理的 inspiration-driven 開發，不是抄襲。",
+      "use_case": "接案前端工程師或 startup 工程師，需要快速實作某個成熟產品的設計語言，用在自己的 codebase",
+      "tech_stack": "JavaScript + design-extract MCP server + Claude Code + Tailwind CSS + shadcn/ui",
+      "hardware": "純 CPU / 雲端 API 即可",
+      "skill_level": "JavaScript 初中級 + 熟悉 Tailwind + 了解 CSS design tokens 概念",
+      "dependencies": "design-extract 免費開源 + Claude API（週末 POC 可能 $1-2）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "npx design-extract https://linear.app --output linear-tokens.json && cat linear-tokens.json | head -50",
+      "market_evidence": "design-extract 1,256★ topic:web-scraping 30 天內新建；Figma 設計到代碼插件市場有 100K+ 用戶；多個前端職缺要求「AI-assisted design system implementation」"
+    },
+    {
+      "format": "remix",
+      "title": "AI 信號雜訊過濾器：GitHub issue 品質評分 MCP server",
+      "projects": [
+        {
+          "name": "audreyt/communitycheck",
+          "url": "https://github.com/audreyt/communitycheck",
+          "note": "唐鳳設計的公民科技規格：為病毒式社群媒體貼文附加代表性民意資料"
+        },
+        {
+          "name": "LWN: Linux dropping old network drivers due to AI bug report burden",
+          "url": "https://www.phoronix.com/news/Linux-Old-Network-AI",
+          "note": "Linux 維護者考慮下架舊網路驅動，原因是 AI 生成的低品質 bug report 造成維護負擔"
+        }
+      ],
+      "description": "你是一個有 50+ contributor 的 OSS 專案維護者。過去六個月，GitHub issue tracker 裡出現越來越多明顯由 AI 生成的 bug report：格式完美但缺乏重現步驟，或者把文件說明當成 bug 回報。Linux kernel 維護者今天在 LWN 討論要直接棄守舊網路驅動的維護，理由是 AI 生成的 bug report 讓維護成本不成比例地上升。audreyt/communitycheck 解決的是同一個問題在公民科技側的版本：AI 放大的錯誤信號如何降低基礎設施的信任度。把兩者連起來的產品是一個 GitHub issue 品質評分 MCP server：給定 issue URL，回傳品質分數（0-1）+ 信號：是否有具體重現步驟、是否有環境資訊、語言模式是否匹配 LLM 生成特徵。維護者的 bot 自動標記低品質 issue，要求補充資訊後才進入 triage queue。這是非 AI/dev-tooling 方向：公民科技 / 社群信任基礎設施。",
+      "use_case": "OSS 專案維護者，需要在 issue triage 流程裡自動過濾 AI 生成的低品質 bug report，降低維護負擔",
+      "tech_stack": "Python + GitHub API + HuggingFace text classification（fine-tune 一個小模型）+ MCP server",
+      "hardware": "GPU 4GB VRAM 用於本地 fine-tune，或直接用 Claude API 做 zero-shot 分類",
+      "skill_level": "Python 中級 + 熟悉 HuggingFace Transformers + 了解 GitHub API",
+      "dependencies": "HuggingFace free tier + GitHub token（免費）+ 若用 Claude API 月費約 $5",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "gh api repos/torvalds/linux/issues --limit 100 | python3 -c \"import sys,json; [print(i['body'][:500]) for i in json.load(sys.stdin) if i.get('body')]\" > sample-issues.txt",
+      "market_evidence": "LWN 今日報導 Linux 考慮棄守舊驅動（直接 maintainer 行為反應）；audreyt/communitycheck 是前數位部長的設計規格（政府級需求確認）；Red Hat 和 Ubuntu bug tracker 均有 maintainer 抱怨 AI spam 的公開 thread"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Claude Opus 4.7 GA",
+      "url": "https://www.anthropic.com/news/claude-opus-4-7",
+      "desc": "Anthropic 最新旗艦模型正式 GA，新 tokenizer（注意：相同 prompt 約多 20-30% tokens，影響成本估算）。",
+      "source": "Anthropic News",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Claude Design by Anthropic Labs",
+      "url": "https://www.anthropic.com/news/claude-design-anthropic-labs",
+      "desc": "Anthropic Labs 推出 Claude Design，實驗性 AI 設計工具。Labs 標籤意味著這是試水產品。",
+      "source": "Anthropic News",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Anthropic AUP 鬆綁：允許 OpenClaw 模式 CLI 工具",
+      "url": "https://docs.openclaw.ai/providers/anthropic",
+      "desc": "Anthropic 明確允許第三方使用 API 建構 Claude CLI wrapper，解除此前對 OpenClaw 類工具的 AUP 疑慮。HN 442 分。",
+      "source": "HN 442分",
+      "repo_age": "本週更新"
+    },
+    {
+      "name": "HKUDS/RAG-Anything",
+      "url": "https://github.com/HKUDS/RAG-Anything",
+      "desc": "All-in-One RAG 框架，統一處理文字、表格、圖片、音訊、影片的異質模態攝入，解決維護多條 RAG pipeline 的問題。",
+      "source": "GitHub Trending #7",
+      "stars": 16750,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "zilliztech/claude-context",
+      "url": "https://github.com/zilliztech/claude-context",
+      "desc": "Zilliz（Milvus 開發商）官方 Claude Code MCP 工具，把整個 codebase 索引進 Milvus 向量庫，讓任何 coding agent 都能做語意搜尋。",
+      "source": "GitHub Trending #3",
+      "stars": 6475,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "Forgejo v15.0",
+      "url": "https://forgejo.org/2026-04-release-v15-0/",
+      "desc": "Gitea fork 的 GitHub 替代方案發布 v15.0，Lobsters 110 分（今日最高）。",
+      "source": "Lobsters 110分",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "trellis-mac (TRELLIS.2 Apple Silicon)",
+      "url": "https://github.com/shivampkumar/trellis-mac",
+      "desc": "把 Microsoft TRELLIS.2 image-to-3D 模型移植到 Apple Silicon（MLX），本地跑 3D 生成不需 CUDA。HN 198 分。",
+      "source": "HN 198分",
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "Framework Laptop 13 Pro",
+      "url": "https://frame.work/laptop13pro",
+      "desc": "Framework 推出 Laptop 13 Pro，HN 377 分 + Phoronix 雙源確認。可維修設計 + 高效能，為 Linux 開發者的硬體選項添新成員。",
+      "source": "HN 377分 + Phoronix",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "FlowElement-ai/m_flow",
+      "url": "https://github.com/FlowElement-ai/m_flow",
+      "desc": "仿海馬迴認知記憶引擎，新範式的 Graph RAG：有時間衰減、重要性評分、情節記憶與語意記憶分離。",
+      "source": "topic:rag · 1273★ · 近期建立",
+      "stars": 1273,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "EKKOLearnAI/hermes-web-ui",
+      "url": "https://github.com/EKKOLearnAI/hermes-web-ui",
+      "desc": "Hermes Agent 的 web dashboard：多平台 AI chat、session 管理、排程 jobs、使用量分析。TypeScript 實作。",
+      "source": "topic:llm · 1416★ · 近期建立",
+      "stars": 1416,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "Manavarya09/design-extract",
+      "url": "https://github.com/Manavarya09/design-extract",
+      "desc": "一條指令提取任何網站的完整設計系統，輸出 DTCG tokens（語意+原始+複合三層），內建 MCP server 供 agent 直接讀取。",
+      "source": "topic:web-scraping · 1256★ · 近期建立",
+      "stars": 1256,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "VidStudio",
+      "url": "https://vidstudio.app/video-editor",
+      "desc": "瀏覽器端影片編輯器，檔案不上傳伺服器，完全本地處理。Show HN 207 分。",
+      "source": "HN 207分",
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "Prompt-to-Excalidraw with Gemma 4 E2B",
+      "url": "https://teamchong.github.io/turboquant-wasm/draw.html",
+      "desc": "在瀏覽器裡跑 Gemma 4（3.1GB WASM）把 prompt 轉成 Excalidraw 圖表，完全本地。Show HN 156 分。",
+      "source": "HN 156分",
+      "repo_age": "近期建立"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Anthropic 允許 OpenClaw 模式 Claude CLI 工具",
+        "url": "https://docs.openclaw.ai/providers/anthropic",
+        "score": 442,
+        "comments": 62,
+        "takeaway": "第三方 Claude CLI wrapper 現在處於明確合法的 AUP 地位。如果你有私藏的 wrapper 工具，今天可以開源。",
+        "action": "把你的 Claude API wrapper 從私有 repo 移到 public，加 'uses Anthropic API per AUP' 說明。",
+        "source": "HN"
+      },
+      {
+        "title": "Laws of Software Engineering",
+        "url": "https://lawsofsoftwareengineering.com/",
+        "score": 692,
+        "comments": 80,
+        "takeaway": "HN 今日最高分（692）。一個歸納軟體工程 heuristics 的網站，評論討論集中在「哪些 laws 在 LLM 輔助開發時代還成立」。",
+        "source": "HN"
+      },
+      {
+        "title": "LWN: Using LLMs to find Python C-extension bugs",
+        "url": "https://lwn.net/Articles/1067234/",
+        "takeaway": "LLM 生成針對 Python C-extension ABI 邊界的 fuzz test cases，成功找到人工測試遺漏的 bug。對在寫 C-extension 的人：這週可以試跑一次 LLM-guided fuzzing，用 Claude 生成針對你 extension 的 edge case inputs。",
+        "action": "如果你在維護 Python C extension，試跑 hypothesis 加 Claude 生成的 property-based tests。",
+        "source": "LWN"
+      },
+      {
+        "title": "Linux 考慮移除舊網路驅動：AI bug report 負擔",
+        "url": "https://www.phoronix.com/news/Linux-Old-Network-AI",
+        "takeaway": "AI 生成的低品質 bug report 讓 Linux 舊驅動維護成本不成比例上升。第一個因 AI noise 而導致 OSS 維護放棄的具體案例。",
+        "source": "Phoronix"
+      },
+      {
+        "title": "Forgejo v15.0 發布",
+        "url": "https://forgejo.org/2026-04-release-v15-0/",
+        "score": 110,
+        "comments": 9,
+        "takeaway": "GitHub 替代方案的最大競爭者發布 major version。如果你在跑自架 Git server，這週值得升級測試。",
+        "source": "Lobsters 110分"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Laws of Software Engineering",
+        "url": "https://lawsofsoftwareengineering.com/",
+        "score": 692,
+        "comments": 80
+      },
+      {
+        "title": "Anthropic says OpenClaw-style Claude CLI usage is allowed again",
+        "url": "https://docs.openclaw.ai/providers/anthropic",
+        "score": 442,
+        "comments": 62
+      },
+      {
+        "title": "Framework Laptop 13 Pro",
+        "url": "https://frame.work/laptop13pro",
+        "score": 377,
+        "comments": 45
+      },
+      {
+        "title": "Tim Cook's Impeccable Timing",
+        "url": "https://stratechery.com/2026/tim-cooks-impeccable-timing/",
+        "score": 252,
+        "comments": 22
+      },
+      {
+        "title": "MNT Reform is an open hardware laptop, designed and assembled in Germany",
+        "url": "http://mnt.stanleylieber.com/reform/",
+        "score": 239,
+        "comments": 27
+      },
+      {
+        "title": "Show HN: VidStudio, a browser based video editor that doesn't upload your files",
+        "url": "https://vidstudio.app/video-editor",
+        "score": 207,
+        "comments": 20
+      },
+      {
+        "title": "Show HN: Run TRELLIS.2 Image-to-3D generation natively on Apple Silicon",
+        "url": "https://github.com/shivampkumar/trellis-mac",
+        "score": 198,
+        "comments": 14
+      },
+      {
+        "title": "Edit store price tags using Flipper Zero",
+        "url": "https://github.com/i12bp8/TagTinker",
+        "score": 189,
+        "comments": 8
+      },
+      {
+        "title": "Show HN: Prompt-to-Excalidraw demo with Gemma 4 E2B in the browser (3.1GB)",
+        "url": "https://teamchong.github.io/turboquant-wasm/draw.html",
+        "score": 156,
+        "comments": 19
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Forgejo v15.0 is available",
+        "url": "https://forgejo.org/2026-04-release-v15-0/",
+        "score": 110,
+        "comments": 9,
+        "tags": [
+          "release",
+          "vcs"
+        ]
+      },
+      {
+        "title": "Jujutsu megamerges for fun and profit",
+        "url": "https://isaaccorbrey.com/notes/jujutsu-megamerges-for-fun-and-profit",
+        "score": 72,
+        "comments": 19,
+        "tags": [
+          "vcs"
+        ]
+      },
+      {
+        "title": "Quantum Computers Are Not a Threat to 128-bit Symmetric Keys",
+        "url": "https://words.filippo.io/128-bits/",
+        "score": 69,
+        "comments": 10,
+        "tags": [
+          "cryptography"
+        ]
+      },
+      {
+        "title": "How To Make a Fast Dynamic Language Interpreter",
+        "url": "https://zef-lang.dev/implementation",
+        "score": 30,
+        "comments": 4,
+        "tags": [
+          "compilers",
+          "performance",
+          "plt"
+        ]
+      },
+      {
+        "title": "Finishing Things",
+        "url": "https://ratfactor.com/finishing-things",
+        "score": 21,
+        "comments": 1,
+        "tags": [
+          "practices"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "jserv",
+        "followers": 4369,
+        "repo": "jserv/cortexm-linux",
+        "url": "https://github.com/jserv/cortexm-linux",
+        "language": "Shell",
+        "hours_ago": 30,
+        "description": "把 Linux 跑在 Arm Cortex-M 上的研究實驗，探索超低功耗嵌入式 SoC 的 Linux 可行性邊界。",
+        "local_context": "jserv 在台灣學術界長期做嵌入式 Linux 研究，cortexm-linux 延續他把「不應該能跑 Linux」的硬體跑起 Linux 的傳統。"
+      },
+      {
+        "developer": "audreyt",
+        "followers": 8836,
+        "repo": "audreyt/communitycheck",
+        "url": "https://github.com/audreyt/communitycheck",
+        "language": "HTML",
+        "hours_ago": 67,
+        "description": "設計規格：為病毒式社群媒體貼文附加代表性民意資料，修正 AI 放大的錯誤信號造成的公共信任損傷。",
+        "local_context": "唐鳳離開數位部後的首個公開 spec repo，把她在數位部推行的 vTaiwan 方法論轉化成可被任何平台採用的技術規格。"
+      },
+      {
+        "developer": "peter279k",
+        "followers": 2131,
+        "repo": "peter279k/swarm-auto-scaler",
+        "url": "https://github.com/peter279k/swarm-auto-scaler",
+        "language": "Python",
+        "hours_ago": 17,
+        "description": "Docker Swarm cluster 的簡易自動服務擴縮容系統，Python 實作。",
+        "local_context": "Docker Swarm 在台灣中小型雲端部署場景仍有廣泛使用（相對 Kubernetes 門檻較低），這個工具回應真實的 ops 需求。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "lucidrains",
+        "followers": 59094,
+        "repo": "lucidrains/pseudo-projector",
+        "url": "https://github.com/lucidrains/pseudo-projector",
+        "language": "Python",
+        "hours_ago": 52,
+        "description": "實作 Mass General Brigham 的 Vitaly Bulgakov 提出的 pseudo projector，一種改進 multimodal model 跨模態投影層的方法。"
+      },
+      {
+        "developer": "iam-veeramalla",
+        "followers": 30806,
+        "repo": "iam-veeramalla/kafka-zero-to-hero",
+        "url": "https://github.com/iam-veeramalla/kafka-zero-to-hero",
+        "language": "Python",
+        "hours_ago": 8,
+        "description": "Apache Kafka 從零開始的教學 repo，定位 absolute beginners。"
+      },
+      {
+        "developer": "JacobLinCool",
+        "followers": 440,
+        "repo": "JacobLinCool/modal-vibevoice",
+        "url": "https://github.com/JacobLinCool/modal-vibevoice",
+        "language": "Python",
+        "hours_ago": 23,
+        "description": "把 Microsoft VibeVoice-ASR（9B 參數）部署到 Modal 的 production-ready 配置，支援長音頻透過 VAD-aware chunking 跨 chunk 處理。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Anthropic AUP 鬆綁：Claude Code 生態系從自我審查中解放",
+      "body": "Anthropic 今天明確允許 OpenClaw 模式的第三方 CLI 工具，這是對過去六個月 builder 自我審查的直接回應。在 claude-code-skill-explosion arc 的第十波，生態系的法律地位從「默許但模糊」變成「明確允許」。預期接下來兩週內，大量私藏在私有 repo 的 Claude wrapper 工具會陸續公開。這是 Anthropic 回應競爭壓力（Kimi K2.6 / Qwen3.6 本週雙發）的生態系策略：不用降價，而是擴大合法 builder 的操作空間。",
+      "evidence": "HN 442 分（top 5%，今日第二高分），62 則留言，多個 builder 確認「原本因 AUP 猶豫但今天會開源」",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 10,
+      "product_opportunity": "建構一個 Claude wrapper tool 目錄（類似 awesome list 但有 AUP 合規標籤），協助 builder 快速找到可以 fork / extend 的起點",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Anthropic says OpenClaw-style Claude CLI usage is allowed again",
+          "url": "https://docs.openclaw.ai/providers/anthropic",
+          "score": 442
+        },
+        {
+          "platform": "Anthropic News",
+          "title": "Introducing Claude Opus 4.7",
+          "url": "https://www.anthropic.com/news/claude-opus-4-7"
+        }
+      ]
+    },
+    {
+      "title": "DeepMind stealth repo 序列：7 天後出現靜默期",
+      "body": "從 2026-04-15 起，google-deepmind 連續在 5 個自然日內推出 4 個空 repo（egg → ddgc → beneath-the-surface → proeval）。今天是序列後的第三天靜默——proeval 仍然是 0★ 無 README，沒有新的空 repo 出現。pred-deepmind-stealth-reveal 的 resolution date 是 2026-04-30，距今 8 天。靜默期有兩種解讀：(a) 準備期，paper 在等 review；(b) 序列已完成，公告時間未定。從過去 DeepMind 的模式看，空 repo 占位後的公告通常在 2-4 週內，所以 2026-04-30 仍是合理的 resolution window。",
+      "evidence": "proeval 連續 3 天 0★ 無 README（times_featured=3，進入 long_term）；今日 developers.json 無新的 google-deepmind 空 repo",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "arc_ref": "deepmind-stealth-pre-launch",
+      "day_count": 8,
+      "product_opportunity": "無直接產品機會，但可追蹤：訂閱 google-deepmind GitHub org 的 repo 建立通知",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google-deepmind/proeval",
+          "url": "https://github.com/google-deepmind/proeval"
+        }
+      ]
+    },
+    {
+      "title": "AI 生成信號噪音開始對 OSS 基礎設施造成可量測的維護損傷",
+      "body": "兩個獨立事件今天交匯：Linux kernel 維護者考慮棄守舊網路驅動，直接原因是 AI 生成的低品質 bug report 讓維護成本不成比例上升（Phoronix #1）；audreyt/communitycheck 提出在病毒式社群媒體貼文上附加代表性民意資料的設計規格，核心問題是 AI 放大錯誤信號對公共信任基礎設施的破壞。這是同一個 upstream 問題在不同 domain 的兩個案例：AI 大規模生成信號讓依賴人工信號品質的基礎設施（kernel mailing list / 公共輿論）開始出現信任降解。這個 pattern 上週在 GitHub 假星星調查（HN 615 分）也出現——今天換到 bug tracking 和 civic信任層。",
+      "evidence": "Phoronix Linux 驅動報導 + audreyt/communitycheck spec（8836 followers 台灣前數位部長）+ 上週 GitHub 假星星調查（HN 615 分）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 9,
+      "product_opportunity": "GitHub issue 品質評分 MCP server（見 ideas #3）；或 kernel mailing list 的 AI-generated report classifier",
+      "source_links": [
+        {
+          "platform": "Phoronix",
+          "title": "Linux May Drop Old Network Drivers Now That AI-Driven Bug Reports Are Causing A Burden",
+          "url": "https://www.phoronix.com/news/Linux-Old-Network-AI"
+        },
+        {
+          "platform": "GitHub",
+          "title": "audreyt/communitycheck",
+          "url": "https://github.com/audreyt/communitycheck"
+        }
+      ]
+    },
+    {
+      "title": "RAG 工具從單模態走向異質模態統一框架：HKUDS/RAG-Anything 登 Trending",
+      "body": "HKUDS/RAG-Anything（16,750★，Trending #7）把文字、表格、圖片、音訊、影片的攝入統一在同一個 pipeline 下。過去 RAG 工程師需要維護 N 個分離的 loader（一個給 PDF 表格、一個給圖片 OCR、一個給影片轉錄），RAG-Anything 提供統一介面。同組的 HKUDS 之前做過 Vibe-Trading，說明這個團隊在 LLM application research 有持續的工程輸出。這個 repo 出現在 Trending 說明 builder 社群對「統一多模態 RAG 入口」的需求到了引爆點。",
+      "evidence": "GitHub Trending #7，16,750★；HKUDS 同組有 Vibe-Trading（long_term 追蹤中）",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "product_opportunity": "在 RAG-Anything 之上加一個 benchmarking layer，讓 builder 可以比較不同 modality 的 retrieval 品質，做成 SaaS eval dashboard",
+      "source_links": [
+        {
+          "platform": "GitHub Trending",
+          "title": "HKUDS/RAG-Anything",
+          "url": "https://github.com/HKUDS/RAG-Anything"
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "FlowElement-ai/m_flow",
+    "url": "https://github.com/FlowElement-ai/m_flow",
+    "stars": 1273,
+    "desc": "仿海馬迴認知記憶引擎，Graph RAG 的新範式：情節記憶（episodic）和語意記憶（semantic）分離存放，有時間衰減和重要性評分。今天進入 RAG 和 MCP 兩個 topic 的搜尋結果，但尚未到 Trending。",
+    "why_sleeper": "大多數 Graph RAG 工具的知識圖譜是靜態的——插入後永遠不衰減，不知道哪些節點「已過時」。m_flow 的海馬迴模型解決了這個 staleness 問題，這是長期 agent memory 的核心缺口，市場上目前沒有類似的 OSS 方案。MemPalace（48K★）做的是記憶檢索，m_flow 做的是記憶整合與衰減，兩者定位不同。",
+    "commercial_path": "把 m_flow 包裝成 SaaS API：按 graph 大小計費，提供「知識庫健康度」報告（哪些節點過時、哪些節點是核心 hub）。目標客戶是建構企業知識庫的 RAG 工程師。"
+  },
+  "contrarian": {
+    "target": "HKUDS/RAG-Anything 的『All-in-One RAG』定位",
+    "claim": "RAG-Anything 的 all-in-one 框架在 90 天內不會成為任何主要 RAG stack 的預設選擇，因為多模態 RAG 的瓶頸不在 loader 層，而在 retrieval 品質的評估和調優——這是統一框架無法解決的問題。",
+    "prediction": "到 2026-07-22，RAG-Anything 在 GitHub 的 stars 不超過 35,000（今日 16,750★），且沒有一個 major RAG framework（LangChain、LlamaIndex、Haystack）發布官方整合 PR 或 adapter。以 GitHub stars count 和上述三個 repo 的 PR history 為準。",
+    "counter_evidence": "RAG-Anything 今日登上 Trending #7，說明 builder 有真實的多模態 RAG 需求；HKUDS 團隊有過 Vibe-Trading 的工程可信度。",
+    "why_contrarian": "all-in-one 框架通常在 PoC 階段很受歡迎，但在生產環境中被拆解——因為每個 modality 的 retrieval tuning 需求太不同。builder 社群對 unified loader 的興趣可能是『試試看』而非『換掉現有 pipeline』。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-claude-design-retention",
+      "text": "到 2026-10-31，Anthropic 主動調整 Claude Design 的定位（下線、改名、或官方將目標用戶從「專業設計師」改為「non-designer mock-up 工具」），或有主要科技媒體報導其用戶留存低於競品。",
+      "status": "pending",
+      "created": "2026-04-18",
+      "resolution_date": "2026-10-31"
+    },
+    {
+      "id": "pred-thunderbolt-ceiling",
+      "text": "到 2026-09-30，thunderbird/thunderbolt GitHub stars 不超過 8,000（2026-04-20 基準 2,116★）。",
+      "status": "pending",
+      "created": "2026-04-19",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-astral-openai-integration",
+      "text": "到 2027-04-20，OpenAI 不會推出將 Ruff/uv 整合進 AI-powered coding workflow 的 GA 產品（以 OpenAI 官方 blog 或產品頁面公告為準）。",
+      "status": "pending",
+      "created": "2026-04-20",
+      "resolution_date": "2027-04-20"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-rag-anything-ceiling",
+      "text": "到 2026-07-22，HKUDS/RAG-Anything 的 GitHub stars 不超過 35,000（今日 16,750★），且 LangChain、LlamaIndex、Haystack 三者均無發布官方整合 PR 或 adapter（以各 repo 的 PR history 為準）。",
+      "status": "pending",
+      "created": "2026-04-22",
+      "resolution_date": "2026-07-22"
+    }
+  ],
+  "meta": {
+    "run_id": "d135d2eb-e42f-4b27-94cd-c721b227edc1",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-21T20:10:33.824Z",
+    "analyze_duration_ms": 534299,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 8
+      },
+      "search": {
+        "ok": true,
+        "count": 52
+      },
+      "developers": {
+        "ok": true,
+        "count": 18
+      }
+    },
+    "degraded_sources": []
+  }
+}
