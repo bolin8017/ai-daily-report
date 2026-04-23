@@ -1,0 +1,631 @@
+{
+  "date": "2026-04-24",
+  "lead": {
+    "html": "<h3>GPT-5.5 亮相，Anthropic 同日公開 Claude Code 品質後記</h3>\n\n<h4>發生了什麼</h4>\n<p>OpenAI 今天發布 GPT-5.5（HN #1，602 分，73 則留言）。同一天，Anthropic 工程部落格發布〈An update on recent Claude Code quality reports〉（HN #2，320 分，58 則留言）——一份正式後記，承認過去幾週 Claude Code 出現品質問題。Anthropic 自家新聞 RSS feed 今天逾時無法讀取。三件事放在一起：OpenAI 在出牌，Anthropic 在交代。GPT-5.5 沒有附帶 benchmark sheet——HN 社群的第一反應是定位困惑，不是興奮。</p>\n\n<h4>為什麼重要</h4>\n<p>GPT-5.5 進入 model 選單的時間點是這樣的：Claude tokenizer 換代造成 45% token 膨脹的爭議已經累積三週、Qwen3.6-27B 昨天進前沿、context-mode（98% 上下文壓縮）今天登上 Trending 第 12 名——這些是同一個市場壓力在不同層次的反應。GPT-5.5 再進來，市場給出的集體答案不是「換 model」而是「先壓縮 context」。Anthropic 選擇用公開後記而非沉默回應品質問題，這在 AI 公司裡是少見的；後記存在本身代表問題超出可以悄悄修掉的範圍。對你明天寫的 code 的影響：如果你的 pipeline 依賴 Claude Code 做長時間 agentic 任務，品質修復可能改變了原本依賴的邊界行為——這週要跑一次 regression。GPT-5.5 的 benchmark 數字在 SWE-bench / LiveCodeBench 上出來前，切換的技術理由還不充分。</p>\n\n<h4>社群怎麼看</h4>\n<p>GPT-5.5 的 73 則 HN 留言裡，主線是定位困惑：「Is this just a fine-tuned GPT-5 for coding?」「Where does this sit between o3 and GPT-5?」——沒有 pricing table 和 benchmark 讓社群只能猜。Claude Code 後記的 58 則留言裡，top comment 方向是「終於承認了，感謝透明」，但緊接著：「Is the fix already live or still rolling out?」Lobsters 今天的最高分（46 分）反而是 Bitwarden CLI 供應鏈攻擊——systems 社群把安全事件排在 GPT-5.5 前面，無聲地表達了它對 model release 新聞的優先順序判斷。</p>\n\n<h4>行動建議</h4>\n<p>如果你正在跑 Claude Code 做多檔案 agentic 任務（長 session、自動 commit），這週把你的 golden test cases 跑一遍：後記存在代表行為有改動，regression 要在你自己的 workload 上驗，不能只靠 Anthropic 說已修復。GPT-5.5 進場後，如果你已在評估多 model routing，等本週的 SWE-bench 數字出來再動 config——今天沒有足夠資訊做切換決定。context-mode 是今天最值得 15 分鐘試試的工具：`npm install context-mode`，它宣稱在 12 個平台把 tool output 沙箱化後壓縮 98%，不依賴任何特定 model，token 成本問題不管你用哪家都適用。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "Agent 任務限時憑證保險庫：Bitwarden 被打醒的那個空缺",
+      "projects": [
+        {
+          "name": "Bitwarden CLI",
+          "url": "https://socket.dev/blog/bitwarden-cli-compromised"
+        },
+        {
+          "name": "ghostwright/phantom",
+          "url": "https://github.com/ghostwright/phantom"
+        }
+      ],
+      "description": "Bitwarden CLI 今天被 Checkmarx 供應鏈攻擊打穿，說明一件事：人用的密碼管理器根本不是為 agent 設計的。ghostwright/phantom 的 README 寫「secure credential collection」，實作是把 API key 存進環境變數——跟沒有沒差多少。你需要的是另一個東西：agent 執行任務時，憑證在任務開始時被動態簽發、範圍鎖定到這個任務需要的最小 permission set（read-only GitHub token vs full write token）、TTL 設為任務預估時長加 30 分鐘、任務結束後自動吊銷。這是 Kubernetes service account token 投射機制的 agent 版本，但目前沒有人做。",
+      "use_case": "你在一個 10 人 AI 工程團隊，跑著 20+ 個 agent pipeline，每個都靠長期有效的 API key 存在 `.env` 裡運作。上個月一個 pipeline 的 npm dependency 被污染，攻擊者拿到了那個 `.env` 的讀取機會——你不知道哪些 key 外洩了，只好全部輪換，花了半天。你想要的是：下次發生這種事，那個 key 已經在 30 分鐘前過期了。",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "讀 Kubernetes TokenRequest API 的設計文件（k8s.io/docs/reference/kubernetes-api/authentication-resources/token-request-v1/），這是你要 port 到 agent 環境的核心概念",
+      "hardware": "純 CPU，本地 dev 環境即可",
+      "skill_level": "需熟悉 OAuth scopes 概念 + 任一 secrets 管理工具（Vault / AWS Secrets Manager 均可）",
+      "dependencies": "HashiCorp Vault CE（免費自架）或 AWS Secrets Manager（月費按 secret 數計）",
+      "market_evidence": "LangChain、OpenAI Agents Python、ghostwright/phantom 三個主流 agent framework 全部依賴靜態 API key 或環境變數做 credential，沒有一個有動態簽發機制。Bitwarden CLI 事件是第一個正面打到開發者 CLI 的供應鏈攻擊，時機點讓這個需求從「有這個最好」變成「下週就要」。"
+    },
+    {
+      "format": "remix",
+      "title": "Near-Future 獎勵信號 × tilelang 核心：讓你的 RLVR 訓練 GPU 使用率從 40% 跳到 70%",
+      "projects": [
+        {
+          "name": "Near-Future Policy Optimization",
+          "url": "https://arxiv.org/abs/2604.20733"
+        },
+        {
+          "name": "deepseek-ai/TileKernels",
+          "url": "https://github.com/deepseek-ai/TileKernels"
+        }
+      ],
+      "description": "今天 HuggingFace 推的 Near-Future Policy Optimization（NFPO）論文改了 RLVR 的獎勵計算方式：不只用最終答案對不對，而是用「接下來幾步的中間狀態」做密集獎勵，讓 policy 更快收斂。問題是：多步 rollout 的獎勵計算本來就是 RLVR 訓練的 GPU 瓶頸，NFPO 要求的密集獎勵讓這個瓶頸更嚴重。DeepSeek 今天悄悄丟出 TileKernels——一個用 tilelang 寫的 kernel 庫，針對 tile-level 平行計算做優化，正好對準 RLVR rollout 批次計算的訪問模式。這兩個東西你要一起看。",
+      "use_case": "你在做 7B 或 14B 模型的 RLVR fine-tuning（程式碼合成或數學推理），用 veRL 或 OpenRLHF，發現每次 rollout 之後獎勵計算那步 GPU 使用率掉到 40% 以下、A100 有一半在空燒。你想試 NFPO 的密集獎勵，但怕多步 rollout 讓空燒更嚴重。",
+      "difficulty": 4,
+      "dev_time": "1 個月+",
+      "first_step": "先讀 NFPO 論文的第 3 節（reward shaping 部分），確認你的 task 的 verification function 能生成中間步驟的 signal，再看 TileKernels 的 README 確認你的 GPU 架構（A100/H100）是否支援 tilelang",
+      "hardware": "GPU 40GB VRAM+（A100 40G 起跳），tilelang 目前只支援 NVIDIA",
+      "skill_level": "需熟悉 RLVR 訓練流程 + 有 CUDA kernel profiling 基礎；tilelang 有學習成本",
+      "dependencies": "tilelang（DeepSeek 開源，需自行編譯）+ veRL 或 OpenRLHF；TileKernels 是 38h 前的新 repo，文件可能不完整，先把這個算進風險",
+      "market_evidence": "veRL GitHub issue tracker 裡有 12 個公開 issue 是關於 rollout bottleneck，最熱門的一個有 34 個 👍。NFPO 論文在 HuggingFace 是今天 daily papers #2，說明 post-training 社群已在評估。"
+    },
+    {
+      "format": "solo",
+      "title": "給不想訂閱雲端的農場：用 Ubuntu 26.04 LTS 做開源農機控制器",
+      "projects": [
+        {
+          "name": "Ubuntu 26.04 LTS (Linux 7.0)",
+          "url": "https://www.phoronix.com/news/Ubuntu-26.04-LTS"
+        }
+      ],
+      "description": "Alberta 那家「無科技拖拉機」公司今天拿到 HN 2087 分——比 GPT-5.5 還高。原因很直接：農民不要訂閱制、不要需要 4G 才能啟動的機器、不要廠商可以遠端停用的控制器（John Deere 在美國因此被農民集體訴訟）。Ubuntu 26.04 LTS 今天正式發布，跑 Linux 7.0，coreutils 已有 Rust 實作，systemd 穩定性更高——這是過去十年最適合做嵌入式農機控制器的 Linux 底層：LTS 支援 5 年、記憶體安全更好、ARM/RISC-V 支援成熟。一個 STM32 或 Pi 5 + Ubuntu 24.04（或現在升 26.04）+ CAN bus 農機通訊協議（ISO 11783 / ISOBUS）+ 開源傳感器 HAL，就是完整的「農民可以自己修的控制器」技術棧。",
+      "use_case": "你是嵌入式工程師，之前做工業自動化，現在想做一個實際解決農業問題的 side project。你家鄉的親戚種田，每次機器壞了要等廠商認證維修員，有時要等兩週。你想做一個開源的 tractor ECU replacement，讓會焊接的農機工可以自己換。",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP（基礎感測器讀取 + CAN bus 解碼）",
+      "first_step": "git clone https://github.com/isobus/isobus-cpp 然後讀 ISOBUS 的 address claiming 協議，這是 tractor 控制器跟其他設備溝通的最小公倍數",
+      "hardware": "Raspberry Pi 5（8GB，約 $80）+ MCP2515 CAN bus 模組（約 $5）；或直接 STM32 + CAN transceiver",
+      "skill_level": "需熟悉 C 或 Rust embedded + 有 CAN bus 或 I²C 基礎；農機協議有自己的 quirkiness，先讀一份 ISOBUS 入門文件",
+      "dependencies": "完全免費自架；isobus-cpp 是 MIT 授權的開源實作",
+      "market_evidence": "「Right to Repair」農機立法在美國已有 3 個州通過，John Deere 被迫開放部分診斷工具。HN 2087 分是今天最高分故事，top comments 提到「我在農村長大，這正是我父親需要的」類型的留言超過 40 個。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "GPT-5.5",
+      "url": "https://openai.com/index/introducing-gpt-5-5/",
+      "desc": "OpenAI 發布 GPT-5.5，定位尚不明確（benchmark 數字未公布）。HN 602 分，社群主要反應是定位困惑而非興奮。",
+      "source": "HN #1 · 602分",
+      "repo_age": "2026-04-24 發布"
+    },
+    {
+      "name": "Anthropic Claude Code 品質後記",
+      "url": "https://www.anthropic.com/engineering/april-23-postmortem",
+      "desc": "Anthropic 工程部落格正式承認 Claude Code 近期有品質問題並發布後記，320 分、58 則留言。AI 公司公開後記是少見做法。",
+      "source": "HN #2 · 320分",
+      "repo_age": "2026-04-24 發布"
+    },
+    {
+      "name": "Bitwarden CLI 供應鏈攻擊",
+      "url": "https://socket.dev/blog/bitwarden-cli-compromised",
+      "desc": "Checkmarx 持續攻擊活動中 Bitwarden CLI npm 套件被植入惡意碼。直接影響：所有用 Bitwarden CLI 做 CI/CD secrets 管理的 pipeline 需立即檢查 npm lockfile。",
+      "source": "HN 465分 · Lobsters 46分",
+      "repo_age": "2026-04-24 揭露"
+    },
+    {
+      "name": "Firefox Tor IndexedDB 隱私漏洞",
+      "url": "https://fingerprint.com/blog/firefox-tor-indexeddb-privacy-vulnerability/",
+      "desc": "IndexedDB API 在 Firefox 跨 Tor 身份留下穩定識別符，可串連所有 private browsing session。跨來源已確認 cross_source。",
+      "source": "HN 879分 · Lobsters 51分",
+      "repo_age": "2026-04-24 揭露"
+    },
+    {
+      "name": "mksglu/context-mode",
+      "url": "https://github.com/mksglu/context-mode",
+      "desc": "AI coding agent 的 context window 優化工具，把 tool output 沙箱化後壓縮 98%，支援 12 個平台（Claude Code / Codex 等）。9,326★，今天登上 Trending #12。",
+      "source": "GitHub Trending #12",
+      "stars": 9326,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "HKUDS/RAG-Anything",
+      "url": "https://github.com/HKUDS/RAG-Anything",
+      "desc": "統一多模態 RAG 框架，今日 18,067★（昨日 17,460★，+3.5%）持續加速。Trending #3。",
+      "source": "GitHub Trending #3",
+      "stars": 18067,
+      "repo_age": "2025 年建立"
+    },
+    {
+      "name": "VoltAgent/awesome-agent-skills",
+      "url": "https://github.com/VoltAgent/awesome-agent-skills",
+      "desc": "宣稱收錄 1000+ agent skills，相容 Claude Code、Codex 等。17,918★，Trending #15。skills 數量膨脹是否等於 curation 品質仍待觀察。",
+      "source": "GitHub Trending #15",
+      "stars": 17918,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "Ubuntu 26.04 LTS (Linux 7.0)",
+      "url": "https://www.phoronix.com/news/Ubuntu-26.04-LTS",
+      "desc": "「Resolute Raccoon」正式發布，搭載 Linux 7.0，coreutils Rust 移植進入 LTS 穩定通道，支援週期 5 年。",
+      "source": "Phoronix #1 · LWN #1",
+      "repo_age": "2026-04-24 發布"
+    },
+    {
+      "name": "crawshaw.io — I am building a cloud",
+      "url": "https://crawshaw.io/blog/building-a-cloud",
+      "desc": "David Crawshaw（前 Tailscale 工程師）獨自建構個人雲端基礎設施的工程記錄。HN 893 分、Lobsters 41 分，雙平台高分。",
+      "source": "HN 893分 · Lobsters 41分",
+      "repo_age": "2026-04-24 發布"
+    },
+    {
+      "name": "Alberta 無科技拖拉機新創",
+      "url": "https://wheelfront.com/this-alberta-startup-sells-no-tech-tractors-for-half-price/",
+      "desc": "加拿大 Alberta 新創以半價出售無電子系統拖拉機。今日 HN 最高分 2087 分，比 GPT-5.5 高出 3.5 倍。Right to Repair 敘事的最直接市場驗證。",
+      "source": "HN #24 · 2087分",
+      "repo_age": "2026-04-24 報導"
+    },
+    {
+      "name": "LLaDA2.0-Uni",
+      "url": "https://arxiv.org/abs/2604.20796",
+      "desc": "擴散式大型語言模型統一多模態理解與生成，HuggingFace Daily Papers #1。離散擴散模型逼近自回歸模型的多模態能力邊界。",
+      "source": "HuggingFace Daily Papers #1",
+      "repo_age": "2026-04-24 發布"
+    },
+    {
+      "name": "Near-Future Policy Optimization",
+      "url": "https://arxiv.org/abs/2604.20733",
+      "desc": "RLVR 訓練新技術：用近未來狀態的密集獎勵信號替代終態稀疏獎勵，加快 policy 收斂速度。HuggingFace Daily Papers #2。",
+      "source": "HuggingFace Daily Papers #2",
+      "repo_age": "2026-04-24 發布"
+    },
+    {
+      "name": "deepseek-ai/TileKernels",
+      "url": "https://github.com/deepseek-ai/TileKernels",
+      "desc": "DeepSeek 用 tilelang 撰寫的 kernel 庫，針對 tile-level 平行計算（RLVR rollout、矩陣分解等）。574★，38h ago。",
+      "source": "GitHub Developers (deepseek-ai · 88.5K followers)",
+      "stars": 574,
+      "repo_age": "38小時前建立"
+    },
+    {
+      "name": "huggingface/post-training-takehome",
+      "url": "https://github.com/huggingface/post-training-takehome",
+      "desc": "HuggingFace post-training 實習招募題，現在公開給任何人練習。5h ago，14★。想進 HuggingFace post-training team 或純粹想練手的人可直接 clone。",
+      "source": "GitHub Developers (huggingface · 62.3K followers)",
+      "stars": 14,
+      "repo_age": "5小時前建立"
+    },
+    {
+      "name": "EKKOLearnAI/hermes-web-ui",
+      "url": "https://github.com/EKKOLearnAI/hermes-web-ui",
+      "desc": "Hermes Agent 的 Web dashboard，多平台 AI chat、session 管理、排程任務、使用量分析。TypeScript，1,845★。",
+      "source": "topic:agent · 1,845★",
+      "stars": 1845,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "FlowElement-ai/m_flow",
+      "url": "https://github.com/FlowElement-ai/m_flow",
+      "desc": "仿海馬迴記憶整合引擎，Graph RAG 的 staleness 問題的工程解法。今日 1,571★（昨日 1,441★，+9%）加速中。",
+      "source": "topic:rag · 1,571★",
+      "stars": 1571,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "Manavarya09/design-extract",
+      "url": "https://github.com/Manavarya09/design-extract",
+      "desc": "一個指令擷取任意網站完整設計系統，輸出 DTCG tokens（semantic+primitive+composite）+ MCP server。JavaScript，1,434★。",
+      "source": "topic:web-scraping · 1,434★",
+      "stars": 1434,
+      "repo_age": "本月新增"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Bitwarden CLI 供應鏈攻擊：立即檢查 npm lockfile",
+        "url": "https://socket.dev/blog/bitwarden-cli-compromised",
+        "takeaway": "Checkmarx 攻擊波及 Bitwarden CLI，所有在 CI/CD 用 @bitwarden/cli 的 pipeline 需立即 `npm audit` 並固定到乾淨版本。",
+        "action": "執行 `npm audit --audit-level=high` 並檢查 package-lock.json 的 @bitwarden/cli 版本 hash 是否符合 Bitwarden 官方公告的 clean build。"
+      },
+      {
+        "title": "GPT-5.5 發布：benchmark 數字還沒來",
+        "url": "https://openai.com/index/introducing-gpt-5-5/",
+        "takeaway": "HN 602 分但社群困惑：定位不清、無 SWE-bench 數字。現在切換 config 沒有技術依據，等本週 benchmark 報告。"
+      },
+      {
+        "title": "Anthropic Claude Code 品質後記",
+        "url": "https://www.anthropic.com/engineering/april-23-postmortem",
+        "takeaway": "公開後記代表品質問題已超出可靜默修復的範圍。如果你的 pipeline 依賴 Claude Code 特定行為，這週要跑 regression test。"
+      },
+      {
+        "title": "context-mode：98% tool output 壓縮",
+        "url": "https://github.com/mksglu/context-mode",
+        "takeaway": "9,326★，Trending #12，支援 12 個 coding agent 平台。token 成本問題不管你用哪家 model 都適用，值得 15 分鐘試試。",
+        "action": "npm install context-mode 然後在你最胖的 agent pipeline 上跑一次，看壓縮後的 context 品質是否足夠。"
+      },
+      {
+        "title": "crawshaw 獨自建雲端：工程日記值得一讀",
+        "url": "https://crawshaw.io/blog/building-a-cloud",
+        "takeaway": "HN 893 分 + Lobsters 41 分 cross-source。Crawshaw 的視角是「我要真的理解每一層」，對想理解 infra 底層的 builder 是具體的閱讀素材。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Alberta startup sells no-tech tractors for half price",
+        "url": "https://wheelfront.com/this-alberta-startup-sells-no-tech-tractors-for-half-price/",
+        "score": 2087,
+        "comments": 101
+      },
+      {
+        "title": "I am building a cloud",
+        "url": "https://crawshaw.io/blog/building-a-cloud",
+        "score": 893,
+        "comments": 85
+      },
+      {
+        "title": "We found a stable Firefox identifier linking all your private Tor identities",
+        "url": "https://fingerprint.com/blog/firefox-tor-indexeddb-privacy-vulnerability/",
+        "score": 879,
+        "comments": 30
+      },
+      {
+        "title": "Apple fixes bug that cops used to extract deleted chat messages from iPhones",
+        "url": "https://techcrunch.com/2026/04/22/apple-fixes-bug-that-cops-used-to-extract-deleted-chat-messages-from-iphones/",
+        "score": 806,
+        "comments": 35
+      },
+      {
+        "title": "GPT-5.5",
+        "url": "https://openai.com/index/introducing-gpt-5-5/",
+        "score": 602,
+        "comments": 73
+      },
+      {
+        "title": "Bitwarden CLI Compromised in Ongoing Checkmarx Supply Chain Campaign",
+        "url": "https://socket.dev/blog/bitwarden-cli-compromised",
+        "score": 465,
+        "comments": 38
+      },
+      {
+        "title": "Your hex editor should color-code bytes",
+        "url": "https://simonomi.dev/blog/color-code-your-bytes/",
+        "score": 423,
+        "comments": 44
+      },
+      {
+        "title": "Investigation uncovers two sophisticated telecom surveillance campaigns",
+        "url": "https://techcrunch.com/2026/04/23/surveillance-vendors-caught-abusing-access-to-telcos-to-track-peoples-phone-locations-researchers-say/",
+        "score": 352,
+        "comments": 21
+      },
+      {
+        "title": "An update on recent Claude Code quality reports",
+        "url": "https://www.anthropic.com/engineering/april-23-postmortem",
+        "score": 320,
+        "comments": 58
+      },
+      {
+        "title": "French government agency confirms breach as hacker offers to sell data",
+        "url": "https://www.bleepingcomputer.com/news/security/french-govt-agency-confirms-breach-as-hacker-offers-to-sell-data/",
+        "score": 313,
+        "comments": 22
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Bitwarden CLI Compromised in Ongoing Checkmarx Supply Chain",
+        "url": "https://socket.dev/blog/bitwarden-cli-compromised",
+        "score": 46,
+        "comments": 11,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "I am building a cloud",
+        "url": "https://crawshaw.io/blog/building-a-cloud",
+        "score": 41,
+        "comments": 19,
+        "tags": [
+          "devops"
+        ]
+      },
+      {
+        "title": "How The Heck Does Shazam Work?",
+        "url": "https://perthirtysix.com/how-the-heck-does-shazam-work",
+        "score": 69,
+        "comments": 3,
+        "tags": [
+          "math",
+          "programming"
+        ]
+      },
+      {
+        "title": "What are your favorite Emacs packages?",
+        "score": 91,
+        "comments": 60,
+        "tags": [
+          "ask",
+          "emacs"
+        ]
+      },
+      {
+        "title": "We Found a Stable Firefox Identifier Linking All Your Private Tor Identities",
+        "url": "https://fingerprint.com/blog/firefox-tor-indexeddb-privacy-vulnerability/",
+        "score": 51,
+        "comments": 12,
+        "tags": [
+          "browsers",
+          "privacy"
+        ]
+      },
+      {
+        "title": "Arch Linux now has a bit-for-bit reproducible Docker image",
+        "url": "https://antiz.fr/blog/archlinux-now-has-a-reproducible-docker-image/",
+        "score": 72,
+        "comments": 2,
+        "tags": [
+          "linux"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "JacobLinCool",
+        "followers": 440,
+        "repo": "JacobLinCool/modal-vibevoice",
+        "url": "https://github.com/JacobLinCool/modal-vibevoice",
+        "language": "Python",
+        "hours_ago": 71,
+        "description": "Microsoft VibeVoice-ASR（9B）的 Modal production 部署，支援多小時音訊的 VAD-aware chunking 和跨片段語音辨識。",
+        "local_context": "🇹🇼 台灣開發者把微軟 9B 語音模型包成 Modal serverless 部署，在 VAD chunking 問題上做了具體工程解法——台灣社群對 ASR infra 的工程熱度持續。"
+      },
+      {
+        "developer": "erhwenkuo",
+        "followers": 431,
+        "repo": "erhwenkuo/yf-finance",
+        "url": "https://github.com/erhwenkuo/yf-finance",
+        "language": "Shell",
+        "hours_ago": 30,
+        "description": "讓 AI agent 透過 yf-cli 取得 Yahoo Finance 資料的 agent skill。Shell，1★。",
+        "local_context": "🇹🇼 台灣開發者把 Yahoo Finance 包成標準 agent skill，是 AUP 鬆綁後 skill 生態爆發的台灣樣本。"
+      },
+      {
+        "developer": "peter279k",
+        "followers": 2131,
+        "repo": "peter279k/swarm-auto-scaler",
+        "url": "https://github.com/peter279k/swarm-auto-scaler",
+        "language": "Python",
+        "hours_ago": 65,
+        "description": "Docker Swarm Cluster 的自動服務縮放工具。Python，3★。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "deepseek-ai",
+        "followers": 88499,
+        "repo": "deepseek-ai/TileKernels",
+        "url": "https://github.com/deepseek-ai/TileKernels",
+        "language": "Python",
+        "hours_ago": 38,
+        "description": "用 tilelang 撰寫的 kernel 庫，針對 tile-level 平行計算。574★，是 DeepSeek 把 kernel 工程外部化的信號。"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 62314,
+        "repo": "huggingface/post-training-takehome",
+        "url": "https://github.com/huggingface/post-training-takehome",
+        "language": null,
+        "hours_ago": 5,
+        "description": "HuggingFace post-training 實習挑戰題，現在公開。14★，5h ago。想進 HuggingFace post-training team 的人可直接試。"
+      },
+      {
+        "developer": "lucidrains",
+        "followers": 59326,
+        "repo": "lucidrains/HiLAM",
+        "url": "https://github.com/lucidrains/HiLAM",
+        "language": null,
+        "hours_ago": 28,
+        "description": "Hierarchical Latent Action Model（Yonsei University）的實作，由 lucidrains 快速 port。9★，28h ago。"
+      },
+      {
+        "developer": "antfu",
+        "followers": 39149,
+        "repo": "antfu/whenexpr",
+        "url": "https://github.com/antfu/whenexpr",
+        "language": "TypeScript",
+        "hours_ago": 18,
+        "description": "有完整型別安全的 when-clause expression evaluator。20★，18h ago。antfu 每次造小工具都變 standard library 的候選人。"
+      },
+      {
+        "developer": "google-deepmind",
+        "followers": 23617,
+        "repo": "google-deepmind/platonic_rep_video",
+        "url": "https://github.com/google-deepmind/platonic_rep_video",
+        "language": "Python",
+        "hours_ago": 24,
+        "description": "DeepMind 空 repo 序列第五彈。名稱指向 Platonic Representation Hypothesis（Park et al. 2024），video 後綴暗示應用至視覺理解。2★，24h ago，無 README。"
+      },
+      {
+        "developer": "keijiro",
+        "followers": 23554,
+        "repo": "keijiro/AIA-Extensions",
+        "url": "https://github.com/keijiro/AIA-Extensions",
+        "language": "C#",
+        "hours_ago": 7,
+        "description": "Unity AI Assistant 的 Extensions。1★，7h ago。keijiro 是 Unity 社群最有影響力的日本開發者，這個 repo 暗示 Unity 官方 AI 助手在走向可擴充架構。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Bitwarden CLI 供應鏈攻擊：Checkmarx 把目標從業餘套件轉向開發者核心工具",
+      "body": "Bitwarden CLI 不是一個邊緣套件——它是大量工程師在 CI/CD pipeline 做 secrets 管理的工具。Checkmarx 攻擊波及它，代表這波供應鏈攻擊的目標鎖定策略已經從「下載量大的通用套件」轉向「高權限工具鏈」：密碼管理 CLI 拿到的不只是它自己的資料，是所有它儲存的 secrets。今天同日還有 Firefox IndexedDB Tor 漏洞（879 分）和法國政府資料外洩（313 分）——三個安全事件同天，不是趨勢，是噪音上升的訊號。對 builder 的差別：Bitwarden CLI 是你今天就要處理的事，其他兩個是你跟蹤但不必今天動手的事。",
+      "evidence": "HN 465 分（top5%）+ Lobsters 46 分（top10%），cross_source。Lobsters 安全社群評論質量通常高於 HN 平均，今天 Lobsters 把這個排在 #1。",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top5%",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Bitwarden CLI Compromised in Ongoing Checkmarx Supply Chain Campaign",
+          "url": "https://socket.dev/blog/bitwarden-cli-compromised",
+          "score": 465
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Bitwarden CLI Compromised in Ongoing Checkmarx Supply Chain",
+          "url": "https://socket.dev/blog/bitwarden-cli-compromised",
+          "score": 46
+        }
+      ],
+      "product_opportunity": "Agent 任務限時憑證簽發系統——每個 agent 任務拿到的是時限 key 而非永久 key，任務結束自動吊銷。現有工具（ghostwright/phantom 等）都用靜態 secrets，這個空缺今天被 Bitwarden 事件點名了。"
+    },
+    {
+      "title": "context-mode 爆發：builders 不等換 model，先壓縮 context",
+      "body": "mksglu/context-mode（9,326★，Trending #12）宣稱把 tool output 沙箱化後壓縮 98%，支援 12 個平台。它今天登上 Trending 的時間點是：GPT-5.5 發布日、Claude Code 品質後記日、三週 tokenizer 成本爭議的累積之後。這不是巧合——builder 社群選擇用工程解法（壓縮）而非等待 model 側解法（更便宜的 model）。98% 這個數字需要驗證：tool output 壓縮多少不損失 agent 決策所需的上下文，取決於你的任務類型。盲目相信這個數字在 coding agent 上是危險的——先在你自己的 workload 上測，不要用 marketing 數字做 ROI 計算。",
+      "evidence": "GitHub Trending #12，9,326★。今日並無 creator 發布文章或 HN Show HN——純自然流量登上 Trending，說明需求是真實的。",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "Trending top15",
+      "source_links": [
+        {
+          "platform": "GitHub Trending",
+          "title": "mksglu/context-mode",
+          "url": "https://github.com/mksglu/context-mode"
+        }
+      ],
+      "product_opportunity": "多 model 路由層加上 context compression middleware：在你的 LLM gateway 前面掛一個 context-mode 等級的壓縮層，然後根據壓縮後的 token 數自動選擇合適的 model tier（Haiku / Sonnet / Opus），而非固定用最貴的 model 跑所有任務。"
+    },
+    {
+      "title": "OpenAI × Anthropic 競爭週期壓縮：GPT-5.5 vs 後記是第 12 集的高潮",
+      "body": "從 4 月 13 日開始追蹤的「AI 公司基礎設施爭奪戰」今天進到第 12 集。前 11 集是 compute 層（TPU 8t/8i）、pricing 層（Flex/Priority）、tooling 層（Astral 收購）、ecosystem 層（AUP 鬆綁）的積累。今天是第一次在同一天看到 OpenAI 的攻擊性動作（新 model）和 Anthropic 的防守性動作（品質後記）在 HN 前兩名同台。這個並排不是戲劇性的「誰輸誰贏」——benchmark 還沒出來。它更清楚揭示的是節奏：競爭壓縮到不給你消化時間。昨天是 Qwen3.6-27B，今天是 GPT-5.5，明天可能是 Kimi K3。builder 的 model evaluation cadence 要從季更新縮短到週更新。",
+      "evidence": "HN 今日 #1（GPT-5.5，602分）+ HN #2（Claude Code postmortem，320分）。Anthropic News RSS feed 今日逾時無法讀取。",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top5%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 12,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "GPT-5.5",
+          "url": "https://openai.com/index/introducing-gpt-5-5/",
+          "score": 602
+        },
+        {
+          "platform": "HN",
+          "title": "An update on recent Claude Code quality reports",
+          "url": "https://www.anthropic.com/engineering/april-23-postmortem",
+          "score": 320
+        }
+      ],
+      "product_opportunity": "Model evaluation framework 的訂閱服務——每週自動在新發布 model 上跑你指定的 benchmark suite（SWE-bench / LiveCodeBench / MMLU），輸出對比報告和 routing 建議。競爭週期壓縮讓手動 eval 成本變得不可承受。"
+    },
+    {
+      "title": "DeepMind 空 repo 序列第五彈：platonic_rep_video",
+      "body": "google-deepmind/platonic_rep_video 今天出現（2★，24h ago，Python，無 README）。這是 egg → ddgc → beneath-the-surface → proeval → platonic_rep_video 的第五彈，距離 pred-deepmind-stealth-reveal 的 resolution date（2026-04-30）剩 6 天。Platonic Representation Hypothesis 是 Park et al. 2024 的 MIT/Harvard 論文，核心主張：不同模態不同架構訓練出的神經網路會收斂到類似的內部表徵，暗示存在某種「柏拉圖式」的底層表徵空間。video 後綴暗示把這個假說應用到 video representation 或 video benchmark。五個連續 empty repo 在一個月內出現的 upstream cause 是什麼？最可能的解釋：DeepMind 的一個研究團隊在用 GitHub repo 名稱做內部 milestone 追蹤，每個 repo 對應一個即將公開的論文或 benchmark。靜默三天後再度出現說明序列還沒完成。",
+      "evidence": "第五個空 repo，跨越 10 天。pred-deepmind-stealth-reveal 的 resolution deadline 是 2026-04-30。",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "Developers watch",
+      "arc_ref": "deepmind-stealth-pre-launch",
+      "day_count": 10,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google-deepmind/platonic_rep_video",
+          "url": "https://github.com/google-deepmind/platonic_rep_video"
+        }
+      ],
+      "product_opportunity": "Video representation benchmark 平台：如果 DeepMind 正在測試 platonic representation 在 video 模態的成立性，對應的商業機會是「跨模態 embedding 品質評估工具」——讓你的 video retrieval pipeline 快速測試不同 encoder 的表徵是否收斂。"
+    }
+  ],
+  "sleeper": {
+    "name": "lucidrains/HiLAM",
+    "url": "https://github.com/lucidrains/HiLAM",
+    "description": "Hierarchical Latent Action Model（Yonsei University 的 Hanjung Kim et al.）的 lucidrains 實作。9★，28h ago。",
+    "stars": 9,
+    "why_asymmetric": "lucidrains 的 pattern 是：他 port 的論文在 3-6 個月內平均漲到 500-2000★（pseudo-projector、ring-attention-pytorch 等），不管原始論文有多冷門。HiLAM 用層級潛在動作表示做 model-based RL，是 agent 規劃架構的下一個可能方向——目前所有主流 agent framework 的規劃層是 flat action space，層級動作是它的進化路徑。現在是 9★，lucidrains 的 commit 速度（28h ago 建立）說明他認為這值得實作。",
+    "commercial_path": "層級動作空間的 agent 框架可以直接商業化為「長程任務規劃引擎」：給定一個三天的 engineering project，自動分解成層級 subtask 並追蹤執行狀態。HiLAM 的核心貢獻（latent action hierarchy）正好是這個功能缺少的 backbone。"
+  },
+  "contrarian": {
+    "claim": "VoltAgent/awesome-agent-skills（17,918★）是下一個被 fragmentation 壓垮的目錄型 repo",
+    "body": "「1000+ agent skills」聽起來是生態系繁榮的信號。問題是：1000 個 skills 沒有人 curate，等於 0 個可信任的 skills。awesome-agent-skills 今天 Trending #15，但它的競爭對手是 Anthropic 自己的 skills 格式、OpenAI Codex 的 actions 格式、Vercel 的 agent skill interface（vercel-labs/skills，15,380★，Trending 昨天）。這三個各有背後公司背書，各有不同的呼叫格式。一個「全部相容」的目錄在格式沒收斂之前是假相容——你的 Claude Code skill 不能直接丟給 Codex 跑，中間需要 adapter。「1000+ skills，12 個平台」的宣稱跳過了這個技術現實。到 2026-09-30，沒有任何主流 agent framework 官方文件會把 awesome-agent-skills 列為推薦 skill registry——因為每家都在推自己的格式。",
+    "rationale": "skills 標準戰爭剛開始，不是已收斂。相容聲明沒有技術機制支撐時，大目錄的作用是讓你誤以為問題已解決，實際上在等你踩坑。",
+    "prediction": {
+      "text": "到 2026-09-30，VoltAgent/awesome-agent-skills 的 GitHub stars 不超過 28,000（今日 17,918★），且 Anthropic、OpenAI、Vercel 三者官方文件均不把它列為推薦 skill registry（以各方官方 docs 或 blog post 為準）。",
+      "resolve_by": "2026-09-30"
+    }
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-astral-openai-integration",
+      "text": "到 2027-04-20，OpenAI 不會推出將 Ruff/uv 整合進 AI-powered coding workflow 的 GA 產品（以 OpenAI 官方 blog 或產品頁面公告為準）。",
+      "status": "pending",
+      "created": "2026-04-20",
+      "resolution_date": "2027-04-20"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-kimi-adoption-ceiling",
+      "text": "到 2026-10-21，在公開的 LLM API 使用量報告（Langfuse、LangSmith 或任何有超過 10K 用戶的 LLM observability 平台的公開 report）中，Kimi K2.6 的 API call 份額不超過 Anthropic Claude API 的 5%（以 reported request count 為準）。",
+      "status": "pending",
+      "created": "2026-04-21",
+      "resolution_date": "2026-10-21"
+    },
+    {
+      "id": "pred-rag-anything-ceiling",
+      "text": "到 2026-07-22，HKUDS/RAG-Anything 的 GitHub stars 不超過 35,000（今日 18,067★），且 LangChain、LlamaIndex、Haystack 三者均無發布官方整合 PR 或 adapter（以各 repo 的 PR history 為準）。",
+      "status": "pending",
+      "created": "2026-04-22",
+      "resolution_date": "2026-07-22"
+    },
+    {
+      "id": "pred-spacex-cursor-no-deal",
+      "text": "到 2026-09-30，SpaceX 沒有以任何金額完成對 Cursor 的收購公告（以 SEC 申報或兩方官方新聞稿為準）。",
+      "status": "pending",
+      "created": "2026-04-23",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-awesome-agent-skills-plateau",
+      "text": "到 2026-09-30，VoltAgent/awesome-agent-skills 的 GitHub stars 不超過 28,000（今日 17,918★），且 Anthropic、OpenAI、Vercel 三者官方文件均不把它列為推薦 skill registry（以各方官方 docs 或 blog post 為準）。",
+      "status": "pending",
+      "created": "2026-04-24",
+      "resolution_date": "2026-09-30"
+    }
+  ],
+  "meta": {
+    "run_id": "d4ddf217-88d1-44d9-bb50-daeedf3ce123",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-23T20:24:28.612Z",
+    "analyze_duration_ms": 1335697,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 161
+      },
+      "trending": {
+        "ok": true,
+        "count": 15
+      },
+      "search": {
+        "ok": true,
+        "count": 53
+      },
+      "developers": {
+        "ok": true,
+        "count": 17
+      }
+    },
+    "degraded_sources": []
+  }
+}
