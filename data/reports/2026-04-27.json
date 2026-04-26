@@ -1,0 +1,605 @@
+{
+  "date": "2026-04-27",
+  "lead": {
+    "html": "<h3>技能庫成為新的 IDE：Matt Pocock 的 .claude 目錄一天衝上 Trending #1，同時三個 source 的 builder 集體在問「我還算 coder 嗎」</h3>\n\n<h4>發生了什麼</h4>\n<p>Matt Pocock（TypeScript Total 課程作者，GitHub 35,412 followers）今天把整個 <code>.claude</code> 目錄公開成 <code>mattpocock/skills</code>，22,859★ 在一天內衝上 GitHub Trending #1。描述一句話：「Agent Skills for real engineers. Straight from my .claude directory.」——不是 showcase，是他自己每天在用的東西直接打包出來。同一天衝上 Trending #8 的 gastownhall/beads（21,606★）主打「a memory upgrade for your coding agent」，是把個人工作方式打包成 agent 資產的另一個嘗試。</p>\n\n<p>同一天，HN 上〈The West forgot how to make things, now it's forgetting how to code〉拿下 1005 分 120 comments（今日最高），Lobsters 最高分是〈Do I belong in tech anymore?〉179 分 59 comments，Dev.to #2 是〈I Used to Love Coding. Now I Just Prompt.〉三個獨立 source，同一個問題，同一天。</p>\n\n<h4>為什麼重要</h4>\n<p>HN 1005 分的文章把現在的 coding 外包比作 1970 年代的製造業外包：把 implementation 外包出去，最後連 debug 的能力都跟著走。Lobsters 179 分討論的 top comment：「你現在做的是 direction，不是 implementation。問題是 direction 的市場比 implementation 小很多。」第二高票：「我還是在 debug AI 的 code，只是它比我快十倍。我不確定這對我是好事。」</p>\n\n<p>但今天真正的訊號在 mattpocock/skills 的 22,859★，不在那篇 1005 分的文章。一個工作流如果還在探索期，沒有人會做成可複製的 skills 庫——Pocock 把它打包，代表社群判斷這個工作流已過 stabilization threshold。skills 標準化之後，差異化從哪裡來？gastownhall/beads 給的答案是 memory：記住哪些 skill 在哪種 context 下有效，下次自動選。這是技能庫的第二層，而不是第零層。</p>\n\n<h4>社群怎麼看</h4>\n<p>Simon Willison 今天以全大寫標題「WHY ARE YOU LIKE THIS」發文（April 25），語氣顯示對某個 AI 行為的直接挫敗感——在 builder 認同危機最高溫的一天，連最積極擁抱 AI 工具的社群領袖也在踩剎車。Gary Marcus 連發三篇攻 ChatGPT 具體限制的文章，與同天 HN 683 分的〈Amateur armed with ChatGPT solves an Erdős problem〉形成對照。HN 留言的 top comment 直接說：「原文描述的是 'early-career researcher'，Scientific American 把它改成 'amateur'。這不是 vibemaths，是一個研究生用 AI 工具加速探索問題空間。」兩個敘事同台，沒有收斂。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 Claude Code 工作流已固定到「有幾個 skills 在特定 file type 下必用」，這週可以在 SQLite 裡建一個 skill 效果日誌：記錄每次 skill 觸發時的 <code>file_extension</code>、<code>problem_type</code>、<code>outcome</code>（resolved / iterated-3x / abandoned），在 Claude Code hook 裡加一段 SELECT 當前 file type 最高 resolved 率的 skill 注入 system prompt。邏輯本身 300 行以內的 TypeScript，純 CPU 可跑。還沒有自己 skills 庫的話，先 clone <code>mattpocock/skills</code> 做 gap analysis：對照你常見的 task，找出他有你沒有的 3 個，這週 implement 一個。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "Skill 效果記憶層：讓 agent 記住哪個 skill 在你的 codebase 真的有用",
+      "projects": [
+        {
+          "name": "gastownhall/beads",
+          "url": "https://github.com/gastownhall/beads"
+        },
+        {
+          "name": "mattpocock/skills",
+          "url": "https://github.com/mattpocock/skills"
+        }
+      ],
+      "description": "mattpocock/skills（22,859★，Trending #1）把個人 skill 庫變成公開資產，gastownhall/beads（21,606★，Trending #8）把 agent memory 做成獨立基礎設施。但兩者都沒解決一個問題：哪個 skill 對哪種 task 有效，只有你的歷史記錄知道。在 SQLite 裡建一個 skill 效果日誌，欄位 `skill_name / file_extension / problem_type / outcome`（resolved, iterated-3x, abandoned）。每次 Claude Code session 結束時寫入結果；每次啟動新 session 時 SELECT 當前 file type 的 top-3 skills 注入 system prompt header。選用 beads 的 Go embedding API 做語意相似 task 的 skill 推薦（問題描述 → 向量化 → 找歷史上最接近問題的 skill）。整個邏輯在 300 行 TypeScript 以內；SQLite 夠用，不需要 vector DB。",
+      "use_case": "你在一個 monorepo 裡同時寫 Python ML pipeline 和 TypeScript API。每次切換語言都要手動想「現在該 load 哪個 skill」。建了這個層之後，Claude Code 在 .py 文件下自動選用你歷史 resolved 率最高的 data-pipeline debug skill，在 .ts 文件下選用 API schema validation skill，不需要你每次手動切換。",
+      "hardware": "純 CPU 可跑",
+      "dependencies": "TypeScript + SQLite（免費自架）；可選 beads embedding API（Go，免費開源）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/gastownhall/beads && cat README.md",
+      "market_evidence": "mattpocock/skills 在單日達 22,859★（Trending #1）；gastownhall/beads 21,606★（Trending #8）；兩個獨立 repo 同天衝榜代表 skill 標準化需求已到引爆點，但 memory 層是空缺"
+    },
+    {
+      "format": "solo",
+      "title": "WhatsApp 離線 RAG：把三年的 Desktop 聊天記錄變成私有知識庫",
+      "projects": [
+        {
+          "name": "steipete/wacrawl",
+          "url": "https://github.com/steipete/wacrawl"
+        }
+      ],
+      "description": "Peter Steinberger（Polipop 創辦人，GitHub 48,608 followers）今天建了 wacrawl（Go，67★，22h ago）：readonly 讀取 WhatsApp Desktop 本機 SQLite 聊天記錄，不需要官方 API 也不需要任何 hack。拿到聊天記錄之後，用 llama.cpp 本地 embedding 對話向量化（今天 antirez 正在做 DeepSeek v4 flash 的 llama.cpp 實驗，說明 local embedding 已夠快），存進 SQLite-vec 或 Chroma，建一個完全離線的「我說過什麼 / 我答應過什麼 / 這件事怎麼決定的」搜尋引擎。整條 pipeline 不碰雲端：律師、醫生、企業法遵等不能把通訊記錄送上雲端的場景，這是目前唯一可行的本地選項。技術難點在 wacrawl 的 DB schema 解析（steipete 有在 README 說明），不在 embedding pipeline。",
+      "use_case": "你是一家醫療新創的 CTO，醫師客戶的 WhatsApp 與病患的非正式溝通記錄有法遵要求不能離開本機。wacrawl 讀取本地 WhatsApp Desktop DB，llama.cpp 本機 embedding，SQLite-vec 向量索引，提供自然語言搜索「上個月有沒有討論過藥物劑量調整」——整條 pipeline 無任何資料送出去。",
+      "hardware": "純 CPU 可跑；Apple Silicon M2 以上在 2GB RAM 以內可跑 llama.cpp embedding",
+      "dependencies": "WhatsApp Desktop 安裝（免費）；llama.cpp（免費）；SQLite-vec（免費）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/steipete/wacrawl && go run main.go --help",
+      "market_evidence": "HIPAA/GDPR 合規的企業通訊 RAG 是 AI 採購阻塞點；HN 471分的「App silently installing on my iPhone」和 Lobsters 40分的「Port 22 Open 54 Days」顯示今天 builder 社群對資料外洩高度敏感；目前無任何開源工具覆蓋 WhatsApp Desktop 本機 RAG 場景"
+    },
+    {
+      "format": "remix",
+      "title": "Apple Silicon 對 AMD Ryzen AI Max：在 Linux 上建一個本地 LLM 推論的標準測試台",
+      "projects": [
+        {
+          "name": "trycua/cua",
+          "url": "https://github.com/trycua/cua",
+          "note": "Computer-Use Agent 沙箱基礎設施"
+        },
+        {
+          "name": "Asahi Linux 7.0",
+          "note": "Apple Silicon Linux 完整支援（2026-04-27 Progress Report）"
+        }
+      ],
+      "description": "今天 Asahi Linux Progress Report 7.0 拿下 HN 531 分 + Lobsters 26 分（cross-source），宣布 Apple Silicon 在 Linux 7.0 下的完整支援。同一天，Phoronix 報導 Clanker T1000——一個在 Framework 筆電 + AMD Ryzen AI Max 上跑的本地 LLM——已在找到真實的 Linux kernel bug。這兩條同天出現，但沒有人把它們接起來：目前沒有標準化的 benchmark suite 同時測試 Apple M-series（Asahi Linux 下）和 AMD Ryzen AI Max（Ubuntu 下）在相同 Linux kernel 版本下的 LLM 推論效能。建一個 Python harness：用 llama.cpp 跑 Llama 3 8B、Mistral 7B、Phi-4 三個模型，記錄 tokens/sec、peak RAM、time-to-first-token，在 Asahi Linux 和 Ubuntu 24.04 LTS 下各跑一遍，結果 publish 到 HuggingFace 的 evaluation 欄位。trycua/cua（14,316★，Trending #7）的沙箱基礎設施可以拿來自動化跑 agent benchmark 部分。",
+      "use_case": "你在考慮為 ML 研究團隊購買本地推論工作站，選項是 Mac Mini M4 Pro（$1,999）或 Framework 16 AMD Ryzen AI 9 HX 370（$2,499）。這個 benchmark 是目前唯一直接比較兩者在 Linux 下 LLM 推論的公開數字——購置決策有具體依據，不用靠廠商 spec sheet。",
+      "hardware": "需要 Apple Silicon Mac 或 AMD Ryzen AI Max 設備其一；兩台都有最佳，只有其中一台也能出一半結果",
+      "skill_level": "需熟悉 Linux + llama.cpp 編譯 + Python benchmark scripting",
+      "dependencies": "llama.cpp（免費）；Asahi Linux（免費）或 Ubuntu 24.04 LTS（免費）；HuggingFace 帳號（免費）",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/ggerganov/llama.cpp && cmake -B build -DLLAMA_METAL=ON",
+      "market_evidence": "Asahi Linux 7.0（HN 531 + Lobsters 26，cross-source）；Phoronix 今日 headline：AMD Ryzen AI Max 在 Framework 筆電上跑本地 LLM 找 kernel bug；HuggingFace Open LLM Leaderboard 目前無 Linux ARM native 欄位"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "mattpocock/skills",
+      "url": "https://github.com/mattpocock/skills",
+      "desc": "Matt Pocock（TypeScript Total 作者，35K followers）的個人 .claude 目錄全部公開。描述：「Agent Skills for real engineers. Straight from my .claude directory.」今日 Trending #1。",
+      "source": "GitHub Trending #1",
+      "stars": 22859,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "Alishahryar1/free-claude-code",
+      "url": "https://github.com/Alishahryar1/free-claude-code",
+      "desc": "在 terminal、VSCode extension 或 Discord 用 Claude Code，支援 openclaw 模式免費使用。Trending #2，AUP 鬆綁後生態系持續擴張。",
+      "source": "GitHub Trending #2",
+      "stars": 13215,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "abhigyanpatwari/GitNexus",
+      "url": "https://github.com/abhigyanpatwari/GitNexus",
+      "desc": "Zero-Server Code Intelligence Engine：全在 client side 跑的 codebase 知識圖譜，不需要任何 server。TypeScript，30,040★。",
+      "source": "GitHub Trending #4",
+      "stars": 30040,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "gastownhall/beads",
+      "url": "https://github.com/gastownhall/beads",
+      "desc": "A memory upgrade for your coding agent。Go 實作，21,606★，Trending #8。agent memory 作為獨立基礎設施的最新候選。",
+      "source": "GitHub Trending #8",
+      "stars": 21606,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "microsoft/typescript-go",
+      "url": "https://github.com/microsoft/typescript-go",
+      "desc": "TypeScript 編譯器的 Go 原生移植，目標是大幅提升 type-check 速度。25,142★，持續衝榜。",
+      "source": "GitHub Trending #6",
+      "stars": 25142,
+      "repo_age": "2025 年建立"
+    },
+    {
+      "name": "trycua/cua",
+      "url": "https://github.com/trycua/cua",
+      "desc": "Computer-Use Agent 的開源基礎設施：sandbox、SDK、benchmark。14,316★，Trending #7。評估 agent 在真實電腦操作的標準測試台。",
+      "source": "GitHub Trending #7",
+      "stars": 14316,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "antirez/llama.cpp-deepseek-v4-flash",
+      "url": "https://github.com/antirez/llama.cpp-deepseek-v4-flash",
+      "desc": "antirez（Redis 創始人，26,411 followers）今天建的實驗性 DeepSeek V4 Flash 在 llama.cpp 的實作，10 小時前。「Flash」暗示比 V3 更小更快的變體即將公開。",
+      "source": "GitHub Developer Watch",
+      "stars": 27,
+      "repo_age": "今日新增"
+    },
+    {
+      "name": "Phoronix: Linux kernel AI bug finder（Clanker T1000）",
+      "url": "https://www.phoronix.com/news/Clanker-T1000-AMD-Ryzen-AI-Max",
+      "desc": "在 Framework Desktop + AMD Ryzen AI Max 上跑的本地 LLM 已在找到真實 Linux kernel bug。本地推論做真實 kernel debug 工作的第一個公開記錄案例。",
+      "source": "Phoronix",
+      "repo_age": "今日報導"
+    },
+    {
+      "name": "Asahi Linux Progress Report：Linux 7.0",
+      "url": "https://asahilinux.org/2026/04/progress-report-7-0/",
+      "desc": "Apple Silicon 在 Linux 7.0 下的完整支援里程碑。HN 531分 + Lobsters 26分，cross-source 今日最強系統類訊號。",
+      "source": "HN 531分 / Lobsters 26分",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "OpenAI Privacy Filter",
+      "url": "https://openai.com/index/introducing-openai-privacy-filter/",
+      "desc": "OpenAI 推出隱私過濾功能。HN #28，282分，22 comments。在「iPhone App 自動安裝自己」同天出現，平台信任問題集中爆發日。",
+      "source": "HN 282分",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "Anthropic + Amazon：高達 5 gigawatts 新算力合作",
+      "url": "https://www.anthropic.com/news/anthropic-amazon-compute",
+      "desc": "Anthropic 與 Amazon 簽署新協議，深化合作至高達 5 gigawatts 新算力。AI 基礎設施競爭第十三章。",
+      "source": "Anthropic News",
+      "repo_age": "今日公告"
+    },
+    {
+      "name": "cosmicstack-labs/mercury-agent",
+      "url": "https://github.com/cosmicstack-labs/mercury-agent",
+      "desc": "24/7 運行的 AI agent，內建 permission-hardened tools、token budgets（硬性費用上限）、多通道存取（CLI / Telegram）。token cost accountability 成為首要設計約束。",
+      "source": "topic:llm · 1,380★ · 近期新增",
+      "stars": 1380,
+      "repo_age": "近期新增"
+    },
+    {
+      "name": "ConardLi/garden-skills",
+      "url": "https://github.com/ConardLi/garden-skills",
+      "desc": "ConardLi 的開源 skill 集：web design、knowledge retrieval、image generation 等。JavaScript，1,362★，topic:rag+agent。中文開發者的 skills 生態系進場。",
+      "source": "topic:rag · 1,362★ · 近期新增",
+      "stars": 1362,
+      "repo_age": "近期新增"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "The West forgot how to make things, now it's forgetting how to code",
+        "url": "https://techtrenches.dev/p/the-west-forgot-how-to-make-things",
+        "score": 1005,
+        "comments": 120,
+        "source": "HN #22",
+        "takeaway": "製造業外包的 deskilling 模型套用在 software：把 implementation 外包給 AI，最終 debug 能力一起走。今天 HN 最高分，top 5%。",
+        "action": "這週在你的 PR template 加一個欄位：「你自己能解釋這段 AI 生成 code 的 mechanism 嗎？」——不是限制 AI 使用，而是維持你能 debug 的最低知識門檻。"
+      },
+      {
+        "title": "Do I belong in tech anymore?",
+        "url": "https://ky.fyi/posts/ai-burnout",
+        "score": 179,
+        "comments": 59,
+        "source": "Lobsters #10（vibecoding tag）",
+        "takeaway": "今日 Lobsters 最高分，遠超其他條目。Top comment：「你做的是 direction，不是 implementation。問題是 direction 的市場比 implementation 小很多。」"
+      },
+      {
+        "title": "Amateur armed with ChatGPT solves an Erdős problem",
+        "url": "https://www.scientificamerican.com/article/amateur-armed-with-chatgpt-vibe-maths-a-60-year-old-problem/",
+        "score": 683,
+        "comments": 49,
+        "source": "HN #10",
+        "takeaway": "HN top comment：「原文是 'early-career researcher'，Scientific American 改成 'amateur'。不是業餘者解了數學難題，是研究生用 AI 加速探索。」Gary Marcus 今天三篇反例同天出現。",
+        "action": "如果你要拿這篇說服老闆投資 AI coding 工具，先讀 HN 留言區，不是 Scientific American 的標題。"
+      },
+      {
+        "title": "The New Linux Kernel AI Bot Uncovering Bugs Is A Local LLM On Framework Desktop + AMD Ryzen AI Max",
+        "url": "https://www.phoronix.com/news/Clanker-T1000-AMD-Ryzen-AI-Max",
+        "source": "Phoronix",
+        "takeaway": "Clanker T1000 在 Framework 筆電 + AMD Ryzen AI Max 上跑本地 LLM 找 Linux kernel bug。本地推論用於嚴肅 kernel debug 的第一個公開記錄。",
+        "action": "如果你在考慮本地推論工作站，AMD Ryzen AI Max + Framework 現在是比 Jetson 系列更有 developer ecosystem 的選擇——kernel maintainer 在用。"
+      },
+      {
+        "title": "Asahi Linux Progress Report: Linux 7.0",
+        "url": "https://asahilinux.org/2026/04/progress-report-7-0/",
+        "score": 531,
+        "comments": 24,
+        "source": "HN #3 / Lobsters #7（cross-source）",
+        "takeaway": "Apple Silicon 在 Linux 7.0 下的完整里程碑。HN 531 + Lobsters 26，今日最強 cross-source 系統類訊號。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "The West forgot how to make things, now it's forgetting how to code",
+        "url": "https://techtrenches.dev/p/the-west-forgot-how-to-make-things",
+        "score": 1005,
+        "comments": 120
+      },
+      {
+        "title": "Amateur armed with ChatGPT solves an Erdős problem",
+        "url": "https://www.scientificamerican.com/article/amateur-armed-with-chatgpt-vibe-maths-a-60-year-old-problem/",
+        "score": 683,
+        "comments": 49
+      },
+      {
+        "title": "Asahi Linux Progress Linux 7.0",
+        "url": "https://asahilinux.org/2026/04/progress-report-7-0/",
+        "score": 531,
+        "comments": 24
+      },
+      {
+        "title": "Tell HN: An app is silently installing itself on my iPhone every day",
+        "url": "https://news.ycombinator.com/item?id=47906253",
+        "score": 471,
+        "comments": 54
+      },
+      {
+        "title": "USB Cheat Sheet (2022)",
+        "url": "https://fabiensanglard.net/usbcheat/index.html",
+        "score": 458,
+        "comments": 23
+      },
+      {
+        "title": "Why has there been so little progress on Alzheimer's disease?",
+        "url": "https://freakonomics.com/podcast/why-has-there-been-so-little-progress-on-alzheimers-disease/",
+        "score": 374,
+        "comments": 50
+      },
+      {
+        "title": "Using coding assistance tools to revive projects you never were going to finish",
+        "url": "https://blog.matthewbrunelle.com/its-ok-to-use-coding-assistance-tools-to-revive-the-projects-you-never-were-going-to-finish/",
+        "score": 334,
+        "comments": 40
+      },
+      {
+        "title": "OpenAI Privacy Filter",
+        "url": "https://openai.com/index/introducing-openai-privacy-filter/",
+        "score": 282,
+        "comments": 22
+      },
+      {
+        "title": "GoDaddy Gave a Domain to a Stranger Without Any Documentation",
+        "url": "https://anchor.host/godaddy-gave-a-domain-to-a-stranger-without-any-documentation/",
+        "score": 276,
+        "comments": 27
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Do I belong in tech anymore?",
+        "url": "https://ky.fyi/posts/ai-burnout",
+        "score": 179,
+        "comments": 59,
+        "tags": [
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "I Left Port 22 Open on the Internet for 54 Days. Here's Who Showed Up",
+        "url": "https://arman-bd.hashnode.dev/i-left-port-22-open-on-the-internet-for-54-days-here-s-who-showed-up",
+        "score": 40,
+        "comments": 15,
+        "tags": [
+          "networking",
+          "security",
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "A breakthrough in C/C++ dependency management",
+        "url": "https://lcamtuf.substack.com/p/a-breakthrough-in-cc-dependency-management",
+        "score": 36,
+        "comments": 19,
+        "tags": [
+          "c",
+          "c++",
+          "programming",
+          "satire"
+        ]
+      },
+      {
+        "title": "Asahi Linux Progress Report: Linux 7.0",
+        "url": "https://asahilinux.org/2026/04/progress-report-7-0/",
+        "score": 26,
+        "comments": 0,
+        "tags": [
+          "linux",
+          "release"
+        ]
+      },
+      {
+        "title": "Linux May Drop Old Network Drivers Now That AI-Driven Bug Reports Are Causing A Burden",
+        "url": "https://www.phoronix.com/news/Linux-Old-Network-AI",
+        "score": 28,
+        "comments": 25,
+        "tags": [
+          "linux"
+        ]
+      },
+      {
+        "title": "Lua can be a really cool HTML templating engine",
+        "url": "https://riki.house/lua-html",
+        "score": 24,
+        "comments": 4,
+        "tags": [
+          "lua",
+          "web"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "audreyt",
+        "followers": 8835,
+        "repo": "audreyt/pdf-outline-fonts",
+        "url": "https://github.com/audreyt/pdf-outline-fonts",
+        "language": "TypeScript",
+        "hours_ago": 19,
+        "description": "選擇性把特定 PDF 字型轉成向量輪廓，同時保留文字選取功能。解決掃描式 PDF 與嵌入字型混用導致的法律文件可讀性問題。",
+        "local_context": "🇹🇼 唐鳳的公民科技工具繼續往可審計、可離線的方向走——法律文件的字型處理是台灣政府數位化流程中長期存在的技術痛點。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 821,
+        "repo": "strategist922/kingfisher",
+        "url": "https://github.com/strategist922/kingfisher",
+        "language": "Python",
+        "hours_ago": 8,
+        "description": "在你的 stack 裡找到洩漏的 secrets、驗證有效性、評估影響範圍，快速撤銷。900+ 規則庫，比 truffleHog 覆蓋更廣。",
+        "local_context": "🇹🇼 繼上週供應鏈攻擊（Bitwarden CLI）的高關注度，台灣開發者在秘密掃描工具上繼續投入——supply chain security 的焦慮正在轉化為具體工具。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "microsoft",
+        "followers": 118193,
+        "repo": "microsoft/github-copilot-canada",
+        "url": "https://github.com/microsoft/github-copilot-canada",
+        "language": null,
+        "hours_ago": 64,
+        "description": "空 repo，無語言、無 README、0★。Microsoft（118K followers）建立區域命名的 Copilot repo——加拿大 AI 法規（AIDA）壓力下的預先佈局，或是政府採購合約的技術接口準備。",
+        "local_context": "Stealth first-party competitor pattern：空 repo + 區域命名 = 監管驅動的產品分支。Canada 正在審議 AIDA（Artificial Intelligence and Data Act）。"
+      },
+      {
+        "developer": "antirez",
+        "followers": 26411,
+        "repo": "antirez/llama.cpp-deepseek-v4-flash",
+        "url": "https://github.com/antirez/llama.cpp-deepseek-v4-flash",
+        "language": "C++",
+        "hours_ago": 10,
+        "description": "Redis 創始人對 DeepSeek V4 Flash 在 llama.cpp 裡的實驗性實作。「Flash」暗示比 V3 更小的高效推論變體即將公開發布。",
+        "local_context": "antirez 做 llama.cpp 貢獻這件事本身是信號：當寫 Redis 的人在做 local inference 底層，說明本地推論已進入頂尖 systems 開發者的日常工具箱。"
+      },
+      {
+        "developer": "steipete",
+        "followers": 48608,
+        "repo": "steipete/wacrawl",
+        "url": "https://github.com/steipete/wacrawl",
+        "language": "Go",
+        "hours_ago": 22,
+        "description": "以 readonly 方式存取現有 WhatsApp Desktop 聊天記錄。Go 實作，不需要官方 API，不需要任何 jailbreak。",
+        "local_context": "Steipete 一向做高品質 iOS/Mac 工具。WhatsApp Desktop 的 SQLite 讀取是私有通訊 RAG 的第一塊磚——今天「iPhone App 自動安裝」HN 471分的背景下，本地資料主權議題持續升溫。"
+      },
+      {
+        "developer": "wesbos",
+        "followers": 35412,
+        "repo": "wesbos/tab-snitch",
+        "url": "https://github.com/wesbos/tab-snitch",
+        "language": "TypeScript",
+        "hours_ago": 68,
+        "description": "偽裝瀏覽器分頁的標題與 favicon。Cloudflare Worker 實作。",
+        "local_context": "Wes Bos（JavaScript 30、Syntax.fm 主持人）的週末工具。功能本身無害好玩，但在今天 iPhone 自動安裝 app 的背景下，browser tab 可信任性議題值得留意。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Builder 認同分裂：技能標準化觸發「我還算 coder 嗎」的集體危機",
+      "body": "今天三個獨立 source 同天收斂到同一個問題：HN 1005分（今日最高）、Lobsters 179分（今日最高，遠超其他條目）、Dev.to #2——builder 在問 AI 輔助 coding 是否正在侵蝕自己的核心能力。這不是 doomer 焦慮，是 deskilling 的合理擔憂：製造業外包的歷史案例是前車之鑑。同天，mattpocock/skills Trending #1 是正面訊號——技能系統化代表 stabilization，不是終結。真正的分裂在於：skills 標準化之後，next layer of differentiation 在哪裡？gastownhall/beads（memory）給出了一個工程師路徑的答案。",
+      "evidence": "HN 1005分（top 5%）、Lobsters 179分（今日最高）、Dev.to #2——三個獨立 source 同天收斂到 builder 認同問題；mattpocock/skills 22,859★（Trending #1）同天衝榜",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%（HN 1005分）",
+      "product_opportunity": "「哪個 skill 在哪個 codebase 真的有效」的記憶層：在 beads 和 mattpocock/skills 之間建一個效果追蹤中間件，讓 agent 自動學習你的 skill 使用模式，比手動整理 .claude 目錄快一個量級",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "The West forgot how to make things, now it's forgetting how to code",
+          "url": "https://techtrenches.dev/p/the-west-forgot-how-to-make-things",
+          "score": 1005
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Do I belong in tech anymore?",
+          "url": "https://ky.fyi/posts/ai-burnout",
+          "score": 179
+        },
+        {
+          "platform": "GitHub Trending",
+          "title": "mattpocock/skills",
+          "url": "https://github.com/mattpocock/skills"
+        }
+      ]
+    },
+    {
+      "title": "本地推論正在做真實工作：antirez 的 llama.cpp 實驗 + Framework 筆電找 kernel bug",
+      "body": "antirez（Redis 創始人，26K followers）今天在 llama.cpp 裡開了 DeepSeek V4 Flash 的實驗性實作（10h ago）。同一天，Phoronix 報導 Clanker T1000——在 Framework Desktop + AMD Ryzen AI Max 上跑的本地 LLM——已在找到真實 Linux kernel bug。「Flash」這個命名暗示比 V3 更小的高效推論變體即將公開，antirez 的搶先實作說明頂尖系統開發者正在把本地推論當成日常工具而非玩具。Phoronix 的 kernel bug 案例是量化證明：本地推論的品質上限已越過「能做 demo」的門檻，進入「能做 kernel audit」的實際工作層級。這個 arc 從四月初系統圈對 LLM 的謹慎態度，到今天出現明確的 builder 採用信號，轉折點在這兩條同天出現。",
+      "evidence": "antirez/llama.cpp-deepseek-v4-flash（10h ago，27★，Redis 創始人建立）；Phoronix：Clanker T1000 在 Framework + AMD Ryzen AI Max 上找 Linux kernel bug",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%（Phoronix feature story）",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 13,
+      "product_opportunity": "面向安全研究員的本地 LLM 靜態分析工具：以 Clanker T1000 模式，在 AMD Ryzen AI Max 上跑本地 LLM 掃 IoT firmware 或 kernel module，輸出可審計的 bug 報告。不碰雲端，符合 air-gapped 環境要求。",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "antirez/llama.cpp-deepseek-v4-flash",
+          "url": "https://github.com/antirez/llama.cpp-deepseek-v4-flash"
+        },
+        {
+          "platform": "Phoronix",
+          "title": "The New Linux Kernel AI Bot Uncovering Bugs Is A Local LLM On Framework Desktop + AMD Ryzen AI Max",
+          "url": "https://www.phoronix.com/news/Clanker-T1000-AMD-Ryzen-AI-Max"
+        }
+      ]
+    },
+    {
+      "title": "Claude Code 技能生態系進入標準化期：三個 repo 同天衝 Trending 前八",
+      "body": "mattpocock/skills（Trending #1，22,859★）、Alishahryar1/free-claude-code（Trending #2，13,215★）、gastownhall/beads（Trending #8，21,606★）三個 Claude Code 相關 repo 同天衝 Trending 前八。這是 Claude Code 生態系第十三波的標誌性訊號：從功能探索（第一到三波）到 skill 個人化（第十波 AUP 鬆綁後）到今天的 skill 打包輸出——一個大師的 .claude 目錄成為社群資產。標準化期的到來通常意味著兩件事同步發生：commodity 採購（clone mattpocock/skills）和 next-layer innovation（beads 的 memory 層）。這是典型的技術成熟曲線中從「hype 峰值」走向「生產力坡道」的轉折。",
+      "evidence": "mattpocock/skills Trending #1（22,859★）、Alishahryar1/free-claude-code Trending #2（13,215★）、gastownhall/beads Trending #8（21,606★）三個同天衝 Trending 前八",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%（Trending #1）",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 13,
+      "product_opportunity": "Claude Code skill 的 A/B testing 平台：記錄不同 skill 版本在相同 task 上的效果差異，讓 skill 作者可以 iterate——類似 Langfuse 之於 prompt，但針對 skill 層",
+      "source_links": [
+        {
+          "platform": "GitHub Trending",
+          "title": "mattpocock/skills",
+          "url": "https://github.com/mattpocock/skills"
+        },
+        {
+          "platform": "GitHub Trending",
+          "title": "gastownhall/beads",
+          "url": "https://github.com/gastownhall/beads"
+        },
+        {
+          "platform": "GitHub Trending",
+          "title": "Alishahryar1/free-claude-code",
+          "url": "https://github.com/Alishahryar1/free-claude-code"
+        }
+      ]
+    },
+    {
+      "title": "AI 基礎設施競爭繼續往算力層下探：Anthropic + Amazon 5 gigawatts",
+      "body": "Anthropic 與 Amazon 簽署新協議，合作規模擴大至高達 5 gigawatts 新算力。同時，Anthropic + NEC 合作建立日本最大 AI 工程師培訓體系。算力競爭從採購進入合建階段，同時從單純的算力擴張延伸到人才管道——5GW 的算力只有在配套人才到位的情況下才能完整發揮。這是 AI 公司基礎設施競爭從硬體層延伸到人力資本層的第一個明確案例。",
+      "evidence": "Anthropic + Amazon 5 gigawatts 合作（Anthropic News #3）；Anthropic + NEC 日本最大 AI 工程師培訓（Anthropic News #2）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 1,
+      "percentile": "top 25%（Anthropic News 主要公告）",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 14,
+      "product_opportunity": "企業 AI 算力規劃工具：給 CTO / infra lead 的 workload capacity planning dashboard，輸入 5GW 等級的算力分配意向，輸出不同 inference tier 的 token throughput 估算和成本分解",
+      "source_links": [
+        {
+          "platform": "Anthropic News",
+          "title": "Anthropic and Amazon expand collaboration for up to 5 gigawatts of new compute",
+          "url": "https://www.anthropic.com/news/anthropic-amazon-compute"
+        },
+        {
+          "platform": "Anthropic News",
+          "title": "Anthropic and NEC collaborate to build Japan's largest AI engineering workforce",
+          "url": "https://www.anthropic.com/news/anthropic-nec"
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "cosmicstack-labs/mercury-agent",
+    "url": "https://github.com/cosmicstack-labs/mercury-agent",
+    "stars": 1380,
+    "description": "Soul-driven AI agent，內建 permission-hardened tools、token budgets（硬性每日費用上限）、多通道存取（CLI / Telegram），24/7 持續運行。1,380★，topic:llm。",
+    "body": "大部分 agent 框架把 cost control 留給使用者自己處理；mercury-agent 把 token budget 做成框架級別的一等公民設計約束。這個差異在 token cost accountability 五天持續升溫的背景下（從 Opus 4.7 tokenizer 膨脹到 context-mode 98% 壓縮）顯得格外準確——builder 社群已在用 engineering 解法對抗成本，mercury-agent 是這個方向最早做成系統性設計的框架之一。Telegram 通道接入讓它在無 GUI 伺服器環境也能操作，適合 CI/CD 觸發的自動化 agent 場景。",
+    "why_asymmetric": "token budget 作為框架設計約束還沒有成熟競品；LangChain/CrewAI 均依賴使用者層面的 cost tracking 而非框架層的 hard cap。如果 token cost 壓力持續（過去 5 天每天都有新訊號），「有硬性上限的 agent」這個差異化會在 3 個月內變成 enterprise 採購的篩選條件。",
+    "commercial_path": "SaaS 化：每個 agent 設定月度 token 上限，超出則降級或暫停，訂閱費用按 agent 數量計算。目標客戶：中小型 startup 的 infra lead，不想因一個 runaway agent 吃掉整個月 API 預算。"
+  },
+  "contrarian": {
+    "claim": "mattpocock/skills Trending #1（22,859★）是 Claude Code 生態系的 awesome-list 時刻——看起來像爆發，實際上是這個 layer 差異化優勢到盡頭的訊號",
+    "body": "當一個 ecosystem 最熱的新 repo 是「把某個大師的個人設定打包成 library」，代表探索期結束、整理期開始。Pocock 的 skills 庫裡沒有任何你在 Claude Code 公開文件找不到的新機制——它的價值完全來自 curation，不是 innovation。這是 awesome-react、awesome-langchain 出現時的同一個訊號：下一個六個月，skills 成為 commodity，和你用哪個 skills 庫無關，只有你的 skills 有沒有測試和記憶才有差異。更重要的是：Anthropic 現在有平台動機把 skill management 收進官方功能。一旦有內建 skill registry，所有社群 skill repo 的 discovery value 歸零——不是因為 skills 不重要，而是因為你不再需要 GitHub 來找它們。",
+    "rationale": "歷史案例：awesome-vue 在 2017 年出現三個月後，Nuxt.js 把最常見的 composition pattern 直接做進框架，awesome-vue 的 top-20 repo 大部分在半年內過期。awesome-langchain 出現後 LangChain 快速整合了其中的 loader、retriever 類型。Claude Code skills 的 stabilization 週期可能更短，因為 Anthropic 對 ecosystem 的控制力比 Vue 核心團隊強得多。",
+    "prediction": "到 2026-07-31，Anthropic 在 Claude Code 官方文件或 changelog 中發布內建 skill 管理介面或 official skill registry（以 anthropic.com 官方 blog 或 claude.ai changelog 為準）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30",
+      "note": "距 resolution date 剩 3 天。今天 dev_watch 無任何新 google-deepmind repo，靜默期延長——序列可能已完成或 paper 仍在 review 中。"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-rag-anything-ceiling",
+      "text": "到 2026-07-22，HKUDS/RAG-Anything 的 GitHub stars 不超過 35,000（今日 18,067★），且 LangChain、LlamaIndex、Haystack 三者均無發布官方整合 PR 或 adapter（以各 repo 的 PR history 為準）。",
+      "status": "pending",
+      "created": "2026-04-22",
+      "resolution_date": "2026-07-22"
+    },
+    {
+      "id": "pred-spacex-cursor-no-deal",
+      "text": "到 2026-09-30，SpaceX 沒有以任何金額完成對 Cursor 的收購公告（以 SEC 申報或兩方官方新聞稿為準）。",
+      "status": "pending",
+      "created": "2026-04-23",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-anthropic-skill-management",
+      "text": "到 2026-07-31，Anthropic 在 Claude Code 官方文件或 changelog 中發布內建 skill 管理介面或 official skill registry（以 anthropic.com 官方 blog 或 claude.ai changelog 為準）。",
+      "status": "pending",
+      "created": "2026-04-27",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-deepseek-v4-flash-release",
+      "text": "DeepSeek 在 2026-05-15 前公開發布 V4 Flash 模型（以 DeepSeek 官方 blog、X 帳號或 HuggingFace model page 為準）——依據：antirez 今天在 llama.cpp 建立實驗性實作，命名明確包含 'flash'，暗示 release 臨近。",
+      "status": "pending",
+      "created": "2026-04-27",
+      "resolution_date": "2026-05-15"
+    }
+  ],
+  "meta": {
+    "run_id": "aacb2f44-fd61-410b-be6d-e389add623da",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-26T20:27:29.754Z",
+    "analyze_duration_ms": 1563529,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 13
+      },
+      "search": {
+        "ok": true,
+        "count": 51
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      }
+    },
+    "degraded_sources": []
+  }
+}
