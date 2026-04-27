@@ -1,0 +1,524 @@
+{
+  "date": "2026-04-28",
+  "lead": {
+    "html": "<h3>Simon Willison 今天為一條死去的合約條款立碑：Microsoft-OpenAI 獨家協議終止，Azure 護城河開始縮窄</h3>\n\n<h4>發生了什麼</h4>\n<p>Bloomberg 今天報導，Microsoft 與 OpenAI 正式終止其獨家合作與營收分成協議。Simon Willison 的第一反應是花一篇文章逐一梳理「現已作古的 OpenAI Microsoft AGI 條款」的歷史——他認為這值得留下紀錄。原合約的核心邏輯：一旦 OpenAI 自行判定達到「AGI」，Microsoft 的優先存取權即失效。這個條款幾乎保證了它永遠不會觸發：OpenAI 自己定義何謂 AGI，就像裁判同時是球員。現在這條款被雙方從合約裡拔掉了，雙方都不再需要維護「有沒有達到 AGI」這個對彼此都尷尬的問題。</p>\n\n<p>同天，GitHub 宣布 Copilot 全面轉向使用量計費（HN 367 分，64 個 comments）。GitHub 屬於 Microsoft。這兩件事是同一個事件在不同層看：Microsoft 正在把整條 AI 供應鏈從固定成本轉成彈性成本——因為底層模型成本的下滑速度讓任何固定定價都是輸家。模型成本六個月內掉一半，但每席 $19 的月費不能跟著掉，結果是固定訂閱的利潤率在變薄，用量計費讓成本轉嫁到使用端。</p>\n\n<h4>為什麼重要</h4>\n<p>獨家協議失效意味著其他雲端商（AWS Bedrock、Google Vertex AI）現在可以談到和 Azure 同等的 OpenAI 模型存取條款。如果你的 production pipeline 在 Azure OpenAI Service 上跑 GPT-4o 的理由只是「Azure 是唯一能穩定拿到 OpenAI 模型的地方」，那個護城河在今天之後已經比三個月前薄了。這不是說你要立刻 migrate——Azure 的整合深度（Active Directory、networking、compliance 文件）還在——但多雲端 OpenAI 路由在 2026 H2 值得放入技術評估清單。</p>\n\n<p>Copilot 用量計費對工程主管最直接的影響：你下個季度的 AI coding tool 帳單從可預測變成不可預測。GitHub 沒有公布新單價，但 heavy user（每天 100+ completion accepted）和 light user（每天 3 次 tab completion）的成本差距可能是 10x。你的團隊裡這兩種人的比例，決定了新計費對你是省錢還是加費。</p>\n\n<h4>社群怎麼看</h4>\n<p>Microsoft-OpenAI deal 的 HN thread（551 分，50 comments）呈現明顯分裂。支持方：「AGI 條款最荒謬的地方是 OpenAI 自己定義 AGI，所以他們可以永遠宣稱沒達到。現在這個曖昧終於結束了。」質疑方：「Microsoft 失去排他後還有什麼護城河？就剩下 Azure 整合深度——這對長期股價是壞事。」Simon Willison 的重點是歷史記錄：他列出每次 AGI 條款在對外說明中如何被模糊處理，最後悄悄消失在某個合約修正版本裡。Copilot billing 的 thread 反而比 deal 本身更活躍（64 comments），top comment：「終於，付使用量而不是替每天只用三次 tab completion 的人補貼。」但也有人直接問：「企業採購部門能接受一個不可預測的月帳單嗎？」——這個問題還沒人回答。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 pipeline 今天在 Azure OpenAI Service 上跑 GPT-4o，這週在 repo 新增一個 <code>vendor-assumptions.md</code>，記錄你依賴的 endpoint 版本（如 <code>gpt-4o-2026-03</code>）、你假設的 rate limit tier、你的月預算上限。夥伴關係重組期是 API 條款最容易悄悄變動的時候——GPT-4 到 GPT-4o 之間 ToS 改了兩次，Anthropic AUP 過去六個月動了三次，這種 cadence 說明你需要一個地方記下「我現在假設能用的是什麼」，而不是等到 migration notice 才開始比對差異。如果你的團隊有 Copilot Business 訂閱，計費切換前先呼叫 <code>GET /orgs/{org}/copilot/usage</code>，把過去 30 天的 completion acceptance rate 拉出來：誰是 heavy user、誰幾乎不用——這是你下個季度決定訂閱規模的原始資料，建立基線比切換後才發現帳單暴增要好得多。</p>"
+  },
+  "ideas": [
+    {
+      "title": "Copilot 用量追蹤儀表板：在計費切換前建立你的成本基線",
+      "description": "GitHub Copilot 宣布轉向使用量計費的同一天，多數工程主管不知道自己團隊目前的 completion acceptance rate 是多少。GitHub API 今天就有 `/orgs/{org}/copilot/usage` 端點，但沒有人把它做成人看得懂的儀表板。這個工具從 API 拉過去 30 天的用量資料，算出每位開發者的 acceptance rate、每個 sprint 的估計成本，以及「如果現在就用量計費，你的帳單會是多少」，並且在可能浪費最多的席位上標紅旗。",
+      "use_case": "你是一家 60 人新創的 Engineering Lead，公司有 30 個 Copilot Business 訂閱（目前月費 $570 固定）。你有 5 個 senior engineers 每天用 Copilot 寫複雜邏輯、acceptance rate 約 70%；有 10 個 junior engineers 幾乎只用 tab completion、acceptance rate 約 12%。GitHub 沒告訴你新計費下這兩種用法的成本差異有多大。這個工具讓你在帳單切換前，先知道誰值得繼續付費、誰可以降等或關閉。",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "curl -H 'Authorization: Bearer $GITHUB_TOKEN' 'https://api.github.com/orgs/{org}/copilot/usage'",
+      "format": "solo",
+      "hardware": "雲端 API 即可",
+      "skill_level": "熟悉 REST API + 基礎 JavaScript 或 Python 即可",
+      "dependencies": "GitHub Copilot Business 訂閱（$19/user/月）+ GitHub PAT（read:org 權限）",
+      "market_evidence": "GitHub Copilot billing 的 HN thread 今天 64 個 comments，top comment：「終於可以付使用量而不是替每天只用三次 tab completion 的人補貼了。」——表示相當比例的 Copilot 席位是低用量的，降等動機明確。"
+    },
+    {
+      "title": "MCP Server 品質評估框架：在 registry 戰開始前先定義標準",
+      "description": "modelcontextprotocol 組織今天建立了 experimental-ext-server-card（0★，0 小時前）——這幾乎肯定是 MCP server registry 的前置基礎設施，「server card」是 marketplace 裡每個 server 的 metadata 名片。dirac-run/dirac 今天用 Gemini flash 頂上 TerminalBench 第一——說明 agent 效能的決定因子不只是模型，而是 skill 設計品質。兩件事合在一起的含義：當 registry 上線後，你怎麼知道一個 MCP server 的 skill 品質好不好？建立一套 MCP server 任務型評估框架，讓你在選 server 之前先跑評測，而不是靠 README 的自我陳述。",
+      "use_case": "你是一家法律科技公司的後端工程師，正在評估三個 contract-analysis MCP server：一個大型 LegalTech 公司出的、一個 OSS 社群維護的、一個你們自己剛建的。你需要在上 production 前知道三個 server 在「條款識別精確度」「多文件比對」「引用追蹤」三類任務上的相對效能，而不是光看 README 的宣稱。你的評估框架接受任意 MCP server URL，跑 30 個標準任務，輸出品質分數卡。",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "Clone https://github.com/dirac-run/dirac，查看 TerminalBench 任務格式，設計你的 MCP server 任務類別清單",
+      "format": "remix",
+      "hardware": "雲端 API 即可",
+      "skill_level": "熟悉 MCP protocol + Python 或 TypeScript",
+      "dependencies": "Gemini API key（免費層足夠跑評測）或 Claude API key",
+      "market_evidence": "ComposioHQ/awesome-codex-skills 今天上 Trending #3（2,658★）、mattpocock/skills Trending #1（29,124★）——skill curation 正在成為獨立競爭優勢，評測工具是下一個空缺；AMAP-ML/SkillClaw（1,033★，topic:agent）今天出現在 discovery pool，說明「讓 skills 集體進化」的問題已有人在解。"
+    },
+    {
+      "title": "科研 PDF 轉換管道：HuggingFace Sandbox + retain-pdf 做多語言科學文獻處理",
+      "description": "huggingface/hf-sandbox（10★，17 小時前）提供 Modal 式的無伺服器計算 API，讓你把 Python 函數部署成 HuggingFace Jobs 上的雲端端點，不需要自管 GPU。wxyhgk/retain-pdf（1,015★，topic:ocr）解決的問題是：在保留公式、表格、版面結構的前提下把科學 PDF 轉成 markdown，目前需要本地 GPU。把兩者結合，建立一個公開的科研 PDF 轉換端點：輸入 arxiv URL，輸出 LaTeX 公式完整保留的 markdown，附帶多語言翻譯選項。整個流程部署在 HuggingFace，不需要本地 GPU。",
+      "use_case": "你是台灣工業技術研究院的材料科學研究員，你的領域每個月有 60-80 篇重要論文發在日文和中文期刊，你的日本合作夥伴看不懂中文，你的台灣同事看不懂日文。每週你花 3-4 小時手動轉文件，最麻煩的是化學方程式——一般 PDF 轉換工具把它變成亂碼。hf-sandbox + Nougat 的組合讓你用 20 行 Python 建一個公開 API，端點接受 PDF URL，回傳 LaTeX 保留的 markdown，加 NLLB 翻譯。",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "pip install huggingface_hub，在 HuggingFace 建一個 Job，用 Nougat 模型跑第一個 PDF 轉換",
+      "format": "remix",
+      "hardware": "純 CPU 可跑（Nougat 有 CPU 模式，速度較慢但免費層可用）",
+      "skill_level": "Python + HuggingFace SDK 基礎即可",
+      "dependencies": "HuggingFace 帳號（免費）+ HF Jobs credits（低用量在免費層內）",
+      "market_evidence": "wxyhgk/retain-pdf 在 30 天內累積 1,015★，對應痛點：「PDF 轉換把公式全毀了」在多個中文技術社群是反覆出現的抱怨；Nougat（Meta）是目前科學 PDF OCR 最準的開源模型，專門為保留 LaTeX 而訓練。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "GitHub Copilot 轉向使用量計費",
+      "url": "https://github.blog/news-insights/company-news/github-copilot-is-moving-to-usage-based-billing/",
+      "desc": "從每席固定訂閱轉為按 completion 使用量計費。GitHub 沒有公布新單價，但方向確定：heavy user 和 light user 的成本將差距拉大。企業採購預算不可預測性上升。",
+      "source": "HN 367分"
+    },
+    {
+      "name": "dirac-run/dirac",
+      "url": "https://github.com/dirac-run/dirac",
+      "desc": "OSS agent，今天在 TerminalBench 上以 Gemini-3-flash-preview 為後端，拿下榜首。用 flash（廉價快速）模型而非最大前沿模型頂榜，說明 agent 效能的決定因子是 skill 結構品質，不只是模型大小。",
+      "source": "HN 256分",
+      "stars": 0
+    },
+    {
+      "name": "DeepSeek V4 正式發布",
+      "url": "https://my.oschina.net/u/4487475/blog/19604746",
+      "desc": "時隔 145 天的 DeepSeek 新版本 V4 終於發布。技術報告開頭沒有「全球最強」，也沒有「打破壟斷」——OSChina 分析認為這是刻意的謙遜定位（「認怂」）。antirez（Redis 創始人）在報告出來後 34 小時內建立了 llama.cpp-deepseek-v4-flash 的實驗性實作。",
+      "source": "OSChina"
+    },
+    {
+      "name": "microsoft/VibeVoice",
+      "url": "https://github.com/microsoft/VibeVoice",
+      "desc": "Microsoft 開源的前沿語音 AI 專案，42,863★。Open-Source Frontier Voice AI，Python 實作。",
+      "source": "GitHub Trending #8",
+      "stars": 42863
+    },
+    {
+      "name": "davila7/claude-code-templates",
+      "url": "https://github.com/davila7/claude-code-templates",
+      "desc": "Claude Code 的 CLI 設定與監控工具，25,740★。涵蓋 CLAUDE.md 模板、agent 設定、工作流自動化。",
+      "source": "GitHub Trending #7",
+      "stars": 25740
+    },
+    {
+      "name": "mattpocock/skills",
+      "url": "https://github.com/mattpocock/skills",
+      "desc": "Matt Pocock（TypeScript 教育者）的個人 .claude 目錄打包成社群資產，29,124★。標語：「Skills for Real Engineers.」代表 skill 標準化已完成社群背書階段。",
+      "source": "GitHub Trending #1",
+      "stars": 29124
+    },
+    {
+      "name": "ComposioHQ/awesome-codex-skills",
+      "url": "https://github.com/ComposioHQ/awesome-codex-skills",
+      "desc": "Codex CLI 和 API 的實用 skill 精選清單，2,658★，Python。Composio 是 agent tooling 生態系的主要玩家之一，這個 repo 是他們的生態系擴張動作。",
+      "source": "GitHub Trending #3",
+      "stars": 2658
+    },
+    {
+      "name": "modelcontextprotocol/experimental-ext-server-card",
+      "url": "https://github.com/modelcontextprotocol/experimental-ext-server-card",
+      "desc": "Anthropic 的 MCP 組織今天建立的新實驗性 repo，0★，語言未定，0 小時前建立。名稱直接說明用途：external MCP server 的 metadata 名片格式。這是 MCP server registry/marketplace 的前置基礎設施訊號——在 registry 上線之前，需要一個標準化的 server 描述格式。",
+      "source": "開發者異常訊號 · 0★ · 0h ago",
+      "stars": 0,
+      "repo_age": "今日建立"
+    },
+    {
+      "name": "PrathamLearnsToCode/paper2code",
+      "url": "https://github.com/PrathamLearnsToCode/paper2code",
+      "desc": "Agent skill：給任意 arxiv URL，自動讀 paper、找 reference implementation，若無則自行實作。把「論文到可跑 code」的 friction 從 2-5 個工作日壓縮到一個 prompt。",
+      "source": "topic:agent · 1193★ · ~14d",
+      "stars": 1193,
+      "repo_age": "本月新建"
+    },
+    {
+      "name": "wxyhgk/retain-pdf",
+      "url": "https://github.com/wxyhgk/retain-pdf",
+      "desc": "在保留版面、公式與結構的前提下進行 PDF 翻譯，針對科研與技術文件設計，1,015★，Python。支援 LaTeX 公式保留，是目前中文開源生態中對科學 PDF 處理最完整的工具。",
+      "source": "topic:ocr · 1015★ · ~13d",
+      "stars": 1015,
+      "repo_age": "本月新建"
+    },
+    {
+      "name": "AMAP-ML/SkillClaw",
+      "url": "https://github.com/AMAP-ML/SkillClaw",
+      "desc": "用 agentic evolver 讓 skills 集體進化：agent 自動評測、改寫、篩選 skill，產出下一代更有效的 skill 集合，1,033★，Python。高德地圖 ML 團隊出品。",
+      "source": "topic:agent · 1033★ · ~11d",
+      "stars": 1033,
+      "repo_age": "本月新建"
+    },
+    {
+      "name": "gastownhall/beads",
+      "url": "https://github.com/gastownhall/beads",
+      "desc": "Coding agent 的記憶升級層：記錄哪個 skill 在哪種 context 有效，22,109★，Go。skill memory 的第一個成熟實作，解決「技能多了但不知道什麼時候該用哪個」的問題。",
+      "source": "GitHub Trending #5",
+      "stars": 22109
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Microsoft-OpenAI AGI 條款終止：Simon Willison 梳理歷史",
+        "url": "https://simonwillison.net/2026/Apr/27/now-deceased-agi-clause/#atom-everything",
+        "takeaway": "AGI 定義戰正式結束。這個條款設計上就無法觸發（OpenAI 自己定義 AGI），現在雙方選擇把它拔掉。Azure OpenAI Service 的排他護城河開始縮窄，多雲端 GPT 路由在 H2 值得評估。",
+        "action": "在 repo 新增 vendor-assumptions.md，記錄當前依賴的 endpoint 版本和 rate limit 假設"
+      },
+      {
+        "title": "4TB 語音樣本從 Mercor 的 40,000 名 AI 標注員帳號中被竊",
+        "url": "https://app.oravys.com/blog/mercor-breach-2026",
+        "takeaway": "AI 訓練資料供應鏈的安全性首次達到這個規模的洩漏：40,000 名標注員的語音樣本，4TB。如果你的 fine-tuning pipeline 有外包標注環節，你的合約裡需要有標注員資料安全條款。",
+        "action": "如果你用 Mercor 做過任何語音標注，查看你的合約中資料安全責任歸屬條款"
+      },
+      {
+        "title": "pgbackrest 宣告停止維護",
+        "url": "https://github.com/pgbackrest/pgbackrest",
+        "takeaway": "pgbackrest 是 PostgreSQL 最廣泛使用的 backup 解決方案之一。停止維護代表你的 Postgres backup 工具需要評估替代方案（Barman、pg_basebackup + WAL-G 是主要選項）。",
+        "action": "如果你的 Postgres backup 依賴 pgbackrest，這週評估 Barman 或 WAL-G 的 migration 成本"
+      },
+      {
+        "title": "Lua 可以是很好用的 HTML templating engine",
+        "url": "https://riki.house/lua-html",
+        "takeaway": "Lobsters 89 分，54 個 comments。Lua 的 table literal 語法意外地適合描述 HTML 樹結構，比 Jinja2 少很多樣板。如果你在嵌入式環境或輕量 web server 裡需要 templating，值得看一眼。",
+        "action": "無立即行動，但如果你在做嵌入式 web 工具可以收藏這個方法"
+      },
+      {
+        "title": "Flipdiscs",
+        "url": "https://flipdisc.io/",
+        "takeaway": "HN 504 分，29 comments。硬體專案：機械翻轉顯示器。不是 AI，不是 LLM。今天排名第二高分的 HN 故事是純硬體美學。讀者對「不是 AI 的東西」的飢渴在 HN 信號裡持續可見。",
+        "action": ""
+      }
+    ],
+    "hn": [
+      {
+        "title": "Microsoft and OpenAI end their exclusive and revenue-sharing deal",
+        "url": "https://www.bloomberg.com/news/articles/2026-04-27/microsoft-to-stop-sharing-revenue-with-main-ai-partner-openai",
+        "score": 551,
+        "comments": 50
+      },
+      {
+        "title": "Flipdiscs",
+        "url": "https://flipdisc.io/",
+        "score": 504,
+        "comments": 29
+      },
+      {
+        "title": "GitHub Copilot is moving to usage-based billing",
+        "url": "https://github.blog/news-insights/company-news/github-copilot-is-moving-to-usage-based-billing/",
+        "score": 367,
+        "comments": 64
+      },
+      {
+        "title": "Pgbackrest is no longer being maintained",
+        "url": "https://github.com/pgbackrest/pgbackrest",
+        "score": 363,
+        "comments": 40
+      },
+      {
+        "title": "4TB of voice samples just stolen from 40k AI contractors at Mercor",
+        "url": "https://app.oravys.com/blog/mercor-breach-2026",
+        "score": 350,
+        "comments": 29
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Lua can be a really cool HTML templating engine",
+        "url": "https://riki.house/lua-html",
+        "score": 89,
+        "comments": 54,
+        "tags": [
+          "lua",
+          "web"
+        ]
+      },
+      {
+        "title": "Dillo release 3.3.0",
+        "url": "https://dillo-browser.org/release/3.3.0/",
+        "score": 60,
+        "comments": 3,
+        "tags": [
+          "browsers",
+          "release"
+        ]
+      },
+      {
+        "title": "Niri v26.04",
+        "url": "https://github.com/niri-wm/niri/releases/tag/v26.04",
+        "score": 57,
+        "comments": 6,
+        "tags": [
+          "linux",
+          "release",
+          "rust"
+        ]
+      },
+      {
+        "title": "Smolwebifying my site",
+        "url": "https://akselmo.dev/posts/smolwebifying-my-site/",
+        "score": 46,
+        "comments": 27,
+        "tags": [
+          "web"
+        ]
+      },
+      {
+        "title": "From Milliseconds to 26 Nanoseconds: How a $20 eBay SFP Module Beat My Entire NTP Setup",
+        "url": "https://austinsnerdythings.com/2026/04/26/ptp-osa5401-26-nanoseconds-raspberry-pi/",
+        "score": 43,
+        "comments": 4,
+        "tags": [
+          "hardware"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "audreyt",
+        "followers": 8835,
+        "repo": "audreyt/pdf-outline-fonts",
+        "url": "https://github.com/audreyt/pdf-outline-fonts",
+        "language": "TypeScript",
+        "hours_ago": 43,
+        "description": "選擇性地把 PDF 中特定字型轉換成向量輪廓，同時保留文字選取功能——解決 PDF 嵌入字型在跨平台渲染時失真的問題。",
+        "local_context": "🇹🇼 唐鳳今天在做的事：PDF 字型與可存取性工具。在台灣公共文件數位化的大背景下，這種「保留語意的同時改善渲染」工具有明確的政府文件應用場景。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 821,
+        "repo": "strategist922/goscrapy",
+        "url": "https://github.com/strategist922/goscrapy",
+        "language": null,
+        "hours_ago": 5,
+        "description": "Go 語言實作的 web scraper 框架，靈感來自 Python 的 Scrapy，利用 Go 的效能做高速爬蟲。",
+        "local_context": "🇹🇼 台灣開發者在 Go 語言 tooling 層的持續積累。strategist922 過去一週也建立了 free-claude-code（AUP 鬆綁後的替代入口），今天轉向做 data collection 基礎設施。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "antirez",
+        "followers": 26418,
+        "repo": "antirez/llama.cpp-deepseek-v4-flash",
+        "url": "https://github.com/antirez/llama.cpp-deepseek-v4-flash",
+        "language": "C++",
+        "hours_ago": 34,
+        "description": "DeepSeek V4 Flash 的 llama.cpp 實驗性實作，C++。Redis 創始人在 DeepSeek V4 發布後 34 小時內開始動手。這是頂尖 systems 開發者把本地推論當作日常工具箱的第十四個連續信號。"
+      },
+      {
+        "developer": "modelcontextprotocol",
+        "followers": 46333,
+        "repo": "modelcontextprotocol/experimental-ext-server-card",
+        "url": "https://github.com/modelcontextprotocol/experimental-ext-server-card",
+        "language": null,
+        "hours_ago": 0,
+        "description": "Anthropic 的 MCP 組織今天剛建的實驗性 repo。0★，無 README，語言未定。名稱解讀：external server（第三方 MCP server）的 card（metadata 名片格式）。這是 MCP server registry/marketplace 的前置基礎設施訊號——在 registry 能運作之前，需要一個標準化的 server 描述格式。今天建立本身比任何 README 內容都更說明 Anthropic 的下一步。"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 62665,
+        "repo": "huggingface/hf-sandbox",
+        "url": "https://github.com/huggingface/hf-sandbox",
+        "language": "Python",
+        "hours_ago": 17,
+        "description": "Modal 式的 sandbox API，建在 HuggingFace Jobs 之上。讓你把任意 Python 函數部署成 HuggingFace 雲端端點，不需要自管伺服器。HuggingFace 正在把自己從 model hosting 平台擴張到 compute/execution 層，直接競爭 Modal 和 Replicate。"
+      },
+      {
+        "developer": "steipete",
+        "followers": 48719,
+        "repo": "steipete/ghcrawl",
+        "url": "https://github.com/steipete/ghcrawl",
+        "language": "TypeScript",
+        "hours_ago": 14,
+        "description": "Terminal UI + CLI，爬取 GitHub issues 和 PR，生成 embedding，對相關工作項目做聚類。解決「我的 repo 有 2000 個 issues，要怎麼快速找到哪些是相關的」這個問題。"
+      },
+      {
+        "developer": "mitsuhiko",
+        "followers": 24402,
+        "repo": "mitsuhiko/mlx-lm",
+        "url": "https://github.com/mitsuhiko/mlx-lm",
+        "language": null,
+        "hours_ago": 13,
+        "description": "用 MLX 跑 LLM。Armin Ronacher（Flask/Werkzeug 創始人、Rust 生態系重要貢獻者）今天 fork 了 mlx-lm——Python web 框架和 Rust tooling 的頂尖作者，現在在 Apple Silicon 上跑本地 LLM 的時間點，是本地推論跨越工程師日常門檻的又一個信號。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "MCP 生態系正式進入基礎設施競爭期：從 skill 積累到 registry 格式定義",
+      "body": "今天有三個獨立事件同時發生，說明 MCP 生態系的競爭重心從「誰有最多 skill」轉向「誰定義 skill 的格式和發現機制」。modelcontextprotocol/experimental-ext-server-card（0★，0 小時前）是 Anthropic 在佈局 server metadata 標準；ComposioHQ/awesome-codex-skills 上 Trending #3，說明 Codex 陣營也在做 skill curation；AMAP-ML/SkillClaw 出現在 discovery pool，說明 skill 自動進化也有人在做。三件事的 upstream cause 是同一個：skill 數量已經超過人工篩選的能力，現在需要的是發現、評測、演化的基礎設施。如果你今天在建 MCP server，你面對的決策不只是「我的 server 能做什麼」，而是「我的 server 在未來的 registry 格式下怎麼描述自己」。",
+      "evidence": "modelcontextprotocol/experimental-ext-server-card 今天 0h ago 建立（0★）；ComposioHQ/awesome-codex-skills Trending #3（2,658★）；AMAP-ML/SkillClaw topic:agent discovery pool（1,033★，~11d）；mattpocock/skills Trending #1（29,124★）",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 15,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "modelcontextprotocol/experimental-ext-server-card",
+          "url": "https://github.com/modelcontextprotocol/experimental-ext-server-card"
+        },
+        {
+          "platform": "GitHub Trending",
+          "title": "ComposioHQ/awesome-codex-skills",
+          "url": "https://github.com/ComposioHQ/awesome-codex-skills"
+        },
+        {
+          "platform": "GitHub Search",
+          "title": "AMAP-ML/SkillClaw",
+          "url": "https://github.com/AMAP-ML/SkillClaw"
+        }
+      ],
+      "product_opportunity": "MCP server 評測工具：標準化任務集 + 自動跑分 + 輸出 server quality card，在 registry 上線前先佔住「第三方評測」這個位置。類似 npm 的 bundlephobia（第三方打包大小分析）在 npm registry 之外成立的路徑。"
+    },
+    {
+      "title": "AI 大型夥伴關係進入重組期：固定成本模型全面轉向彈性定價",
+      "body": "Microsoft-OpenAI 排他協議終止（HN 551 分）和 GitHub Copilot 轉向使用量計費（HN 367 分）同天發生，不是巧合。底層邏輯相同：AI 底層模型成本在過去十二個月下降速度超過任何固定定價協議的設計假設。固定成本架構在成本快速下降的市場裡是輸家——供應方的成本在降，但收費結構鎖死了利潤空間。用量計費讓成本轉嫁到使用端，保留了定價彈性。對 builder 的影響：你的 AI tooling 帳單從可預測（固定月費）變成不可預測（使用量浮動），下個季度的預算編列需要把 AI usage pattern 的基線建起來。",
+      "evidence": "Microsoft-OpenAI 排他協議終止（Bloomberg，HN 551 分，50 comments）；GitHub Copilot 使用量計費（GitHub blog，HN 367 分，64 comments）；Simon Willison 深度梳理「now-deceased AGI clause」歷史",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 15,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Microsoft and OpenAI end their exclusive and revenue-sharing deal",
+          "url": "https://www.bloomberg.com/news/articles/2026-04-27/microsoft-to-stop-sharing-revenue-with-main-ai-partner-openai",
+          "score": 551
+        },
+        {
+          "platform": "HN",
+          "title": "GitHub Copilot is moving to usage-based billing",
+          "url": "https://github.blog/news-insights/company-news/github-copilot-is-moving-to-usage-based-billing/",
+          "score": 367
+        },
+        {
+          "platform": "Simon Willison",
+          "title": "Tracking the history of the now-deceased OpenAI Microsoft AGI clause",
+          "url": "https://simonwillison.net/2026/Apr/27/now-deceased-agi-clause/#atom-everything"
+        }
+      ],
+      "product_opportunity": "AI vendor cost monitoring 工具：跨多個 AI API provider 的即時成本追蹤儀表板，在用量計費全面普及後，這個工具的 TAM 從「nice-to-have」變成「budget compliance 必需品」。"
+    },
+    {
+      "title": "本地推論從 demo 跨入生產工具：三個獨立信號同天出現",
+      "body": "antirez（Redis 創始人，26,418 followers）在 DeepSeek V4 發布 34 小時內建立 llama.cpp 實作；mitsuhiko（Flask/Werkzeug 創始人，24,402 followers）今天 fork mlx-lm；dirac-run/dirac 用 Gemini flash 頂上 TerminalBench，說明便宜模型在本地跑 agent 任務的效能已達到足夠水準。三個信號的共同 upstream：本地推論的 cost-per-token 和 latency 在過去六個月雙雙突破「值得在真實工作中使用」的門檻。這不是「哇本地也能跑 LLM 了」的 demo 時刻，而是「頂尖 systems 開發者把它當作日常工具箱」的工具時刻。把四月十四日系統圈擔憂「AI bug report 是噪音」的時間點對比：十四天後，頂尖 systems 開發者在用本地 LLM 做真實工作。",
+      "evidence": "antirez/llama.cpp-deepseek-v4-flash（C++，34h ago，80★）；mitsuhiko/mlx-lm（13h ago）；dirac-run/dirac TerminalBench #1（HN 256 分）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 14,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "antirez/llama.cpp-deepseek-v4-flash",
+          "url": "https://github.com/antirez/llama.cpp-deepseek-v4-flash"
+        },
+        {
+          "platform": "HN",
+          "title": "Show HN: OSS Agent I built topped the TerminalBench on Gemini-3-flash-preview",
+          "url": "https://github.com/dirac-run/dirac",
+          "score": 256
+        },
+        {
+          "platform": "GitHub",
+          "title": "mitsuhiko/mlx-lm",
+          "url": "https://github.com/mitsuhiko/mlx-lm"
+        }
+      ],
+      "product_opportunity": "本地 agent benchmark 套件：設計一套「真實工作任務」的 benchmark（不是合成任務），讓 builder 快速評測本地模型在他們自己的工作負載上的效能，而不是靠 TerminalBench 這類通用 benchmark 做決策。"
+    },
+    {
+      "title": "AI 訓練資料供應鏈安全首次達到規模洩漏：Mercor 40K 標注員語音資料被竊",
+      "body": "4TB 語音樣本從 Mercor 的 40,000 名 AI 標注員帳號中被竊（HN 350 分）。這是目前最大規模的 AI 訓練資料洩漏事件之一，而且攻擊目標是「標注員」而非「模型本身」——這說明攻擊者已經理解 AI 供應鏈的薄弱環節在上游的人工環節，而非下游的技術系統。如果你的 fine-tuning 或 RLHF pipeline 有外包標注環節（Mercor、Scale AI、Appen 等），你的合約裡需要有資料安全責任歸屬條款，而不只是保密協議。",
+      "evidence": "HN 350 分，29 comments；Oravys 事件報告（app.oravys.com）；40,000 名受影響標注員，4TB 語音資料",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "4TB of voice samples just stolen from 40k AI contractors at Mercor",
+          "url": "https://app.oravys.com/blog/mercor-breach-2026",
+          "score": 350
+        }
+      ],
+      "product_opportunity": "AI training data provenance 工具：每筆訓練資料帶 hash + 來源標記 + 標注員 ID（匿名化），當供應鏈發生洩漏時，能快速回答「我的訓練集裡有多少比例是受影響資料」。"
+    }
+  ],
+  "sleeper": {
+    "name": "PrathamLearnsToCode/paper2code",
+    "url": "https://github.com/PrathamLearnsToCode/paper2code",
+    "description": "Agent skill：給任意 arxiv URL，自動讀 paper、找 reference implementation，若無則自行實作。",
+    "body": "paper2code 是今天 discovery picks 裡停留最久的一個。架構是 Claude Code skill 形式：給 arxiv URL，skill 自動讀 paper、找 reference impl、如果沒有 repo 就自己實作——從論文到可跑的 code，中間只要一個 prompt。1,193★ 在 30 天內新建的 topic:agent repo 裡是中段，但它解決的 friction 是真實的：ML 工程師把一篇 paper 讀懂、找到或復現 implementation，平均要 2-5 個工作日。如果它能把「有 reference impl 的 paper」的 friction 從 2 天降到 2 小時，它就在 ML 研究生態裡找到了一個真正的工作流空缺。",
+    "why_asymmetric": "1,193★ 看起來不高，但它的成長曲線會和 Claude Code skill 生態系的標準化同步——等 MCP server registry 上線（見今天的 experimental-ext-server-card 訊號），paper2code 這類垂直工作流 skill 的曝光度會被動提升。此外，Anthropic 自己在 Claude Code 品質後記（上週 HN 320 分）裡提到 agent skill 的多樣性是未來競爭力的核心，paper2code 的場景足夠垂直，不容易被通用 skill 取代。",
+    "commercial_path": "向學術機構按月收費（50 papers/月以下免費，$29/月解鎖 unlimited + private repo 輸出）；向企業 R&D 部門提供 API（private model 支援 + compliance audit trail + citation tracking）；與 arxiv Semantic Scholar 整合做 citation-aware 實作，讓「這篇 paper 的引用 paper 有沒有開源 impl」也變成可查詢的答案。",
+    "stars": 1193
+  },
+  "contrarian": {
+    "claim": "dirac 在 TerminalBench 頂榜的意義被高估：benchmark 設計缺陷比 agent 能力更值得關注",
+    "body": "HN 今天慶祝「OSS agent 用 Gemini flash 頂上 TerminalBench 第一」，解讀是「廉價模型可以比肩昂貴模型」。但更誠實的解讀是：一個 22 歲的 Show HN 作者在 24 小時內就能頂上的 benchmark，可能不是一個設計嚴謹的 benchmark。TerminalBench 的任務集是公開的，頂榜的最快路徑通常是把任務集拿來微調或 prompt-optimize，而不是解決通用 terminal 問題。ML 歷史上，一個 benchmark 從發布到出現「這只是在測 benchmark 本身」的質疑，平均是 4-8 個月。TerminalBench 發布時間不明，但 Show HN 就頂榜通常是 benchmark overfitting 的早期信號。",
+    "rationale": "benchmark 的價值在於能否預測真實工作中的效能。dirac 在 TerminalBench 上頂榜，但它在真實的 terminal 工作任務（debugging production issue、refactoring legacy codebase）上的效能尚未有獨立驗證。如果這個 benchmark 的真實預測力存疑，整個「flash 模型夠用」的結論就需要重新評估。"
+  },
+  "predictions": [
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-anthropic-skill-management",
+      "text": "到 2026-07-31，Anthropic 在 Claude Code 官方文件或 changelog 中發布內建 skill 管理介面或 official skill registry（以 anthropic.com 官方 blog 或 claude.ai changelog 為準）。",
+      "status": "pending",
+      "created": "2026-04-27",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-deepseek-v4-flash-release",
+      "text": "DeepSeek 在 2026-05-15 前公開發布 V4 Flash 模型（以 DeepSeek 官方 blog、X 帳號或 HuggingFace model page 為準）——依據：antirez 今天在 llama.cpp 建立實驗性實作，命名明確包含 'flash'，暗示 release 臨近。",
+      "status": "needs_revision",
+      "created": "2026-04-27",
+      "resolution_date": "2026-05-15"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。依據：experimental-ext-server-card 今天 0h ago 建立，是 registry 基礎設施的前置信號。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-copilot-flat-rate-return",
+      "text": "到 2026-09-30，GitHub 會重新推出 Copilot Enterprise 的固定費率定價選項（以 github.blog 官方公告或 GitHub Universe 2026 keynote 為準），作為對企業採購部門抵制可變帳單的回應。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-09-30"
+    }
+  ],
+  "meta": {
+    "run_id": "02090af1-487c-4101-a7b5-4cfd468ff5f3",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-27T20:18:52.621Z",
+    "analyze_duration_ms": 1063577,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 13
+      },
+      "search": {
+        "ok": true,
+        "count": 42
+      },
+      "developers": {
+        "ok": true,
+        "count": 11
+      }
+    },
+    "degraded_sources": []
+  }
+}
