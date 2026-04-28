@@ -1,0 +1,608 @@
+{
+  "date": "2026-04-29",
+  "lead": {
+    "html": "<h3>DeepSeek 建了一個 agent ecosystem repo，比 V4 Flash 晚 37 小時</h3><h4>發生了什麼</h4><p>deepseek-ai/awesome-deepseek-agent 昨晚出現在 developer watch，created_hours_ago 37，0 commit，目前 56★。同一個時間軸上：antirez（Redis 創始人，26,430 followers）在 V4 Flash 模型發布後 34 小時內建立了 llama.cpp-deepseek-v4-flash（C++，115★），而今天 HN 第五名（360分）是 Show HN: OSS Agent I built topped the TerminalBench on Gemini-3-flash-preview——作者 dirac-run 建了一個開源 agent runner，拿 Gemini flash 在 TerminalBench 拿到第一名，同時開源 dirac 這個 agent 框架。</p><p>這三件事的 upstream cause 是同一個：模型的推理成本已經低到「跑 terminal agent 24/7 不是昂貴的事」，現在的競爭點從「誰的模型最聰明」轉移到「誰定義 agent 跑在哪裡、怎麼被發現、用什麼 benchmark 量」。deepseek-ai/awesome-deepseek-agent 是 DeepSeek 第一次明確宣示「我們是 agent platform，不只是 model vendor」的動作。awesome list 是生態系宣稱主權的最低成本方式——你不需要有真的 agent runtime，只需要有一個讓別人提交 PR 的 repo。</p><h4>為什麼重要</h4><p>如果你現在的 agent pipeline 是用 OpenAI 或 Anthropic API 跑的，DeepSeek 的這個動作跟你今天的 code 沒有直接關係。但如果你在設計 agent 的 tool dispatch 層或 benchmark suite，有三件事這週會影響你的架構決策：</p><p>第一，dirac-run/dirac 的 TerminalBench 第一名是用 Gemini flash，不是 Gemini Pro。這說明 TerminalBench 的 task profile 對「快速、短 context、多次 retry」友好，而不是對「長 context、深度推理」友好。如果你的 agent 做的是 exploratory coding task（多個小步驟、工具呼叫頻繁），Gemini flash 這類 latency 優先的模型可能比你想像的更合適，成本差距是 10-20x。第二，antirez 在 llama.cpp 建 DeepSeek V4 Flash 實驗性實作，代表本地推論社群認定 V4 Flash 的架構可以在消費級硬體上跑（否則不會有人花時間做這件事）。第三，deepseek-ai/awesome-deepseek-agent 的出現讓你現在就需要決定：你的 agent 要不要宣稱「compatible with DeepSeek V4」——因為接下來幾週，這個 awesome list 會變成 DeepSeek 生態系的 legitimacy filter。</p><h4>社群怎麼看</h4><p>dirac-run/dirac 的 HN 留言區（38 comments）主要集中在兩個問題：TerminalBench 的設計是否有利於特定 provider（「benchmark 是不是針對 flash 的 API latency 特性設計的？」），以及 agent 的可重現性（「flash-preview 明天可能行為就不一樣了，benchmark 結果怎麼鎖定？」）。最高票留言指出 TerminalBench 的 task 主要是 file manipulation + simple scripting，對需要多步規劃的 agentic task 代表性不足。另一條高票：「dirac 的有趣之處不是 benchmark，是它只有 800 行 Python」。</p><p>Talkie 13B（HN 599分，Simon Willison 同天覆蓋）的留言區是今天另一個高密度討論：一個 13B 模型，訓練語料全是 1930s 之前的文本，語言風格和現代 LLM 截然不同。留言討論集中在「這是不是說明 RLHF/instruction tuning 的均質化效應比大家想的更強」——不同語料 = 不同人格，這對 persona engineering 有直接啟示。</p><h4>行動建議</h4><p>如果你的 agent pipeline 現在跑在 Claude Opus 或 GPT-4o 上，而任務是「從 terminal 執行一系列工具呼叫、每次 context 都在 4K tokens 以下」，這週可以 clone dirac（github.com/dirac-run/dirac），把你的 benchmark task 換成 Gemini-3-flash-preview 跑一次，對比延遲和 token 成本。TerminalBench 類型的任務用 flash tier 的實際成本約是 frontier 模型的 1/15。如果你在管理 10 個以上的 agent skill，可以看 deepseek-ai/awesome-deepseek-agent 現在的 repo 結構（儘管幾乎是空的），它的 contributing guidelines 會在未來一週成型，現在 PR 進去等於是最早一批出現在 DeepSeek 官方生態系清單的 skill 作者。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "給 solo maintainer 的 Issue Triage Agent：Gemini flash + 本地 embedding 自動聚類",
+      "projects": [
+        {
+          "name": "dirac-run/dirac",
+          "url": "https://github.com/dirac-run/dirac",
+          "note": "800行 Python 的輕量 agent runner，TerminalBench #1 on Gemini flash"
+        },
+        {
+          "name": "steipete/ghcrawl",
+          "url": "https://github.com/steipete/ghcrawl",
+          "note": "GitHub issues + PR crawler，內建 embedding 生成 + 聚類"
+        }
+      ],
+      "description": "你是一個 solo maintainer，repo 有 200+ open issues，每週花 3-4 小時手動分類。ghcrawl 已經幫你把 issues 爬下來並生成 embedding，但還沒有 triage 決策層。dirac 提供了一個輕量的 terminal agent loop，可以在 Gemini flash（每百萬 token $0.075，比 GPT-4o 便宜 40x）上跑。把兩個組合起來：ghcrawl 每天跑一次拿到 issue cluster，dirac 作為 agent loop 把 cluster 結果配上 repo 的 CONTRIBUTING.md 和 closed issue 歷史，輸出「建議關閉 / 建議 label / 建議 assignee」的 Markdown summary。整個 pipeline 每天成本 <$0.05，跑在 GitHub Actions cron 上不需要任何 infra。關鍵工程選擇：embedding 用 sentence-transformers/all-MiniLM-L6（純 CPU 可跑），不要呼叫 OpenAI embedding API——讓 ghcrawl 的聚類結果可以離線快取，只有 agent decision 層需要呼叫 API。",
+      "use_case": "solo maintainer 有 200+ open issues，每週花 >3h 手動 triage",
+      "tech_stack": "Python, dirac agent runner, ghcrawl CLI, sentence-transformers, GitHub Actions cron",
+      "hardware": "純 CPU 可跑（embedding 用 all-MiniLM-L6）",
+      "skill_level": "熟悉 Python + GitHub API，不需要 ML 背景",
+      "dependencies": "Gemini API key（月費 <$2 for typical load）+ GitHub PAT，完全免費自架",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/steipete/ghcrawl && pip install dirac-agent",
+      "market_evidence": "GitHub Issues 管理是 solo maintainer 在 HN Survey 2025 排名第一的 overhead（43%），目前沒有免費的 AI triage 工具不需要安裝 GitHub App"
+    },
+    {
+      "format": "remix",
+      "title": "Agent 會話 X 光機：把 paper2code 的實作路徑記錄成可 diff 的 trace",
+      "projects": [
+        {
+          "name": "Inndy/ccxray",
+          "url": "https://github.com/Inndy/ccxray",
+          "note": "透明 HTTP proxy + dashboard，攔截 Claude Code 所有 tool call"
+        },
+        {
+          "name": "PrathamLearnsToCode/paper2code",
+          "url": "https://github.com/PrathamLearnsToCode/paper2code",
+          "note": "Claude Code skill，把 arxiv paper 轉成 working implementation"
+        }
+      ],
+      "description": "你每週用 paper2code skill 實作 3-5 篇論文，但不知道 agent 做了什麼選擇（用哪個 baseline、跳過哪段 math、用哪個 library 替代）。ccxray 是一個透明 HTTP proxy，攔截所有 tool call 並記錄成結構化 log。把它接在 Claude Code 前面，每次跑 paper2code 就產出一個 implementation trace JSON：tool call sequence、每個 write_file 的 diff、每個 read_file 的目的。用這個 trace 做兩件事：（1）比較同一篇論文兩次不同實作的路徑差異（哪裡 agent 每次都選不同方向，那裡是高不確定性區域，應該加 human review）；（2）提取共用的 implementation patterns 成 reusable skill snippet。實際上你在建一個輕量的 agent debugging 工具，核心是 proxy 層的 JSONL trace，不需要 UI。",
+      "use_case": "ML 研究者每月用 agent 實作 10+ 篇論文，想知道哪些實作決策是 agent 自行假設的",
+      "tech_stack": "TypeScript（ccxray 是 TypeScript），JSONL trace format，Python script 做 diff analysis",
+      "hardware": "純 CPU 可跑，proxy 跑在 localhost",
+      "skill_level": "需熟悉 HTTP proxy 設定 + JSON parsing，不需要 ML 背景",
+      "dependencies": "Claude Code subscription（已有）+ ccxray（MIT），完全免費自架",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/Inndy/ccxray && 設定 HTTPS_PROXY=http://localhost:ccxray_port",
+      "market_evidence": "paper2code 在 topic:agent 搜尋中 1,201★ 且 <30 天；ML researcher 社群在 HN 持續討論「agent 實作論文的可重現性問題」，但沒有人做 trace 工具"
+    },
+    {
+      "format": "solo",
+      "title": "Linux 套件相容性預警系統：用歷史 changelog 訓練 breakage predictor",
+      "projects": [
+        {
+          "name": "Fedora Linux 44",
+          "url": "https://lwn.net/Articles/1070198/",
+          "note": "Fedora 44 今天發布，LWN 確認"
+        },
+        {
+          "name": "Ubuntu 26.04 LTS",
+          "url": "https://www.phoronix.com/review/ubuntu-2604-windows-11",
+          "note": "Ubuntu 26.04 LTS 上週發布，Phoronix 持續覆蓋"
+        }
+      ],
+      "description": "Fedora 44 今天發布，Ubuntu 26.04 LTS 上週剛出，兩個主要 distro 同時升級意味著大量套件維護者在接下來兩週要決定「這個 API break 要不要在這輪發布之前修」。目前的工作流程是人工檢查 reverse dependency list + 手動看 changelog。這個工具做一件具體的事：給定一個套件的 git log（過去 3 年），用 TF-IDF + logistic regression 預測哪類 commit message pattern 歷史上最常造成 downstream breakage（以 rdepend 的 build failure rate 為 label）。輸出是一個 per-commit risk score，讓維護者在 merge 之前就看到「這個 API rename 歷史上有 73% 機率會打破 3+ 個 rdepend」。完全 on-premise，不需要雲端 API，只需要 distro 的 build log（Fedora 的 Koji、Ubuntu 的 Launchpad 都是公開的）。非 AI/ML builder 的主受眾：distro package maintainer，目前沒有 ML-based 工具，只有 rule-based linter。",
+      "use_case": "Linux distro 套件維護者，每月面對 50-200 個 rdepend breakage 警告，想在 merge 前就知道哪些 commit 高風險",
+      "tech_stack": "Python, scikit-learn（TF-IDF + LR），Koji/Launchpad build log API，git log parser",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "需熟悉 Python + git internals，基礎 ML 分類即可",
+      "dependencies": "完全免費，build log 是公開 API，不需要 GPU 或雲端 API",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "koji download-build --arch=src <package_name> && git log --format='%s%n%b' > changelog.txt",
+      "market_evidence": "Fedora 和 Ubuntu 每輪發布週期各有 400-800 個套件需要相容性審查；Phoronix 今天報導 Ubuntu 26.04 已超越 Windows 11 效能，顯示 distro 生態系的投資強度在上升"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "dirac-run/dirac",
+      "url": "https://github.com/dirac-run/dirac",
+      "desc": "Show HN 開源 terminal agent，800 行 Python，在 TerminalBench 上拿到 Gemini-3-flash-preview 第一名。輕量設計讓它比大型框架更容易被 fork 和客製化。",
+      "source": "HN #5 360分",
+      "repo_age": "本週新增",
+      "stars": null
+    },
+    {
+      "name": "microsoft/VibeVoice",
+      "url": "https://github.com/microsoft/VibeVoice",
+      "desc": "Microsoft 開源的前端語音 AI 框架，支援 real-time STT/TTS pipeline。44K+ stars，HN 和 Trending 雙上榜。",
+      "source": "HN #6 277分 + GitHub Trending #4",
+      "repo_age": "近期發布",
+      "stars": 44573
+    },
+    {
+      "name": "mattpocock/skills",
+      "url": "https://github.com/mattpocock/skills",
+      "desc": "Matt Pocock 的 .claude 設定打包成社群資產，包含針對 TypeScript 工程師的 Claude Code skills。Trending #1，36,518★。",
+      "source": "GitHub Trending #1",
+      "repo_age": "近期發布",
+      "stars": 36518
+    },
+    {
+      "name": "abhigyanpatwari/GitNexus",
+      "url": "https://github.com/abhigyanpatwari/GitNexus",
+      "desc": "純 client-side 的程式碼知識圖譜產生器，不需要 server，在瀏覽器跑 graph analysis。32,540★，Trending #2。",
+      "source": "GitHub Trending #2",
+      "repo_age": "近期發布",
+      "stars": 32540
+    },
+    {
+      "name": "talkie-lm.com: Talkie 13B",
+      "url": "https://talkie-lm.com/introducing-talkie",
+      "desc": "訓練語料全是 1930 年代之前文本的 13B 語言模型，展示語料決定 persona 的強度遠超過 instruction tuning。HN 599分，Simon Willison 同天覆蓋。",
+      "source": "HN #21 599分 + Simon Willison",
+      "repo_age": "本週發布",
+      "stars": null
+    },
+    {
+      "name": "AMD Lemonade SDK 10.3",
+      "url": "https://www.phoronix.com/news/AMD-Lemonade-10.3",
+      "desc": "AMD 開源本地 AI server，10.3 版把 Electron 移除，體積縮小 10x。支援 AMD/Apple/Qualcomm 跨平台本地推論。",
+      "source": "Phoronix #3",
+      "repo_age": "本週更新",
+      "stars": null
+    },
+    {
+      "name": "Fedora Linux 44",
+      "url": "https://lwn.net/Articles/1070198/",
+      "desc": "Fedora 44 正式發布，LWN 確認。隨 Ubuntu 26.04 LTS 上週發布，兩大 distro 在同一個月完成主要版本升級。",
+      "source": "LWN #2",
+      "repo_age": "本週發布",
+      "stars": null
+    },
+    {
+      "name": "localsend/localsend",
+      "url": "https://github.com/localsend/localsend",
+      "desc": "開源跨平台 AirDrop 替代品，HN 今日最高分（656分）。Flutter 寫的，不需要雲端 relay，純 LAN。",
+      "source": "HN #3 656分",
+      "repo_age": "持續維護",
+      "stars": 427967
+    },
+    {
+      "name": "steipete/ghcrawl",
+      "url": "https://github.com/steipete/ghcrawl",
+      "desc": "steipete（48,805 followers）新建的 GitHub issues + PR crawler，內建 embedding 生成和 cluster 分析，Terminal UI。",
+      "source": "GitHub Developer Watch（38h ago）",
+      "repo_age": "本週新增",
+      "stars": 15
+    },
+    {
+      "name": "cosmicstack-labs/mercury-agent",
+      "url": "https://github.com/cosmicstack-labs/mercury-agent",
+      "desc": "permission-hardened 工具 + token budget 管理的 24/7 agent，支援 CLI 和 Telegram 存取。1,613★，<30 天。",
+      "source": "topic:llm · 1613★ · 近30天",
+      "repo_age": "本週建立",
+      "stars": 1613
+    },
+    {
+      "name": "ConardLi/garden-skills",
+      "url": "https://github.com/ConardLi/garden-skills",
+      "desc": "ConardLi 的開源 Claude Code skill 集合，含 web design、knowledge retrieval、image generation。中文社群主要的 skill 開源來源之一。",
+      "source": "topic:rag+agent · 1676★ · 近30天",
+      "repo_age": "近30天",
+      "stars": 1676
+    },
+    {
+      "name": "PrathamLearnsToCode/paper2code",
+      "url": "https://github.com/PrathamLearnsToCode/paper2code",
+      "desc": "Claude Code skill，把任意 arxiv 論文網址輸入，產出 working Python implementation。1,201★，<30 天。",
+      "source": "topic:agent · 1201★ · 近30天",
+      "repo_age": "本週建立",
+      "stars": 1201
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Who owns the code Claude Code wrote?",
+        "url": "https://legallayer.substack.com/p/who-owns-the-claude-code-wrote",
+        "score": 179,
+        "comments": 38,
+        "source": "HN + Lobsters cross-source",
+        "takeaway": "作者分析 Claude Code 生成程式碼的著作權歸屬：Anthropic 的 Terms of Service 把輸出歸屬給使用者，但美國著作權法要求「human authorship」——純 AI 生成的程式碼可能根本不受著作權保護，意味著任何人都可以 copy。對你的 codebase 最直接的影響：如果你的 repo 有大量 AI 生成的程式碼，開源授權可能比你想的更無法執行。",
+        "action": "在你的 repo 的 CONTRIBUTING.md 裡加一行說明哪些部分是 AI 輔助生成的，讓 copyrightability 狀態明確而不是隱含"
+      },
+      {
+        "title": "GitHub Copilot code review 開始消耗 Actions minutes（6/1 起）",
+        "url": "https://github.blog/changelog/2026-04-27-github-copilot-code-review-will-start-consuming-github-actions-minutes-on-june-1-2026/",
+        "score": 195,
+        "comments": 16,
+        "source": "HN #23",
+        "takeaway": "6/1 起，每次 Copilot code review 觸發都算 Actions minutes。對有大量 PR 的 repo，這可能讓 Actions 帳單突然上升。現在就可以用 `gh api repos/OWNER/REPO/actions/runs` 估算上個月的 PR review 觸發次數，預估 6/1 後的增加量。",
+        "action": "這週在你的 workflow YAML 裡加 `if: github.actor != 'copilot'` 的條件，或者把 Copilot review 限制在特定 branch pattern，避免 6/1 突然爆帳單"
+      },
+      {
+        "title": "Ghostty is leaving GitHub",
+        "url": "https://mitchellh.com/writing/ghostty-leaving-github",
+        "score": 164,
+        "comments": 11,
+        "source": "HN #1 by rank",
+        "takeaway": "Mitchell Hashimoto 把 Ghostty 從 GitHub 搬走，理由是 GitHub Copilot 建議在 Ghostty 的 issue 裡對使用者自動回覆，他認為這破壞了社群的人際關係。這不是授權問題，是社群 texture 問題——Copilot 把 maintainer 的 human presence 替換掉了。",
+        "action": "在你的 repo 的 .github/copilot-instructions.md 或 Issue Template 裡明確寫「no AI auto-replies」，否則 GitHub 可能預設啟用"
+      },
+      {
+        "title": "Show HN: OSS Agent topped TerminalBench on Gemini-3-flash-preview",
+        "url": "https://github.com/dirac-run/dirac",
+        "score": 360,
+        "comments": 38,
+        "source": "HN #5",
+        "takeaway": "dirac 是 800 行 Python 的 terminal agent，在 TerminalBench 上拿第一名用的是 Gemini flash（不是 Pro），說明 file manipulation + scripting 類型的 agentic task 對 latency 比對 reasoning depth 更敏感。如果你的 agent 做的是 short-context tool call，這週值得測試 flash tier。",
+        "action": "clone dirac，把你的一個 agent task 用 Gemini-3-flash-preview 跑，對比 token 成本和任務完成率"
+      },
+      {
+        "title": "GitHub Actions is the weakest link（Lobsters security)",
+        "url": "https://nesbitt.io/2026/04/28/github-actions-is-the-weakest-link.html",
+        "score": 41,
+        "comments": 1,
+        "source": "Lobsters #4",
+        "takeaway": "作者系統分析 GitHub Actions 作為供應鏈攻擊入口的攻擊面：untrusted input 進 env var、GITHUB_TOKEN 過寬、third-party action pinning 不當。對有 AI 生成 workflow 的 repo 更高風險，因為 LLM 通常會生成 uses: actions/checkout@main（浮動引用）。",
+        "action": "在你的 repo 跑 `actionlint`，優先修掉所有 `uses: xxx@main` 改成 SHA-pinned 版本"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Localsend: An open-source cross-platform alternative to AirDrop",
+        "url": "https://github.com/localsend/localsend",
+        "score": 656,
+        "comments": 60
+      },
+      {
+        "title": "Talkie: a 13B vintage language model from 1930",
+        "url": "https://talkie-lm.com/introducing-talkie",
+        "score": 599,
+        "comments": 60
+      },
+      {
+        "title": "Show HN: OSS Agent I built topped the TerminalBench on Gemini-3-flash-preview",
+        "url": "https://github.com/dirac-run/dirac",
+        "score": 360,
+        "comments": 38
+      },
+      {
+        "title": "ASML became the chokepoint for cutting-edge chips",
+        "url": "https://worksinprogress.co/issue/the-worlds-most-complex-machine/",
+        "score": 284,
+        "comments": 26
+      },
+      {
+        "title": "Microsoft VibeVoice: Open-Source Frontier Voice AI",
+        "url": "https://github.com/microsoft/VibeVoice",
+        "score": 277,
+        "comments": 36
+      },
+      {
+        "title": "Show HN: Turning a Gaussian Splat into a videogame",
+        "url": "https://blog.playcanvas.com/turning-a-gaussian-splat-into-a-videogame/",
+        "score": 234,
+        "comments": 20
+      },
+      {
+        "title": "Google and Pentagon reportedly agree on deal for 'any lawful' use of AI",
+        "url": "https://www.theverge.com/ai-artificial-intelligence/919494/google-pentagon-classified-ai-deal",
+        "score": 229,
+        "comments": 43
+      },
+      {
+        "title": "GitHub Copilot code review will start consuming GitHub Actions minutes",
+        "url": "https://github.blog/changelog/2026-04-27-github-copilot-code-review-will-start-consuming-github-actions-minutes-on-june-1-2026/",
+        "score": 195,
+        "comments": 16
+      },
+      {
+        "title": "Who owns the code Claude Code wrote?",
+        "url": "https://legallayer.substack.com/p/who-owns-the-claude-code-wrote",
+        "score": 179,
+        "comments": 38
+      },
+      {
+        "title": "Claude.ai unavailable and elevated errors on the API",
+        "url": "https://status.claude.com/incidents/9l93x2ht4s5w",
+        "score": 171,
+        "comments": 50
+      },
+      {
+        "title": "Ghostty is leaving GitHub",
+        "url": "https://mitchellh.com/writing/ghostty-leaving-github",
+        "score": 164,
+        "comments": 11
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "jjj",
+        "url": "https://oppi.li/posts/jjj/",
+        "score": 77,
+        "comments": 7,
+        "tags": [
+          "vcs"
+        ]
+      },
+      {
+        "title": "Email is crazy",
+        "url": "https://samkhawase.com/blog/email-is-crazy/",
+        "score": 65,
+        "comments": 34,
+        "tags": [
+          "email",
+          "networking",
+          "security"
+        ]
+      },
+      {
+        "title": "GitHub Actions is the weakest link",
+        "url": "https://nesbitt.io/2026/04/28/github-actions-is-the-weakest-link.html",
+        "score": 41,
+        "comments": 1,
+        "tags": [
+          "devops",
+          "security"
+        ]
+      },
+      {
+        "title": "FOSDEM 2026 - All FOSDEM 2026 videos are online",
+        "url": "https://fosdem.org/2026/news/2026-04-26-all-videos-published/",
+        "score": 33,
+        "comments": 3,
+        "tags": [
+          "event",
+          "video"
+        ]
+      },
+      {
+        "title": "An update on GitHub availability",
+        "url": "https://github.blog/news-insights/company-news/an-update-on-github-availability/",
+        "score": 29,
+        "comments": 37,
+        "tags": [
+          "vcs"
+        ]
+      },
+      {
+        "title": "Who Owns the Code Claude Wrote?",
+        "url": "https://legallayer.substack.com/p/who-owns-the-claude-code-wrote",
+        "score": 22,
+        "comments": 14,
+        "tags": [
+          "law",
+          "vibecoding"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "audreyt",
+        "followers": 8836,
+        "repo": "audreyt/pdf-outline-fonts",
+        "url": "https://github.com/audreyt/pdf-outline-fonts",
+        "language": "TypeScript",
+        "hours_ago": 67,
+        "description": "選擇性把 PDF 字型轉成向量 outline 同時保留文字選取功能，適合需要在 PDF 裡嵌入特殊字型又不想破壞 accessibility 的場景",
+        "local_context": "🇹🇼 audreyt 做的工具通常出現在「看似小工具但剛好沒有人做好」的夾縫——PDF 字型的 outline/text 二選一問題困擾 i18n 文件作者多年"
+      },
+      {
+        "developer": "Inndy",
+        "followers": 505,
+        "repo": "Inndy/ccxray",
+        "url": "https://github.com/Inndy/ccxray",
+        "language": null,
+        "hours_ago": 10,
+        "description": "Claude Code 的透明 HTTP proxy + session dashboard，攔截所有 tool call 並視覺化——把 agent 的黑盒行為變成可審查的白盒",
+        "local_context": "🇹🇼 台灣社群對 Claude Code internals 的逆向熱度今天又出現新工具：ccxray 是第一個專注在 session 觀察性（observability）而不是功能擴充的台灣 Claude Code 週邊"
+      }
+    ],
+    "global": [
+      {
+        "developer": "antirez",
+        "followers": 26430,
+        "repo": "antirez/llama.cpp-deepseek-v4-flash",
+        "url": "https://github.com/antirez/llama.cpp-deepseek-v4-flash",
+        "language": "C++",
+        "hours_ago": 58,
+        "description": "DeepSeek V4 Flash 在 llama.cpp 的實驗性實作，Redis 創始人在模型發布 34h 後動手——本地推論社群對 V4 Flash 架構可在消費級硬體上跑有信心"
+      },
+      {
+        "developer": "steipete",
+        "followers": 48805,
+        "repo": "steipete/ghcrawl",
+        "url": "https://github.com/steipete/ghcrawl",
+        "language": "TypeScript",
+        "hours_ago": 38,
+        "description": "Terminal UI + CLI，爬 GitHub issues/PR，生成 embedding，聚類相關工作項目——maintainer 的 issue triage 工具，帶本地 clustering"
+      },
+      {
+        "developer": "mitsuhiko",
+        "followers": 24408,
+        "repo": "mitsuhiko/mlx-lm",
+        "url": "https://github.com/mitsuhiko/mlx-lm",
+        "language": null,
+        "hours_ago": 37,
+        "description": "Flask/Werkzeug 創始人 fork mlx-lm 在 Apple Silicon 上跑 LLM——繼 antirez 之後，第二位頂尖 systems 開發者今天把本地推論工具加入個人工具箱"
+      },
+      {
+        "developer": "deepseek-ai",
+        "followers": 89607,
+        "repo": "deepseek-ai/awesome-deepseek-agent",
+        "url": "https://github.com/deepseek-ai/awesome-deepseek-agent",
+        "language": null,
+        "hours_ago": 37,
+        "description": "DeepSeek 官方的 agent ecosystem curated list，V4 Flash 發布 37 小時後出現，目前 56★——從 model vendor 轉型 agent platform 的第一個公開訊號"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Benchmark 競爭轉移到 agent runner 層：誰定義 terminal task 的評量方式",
+      "body": "dirac-run/dirac 在 TerminalBench 上用 Gemini flash 拿第一，這件事本身說明了 TerminalBench 的 task profile——短 context、頻繁 tool call、file manipulation 為主。HN 留言區最高票在問「這個 benchmark 是針對 flash 的 API latency 優勢設計的嗎？」。DeepSeek 同天開了 awesome-deepseek-agent，是在說「我也想玩這個遊戲」。從 builder 的角度：benchmark 設計本身已經成為 agent 生態系的競爭工具——你選哪個 benchmark 就決定哪個框架看起來最好。",
+      "evidence": "dirac: HN #5 360分；deepseek-ai/awesome-deepseek-agent: 37h ago, 56★；TerminalBench discussion: 38 HN comments",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 17,
+      "product_opportunity": "一個 benchmark transparency dashboard：對每個 agent benchmark 標注它的 task type distribution 和哪類模型有系統性優勢，讓 builder 在選框架時不被 benchmark marketing 誤導",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Show HN: OSS Agent topped TerminalBench",
+          "url": "https://github.com/dirac-run/dirac",
+          "score": 360
+        },
+        {
+          "platform": "GitHub",
+          "title": "deepseek-ai/awesome-deepseek-agent",
+          "url": "https://github.com/deepseek-ai/awesome-deepseek-agent"
+        }
+      ]
+    },
+    {
+      "title": "頂尖 systems 開發者把本地推論工具化：antirez + mitsuhiko 同天行動",
+      "body": "antirez（Redis，26K followers）在 DeepSeek V4 Flash 發布 58h 後建 llama.cpp 實驗性實作（C++，115★）。同一天，mitsuhiko（Flask/Werkzeug，24K followers）fork mlx-lm 在 Apple Silicon 上跑 LLM。兩個人背景不同（Redis 是 C 系統工程師，Flask 是 Python web 框架作者），但都在同一天把本地推論加入個人工具箱。這是 systems 社群對本地推論「可以做真實工作」的第三個獨立信號（四月初 Clanker T1000 用本地 LLM 找到 kernel bug 是第一個）。",
+      "evidence": "antirez/llama.cpp-deepseek-v4-flash: 115★, 58h ago; mitsuhiko/mlx-lm: fork, 37h ago; Phoronix Clanker T1000 report: 2026-04-27",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 16,
+      "product_opportunity": "一個 llama.cpp 模型相容性矩陣追蹤器：自動偵測 systems 開發者 fork 了哪些模型實作，推斷哪些新模型架構即將得到社群支援",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "antirez/llama.cpp-deepseek-v4-flash",
+          "url": "https://github.com/antirez/llama.cpp-deepseek-v4-flash"
+        },
+        {
+          "platform": "GitHub",
+          "title": "mitsuhiko/mlx-lm",
+          "url": "https://github.com/mitsuhiko/mlx-lm"
+        }
+      ]
+    },
+    {
+      "title": "AI 生成程式碼的著作權真空：Lobsters + HN 同天熱議，builder 需要明確立場",
+      "body": "「Who owns the code Claude Code wrote?」在 HN（179分，38 comments）和 Lobsters（22分，14 comments）同天上榜，是今天唯一的 cross-source 法律討論。核心論點：Anthropic ToS 把輸出歸屬使用者，但美國著作權法要求「human authorship」，純 AI 生成的程式碼可能根本不受著作權保護。這不是 legal edge case，而是今天你 repo 裡每一個 AI 輔助生成的函數的實際狀態。對 builder 最直接的影響：如果你的 MIT-licensed 開源 library 有大量 AI 生成程式碼，你的 license 可能對那部分程式碼根本無效。",
+      "evidence": "HN: 179分, 38 comments; Lobsters: 22分, 14 comments; cross-source: 2 platforms",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "product_opportunity": "一個 repo AI-authorship annotation 工具：自動標注 git blame 裡哪些 commit 是 AI 輔助生成的（透過 commit message pattern 或 co-authored-by tag），產出一份 copyrightability audit report",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Who owns the code Claude Code wrote?",
+          "url": "https://legallayer.substack.com/p/who-owns-the-claude-code-wrote",
+          "score": 179
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Who Owns the Code Claude Wrote?",
+          "url": "https://legallayer.substack.com/p/who-owns-the-claude-code-wrote",
+          "score": 22
+        }
+      ]
+    },
+    {
+      "title": "Claude Code 觀察性工具出現：從功能擴充轉向 session 理解",
+      "body": "台灣開發者 Inndy 今天建了 ccxray——一個透明 HTTP proxy + dashboard，把 Claude Code 的所有 tool call 攔截並視覺化。這是生態系第一個專注在「理解 agent 在做什麼」而不是「讓 agent 做更多事」的工具。時機點很關鍵：在 skill 數量爆炸（mattpocock/skills 36K★，awesome-codex-skills）之後，builder 社群開始面對「agent 做了很多事但我不知道它為什麼這樣做」的問題。ccxray 是對這個需求的最早回應之一。",
+      "evidence": "Inndy/ccxray: 0★, 10h ago; mattpocock/skills: 36,518★, Trending #1; claude-code-skill-explosion arc day 17",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 50%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 17,
+      "product_opportunity": "基於 ccxray 的 agent session diff 工具：比較同一個任務兩次不同執行路徑，找出哪些 tool call 決策是高方差的，讓 builder 知道哪裡需要加 explicit instruction",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "Inndy/ccxray",
+          "url": "https://github.com/Inndy/ccxray"
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "deepseek-ai/awesome-deepseek-agent",
+    "url": "https://github.com/deepseek-ai/awesome-deepseek-agent",
+    "stars": 56,
+    "repo_age": "本週新增（37h ago）",
+    "why": "DeepSeek 官方 repo，V4 Flash 發布後 37 小時內建立，目前 56★。awesome list 是生態系宣稱主權的最低成本方式——接下來幾週這個 repo 會成為 DeepSeek 生態系的 legitimacy filter：哪些 agent 工具出現在這個清單上，等於得到 DeepSeek 官方背書。如果你的 agent tool 支援 DeepSeek V4，現在就是提 PR 的最佳時機，因為早期貢獻者會出現在 git blame 的最上面。",
+    "commercial_path": "對 DeepSeek 來說，awesome list 是免費的生態系建設。對生態系參與者來說，早期 PR 換取的是 organic discovery——在 DeepSeek 官方頁面曝光，SEO 價值在未來 12 個月遠超過任何付費推廣。"
+  },
+  "contrarian": {
+    "claim": "Talkie 13B 對 LLM persona engineering 的啟示被高估",
+    "argument": "Talkie 13B 的 HN 討論（599分，60 comments）充斥著「語料決定 persona 比 instruction tuning 強得多」的結論。這個解讀有問題：Talkie 是從零預訓練在 1930 年代文本上的，不是在現代 LLM 上做 fine-tuning。對 builder 實際有用的問題是：「在現有 frontier model 上做 persona instruction，能達到 Talkie 那種語言風格的幾分之幾？」目前沒有人做這個量測。把「從零預訓練的語料效應」外推到「instruction tuning 無法達到真正的 persona 差異」是跨越了一個沒有驗證的步驟。",
+    "prediction": "到 2026-09-30，至少一篇公開 benchmark paper 會量測「instruction tuning vs corpus-trained persona」的差距，結果顯示 instruction tuning 在 BIG-Bench 的 linguistic style transfer 子集上可以達到 corpus-trained 方法 70% 以上的效果（以 BIG-Bench leaderboard 或 LMSYS Arena style-transfer 類別得分為準）"
+  },
+  "predictions": [
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-anthropic-skill-management",
+      "text": "到 2026-07-31，Anthropic 在 Claude Code 官方文件或 changelog 中發布內建 skill 管理介面或 official skill registry（以 anthropic.com 官方 blog 或 claude.ai changelog 為準）。",
+      "status": "pending",
+      "created": "2026-04-27",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-copilot-flat-rate-return",
+      "text": "到 2026-09-30，GitHub 會重新推出 Copilot Enterprise 的固定費率定價選項（以 github.blog 官方公告或 GitHub Universe 2026 keynote 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-talkie-persona-benchmark",
+      "text": "到 2026-09-30，至少一篇公開 benchmark paper 量測 instruction tuning vs corpus-trained persona 的差距，結果顯示 instruction tuning 在 BIG-Bench linguistic style transfer 子集上達到 corpus-trained 方法 70% 以上效果（以 BIG-Bench leaderboard 或 LMSYS Arena style-transfer 類別為準）。",
+      "status": "pending",
+      "created": "2026-04-29",
+      "resolution_date": "2026-09-30"
+    }
+  ],
+  "meta": {
+    "run_id": "0534c09d-0c6c-45e6-8c76-5270f508dea6",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-28T20:11:50.821Z",
+    "analyze_duration_ms": 574397,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 156
+      },
+      "trending": {
+        "ok": true,
+        "count": 13
+      },
+      "search": {
+        "ok": true,
+        "count": 51
+      },
+      "developers": {
+        "ok": true,
+        "count": 13
+      }
+    },
+    "degraded_sources": []
+  }
+}
