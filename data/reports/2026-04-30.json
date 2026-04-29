@@ -1,0 +1,619 @@
+{
+  "date": "2026-04-30",
+  "lead": {
+    "html": "<h3>GitHub 的社交契約正在斷裂，Zed 1.0 是第一個在場的替代答案</h3>\n\n<h4>發生了什麼</h4>\n<p>Mitchell Hashimoto 今天發文宣布 Ghostty 要離開 GitHub，理由直接點名 Copilot：「AI 自動回覆讓我覺得我在跟一個機器人維持人際關係，不是在跟我的用戶。」這篇文章在 HN 拿到 3264 分、163 條留言——是今天所有技術新聞分數最高的一篇，高過任何模型發布、高過任何安全漏洞。</p>\n\n<p>同一天，四條獨立信號指向同一方向：mitsuhiko 發表〈Before GitHub〉（HN 631 分），回憶 2005-2010 年 Savannah、Berlios、SourceForge 時代；「We need a federation of forges」進 HN 前十（437 分），提出具體的 ActivityPub-over-git 路線；Lobsters 最高分是〈jjj〉（109 分，VCS tag）——一個刻意不碰 GitHub API 的純命令列版控工具；Loris Cro（Zig 語言核心維護者）發表〈Contributor Poker and Zig's AI Ban〉（Lobsters 60 分），宣布 Zig 正式寫入貢獻指南：不接受 AI 生成的 commit，理由是「我們不想玩一場出牌前就已知道對手手牌的撲克」。</p>\n\n<p>Zed 1.0 選擇在同一天正式發布（HN 1144 分，Lobsters 49 分）。Zed 是 Rust 寫的協作程式碼編輯器，由前 Atom 團隊（GitHub 的編輯器）成員建立，明確設計為 agent 工作流的 first-class participant 而非 plugin。1.0 意味著 API 穩定、extension 生態可以開始建立——也意味著從今天起，從 VS Code 遷移到 Zed 是一個有長期 support 承諾的決定。</p>\n\n<p>Forgejo 今天也在 Lobsters 有一個 88 分的 security carrot disclosure——即使「替代 GitHub」的陣營，維護社群信任也是政治事件。</p>\n\n<h4>為什麼重要</h4>\n<p>GitHub 的問題不是「AI 功能太多」。問題是 GitHub 優化的 metric 是 throughput，不是 signal quality。Copilot 自動回覆讓每一個 issue 都得到「回應」，但這讓 maintainer 失去了「這個用戶夠認真到值得我花時間」的判斷依據。mitsuhiko 在〈Before GitHub〉裡說了一個精確的觀察：GitHub 把 async 的人際協作變成了 synchronous 的 ticket queue，這件事發生在過去三年。</p>\n\n<p>對你的 Claude Code workflow 有兩個直接影響。第一：如果你維護 OSS repo，你的 issue tracker 正在被 AI 生成的格式化問題稀釋——不是有人惡意灌水，是 LLM 讓低成本 issue 提交變得容易了。第二：Zed 1.0 的 async context model 在長 agent session 上的 timeout 行為和 VS Code terminal 不同，值得測量。</p>\n\n<p>同一天浮現的另一條線：steipete（48,874 followers）在 Ghostty 公告的 24 小時前，就發布了 ghcrawl——用 embedding + clustering 整理 GitHub issues 的 terminal UI 工具。他不是在回應 Ghostty，他已經在解同一個問題了。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 的 Ghostty 文章高票 comment（tptacek）：「Mitchell is right but the proposed solution doesn't scale. 99% of projects don't have the resources to self-host a forge.」第二高票：「The problem isn't Copilot, it's that GitHub never gave maintainers the moderation tools to fight AI-generated spam. Copilot is the symptom.」</p>\n\n<p>Loris Cro 的文章裡的比喻最直白：「We play Contributor Poker — we bet our review time on a PR before we know if it's AI-generated. The AI ban is not about AI being bad. It's about not wanting to play a rigged card game.」Zed 1.0 的 HN thread 相對安靜（119 comments，tone 偏正面）：「Zed is the editor I've been waiting for since Atom was killed.」「1.0 means I can finally recommend this to my team without apologizing.」</p>\n\n<h4>行動建議</h4>\n<p>如果你維護一個有超過 100 個 open issues 的 OSS repo，這週在 CONTRIBUTING.md 加一段 AI policy：「Issues generated entirely by AI tools without human reproduction steps will be closed without comment. PRs must include a human-written summary of what changed and why.」不需要 zero-tolerance——只需要讓 AI 生成的 content 多一個 human verification gate。Ghostty 和 Zig 都在做。</p>\n\n<p>如果你用 Claude Code 做 multi-step agent 任務，今天花 30 分鐘試 Zed 1.0：<code>brew install --cask zed</code>，開你最常讓 Claude Code 跑的 repo，比較 tool call 速度和 context feedback 和 VS Code 的差異。1.0 不代表完美——找到 regression 並回報是 early adopter 的正確姿勢。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "AI Issue Triage：在 ghcrawl 上加一層 AI 生成內容偵測器",
+      "projects": [
+        {
+          "name": "steipete/ghcrawl",
+          "url": "https://github.com/steipete/ghcrawl",
+          "note": "GitHub issue embedding + clustering terminal UI"
+        },
+        {
+          "name": "Ghostty 離開 GitHub 事件",
+          "url": "https://mitchellh.com/writing/ghostty-leaving-github",
+          "note": "HN 3264分，AI 自動回覆破壞 maintainer 社群信任"
+        }
+      ],
+      "description": "steipete/ghcrawl 已經做好了最難的部分：把 GitHub issues 爬下來、產生 embedding、按語意 cluster。缺的是最後一層分類器，把 AI 生成的格式化問題（有標準結構、無 reproduction steps、標點符號過於整齊、無 system info）和人類手寫的 genuine bug reports 分開，自動打 label 或建議關閉。分類器不需要自己訓練——用 OpenAI embeddings 的 cosine distance 就可以：AI 生成的 issues 在語意空間裡的分布明顯比人類寫的更集中。",
+      "use_case": "你維護一個有 300-2000 個 open issues 的 OSS repo，最近六個月 triage 時間的 40% 花在回覆格式正確但沒有 reproduction 細節的問題，你懷疑其中大半是 AI 填表單產出的。你不想封鎖 AI 使用者，你只想讓真實 bug 浮上來。",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/steipete/ghcrawl && npm install && node src/index.js --repo owner/repo --output issues.json",
+      "hardware": "純 CPU 可跑（本地 all-MiniLM embedding 模型 < 90MB）",
+      "skill_level": "Node.js + OpenAI embeddings API 或本地 all-MiniLM；無需 ML 訓練背景",
+      "dependencies": "GitHub Personal Access Token + OpenAI API key（可換 local embedding model，費用歸零）",
+      "market_evidence": "Ghostty HN 3264 分是今天全站最高分；Zig 正式寫入 CONTRIBUTING.md 禁止 AI commit（Lobsters 60 分）；Linux kernel maintainer 四月初討論同樣政策（LWN）——三個彼此無關的社群在同一個月各自得出相同結論"
+    },
+    {
+      "format": "solo",
+      "title": "把 Claude Code 最耗時的 CI 步驟包成 MCP async task，讓 agent 不再空等",
+      "projects": [
+        {
+          "name": "modelcontextprotocol/experimental-ext-tasks",
+          "url": "https://github.com/modelcontextprotocol/experimental-ext-tasks",
+          "note": "MCP 長時間執行 task 協定擴充，3h ago"
+        }
+      ],
+      "description": "MCP 協定的 tasks extension 允許 MCP server 回傳一個 task handle 而不是立即結果，agent 拿到 handle 後繼續做其他事，task 完成時透過 notification 通知。對 Claude Code 的直接應用：把 docker build、pytest 整套、Playwright e2e 包成三個 async MCP task。原本的情況是 context window 停在那裡等 4-8 分鐘，agent idle，偶爾超時斷線。tasks extension 讓 agent 在等 build 的時候去寫文件、整理 TODO、review 另一個 PR——這是和工作量完全相符的並行結構，不是投機性加速。",
+      "use_case": "你的 Claude Code session 每次跑整套 test suite 要 5-8 分鐘，這段時間 agent 什麼都做不了，你坐在那裡盯著進度條。你的 test suite 是 pytest + Docker-in-Docker，每天這樣浪費的時間合計超過 1 小時。",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/modelcontextprotocol/experimental-ext-tasks && 閱讀 README 確認 task lifecycle（create → poll → complete/fail）",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "需熟悉 MCP protocol + TypeScript async patterns；experimental spec 可能在 MVP 期間改動",
+      "dependencies": "Claude Code Max 訂閱 + MCP server dev 環境；tasks spec 目前 experimental，穩定性不保證",
+      "market_evidence": "昨天 experimental-ext-server-card、今天 experimental-ext-tasks——MCP org 連續兩天出新的 experimental extension，說明這是有規劃的序列；dirac-run/dirac 在 TerminalBench 拿 Gemini flash 第一（HN 360 分，4/29），其核心差異正是 async execution 設計"
+    },
+    {
+      "format": "remix",
+      "title": "RP2040 + Rust embedded + FHIR R4：開源電解脫毛記錄儀，讓治療資料真正屬於你",
+      "projects": [
+        {
+          "name": "DIY Hair Electrolysis Machine",
+          "url": "https://www.scd31.com/posts/diy-hair-electrolysis-machine",
+          "note": "Lobsters 79分，hardware+rust tag，用 Rust embedded 自製電解脫毛裝置"
+        }
+      ],
+      "description": "Lobsters 今天 79 分的〈I Built My Own Hair Electrolysis Machine〉說的是一個已經解決的問題：DIY 電解裝置材料成本 < $50 但商業診所收費 $500+/session。尚未解決的問題是：治療資料（電流強度、脈衝寬度、治療部位、session 時長）存在哪裡？目前答案是 therapist 的紙本記錄或私有 app。改進方案：RP2040 開發板（$5）搭配電流感測器，治療結束時自動把 session 參數寫入本地 FHIR R4 Observation bundle（JSON over USB serial）。FHIR R4 是 HL7 標準，任何 EHR 系統可以直接讀——你的治療歷程是你的資料，不是診所的資產。",
+      "use_case": "你是一位提供電解脫毛服務的獨立治療師，手動記錄 30 個客戶每次 session 的電流設定和治療時間，資料散在三本不同的紙本記錄裡，當客戶換地址或你換工作地點，歷史資料就斷掉了。",
+      "difficulty": 4,
+      "dev_time": "1個月+",
+      "first_step": "閱讀 HL7 FHIR R4 Observation resource spec（fhir.org/R4/observation.html）確認 session 資料 mapping；買 RP2040 開發板測試 ADC 電流讀取",
+      "hardware": "RP2040 開發板（~$5）+ ACS712 電流感測器（~$8）+ 醫療級絕緣材料；總材料 < $50",
+      "skill_level": "需熟悉 Rust embedded no_std + FHIR R4 Resource 格式；不需要 LLM 整合",
+      "dependencies": "完全免費自架；FHIR R4 spec 公開；無雲端依賴；美國 FDA Class I 豁免允許個人自用電刺激裝置，但商業銷售需另行確認法規",
+      "market_evidence": "Lobsters 79 分 11 comments，原作者說「commercial units are $500 per session at a clinic but the circuit is $5 of parts」；comments 中多人詢問是否能用同樣方法做其他低功率醫療電刺激裝置；FHIR R4 在 2025 年已是美國 ONC 認證的強制標準，任何 EHR 軟體必須支援"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Zed 1.0",
+      "url": "https://zed.dev/blog/zed-1-0",
+      "desc": "Rust 寫的協作程式碼編輯器正式進入 1.0。前 Atom 團隊建立，agent-first 設計，built-in Claude 整合，API 穩定承諾從今天起。",
+      "source": "HN 1144分 · Lobsters 49分",
+      "repo_age": "2021 年建立"
+    },
+    {
+      "name": "warpdotdev/warp",
+      "url": "https://github.com/warpdotdev/warp",
+      "desc": "「Agentic development environment, born out of the terminal」，今日 GitHub Trending #1。42,719★，Rust，Claude Code native integration。",
+      "source": "GitHub Trending #1",
+      "repo_age": "2021 年建立",
+      "stars": 42719
+    },
+    {
+      "name": "Mistral Medium 3.5 + Vibe Remote Agents",
+      "url": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+      "desc": "Mistral 同步發布 Medium 3.5 模型和 Vibe Remote Agents 框架，後者是 headless browser agent runtime，定位直接競爭 Codex CLI。",
+      "source": "HN 304分",
+      "repo_age": "2026-04-30 發布"
+    },
+    {
+      "name": "Simon Willison / LLM 0.32a0",
+      "url": "https://simonwillison.net/2026/Apr/29/llm/#atom-everything",
+      "desc": "Simon Willison 的 LLM CLI 工具 0.32a0 是重大向後相容重構（major backwards-compatible refactor）。builder 最常用的 LLM 命令列工具之一。",
+      "source": "Simon Willison RSS",
+      "repo_age": "2023 年建立"
+    },
+    {
+      "name": "Anthropic Claude for Creative Work",
+      "url": "https://www.anthropic.com/news/claude-for-creative-work",
+      "desc": "Anthropic 發布 Claude 創意工作專頁，同日 HN 有 HERMES.md 帳單事件（$200 超收，拒退款，HN rank #1，373 分）——兩件事同天出現形成對比。",
+      "source": "Anthropic News",
+      "repo_age": "2026-04-30 發布"
+    },
+    {
+      "name": "modelcontextprotocol/experimental-ext-tasks",
+      "url": "https://github.com/modelcontextprotocol/experimental-ext-tasks",
+      "desc": "MCP 協定 tasks extension：允許 MCP server 啟動長時間執行操作並回傳 task handle，agent 非同步等待結果。昨天 server-card、今天 tasks——連續兩天的 MCP 基礎設施信號。",
+      "source": "GitHub dev watch · 3h ago",
+      "repo_age": "2026-04-30 建立",
+      "stars": 0
+    },
+    {
+      "name": "Tencent Hunyuan Hy-MT1.5-1.8B-1.25bit",
+      "url": "https://www.oschina.net/news/437600",
+      "desc": "騰訊混元把支援 33 種語言的翻譯模型壓縮至 440MB，1.25-bit 量化，完全離線，手機下載即用。端側多語言 NLP 的新密度標竿。",
+      "source": "OSChina",
+      "repo_age": "2026-04-30 發布"
+    },
+    {
+      "name": "OpenCL Cooperative Matrix for Machine Learning",
+      "url": "https://www.phoronix.com/news/OpenCL-Cooperative-Matrix",
+      "desc": "OpenCL 引入 Cooperative Matrix 擴充，把 2023 年 Vulkan 的 Matrix multiply-accumulate 加速帶到 OpenCL。AMD/Intel iGPU 的 ML kernel 加速路徑正式對齊 Vulkan。",
+      "source": "Phoronix",
+      "repo_age": "spec 2026-04-30 發布"
+    },
+    {
+      "name": "Linux sched_ext AI code review bug fixes",
+      "url": "https://www.phoronix.com/news/Linux-7.1-AI-Sched-Ext-Fixes",
+      "desc": "Linux 7.1-rc1 後，sched_ext（可擴充排程框架）在 AI 程式碼審查後收到一批 bug fixes。同月 AI 找到真實 kernel bug 的案例第二例——從噪音到訊號的轉折持續。",
+      "source": "Phoronix",
+      "repo_age": "Linux 7.1-rc1"
+    },
+    {
+      "name": "Recursive Multi-Agent Systems",
+      "url": "https://arxiv.org/abs/2604.25917",
+      "desc": "HuggingFace Daily Papers #1。把 looped LLM 當作新的 scaling axis——不是更多參數，而是更多 iteration。對設計 multi-agent pipeline 的 builder：recursion 深度 vs token 成本的 trade-off 有新的理論基礎。",
+      "source": "HuggingFace Daily Papers #1",
+      "repo_age": "2026-04-30 發布"
+    },
+    {
+      "name": "nexu-io/open-design",
+      "url": "https://github.com/nexu-io/open-design",
+      "desc": "Claude Design 的本地優先開源替代方案。19 個 Skills，71 個品牌設計系統，TypeScript，完全自架。Anthropic 剛發布 Claude for Creative Work，這個 repo 同天出現。",
+      "source": "topic:llm · 3977★ · 本週新增",
+      "repo_age": "本週新增",
+      "stars": 3977
+    },
+    {
+      "name": "Manavarya09/design-extract",
+      "url": "https://github.com/Manavarya09/design-extract",
+      "desc": "一個指令萃取任何網站的完整 design system：DTCG tokens、semantic+primitive+composite 層級、內建 MCP server。1,782★，JavaScript。",
+      "source": "topic:web-scraping · 1782★ · 本週新增",
+      "repo_age": "本週新增",
+      "stars": 1782
+    },
+    {
+      "name": "cosmicstack-labs/mercury-agent",
+      "url": "https://github.com/cosmicstack-labs/mercury-agent",
+      "desc": "Soul-driven AI agent，有 permission-hardened tools、token budget 管理、多頻道存取（CLI + Telegram）。1,758★，TypeScript，24/7 運作設計。",
+      "source": "topic:llm · 1758★ · 本週新增",
+      "repo_age": "本週新增",
+      "stars": 1758
+    },
+    {
+      "name": "PrathamLearnsToCode/paper2code",
+      "url": "https://github.com/PrathamLearnsToCode/paper2code",
+      "desc": "Agent skill：把任意 arXiv paper 轉成可執行的實作。1,207★，Python。搭配今天的 Recursive Multi-Agent Systems paper，是最直接的 POC 工具。",
+      "source": "topic:agent · 1207★ · 本週新增",
+      "repo_age": "本週新增",
+      "stars": 1207
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Ghostty is leaving GitHub",
+        "url": "https://mitchellh.com/writing/ghostty-leaving-github",
+        "takeaway": "Mitchell Hashimoto 明確說出大多數 maintainer 感覺到但說不清楚的事：Copilot 的自動化把 GitHub 從協作平台變成了 ticket routing system。HN 3264 分是今天全站最高。",
+        "action": "在你的 OSS repo CONTRIBUTING.md 加入 AI contribution policy，說清楚你對 AI 生成 issues/PRs 的態度。"
+      },
+      {
+        "title": "Zed 1.0",
+        "url": "https://zed.dev/blog/zed-1-0",
+        "takeaway": "Rust-native 編輯器第一個有長期 support 承諾的版本。HN 1144分 + Lobsters 49 分，前 Atom 團隊，agent-first。如果你一直在等「從 VS Code 遷移的安全時機」，今天是。",
+        "action": "brew install --cask zed，在你最常跑 Claude Code 的 repo 測試 30 分鐘，記錄 context timeout 行為差異。"
+      },
+      {
+        "title": "HERMES.md: Anthropic bug causes $200 extra charge, refuses refund",
+        "url": "https://github.com/anthropics/claude-code/issues/53262",
+        "takeaway": "Anthropic 帳單系統 bug 讓一名用戶被多收 $200，客服拒退款。HN rank #1（373 分），同天 Anthropic 發布 Claude for Creative Work。billing 信任問題正在上升到和 model 品質同等的討論優先度。",
+        "action": "這週在你的 billing dashboard 設定 Claude API spend limit，並確認 auto-renewal 行為符合預期。"
+      },
+      {
+        "title": "Simon Willison / LLM 0.32a0",
+        "url": "https://simonwillison.net/2026/Apr/29/llm/#atom-everything",
+        "takeaway": "LLM CLI 重大重構，向後相容。如果你在 shell script 或 Makefile 裡用 llm 呼叫模型，現在是升級並測試的時候。"
+      },
+      {
+        "title": "How ChatGPT serves ads",
+        "url": "https://www.buchodi.com/how-chatgpt-serves-ads-heres-the-full-attribution-loop/",
+        "takeaway": "完整揭示 ChatGPT 的廣告歸因迴路：回應裡的贊助連結有完整 click attribution 追蹤。HN 473 分 44 留言。對用 ChatGPT API 做 RAG 的 builder：search-augmented response 的「客觀性」假設需要重新評估。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Ghostty is leaving GitHub",
+        "url": "https://mitchellh.com/writing/ghostty-leaving-github",
+        "score": 3264,
+        "comments": 163
+      },
+      {
+        "title": "Zed 1.0",
+        "url": "https://zed.dev/blog/zed-1-0",
+        "score": 1144,
+        "comments": 119
+      },
+      {
+        "title": "Before GitHub",
+        "url": "https://lucumr.pocoo.org/2026/4/28/before-github/",
+        "score": 631,
+        "comments": 49
+      },
+      {
+        "title": "Bugs Rust won't catch",
+        "url": "https://corrode.dev/blog/bugs-rust-wont-catch/",
+        "score": 589,
+        "comments": 36
+      },
+      {
+        "title": "How ChatGPT serves ads",
+        "url": "https://www.buchodi.com/how-chatgpt-serves-ads-heres-the-full-attribution-loop/",
+        "score": 473,
+        "comments": 44
+      },
+      {
+        "title": "Soft launch of open-source code platform for government",
+        "url": "https://www.nldigitalgovernment.nl/news/soft-launch-for-government-open-source-code-platform/",
+        "score": 468,
+        "comments": 26
+      },
+      {
+        "title": "We need a federation of forges",
+        "url": "https://blog.tangled.org/federation/",
+        "score": 437,
+        "comments": 49
+      },
+      {
+        "title": "HERMES.md: Anthropic bug causes $200 extra charge, refuses refund",
+        "url": "https://github.com/anthropics/claude-code/issues/53262",
+        "score": 373,
+        "comments": 31
+      },
+      {
+        "title": "Mistral Medium 3.5",
+        "url": "https://mistral.ai/news/vibe-remote-agents-mistral-medium-3-5",
+        "score": 304,
+        "comments": 23
+      },
+      {
+        "title": "Cursor Camp",
+        "url": "https://neal.fun/cursor-camp/",
+        "score": 259,
+        "comments": 28
+      },
+      {
+        "title": "Show HN: Auto-Architecture: Karpathy's Loop, pointed at a CPU",
+        "url": "https://github.com/FeSens/auto-arch-tournament/blob/main/docs/auto-arch-tournament-blog-post.md",
+        "score": 224,
+        "comments": 14
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "jjj",
+        "url": "https://oppi.li/posts/jjj/",
+        "score": 109,
+        "comments": 10,
+        "tags": [
+          "vcs"
+        ]
+      },
+      {
+        "title": "Carrot disclosure: Forgejo",
+        "url": "https://dustri.org/b/carrot-disclosure-forgejo.html",
+        "score": 88,
+        "comments": 41,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "I Built My Own Hair Electrolysis Machine",
+        "url": "https://www.scd31.com/posts/diy-hair-electrolysis-machine",
+        "score": 79,
+        "comments": 11,
+        "tags": [
+          "hardware",
+          "rust"
+        ]
+      },
+      {
+        "title": "Contributor Poker and Zig's AI Ban",
+        "url": "https://kristoff.it/blog/contributor-poker-and-ai/",
+        "score": 60,
+        "comments": 12,
+        "tags": [
+          "zig"
+        ]
+      },
+      {
+        "title": "Zed is 1.0",
+        "url": "https://zed.dev/blog/zed-1-0",
+        "score": 49,
+        "comments": 18,
+        "tags": [
+          "editors",
+          "rust"
+        ]
+      },
+      {
+        "title": "Bugs Rust Won't Catch",
+        "url": "https://corrode.dev/blog/bugs-rust-wont-catch/",
+        "score": 41,
+        "comments": 15,
+        "tags": [
+          "rust"
+        ]
+      },
+      {
+        "title": "Why I Still Reach for Lisp (& Scheme) Instead of Haskell",
+        "url": "https://jointhefreeworld.org/blog/articles/lisps/why-i-still-reach-for-scheme-instead-of-haskell/index.html",
+        "score": 40,
+        "comments": 11,
+        "tags": [
+          "haskell",
+          "lisp",
+          "programming"
+        ]
+      },
+      {
+        "title": "Apple wants to kill your Time Capsule, but they run NetBSD so they can't",
+        "url": "https://www.osnews.com/story/144845/apple-wants-to-kill-your-time-capsule-but-they-run-netbsd-so-they-cant/",
+        "score": 39,
+        "comments": 3,
+        "tags": [
+          "mac",
+          "netbsd"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "Inndy",
+        "followers": 506,
+        "repo": "Inndy/ccxray",
+        "url": "https://github.com/Inndy/ccxray",
+        "language": null,
+        "hours_ago": 34,
+        "description": "X-ray vision for AI agent sessions — transparent HTTP proxy and dashboard for Claude Code",
+        "local_context": "🇹🇼 Inndy 的 ccxray 是台灣開發者社群在 agent session observability 這個方向的第一個公開工具，和今天 Zed 1.0 提出的 agent-first 編輯器理念在同一個問題空間裡匯合"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 821,
+        "repo": "strategist922/dicoogle",
+        "url": "https://github.com/strategist922/dicoogle",
+        "language": null,
+        "hours_ago": 9,
+        "description": "Fork of Dicoogle — Open Source PACS (Picture Archiving and Communication System) for medical imaging",
+        "local_context": "🇹🇼 開源醫療影像系統 fork，配合今天 Lobsters DIY 醫療硬體話題，醫療開源工具在這個社群有持續的關注度"
+      }
+    ],
+    "global": [
+      {
+        "developer": "modelcontextprotocol",
+        "followers": 46411,
+        "repo": "modelcontextprotocol/experimental-ext-tasks",
+        "url": "https://github.com/modelcontextprotocol/experimental-ext-tasks",
+        "language": null,
+        "hours_ago": 3,
+        "description": "Experimental MCP protocol extension for long-running task operations with async task handles and notifications"
+      },
+      {
+        "developer": "steipete",
+        "followers": 48874,
+        "repo": "steipete/ghcrawl",
+        "url": "https://github.com/steipete/ghcrawl",
+        "language": "TypeScript",
+        "hours_ago": 62,
+        "description": "Terminal UI and local CLI for crawling GitHub issues and pull requests, generating embeddings, and clustering related work"
+      },
+      {
+        "developer": "facebook",
+        "followers": 35244,
+        "repo": "facebook/haptics-studio",
+        "url": "https://github.com/facebook/haptics-studio",
+        "language": "TypeScript",
+        "hours_ago": 23,
+        "description": "Desktop application for designing haptic feedback patterns — Meta 開源的觸覺設計工具，指向 Quest/AR 裝置的 haptics SDK 開放方向"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 62750,
+        "repo": "huggingface/leLab",
+        "url": "https://github.com/huggingface/leLab",
+        "language": "TypeScript",
+        "hours_ago": 9,
+        "description": "Web UI interface on top of lerobot — HuggingFace 為機器人學習框架 lerobot 建立的 web dashboard"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 118476,
+        "repo": "microsoft/amplifier-module-provider-openai-chatgpt",
+        "url": "https://github.com/microsoft/amplifier-module-provider-openai-chatgpt",
+        "language": null,
+        "hours_ago": 7,
+        "description": "ChatGPT OpenAI provider module for the Amplifier project — Microsoft Amplifier 序列第四彈，在 Microsoft-OpenAI 排他協議終止後，Amplifier 開始納入 ChatGPT 作為原生 provider"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "GitHub 平台人際信任危機：四條獨立信號在同一天匯聚",
+      "body": "Ghostty（HN 3264 分）、mitsuhiko 的〈Before GitHub〉（631 分）、「We need a federation of forges」（437 分）、Zig AI ban（Lobsters 60 分）四條線在同一天出現，不是巧合——它們的 upstream 是同一件事：GitHub Copilot 的自動化讓平台從「人與人協作」轉型成「AI 處理 ticket queue」。這個轉型已經進行了 12-18 個月，但今天是第一次看到來自 terminal、editor、forge、語言社群四個完全不同方向的 maintainer 同時公開表態。對 builder 的影響是雙向的：你在 GitHub 上的信號品質（issues、PR review、commit message）正在被 AI 生成的 content 稀釋；同時，你的 OSS 社群可能在等你先宣布 AI policy，才決定要不要貢獻。",
+      "evidence": "Ghostty HN 3264 分（今日全站最高）163 留言；mitsuhiko〈Before GitHub〉631 分；federation of forges 437 分；Zig AI ban Lobsters 60 分——四個不同作者、四個不同社群、同一天，無協調跡象",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 4,
+      "percentile": "top 5%",
+      "arc_ref": "oss-licensing-ai-pressure",
+      "day_count": 15,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Ghostty is leaving GitHub",
+          "url": "https://mitchellh.com/writing/ghostty-leaving-github",
+          "score": 3264
+        },
+        {
+          "platform": "HN",
+          "title": "Before GitHub",
+          "url": "https://lucumr.pocoo.org/2026/4/28/before-github/",
+          "score": 631
+        },
+        {
+          "platform": "HN",
+          "title": "We need a federation of forges",
+          "url": "https://blog.tangled.org/federation/",
+          "score": 437
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Contributor Poker and Zig's AI Ban",
+          "url": "https://kristoff.it/blog/contributor-poker-and-ai/",
+          "score": 60
+        }
+      ],
+      "product_opportunity": "OSS maintainer 的 AI content moderation dashboard：自動偵測 AI 生成的 issue/PR（embedding 分類），讓小型 OSS 團隊不需要自建 forge 就能控制 issue tracker 的信號品質"
+    },
+    {
+      "title": "MCP 協定向 async task engine 演進：48 小時內兩個連續 experimental extension",
+      "body": "昨天 modelcontextprotocol/experimental-ext-server-card（server registry 基礎設施），今天 modelcontextprotocol/experimental-ext-tasks（長時間執行的 async task protocol）——同一個 org 連續兩天建立新的 experimental extension，說明這是有規劃的序列，不是個人實驗。tasks extension 的技術意義：MCP tool call 的 response 可以是 task handle 而非立即結果，解除了「agent 必須 hold context window 等待長時間操作」的設計約束。這是 agent 架構從「同步工具呼叫」進化到「非同步任務委派」的協定層基礎。",
+      "evidence": "modelcontextprotocol/experimental-ext-server-card（4/29，0★）+ modelcontextprotocol/experimental-ext-tasks（4/30，0★，3h ago）；pred-mcp-registry-by-july 持續累積佐證",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 16,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "modelcontextprotocol/experimental-ext-tasks",
+          "url": "https://github.com/modelcontextprotocol/experimental-ext-tasks"
+        },
+        {
+          "platform": "GitHub",
+          "title": "modelcontextprotocol/experimental-ext-server-card (4/29)",
+          "url": "https://github.com/modelcontextprotocol/experimental-ext-server-card"
+        }
+      ],
+      "product_opportunity": "MCP-compatible async CI runner：把 docker build / pytest / Playwright 包裝成 long-running MCP task，讓 Claude Code 在等 build 的時候繼續做別的事"
+    },
+    {
+      "title": "AI tooling 帳單不確定性從 GitHub Copilot 蔓延至模型廠直接帳單",
+      "body": "四月的 AI billing 話題有三個累積層：4/28 GitHub Copilot 轉向用量計費（HN 367 分），4/29 Copilot code review 開始消耗 Actions minutes，4/30 Anthropic 帳單系統 bug 導致 $200 超收並拒退款（HN rank #1，373 分）。同天 GitHub CTO Kyle Daigle 承認 AI 驅動流量讓基礎設施從 10 倍擴張到 30 倍——這不是小數目，最終會反映在定價上。這三件事的 upstream 不是同一個：billing bug 是工程品質問題，Copilot 計費改變是商業決策，30x 流量是市場現象。但對 builder 的影響是共同的：今天 AI tooling 帳單的確定性已經低於半年前。",
+      "evidence": "「HERMES.md: Anthropic $200 billing bug」HN rank #1（373 分）；「How ChatGPT serves ads」473 分；GitHub CTO：AI-driven traffic 推動基礎設施從 10x 擴張到 30x（OSChina #1）",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 18,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "HERMES.md: Anthropic bug causes $200 extra charge",
+          "url": "https://github.com/anthropics/claude-code/issues/53262",
+          "score": 373
+        },
+        {
+          "platform": "HN",
+          "title": "How ChatGPT serves ads",
+          "url": "https://www.buchodi.com/how-chatgpt-serves-ads-heres-the-full-attribution-loop/",
+          "score": 473
+        },
+        {
+          "platform": "OSChina",
+          "title": "GitHub CTO 談平台可用性：AI 驅動開發使流量暴增，基礎設施從 10 倍擴容至 30 倍",
+          "url": "https://www.oschina.net/news/437601"
+        }
+      ],
+      "product_opportunity": "跨平台 AI API 帳單審計工具：整合 Anthropic + OpenAI + GitHub Copilot 的計費資料，自動偵測異常費用和用量高峰，給中型開發團隊每週 cost digest"
+    }
+  ],
+  "sleeper": {
+    "name": "nexu-io/open-design",
+    "url": "https://github.com/nexu-io/open-design",
+    "description": "本地優先、完全開源的 Claude Design 替代方案。19 個 Skills，71 個品牌設計系統，TypeScript。",
+    "body": "nexu-io/open-design 在 Anthropic 發布 Claude for Creative Work 的同一天出現在 topic:llm 搜尋結果（3,977★，本週新增）。這個 timing 不是偶然——Claude Design 是 Anthropic 近期最明確的付費產品拓展方向，open-design 是第一個正面對應的自架替代方案。設計工具市場的 self-hosted 需求明確：IP 保護（品牌設計系統不能出雲端）、離線工作、無訂閱費。71 個品牌設計系統是差異化——這不是空殼工具，有真實的資料資產。",
+    "why_asymmetric": "Claude Design 的定價尚未公開，一旦 Anthropic 宣布設計工具訂閱費率，open-design 的 star 成長速度預期加速。目前 3,977★ 處於「夠真實但尚未爆發」的區間。",
+    "commercial_path": "以 self-hosted 授權（類 Bitwarden 模式）向企業銷售，解決設計資產不能出企業防火牆的合規需求；或作為 AI design agency 的基礎設施，幫助設計師用 skill 標準化接案流程。",
+    "stars": 3977
+  },
+  "contrarian": {
+    "topic": "GitHub 平台出走潮是邊緣現象，不是趨勢",
+    "body": "Ghostty、Zig、Forgejo——今天三個高分 HN/Lobsters 故事都在說「要離開 GitHub 或設防 AI 入侵」。但這三個案例有一個共同特徵：它們都是有資源自建基礎設施的成熟專案（Ghostty 有 Mitchell Hashimoto 個人品牌，Zig 有 Zig Software Foundation，Forgejo 有 Codeberg 支持）。99% 的 OSS maintainer 沒有這些資源——他們的 GitHub 停留成本是零，遷移成本是真實的（domain 遷移、CI 重建、contributor discovery 中斷）。更重要的是：GitHub 的問題（AI 生成 issue 汙染）是可以在 GitHub 內部解決的，GitHub 自己有商業動機去修——因為低品質 issue 同樣浪費 Copilot 的 inference 成本。GitHub platform exit 的聲量在 2026 年不會超過 2015 年 GitHub 收購 Atom 後的 Atom 出走聲量。",
+    "rationale": "歷史上每次 GitHub 做惹眾怒的事（2019 年 ICE 合約、2022 年 Copilot IP 爭議），都有一波「我要遷移到 GitLab/Forgejo」的宣言，但實際遷移率非常低。網路效應不是靠感情切斷的，是靠 switching cost 切斷的，而 GitHub 的 switching cost 還沒到讓大多數 maintainer 真的動。",
+    "claim": "到 2026-12-31，GitHub 的 OSS 公開 repository 總數年增率仍超過 15%（以 GitHub 官方 Octoverse report 或 API 可查詢的公開 repo 數量為準），證明出走聲量沒有轉化為實際遷移。",
+    "prediction_date": "2026-12-31"
+  },
+  "predictions": [
+    {
+      "id": "pred-deepmind-stealth-reveal",
+      "text": "google-deepmind 在 2026-04-30 前，針對 egg / ddgc / beneath-the-surface / proeval 中至少一個，發布帶有 paper link 或 README 說明的正式 commit（以 repo commit history 為準）。",
+      "status": "failed",
+      "created": "2026-04-17",
+      "resolution_date": "2026-04-30",
+      "resolution_note": "截至 2026-04-30，連續靜默 6 天，五個 repo 均無 README 更新。序列可能是 internal tooling 或 paper 投稿前的佔位，非即將公開的 research。"
+    },
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-anthropic-skill-management",
+      "text": "到 2026-07-31，Anthropic 在 Claude Code 官方文件或 changelog 中發布內建 skill 管理介面或 official skill registry（以 anthropic.com 官方 blog 或 claude.ai changelog 為準）。",
+      "status": "pending",
+      "created": "2026-04-27",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31",
+      "evidence_update": "experimental-ext-server-card（4/29）+ experimental-ext-tasks（4/30）說明 MCP org 正在系統性建構 registry 基礎設施，此 prediction 持續累積正向佐證"
+    },
+    {
+      "id": "pred-copilot-flat-rate-return",
+      "text": "到 2026-09-30，GitHub 會重新推出 Copilot Enterprise 的固定費率定價選項（以 github.blog 官方公告或 GitHub Universe 2026 keynote 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-github-ai-content-policy",
+      "text": "到 2026-12-31，GitHub 在 repository settings 中加入「AI-generated content policy」標記選項，讓 maintainer 聲明是否接受 AI 生成的 issues/PRs（以 GitHub changelog 或 GitHub Universe 2026 公告為準）。",
+      "status": "pending",
+      "created": "2026-04-30",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "db5aafa0-1754-4fb9-b9eb-f206b6f07bf1",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-29T20:26:08.402Z",
+    "analyze_duration_ms": 1436525,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 156
+      },
+      "trending": {
+        "ok": true,
+        "count": 16
+      },
+      "search": {
+        "ok": true,
+        "count": 50
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      }
+    },
+    "degraded_sources": []
+  }
+}
