@@ -1,0 +1,618 @@
+{
+  "date": "2026-05-01",
+  "lead": {
+    "html": "<h3>Claude Code 偵測 OpenClaw 關鍵字後改變行為——builder 的主力工具出現信任破口</h3>\n\n<h4>發生了什麼</h4>\n<p>今天 HN 第 6 名（649 分）是一條 Twitter 截圖：開發者 theo 發現，Claude Code 會偵測 commit message 或上下文中是否出現「OpenClaw」字串，出現時拒絕執行特定請求、或在帳單上額外收費。OpenClaw 是 Anthropic 自己在 AUP 鬆綁後明確允許的第三方 Claude CLI wrapper。這不是一個邊緣 bug：它代表 Claude Code 的系統提示或 policy layer 裡存在一個針對競品名稱的過濾機制，而 Anthropic 事先沒有公開說明這個機制的存在。社群在過去 24 小時記錄到至少三個不同使用者、在不同 codebase 中複現這個行為。</p>\n\n<h4>為什麼重要</h4>\n<p>這件事觸碰的不是功能問題，而是 builder 工具鏈的透明度假設。當你的 coding agent 會根據它「讀到了什麼」決定服務品質，你對它輸出的信任基礎就改變了：你現在需要考慮「這個拒絕是因為我的 code 真的有問題，還是因為 commit message 裡提到了某個詞」。這個問題的機制——policy layer 對內容做模式比對然後改變行為——和 prompt injection 的攻擊面完全重疊：如果系統提示可以被競品名稱觸發，它也可以被惡意 context 觸發。對正在把 Claude Code 嵌入 CI/CD pipeline 的 team 而言，這個發現的重量超過純使用體驗層面。同一天，google/prompt-encryption-sdk（11h ago，0★，Python）悄悄出現在 Google 的 GitHub org，名稱暗示「在 prompt 離開 client 端之前加密」——這個方向正好對準 claude-code 類工具需要把整個 codebase context 送出去的那個隱私漏洞。兩件事同天出現不一定是協調，但它們合起來說明一個結構性問題：LLM coding agent 的 trust model 還沒有被 industry 仔細定義過。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 留言分成兩個陣營。第一個陣營認為這是 Anthropic 的商業保護機制，評論者 throwaway_dev44 寫道：「Anthropic said OpenClaw was allowed, but apparently only if Claude doesn't notice it's being used as a wrapper. The AUP policy and the model's training are contradicting each other.」第二個陣營認為這可能是 false positive——Claude Code 的 safety filter 誤把 OpenClaw 當成某類別的敏感詞。評論者 fmunshi 引用了一個不帶 OpenClaw 字串但行為相同的邊緣案例，暗示可能是 pattern match 而非精確詞彙觸發。共同點：大家都同意 Anthropic 需要公開說明這個機制，而不是保持沉默。Lobsters 的討論則更短、更直接：「If your coding agent has undisclosed keyword filters, you can't trust it in your pipeline.」</p>\n\n<h4>行動建議</h4>\n<p>如果你正在把 Claude Code 嵌入 CI/CD 或讓它有寫入權限的 agent 任務：這週在 agent session 的 system prompt 裡加一條 canary 測試——commit message 輪換包含一個無害的罕見英文詞（不是任何工具名），記錄 Claude Code 的回應是否發生系統性差異。如果你的 repo 有競品工具的相關 commit，可以先把 commit message 改成不帶工具名的描述性格式，直到 Anthropic 澄清機制。關於 google/prompt-encryption-sdk：它目前沒有 README，但你現在就可以 star + watch——如果這個 repo 在下週出現內容，它解決的是「把 codebase context 送給 Claude Code 前做 field-level encryption」這個問題，build time 大約 1-2 週 MVP。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "LLM Keyword Canary：自動化偵測 coding agent 的隱藏 keyword filter",
+      "projects": [
+        {
+          "name": "claude-code-keyword-behavior",
+          "url": "https://twitter.com/theo/status/2049645973350363168",
+          "note": "今日引爆的 OpenClaw 行為報告"
+        },
+        {
+          "name": "Inndy/ccxray",
+          "url": "https://github.com/Inndy/ccxray",
+          "note": "Claude Code HTTP proxy + dashboard"
+        }
+      ],
+      "description": "你是一個把 Claude Code 嵌入 CI/CD pipeline 的工程師，你需要知道：你的 agent 有沒有針對特定詞彙改變行為的隱藏機制？現有工具（ccxray）可以記錄 HTTP request/response，但沒有自動化的 behavioral fingerprinting。Build 一個 pytest-style 測試套件，每次 CI run 都自動發送一批「canary prompt」給 coding agent——每個 prompt 在 context 裡藏一個不同的詞（競品名、政治詞彙、公司名），記錄 response、latency、cost，然後統計比較。如果某類詞彙導致系統性的 refusal rate 上升或 latency 異常，自動標記並生成報告。技術路線：Python wrapper + ccxray 的 proxy mode + SQLite 記錄 + 簡單 anomaly detection（z-score on response length distribution）。這個工具本身就是一個有市場的 compliance product——任何監管嚴格的行業（醫療、金融、法律）都需要能證明「我們的 AI 工具對所有輸入一視同仁」。",
+      "use_case": "你是把 Claude Code 嵌入 CI 的工程師，懷疑 agent 對某類 commit message 有不同行為",
+      "hardware": "純 CPU 可跑，雲端 API 即可",
+      "skill_level": "Python 中階 + HTTP proxy 基礎知識",
+      "dependencies": "Claude Code 訂閱 + ccxray（可選，也可以直接用 mitmproxy）",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "pip install mitmproxy && 寫第一個 canary prompt 測試：比較包含/不包含特定詞的相同任務的 response length 分佈",
+      "market_evidence": "今日 HN 649 分的 OpenClaw 報告說明：至少有數百個開發者已經在擔心這個問題，目前沒有工具能系統化地測量"
+    },
+    {
+      "format": "remix",
+      "title": "Prompt Encryption Layer：在 codebase context 送出前做 field-level 加密",
+      "projects": [
+        {
+          "name": "google/prompt-encryption-sdk",
+          "url": "https://github.com/google/prompt-encryption-sdk",
+          "note": "Google 今天建立的 0★ 空 repo，11h ago"
+        },
+        {
+          "name": "Houseofmvps/codesight",
+          "url": "https://github.com/Houseofmvps/codesight",
+          "note": "Universal AI context generator，1011★"
+        }
+      ],
+      "description": "Claude Code、Cursor、Copilot 在運作時會把整個 codebase context 送給 cloud API——對處理敏感 codebase（金融系統、醫療資料、國防專案）的 team 而言，這是一個未被解決的資料主權問題。google/prompt-encryption-sdk 今天出現，名稱暗示「在 prompt 離開 client 端前加密」，但它沒有 README。你可以搶先 build 一個 Claude Code plugin / MCP server，在 codesight（負責蒐集 context）和 Claude Code（負責送出）之間插入一個 field-level encryption layer：把 variable names、字串 literals、API keys 替換成 deterministic pseudonym（用 AES-SIV 或 format-preserving encryption），送出加密版 context，收到回應後 reverse-map 回來。關鍵技術問題：code semantic 必須保留（`userAuthToken` 和 `var_42` 的語意不同），所以 pseudonym 要做 semantic-preserving mapping，不是隨機替換。這個工具對 enterprise 有直接的合規 value：可以讓使用 Claude Code 的 team 在不把真實 IP 送出去的情況下仍然享受 AI 補完。",
+      "use_case": "你的 team 在受監管行業用 Claude Code，但 CISO 不允許把 codebase 送給 cloud API",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "需熟悉 Python + cryptography + MCP server 架構",
+      "dependencies": "codesight（open source）+ MCP SDK + 格式保留加密庫（如 ff3-py）",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/Houseofmvps/codesight && 讀它的 context 生成邏輯，找插入 encryption hook 的位置",
+      "market_evidence": "google/prompt-encryption-sdk 的出現說明 Google 內部已經在解決這個問題；enterprise AI coding adoption 的主要阻力之一就是 codebase data residency"
+    },
+    {
+      "format": "solo",
+      "title": "供應鏈 Malware Diff：AI 訓練函式庫的依賴樹自動化審計工具",
+      "projects": [
+        {
+          "name": "semgrep-pytorch-lightning-malware",
+          "url": "https://semgrep.dev/blog/2026/malicious-dependency-in-pytorch-lightning-used-for-ai-training/",
+          "note": "今日 HN #2（221 分）：PyTorch Lightning 嵌入惡意依賴"
+        }
+      ],
+      "description": "今天 HN 第 2 名（221 分）是一篇 Semgrep 報告：PyTorch Lightning AI 訓練函式庫被植入 Shai-Hulud 主題的惡意依賴。這是繼上週 Bitwarden CLI 攻擊後，AI 工具鏈被精準鎖定的第二個公開案例。攻擊者選擇 AI 訓練函式庫是有意為之：訓練環境通常有 GPU 伺服器、大量計算資源、可能的模型權重和訓練資料——這些都是高價值目標。Build 一個 GitHub Action，專門針對 AI 訓練 stack（PyTorch、Lightning、Transformers、Accelerate、Datasets）的依賴樹做 differential audit：比較 `pip install --dry-run` 的依賴解析結果和 PyPI 的 checksum 記錄，找出任何在過去 30 天內有依賴新增、移除或 checksum 變動的套件。這個工具比 Dependabot 更細粒度：它專注在「依賴樹悄悄新增了什麼子依賴」這個 Dependabot 不追蹤的攻擊面。用 Sigstore 做 provenance verification。非 AI/dev-tooling idea：這個工具本身是一個公民科技方向的 OSS 安全工具，可以讓學術界和非盈利組織的 AI 研究者在沒有企業安全預算的情況下保護自己的訓練環境。",
+      "use_case": "你維護一個 ML 訓練 pipeline，依賴 PyTorch Lightning 或其生態系套件，需要在 CI 早期偵測依賴樹異常",
+      "hardware": "純 CPU 可跑，不需要 GPU",
+      "skill_level": "Python 中階 + GitHub Actions + 基本供應鏈安全概念",
+      "dependencies": "完全免費自架，Sigstore 免費使用",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "pip install pip-audit && pip-audit --requirement requirements.txt --output-format json 看輸出結構，再設計差異追蹤邏輯",
+      "market_evidence": "Semgrep 報告今日 HN 221 分；Bitwarden CLI 上週同類攻擊 465 分——同一個月兩起 AI/dev 工具鏈攻擊是 pattern，市場需要專門工具"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Claude Code detects OpenClaw keywords (behavioral change report)",
+      "url": "https://twitter.com/theo/status/2049645973350363168",
+      "desc": "Builder 社群記錄到 Claude Code 在偵測到 commit message 含 OpenClaw 字串後拒絕請求或額外計費，至少三人複現。Anthropic 尚未公開說明機制。",
+      "source": "HN #6 · 649分",
+      "repo_age": "今日爆發"
+    },
+    {
+      "name": "OpenAI: Where the goblins came from",
+      "url": "https://openai.com/index/where-the-goblins-came-from/",
+      "desc": "OpenAI 官方解釋 GPT 模型為何頻繁提及 goblin 意象——從 GPT-5.1 起的訓練資料 artifact 分析，罕見的模型行為透明度披露。",
+      "source": "HN #27 · 990分",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "PyTorch Lightning malware (Shai-Hulud themed)",
+      "url": "https://semgrep.dev/blog/2026/malicious-dependency-in-pytorch-lightning-used-for-ai-training/",
+      "desc": "Semgrep 發現 PyTorch Lightning AI 訓練函式庫被植入惡意依賴。繼 Bitwarden CLI 後，AI 工具鏈第二起大型供應鏈攻擊。",
+      "source": "HN #2 · 221分",
+      "repo_age": "今日披露"
+    },
+    {
+      "name": "Mozilla opposition to Chrome's Prompt API",
+      "url": "https://github.com/mozilla/standards-positions/issues/1213#issuecomment-4347988313",
+      "desc": "Mozilla 在 W3C 標準流程中正式反對 Chrome 的瀏覽器內建 LLM Prompt API，理由是隱私與 fingerprinting 風險。",
+      "source": "HN #16 · 482分",
+      "repo_age": "今日公告"
+    },
+    {
+      "name": "IBM Granite 4.1（8B matching 32B MoE）",
+      "url": "https://firethering.com/granite-4-1-ibm-open-source-model-family/",
+      "desc": "IBM 開源 Granite 4.1，8B 參數達到 32B MoE 效能。Apache 2.0 授權，針對 coding + enterprise reasoning 任務優化，inference 成本顯著低於同級模型。",
+      "source": "HN #22 · 247分",
+      "repo_age": "今日發布",
+      "stars": null
+    },
+    {
+      "name": "GCC 16.1 released",
+      "url": "https://lwn.net/Articles/1070649/",
+      "desc": "GNU Compiler Collection 16.1 正式發布。主要改動：C23 支援大幅完善、Rust front-end 實驗性整合、新的 static analysis 改進。",
+      "source": "LWN",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "warpdotdev/warp（Trending #1，48786★）",
+      "url": "https://github.com/warpdotdev/warp",
+      "desc": "Warp 重新定位為「agentic development environment born out of the terminal」，Rust 寫成，今日登 Trending #1。",
+      "source": "GitHub Trending #1",
+      "repo_age": "持續演進",
+      "stars": 48786
+    },
+    {
+      "name": "lukilabs/craft-agents-oss（Trending #5，5531★）",
+      "url": "https://github.com/lukilabs/craft-agents-oss",
+      "desc": "TypeScript agent framework，強調 craft（精工）而非快速 scaffold。今日 Trending #5。",
+      "source": "GitHub Trending #5",
+      "repo_age": "近期新增",
+      "stars": 5531
+    },
+    {
+      "name": "1jehuang/jcode（Trending #7，1823★）",
+      "url": "https://github.com/1jehuang/jcode",
+      "desc": "Rust 寫成的 Coding Agent Harness，定位輕量，自主管理 agent 任務佇列與 context window。",
+      "source": "GitHub Trending #7",
+      "repo_age": "近期新增",
+      "stars": 1823
+    },
+    {
+      "name": "iamzhihuix/skills-manage（1396★）",
+      "url": "https://github.com/iamzhihuix/skills-manage",
+      "desc": "Desktop app 統一管理 Claude Code、Cursor、Gemini CLI、Codex 等 20+ 平台的 AI coding agent skills，一個介面管全部。",
+      "source": "topic:llm · 1396★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1396
+    },
+    {
+      "name": "AMAP-ML/SkillClaw（1090★）",
+      "url": "https://github.com/AMAP-ML/SkillClaw",
+      "desc": "Agentic Evolver 讓 Skills 集體演化——不是人工整理 skills list，而是讓 agent 自主評估哪些 skill 有效並迭代。Python。",
+      "source": "topic:agent · 1090★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1090
+    },
+    {
+      "name": "Houseofmvps/codesight（1011★）",
+      "url": "https://github.com/Houseofmvps/codesight",
+      "desc": "Universal AI context generator：一個指令生成整個 codebase 的壓縮 context，節省 Claude Code/Cursor/Copilot/Codex 的 token 消耗。跨平台，TypeScript。",
+      "source": "topic:mcp · 1011★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1011
+    },
+    {
+      "name": "R6410418/Jackrong-llm-finetuning-guide（1072★）",
+      "url": "https://github.com/R6410418/Jackrong-llm-finetuning-guide",
+      "desc": "LLM fine-tuning 完整中文指南，Jupyter Notebook 格式，涵蓋 LoRA、QLoRA、RLHF 等常見方法，附帶可執行範例。",
+      "source": "topic:fine-tuning · 1072★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1072
+    },
+    {
+      "name": "VectifyAI/OpenKB（992★）",
+      "url": "https://github.com/VectifyAI/OpenKB",
+      "desc": "Open LLM Knowledge Base：self-hosted 知識庫系統，結合 RAG 與 LLM 問答，Python，針對 enterprise knowledge management 優化。",
+      "source": "topic:rag · 992★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 992
+    },
+    {
+      "name": "google/prompt-encryption-sdk（新出現，0★，11h ago）",
+      "url": "https://github.com/google/prompt-encryption-sdk",
+      "desc": "Google 今天在自家 org 建立的空 repo，名稱暗示「在 prompt 送出前做加密」。無 README，無 stars。監看中——若下週出現內容，可能是 enterprise LLM privacy 的重要工具。",
+      "source": "dev_watch anomaly · 0★ · 11h ago",
+      "repo_age": "今日建立",
+      "stars": 0
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Claude Code refuses requests or charges extra if your commits mention \"OpenClaw\"",
+        "url": "https://twitter.com/theo/status/2049645973350363168",
+        "score": 649,
+        "comments": 64,
+        "takeaway": "Coding agent 對特定詞彙改變行為的問題，直接影響把 Claude Code 嵌入 pipeline 的 team 的信任模型。",
+        "action": "在 CI 加 canary test，監測 agent 對不同 context 的 response length 分佈是否系統性不同。"
+      },
+      {
+        "title": "Where the goblins came from (OpenAI)",
+        "url": "https://openai.com/index/where-the-goblins-came-from/",
+        "score": 990,
+        "comments": 83,
+        "takeaway": "OpenAI 罕見披露訓練資料 artifact 如何影響模型輸出——對做 fine-tuning 的人，這是一個關於 corpus artifact 如何洩漏進行為的具體案例。"
+      },
+      {
+        "title": "Shai-Hulud Themed Malware in PyTorch Lightning",
+        "url": "https://semgrep.dev/blog/2026/malicious-dependency-in-pytorch-lightning-used-for-ai-training/",
+        "score": 221,
+        "comments": 21,
+        "takeaway": "AI 訓練函式庫被植入惡意依賴——這個月第二起 AI 工具鏈供應鏈攻擊，需要系統化的依賴樹審計。",
+        "action": "這週在你的 ML 訓練 pipeline 的 CI 加 pip-audit 步驟，記錄目前的依賴 checksum 作為 baseline。"
+      },
+      {
+        "title": "Mozilla's opposition to Chrome's Prompt API",
+        "url": "https://github.com/mozilla/standards-positions/issues/1213#issuecomment-4347988313",
+        "score": 482,
+        "comments": 32,
+        "takeaway": "如果你在做瀏覽器擴充套件或 web app 打算用 Chrome Prompt API，這是一個 browser compatibility 警示——Firefox 明確不會跟進。"
+      },
+      {
+        "title": "Granite 4.1: IBM's 8B Model Matching 32B MoE",
+        "url": "https://firethering.com/granite-4-1-ibm-open-source-model-family/",
+        "score": 247,
+        "comments": 23,
+        "takeaway": "Apache 2.0 授權的 8B 模型跑到 32B MoE 水準。如果你的 pipeline 需要完全 open-weight、可商用、inference 便宜，這週可以 benchmark 一下 Granite 4.1 vs 你現在用的 model。",
+        "action": "ollama pull granite4.1 && 跑你的 eval suite 比較"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Where the goblins came from",
+        "url": "https://openai.com/index/where-the-goblins-came-from/",
+        "score": 990,
+        "comments": 83
+      },
+      {
+        "title": "Claude Code refuses requests or charges extra if your commits mention \"OpenClaw\"",
+        "url": "https://twitter.com/theo/status/2049645973350363168",
+        "score": 649,
+        "comments": 64
+      },
+      {
+        "title": "Belgium stops decommissioning nuclear power plants",
+        "url": "https://dpa-international.com/general-news/urn:newsml:dpa.com:20090101:260430-930-14717/",
+        "score": 648,
+        "comments": 36
+      },
+      {
+        "title": "The Zig project's rationale for their anti-AI contribution policy",
+        "url": "https://simonwillison.net/2026/Apr/30/zig-anti-ai/",
+        "score": 611,
+        "comments": 47
+      },
+      {
+        "title": "Mozilla's opposition to Chrome's Prompt API",
+        "url": "https://github.com/mozilla/standards-positions/issues/1213#issuecomment-4347988313",
+        "score": 482,
+        "comments": 32
+      },
+      {
+        "title": "Spain's parliament will act against massive IP blockages by LaLiga",
+        "url": "https://www.democrata.es/en/politics/congress-and-senate/congress-will-act-against-massive-ip-blockages-by-laliga/",
+        "score": 301,
+        "comments": 20
+      },
+      {
+        "title": "How Mark Klein told the EFF about Room 641A",
+        "url": "https://thereader.mitpress.mit.edu/the-whistleblower-who-uncovered-the-nsas-big-brother-machine/",
+        "score": 270,
+        "comments": 16
+      },
+      {
+        "title": "Granite 4.1: IBM's 8B Model Matching 32B MoE",
+        "url": "https://firethering.com/granite-4-1-ibm-open-source-model-family/",
+        "score": 247,
+        "comments": 23
+      },
+      {
+        "title": "How an oil refinery works",
+        "url": "https://www.construction-physics.com/p/how-an-oil-refinery-works",
+        "score": 236,
+        "comments": 10
+      },
+      {
+        "title": "Shai-Hulud Themed Malware Found in PyTorch Lightning",
+        "url": "https://semgrep.dev/blog/2026/malicious-dependency-in-pytorch-lightning-used-for-ai-training/",
+        "score": 221,
+        "comments": 21
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Contributor Poker and Zig's AI Ban",
+        "url": "https://kristoff.it/blog/contributor-poker-and-ai/",
+        "score": 169,
+        "comments": 85,
+        "tags": [
+          "vibecoding",
+          "zig"
+        ]
+      },
+      {
+        "title": "Zed is 1.0",
+        "url": "https://zed.dev/blog/zed-1-0",
+        "score": 95,
+        "comments": 36,
+        "tags": [
+          "editors",
+          "rust"
+        ]
+      },
+      {
+        "title": "Functional Programmers need to take a look at Zig",
+        "url": "https://pure-systems.org/posts/2026-04-29-functional-programmers-need-to-take-a-look-at-zig.html",
+        "score": 74,
+        "comments": 21,
+        "tags": [
+          "haskell",
+          "zig"
+        ]
+      },
+      {
+        "title": "FastCGI: 30 Years Old and Still the Better Protocol for Reverse Proxies",
+        "url": "https://www.agwa.name/blog/post/fastcgi_is_the_better_protocol_for_reverse_proxies",
+        "score": 68,
+        "comments": 14,
+        "tags": [
+          "networking"
+        ]
+      },
+      {
+        "title": "Why I Still Reach for Lisp (& Scheme) Instead of Haskell",
+        "url": "https://jointhefreeworld.org/blog/articles/lisps/why-i-still-reach-for-scheme-instead-of-haskell/index.html",
+        "score": 59,
+        "comments": 24,
+        "tags": [
+          "haskell",
+          "lisp",
+          "programming"
+        ]
+      },
+      {
+        "title": "Copy Fail — 732 Bytes to Root",
+        "url": "https://copy.fail/",
+        "score": 56,
+        "comments": 55,
+        "tags": [
+          "linux",
+          "security"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4377,
+        "repo": "doggy8088/groq-api-cookbook",
+        "url": "https://github.com/doggy8088/groq-api-cookbook",
+        "language": "Jupyter Notebook",
+        "hours_ago": 1,
+        "description": "Groq API cookbook，Jupyter Notebook 格式，涵蓋 Groq 推理 API 的常用 pattern。",
+        "local_context": "台灣社群對低延遲推理 API 的實用指南需求升溫——doggy8088 是台灣 .NET/DevOps 社群的重要貢獻者，轉向 Groq 說明低成本、高速推理路線正在進入台灣企業開發者工具箱。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 821,
+        "repo": "strategist922/fastmcp",
+        "url": "https://github.com/strategist922/fastmcp",
+        "language": null,
+        "hours_ago": 7,
+        "description": "The fast, Pythonic way to build MCP servers and clients——fork/mirror 的 FastMCP 框架。",
+        "local_context": "台灣開發者持續跟進 MCP 生態系；strategist922 在 AUP 鬆綁後 4 小時就建立了 free-claude-code，今天的 fastmcp fork 是他持續追蹤 Claude/MCP 協定的延續。"
+      },
+      {
+        "developer": "Inndy",
+        "followers": 506,
+        "repo": "Inndy/ccxray",
+        "url": "https://github.com/Inndy/ccxray",
+        "language": null,
+        "hours_ago": 58,
+        "description": "X-ray vision for AI agent sessions——Claude Code 的透明 HTTP proxy 和 session dashboard。",
+        "local_context": "今天 OpenClaw keyword filter 爭議爆發後，ccxray 的重要性陡升：它正好是能記錄 Claude Code 完整 HTTP 交互的工具，讓 builder 自己審計 agent 的行為是否有異常。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "google",
+        "followers": 71694,
+        "repo": "google/prompt-encryption-sdk",
+        "url": "https://github.com/google/prompt-encryption-sdk",
+        "language": "Python",
+        "hours_ago": 11,
+        "description": "空 repo，名稱暗示「在 prompt 送出前做加密」。無 README、無 stars——典型的佔位 repo pattern，預告即將公開的工具。"
+      },
+      {
+        "developer": "facebook",
+        "followers": 35250,
+        "repo": "facebook/haptics-studio",
+        "url": "https://github.com/facebook/haptics-studio",
+        "language": "TypeScript",
+        "hours_ago": 47,
+        "description": "Meta 的觸覺效果設計 desktop app，TypeScript 寫成，為 AR/VR haptics 設計工作流程。11★，是今天 developer watch 裡最有 novelty 的第一方 repo。"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 62788,
+        "repo": "huggingface/leLab",
+        "url": "https://github.com/huggingface/leLab",
+        "language": "TypeScript",
+        "hours_ago": 33,
+        "description": "lerobot 的 web UI 介面，TypeScript 寫成。HuggingFace 在為 lerobot（機器人學習框架）建構可視化操作層。"
+      },
+      {
+        "developer": "modelcontextprotocol",
+        "followers": 46437,
+        "repo": "modelcontextprotocol/experimental-ext-tasks",
+        "url": "https://github.com/modelcontextprotocol/experimental-ext-tasks",
+        "language": null,
+        "hours_ago": 27,
+        "description": "MCP Tasks 擴充協定參考實作，讓 agent 能委派長時間任務並取回 handle，解除「必須 hold context window 等待」的設計約束。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "AI coding agent 的 trust model 正在被迫明確化",
+      "body": "今天的 OpenClaw keyword filter 事件（HN 649 分）是這個趨勢的爆發點：builder 社群第一次大規模討論「我的 coding agent 有沒有針對特定輸入改變行為的機制，而我不知道」。這不是單一事件，它接在昨天 Ghostty 離開 GitHub（HN 3264 分）、上週 Anthropic billing bug（HN 373 分）之後，形成一個 pattern：AI 工具的不透明行為正在成為和 model 效能同等重要的討論主題。在這個背景下，google/prompt-encryption-sdk 的出現（11h ago，0★，Google org）是一個供給側回應信號——如果 Google 在內部已經在解決「如何在 prompt 送出前加密」，說明 enterprise LLM privacy 的需求已經到達觸發第一方工具建設的門檻。",
+      "evidence": "HN 649 分 OpenClaw 報告；google/prompt-encryption-sdk 11h ago 出現；Inndy/ccxray 在台灣開發者群體中成為今日焦點工具",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "product_opportunity": "LLM agent behavior auditing SaaS：提供 hosted canary testing，讓 team 定期驗證他們使用的 coding agent 對各類輸入是否保持行為一致性",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Claude Code refuses requests or charges extra if your commits mention OpenClaw",
+          "url": "https://twitter.com/theo/status/2049645973350363168",
+          "score": 649
+        },
+        {
+          "platform": "GitHub",
+          "title": "google/prompt-encryption-sdk",
+          "url": "https://github.com/google/prompt-encryption-sdk"
+        }
+      ]
+    },
+    {
+      "title": "AI 訓練工具鏈成為供應鏈攻擊的新優先目標",
+      "body": "PyTorch Lightning malware（HN 221 分）和上週 Bitwarden CLI 攻擊（HN 465 分）是同一個月內兩起針對開發者工具的供應鏈攻擊，但有一個關鍵升級：PyTorch Lightning 是 AI 訓練函式庫，攻擊者開始精準瞄準 AI model 開發工具鏈。AI 訓練環境通常有 GPU 伺服器、大量算力、可能的模型權重和敏感訓練資料，是比密碼管理器更高價值的攻擊面。目前 AI 訓練 stack 的依賴審計工具遠不如 web 開發成熟：npm audit、pip-audit 存在但不夠 AI-specific，沒有專注在「訓練依賴樹在過去 30 天的微小變化」的工具。",
+      "evidence": "PyTorch Lightning malware HN 221 分；Bitwarden CLI 上週 HN 465 分；同一個月第二起 AI dev 工具鏈攻擊",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "Systems 圈對 LLM 敘事做出編輯回應：要求可審計、可 fork、可嵌入",
+      "product_opportunity": "AI 訓練 stack 專用的依賴審計 GitHub Action：每次 CI run 追蹤訓練依賴樹的 checksum 差異，flags 任何 30 天內的靜默新增子依賴",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Shai-Hulud Themed Malware in PyTorch Lightning",
+          "url": "https://semgrep.dev/blog/2026/malicious-dependency-in-pytorch-lightning-used-for-ai-training/",
+          "score": 221
+        }
+      ]
+    },
+    {
+      "title": "Zig 反 AI 政策在 HN + Lobsters 雙源發酵，形成 OSS 貢獻規則辯論的新節點",
+      "body": "Simon Willison 的 Zig anti-AI 政策分析（HN 611 分）今天和 Lobsters 上的 Kristoff 原文（169 分）形成 cross-source 共振，是 Ghostty 離開 GitHub 事件的延續——但論述層次不同。Ghostty 是 social contract 問題（AI 機器人破壞人際關係），Zig 是 contributor policy 問題（AI 生成的 code 如何被鑑定、如何被追責）。Kristoff 的「Contributor Poker」框架把問題形式化：當你接受 AI 生成的 contribution，你無法知道 contributor 理解了什麼、未來能 maintain 什麼，這改變了 code review 的社會合約。Lobsters 留言裡有一條值得記錄：「The real issue is that AI PRs don't come with a maintainer. When the code breaks, who debugs it?」",
+      "evidence": "HN 611 分（Simon Willison 寫 Zig anti-AI）+ Lobsters 169 分（Kristoff 原文）；cross-source = 3（HN + Lobsters + Simon Willison blog）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "arc_ref": "OSS 商業模式在 AI 競爭壓力下的授權翻轉浪潮",
+      "day_count": 2,
+      "product_opportunity": "OSS maintainer 的 AI contribution policy 模板庫：提供可直接複製到 CONTRIBUTING.md 的 AI 貢獻規則範本，讓不同項目（允許/禁止/有條件允許）可以聲明並被搜尋",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "The Zig project's rationale for their anti-AI contribution policy",
+          "url": "https://simonwillison.net/2026/Apr/30/zig-anti-ai/",
+          "score": 611
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Contributor Poker and Zig's AI Ban",
+          "url": "https://kristoff.it/blog/contributor-poker-and-ai/",
+          "score": 169
+        }
+      ]
+    },
+    {
+      "title": "Skills 管理工具層正在形成，從 awesome-list 升級到 desktop app",
+      "body": "iamzhihuix/skills-manage（1396★）今天從 search.json 浮現，是今日最有架構意義的 discovery pick：它不是另一個 skills collection，而是一個管理 20+ 平台（Claude Code、Cursor、Gemini CLI、Codex）skills 的 desktop app。這說明 skill 生態系已經大到讓「如何管理自己的 skills」本身成為一個產品需求。搭配 AMAP-ML/SkillClaw（1090★，skills 集體演化）和 Houseofmvps/codesight（1011★，context 壓縮），今天三個 discovery picks 形成一個 stack：context 生成 → skill 管理 → skill 演化。這個 stack 在三週前還不存在。",
+      "evidence": "iamzhihuix/skills-manage 1396★；AMAP-ML/SkillClaw 1090★；Houseofmvps/codesight 1011★——三個 skill 生態系工具同天出現在 search.json top candidates",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "arc_ref": "Claude Code 生態系從 skill 擴張到 runtime 重寫",
+      "day_count": 17,
+      "product_opportunity": "Skills marketplace with compatibility scoring：讓 skill 作者標記哪些平台相容、讓使用者按 platform 過濾，加入 skill 衝突偵測（兩個 skill 都修改同一個 agent 行為的情況）",
+      "source_links": [
+        {
+          "platform": "GitHub Search",
+          "title": "iamzhihuix/skills-manage",
+          "url": "https://github.com/iamzhihuix/skills-manage"
+        },
+        {
+          "platform": "GitHub Search",
+          "title": "AMAP-ML/SkillClaw",
+          "url": "https://github.com/AMAP-ML/SkillClaw"
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "lucasastorian/llmwiki",
+    "url": "https://github.com/lucasastorian/llmwiki",
+    "stars": 744,
+    "desc": "Open Source Implementation of Karpathy's LLM Wiki——上傳文件、透過 MCP 連接 Claude account，讓 Claude 把你的文件整理成 wiki 格式。744★，Python，topic: rag + mcp 雙標籤。Karpathy 有提到 LLM Wiki 概念但沒有公開 reference impl，這個 repo 是第一個照著這個概念實作的。",
+    "why_sleeper": "Karpathy 的 Substack 今天顯示「Coming soon」——他即將開始正式發文。如果他的第一篇文章提到 LLM Wiki，這個 repo 可能在一週內跳 10x stars。744★ 的現況是 asymmetric upside 的典型形態。",
+    "commercial_path": "Enterprise wiki 版本：針對 internal knowledge base 場景，加入 access control + audit log + MCP server discovery，以 SaaS 形式提供（月費 $20-50/team seat）。知識管理市場的 Notion AI 替代方案，但完全由自己的文件 + 自己連接的 LLM 驅動，無 vendor lock-in。"
+  },
+  "contrarian": {
+    "claim": "IBM Granite 4.1「8B matching 32B MoE」的說法被高估，實際在 coding 任務上的差距仍然顯著",
+    "reasoning": "「X 參數達到 Y 效能」的 claim 幾乎全部是在精心挑選的 benchmark 子集上成立，在實際的多步驟 coding agent 任務上（需要長 context + tool use + error recovery），8B 模型的 context window 限制和 reasoning depth 仍然是 32B MoE 的主要差異來源。HN 留言裡有人已經在問『哪個 benchmark 具體是這樣？』——24 小時後如果 Granite 4.1 在 SWE-bench 或 HumanEval Plus 上的數字出現，通常都比發布文章的 claim 低 15-30%。",
+    "falsifiable_prediction": "到 2026-08-31，在 HumanEval Plus 或 SWE-bench Verified 的公開 leaderboard 上，Granite 4.1 8B 的得分不超過同榜最高 32B MoE 開源模型得分的 90%（以 EvalPlus leaderboard 或 SWE-bench.com 公開數字為準）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-anthropic-skill-management",
+      "text": "到 2026-07-31，Anthropic 在 Claude Code 官方文件或 changelog 中發布內建 skill 管理介面或 official skill registry（以 anthropic.com 官方 blog 或 claude.ai changelog 為準）。",
+      "status": "pending",
+      "created": "2026-04-27",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-copilot-flat-rate-return",
+      "text": "到 2026-09-30，GitHub 會重新推出 Copilot Enterprise 的固定費率定價選項（以 github.blog 官方公告或 GitHub Universe 2026 keynote 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-github-ai-content-policy",
+      "text": "到 2026-12-31，GitHub 在 repository settings 中加入「AI-generated content policy」標記選項，讓 maintainer 聲明是否接受 AI 生成的 issues/PRs（以 GitHub changelog 或 GitHub Universe 2026 公告為準）。",
+      "status": "pending",
+      "created": "2026-04-30",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-granite41-benchmark-gap",
+      "text": "到 2026-08-31，在 HumanEval Plus 或 SWE-bench Verified 的公開 leaderboard 上，Granite 4.1 8B 的得分不超過同榜最高 32B MoE 開源模型得分的 90%（以 EvalPlus leaderboard 或 SWE-bench.com 公開數字為準）。",
+      "status": "pending",
+      "created": "2026-05-01",
+      "resolution_date": "2026-08-31"
+    }
+  ],
+  "meta": {
+    "run_id": "bf31e81e-e43b-40f7-bf20-a5a28540242d",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-04-30T20:12:39.578Z",
+    "analyze_duration_ms": 664380,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 161
+      },
+      "trending": {
+        "ok": true,
+        "count": 13
+      },
+      "search": {
+        "ok": true,
+        "count": 50
+      },
+      "developers": {
+        "ok": true,
+        "count": 13
+      }
+    },
+    "degraded_sources": []
+  }
+}
