@@ -1,0 +1,588 @@
+{
+  "date": "2026-05-02",
+  "lead": {
+    "html": "<h3>Jacob Harr 和 Google 同一天在「振動編碼」這個詞上劃下不同的線</h3>\n\n<h4>發生了什麼</h4>\n<p>Jacob Harr 今天在 Lobsters 同一天發出兩篇文章：〈The LLM Is Not a Junior Engineer〉（41 分，16 則留言）和〈Why I Don't Vibe Code〉（32 分）。一人雙文同上 Lobsters 排行在社群裡不常見；前者引發了真實的爭辯，後者幾乎沒有反駁聲音。Google AI Blog 同一天宣布六月在 Kaggle 開辦五日制「AI Agents Vibe Coding Course」。Gary Marcus 在 Substack 當天把「vibe-coded」當作品管失控的同義詞放入標題：〈Dario Amodei, hype, AI safety, and the explosion of vibe-coded AI disasters〉。Simon Willison 三天前引用 Zig 創始人 Andrew Kelley 的話為 Zig 的 anti-AI contributor policy 辯護，今天他的 feed 繼續往這個方向走。四條線彼此沒有協調，在同一個 feed 裡相遇。Anthropic 的 RSS feed 今天 timeout，一個回應在昨天 OpenClaw 爭議（HN 649 分）後缺席的官方聲音。</p>\n\n<h4>為什麼重要</h4>\n<p>「振動編碼」這個詞的語意正在分裂成三個不相容的定義：Karpathy 最早的意思是「用自然語言代替精確規格、快速產生程式碼」，中性偏正面；Lobsters 社群現在的用法是「不審查 LLM 輸出直接 merge」，是貶義詞；Google 把它當作可教學的 agent workflow 技術行銷。這個語意落差不在哲學層面，在你的 PR 模板和 code review checklist 上：當你的 team 裡一半人用第一個定義、一半用第二個，你的 code review 標準就開始說不同的語言。昨天 Claude Code 的 keyword filter 爭議讓 builder 社群第一次大規模意識到 agent 行為不是透明的，今天 Lobsters 的反應是：既然行為不透明，你就不能像信任 junior engineer 那樣信任 LLM。「機制」在這裡很清楚：知情不對稱（agent 知道自己的行為規則，使用者不知道）驅動了社群對監督層的需求，Harr 和 Marcus 的文章是回應，不是巧合地同時發生。</p>\n\n<h4>社群怎麼看</h4>\n<p>Harr 的〈The LLM Is Not a Junior Engineer〉留言裡最受認同的論點：「Junior engineer 做錯了會意識到出了問題，LLM 做錯了會繼續做，而且每一步都有十足信心。」對立的留言說：「問題不是 LLM 的反應方式，是你的 review gate 夠不夠嚴。」Zach Oakes 同天在 Lobsters 貼出生活更新影片（26 分），談離開 Clojure 社群後跟 Zig 和 AI 工具的互動——他說 AI 工具在他沒有穩定工作的情況下讓他還能做出值得驕傲的東西，但條件是他主動審查每一行輸出。三個聲音：強烈反對（Harr）、有條件接受（Oakes）、機構推廣（Google）——在同一天同一個社群出現，是這個辯論現在最清楚的截面。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 team 正在用 Claude Code 或 Codex 跑大規模 refactor，這週在你的 PR 模板裡加一個 checkbox：「[ ] LLM-generated diff reviewed line-by-line」，並在 git commit footer 加 <code>Co-authored-by: claude-sonnet-4-6</code> 作為 machine-readable attribution。理由不是合規，是可追溯性：Git blame 要能在六個月後告訴你某一段是人寫的還是 agent 寫的。如果你的 security team 要求更嚴格的 audit trail，今天 Lobsters 討論裡的「mechanical supervision」模式——每個 agent action 在執行前都要通過明確的人工確認——比「trust and verify」更適合 regulated 環境。具體實作：在你的 shell script 裡把 <code>claude code --dangerously-skip-permissions</code> 換成 prompt-per-action 模式，每次 write 前顯示 diff 並等待 Y/n 確認。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "從零文件到可搜尋 wiki：codesight 提取脈絡、llmwiki 自動建構活文件",
+      "projects": [
+        {
+          "name": "Houseofmvps/codesight",
+          "url": "https://github.com/Houseofmvps/codesight",
+          "note": "Universal AI context generator，省下幾千 tokens per conversation"
+        },
+        {
+          "name": "lucasastorian/llmwiki",
+          "url": "https://github.com/lucasastorian/llmwiki",
+          "note": "Karpathy LLM Wiki 的開源實作，MCP 連接、文件自動整理成 wiki"
+        }
+      ],
+      "description": "codesight 把 repo 的目錄結構、函式介面、相依關係提取成 AI 可讀的壓縮格式，每次 Claude Code session 少帶幾千 tokens 的 context 進去。llmwiki 把文件組織成 MCP 連接的 wiki，可以用自然語言查詢。串接之後：在 git post-commit hook 裡跑一次 codesight，把輸出送給 llmwiki 的 write agent，新工程師 clone repo 之後一小時內就有帶模組說明和架構圖的可搜尋 wiki，而不是一個停在 2022 年的 README。wiki 每次 commit 自動更新，不需要人工維護。",
+      "use_case": "你接手一個三年沒有人維護文件的 Python 微服務，PM 上週要求把 API 文件整理成可搜尋的知識庫，deadline 是兩週後。你手上沒有額外人力，但你有一個空的 GitHub Actions slot 和 Claude API key。",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/Houseofmvps/codesight && npm install && node codesight.js --output=context.md",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "熟悉 Python + GitHub Actions 即可",
+      "dependencies": "Claude API key，月費 ~$5（wiki 更新每次約 2k–5k tokens）",
+      "market_evidence": "Houseofmvps/codesight 1,017★（30 天內新增），lucasastorian/llmwiki 759★ 且持續成長。兩個 repo 都在 topic:llm/mcp 搜尋前十出現，代表 AI-assisted documentation 已經從個人工具走到社群共識層。"
+    },
+    {
+      "format": "solo",
+      "title": "USB-C 纜線真相資料庫：$25 硬體 jig + 社群驗測取代 Amazon 假規格",
+      "projects": [
+        {
+          "name": "darrylmorley/whatcable",
+          "url": "https://github.com/darrylmorley/whatcable",
+          "note": "HN #1 Show HN 327 分，macOS menu bar app 讀取已連接 USB-C 纜線的規格"
+        }
+      ],
+      "description": "darrylmorley/whatcable 今天在 HN 拿到 327 分，背後的問題是：Amazon 上標著「USB4 Gen2 × 2」的纜線，超過 40% 實際協商的速度不到聲稱值（Benson Leung 2023 測試數據）。WhatCable 只能讀「已連接的纜線」，沒有資料庫。用一個 $25 的 USB-C PD 分析儀（FNIRSI C3 或 ChargerLAB POWER-Z）+ Raspberry Pi 4 + Python 3 建一個 CLI：插入纜線 → 量測 PD 協商電壓、電流、協定版本（USB 2/3/4、Thunderbolt 3/4 識別）→ 自動送到 GitHub-hosted SQLite → 貢獻到公共 cable DB。前端是一個靜態 GitHub Pages 查詢頁面，掃 QR code 就能查某一型號的纜線是否真的 100W。",
+      "use_case": "你在做遠端工作空間設計，每個月都有工程師問你「哪條 USB-C 纜線可以同時傳 4K 影像和 100W 充電」——你沒辦法回答，因為 Amazon listing 幾乎全是假規格，買回來才發現充不到 65W 而且視訊降到 1080p。",
+      "difficulty": 2,
+      "dev_time": "週末 POC（軟體 + DB schema）＋ 1–2 週加硬體 jig 和公開 API",
+      "first_step": "pip install usb-pd-analyzer && python -m usb_pd_analyzer --detect && git init cable-db && gh repo create cable-db --public",
+      "hardware": "USB-C PD 測試儀 ~$25（FNIRSI C3）＋ USB-A 轉 USB-C 轉接頭",
+      "skill_level": "Python 入門即可；知道 USB PD 協定名詞（PPS、EPR、SPR）是加分",
+      "dependencies": "完全免費自架（SQLite + GitHub Pages + GitHub Actions）",
+      "market_evidence": "WhatCable HN 327 分，26 則留言，沒有一則說「這個問題不存在」——只有感謝和功能需求。USB-IF 認證資料庫是封閉的，沒有公開的 crowd-sourced 替代品。"
+    },
+    {
+      "format": "remix",
+      "title": "機械督導 agent harness：把 LLM 當 intern 而非 junior engineer 的協議強制框架",
+      "projects": [
+        {
+          "name": "GammaLabTechnologies/harmonist",
+          "url": "https://github.com/GammaLabTechnologies/harmonist",
+          "note": "Portable AI agent orchestration，186 agents，零 runtime 依賴，mechanical protocol enforcement"
+        }
+      ],
+      "description": "harmonist 的設計哲學是「mechanical protocol enforcement」：每個 agent action 都要通過一個明確定義的協議 gate 才能執行。把這個框架接到 coding agent 工作流上，讓每次 LLM 提議 write/edit/delete 操作時都必須在 terminal 顯示 diff + 等待 Y/n 確認，確認結果記錄進 audit log（timestamp、action、human decision）。對比現有的「trust and verify」模式（agent 執行完再看 git diff），這個 harness 把 human review point 移到執行前而不是執行後，符合 Harr 今天在 Lobsters 的論點：LLM 做錯了會繼續做，所以要在每個 action 前攔截，不是事後補。harmonist 的零 runtime 依賴設計讓它可以嵌入 CI pipeline 或 Docker-in-Docker 環境，不需要額外安裝任何 runtime。",
+      "use_case": "你是 fintech startup 的 lead engineer，正在用 Claude Code 對一個處理支付邏輯的 Python 服務做大規模 refactor。你的 security team 要求每一個 LLM-generated diff 必須有人工 sign-off 紀錄，具體到每一個 file write，而不是 session-level 的「agent did it」。現有的 Claude Code 沒有這個 audit granularity。",
+      "difficulty": 3,
+      "dev_time": "1–2 週 MVP",
+      "first_step": "git clone https://github.com/GammaLabTechnologies/harmonist && python -m harmonist init --mode=supervised --audit-log=./agent-audit.jsonl",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "熟悉 Python + 了解 agent orchestration 基本概念",
+      "dependencies": "你偏好的 coding agent API key（Claude API 或 OpenAI Codex）；harmonist 本身零依賴",
+      "market_evidence": "Jacob Harr 今天 Lobsters 雙文共 73 分（41+32），是今日 Lobsters 最高信號。GammaLabTechnologies/harmonist 1,030★，今日首次進入 topic:llm 搜尋前十，代表這個方向的需求剛被發現不久。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "TauricResearch/TradingAgents",
+      "url": "https://github.com/TauricResearch/TradingAgents",
+      "desc": "Multi-agent LLM 金融交易框架，以 multi-agent debate 模擬華爾街分析師團隊，59,492★ 今日 GitHub Trending #1",
+      "source": "GitHub Trending #1",
+      "repo_age": "2025 年建立",
+      "stars": 59492
+    },
+    {
+      "name": "simstudioai/sim",
+      "url": "https://github.com/simstudioai/sim",
+      "desc": "Build、deploy、orchestrate AI agent 的中央協調層，TypeScript，28,104★",
+      "source": "GitHub Trending #7",
+      "repo_age": "2025 年建立",
+      "stars": 28104
+    },
+    {
+      "name": "browserbase/skills",
+      "url": "https://github.com/browserbase/skills",
+      "desc": "Claude Agent SDK 加上完整的 web browsing 工具集，1,116★",
+      "source": "GitHub Trending #6",
+      "repo_age": "本週新增",
+      "stars": 1116
+    },
+    {
+      "name": "1jehuang/jcode",
+      "url": "https://github.com/1jehuang/jcode",
+      "desc": "Rust 寫的 Coding Agent Harness，2,284★，輕量化 agent shell 介面",
+      "source": "GitHub Trending #4",
+      "repo_age": "本月新增",
+      "stars": 2284
+    },
+    {
+      "name": "darrylmorley/whatcable",
+      "url": "https://github.com/darrylmorley/whatcable",
+      "desc": "macOS menu bar app，讀取連接的 USB-C 纜線實際協商的規格（電壓、電流、協定版本），解決 Amazon 假規格問題",
+      "source": "HN #1 Show HN · 327 分",
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "GhostBox",
+      "url": "https://www.ghost.charity/",
+      "desc": "從 Global Free Tier 借用一台一次性小機器：免費、隨用隨棄的雲端 VM，用完即丟不留 state",
+      "source": "HN 103 分",
+      "repo_age": "新服務"
+    },
+    {
+      "name": "Codex CLI 0.128.0",
+      "url": "https://simonwillison.net/2026/Apr/30/codex-goals/#atom-everything",
+      "desc": "新增 /goal 指令，讓 agent 在開始任務前先明確化目標，再規劃步驟——agent goal-setting 作為一等公民的協定設計",
+      "source": "Simon Willison",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "GCC 16",
+      "url": "https://gcc.gnu.org/gcc-16/changes.html",
+      "desc": "GCC 16 Release Series 正式發布，Lobsters 52 分，22 則留言，含新的 C23 支援和優化改進",
+      "source": "Lobsters 52 分",
+      "repo_age": "2026-05-02 發布"
+    },
+    {
+      "name": "iamzhihuix/skills-manage",
+      "url": "https://github.com/iamzhihuix/skills-manage",
+      "desc": "Desktop app，一個介面管理 Claude Code、Cursor、Gemini CLI、Codex 等 20+ 平台的 AI coding agent skills，1,419★",
+      "source": "topic:llm · 1419★ · ≤30d",
+      "repo_age": "本月新增",
+      "stars": 1419
+    },
+    {
+      "name": "GammaLabTechnologies/harmonist",
+      "url": "https://github.com/GammaLabTechnologies/harmonist",
+      "desc": "186 agents、零 runtime 依賴的可攜式 AI agent 協調框架，mechanical protocol enforcement 設計，1,030★",
+      "source": "topic:llm · 1030★ · ≤30d",
+      "repo_age": "本月新增",
+      "stars": 1030
+    },
+    {
+      "name": "VectifyAI/OpenKB",
+      "url": "https://github.com/VectifyAI/OpenKB",
+      "desc": "Open LLM Knowledge Base：self-hosted，Python，從 RAG-focused 延伸到 enterprise knowledge management，1,025★",
+      "source": "topic:rag · 1025★ · ≤30d",
+      "repo_age": "本月新增",
+      "stars": 1025
+    },
+    {
+      "name": "Houseofmvps/codesight",
+      "url": "https://github.com/Houseofmvps/codesight",
+      "desc": "Universal AI context generator，把 repo 結構壓縮成 AI 可讀格式，每次 conversation 省下幾千 tokens，1,017★",
+      "source": "topic:llm+mcp · 1017★ · ≤30d",
+      "repo_age": "本月新增",
+      "stars": 1017
+    },
+    {
+      "name": "lucasastorian/llmwiki",
+      "url": "https://github.com/lucasastorian/llmwiki",
+      "desc": "Karpathy LLM Wiki 的開源實作：上傳文件、連接 Claude MCP，wiki 自動整理，759★",
+      "source": "topic:rag+mcp · 759★ · ≤30d",
+      "repo_age": "本月新增",
+      "stars": 759
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Mozilla's position on the Prompt API",
+        "url": "https://mastodon.social/@firefoxwebdevs/116492853483021978",
+        "score": 82,
+        "comments": 15,
+        "takeaway": "Mozilla 正式反對 Chrome Prompt API 成為 W3C 標準，認為把瀏覽器內建 LLM 與特定 model（Gemini Nano）綁在一起是違反 open web 精神的設計。Lobsters 留言：「W3C 標準化需要 Chrome + Safari 支援，Mozilla 的 4% 市佔在投票上沒有決定性。」",
+        "action": "如果你在做 browser AI 功能，這週在架構文件裡列出三條 inference 路徑（Chrome Prompt API／WASM 本地推論／server-side API）並標清楚每條路的跨 browser 假設。"
+      },
+      {
+        "title": "An open letter asking NHS England to keep its code open",
+        "url": "https://keepthingsopen.com/",
+        "score": 164,
+        "comments": 5,
+        "takeaway": "LWN 報導 NHS England 正準備關閉旗下軟體原始碼，Terence Eden 發起 keepthingsopen.com 連署。這是 OSS 主權問題從 tooling 層擴展到國家醫療基礎設施的第一個大型案例。",
+        "action": "如果你在為 NHS 或英國政府部門做 IT supplier，追蹤 keepthingsopen.com 連署數字——連署量超過 threshold 後可能影響採購條件。"
+      },
+      {
+        "title": "The LLM Is Not a Junior Engineer",
+        "url": "https://jacobharr.is/personal/llm-not-junior-engineer",
+        "score": 41,
+        "comments": 16,
+        "takeaway": "Jacob Harr 的核心論點：Junior engineer 做錯了會停下來問，LLM 做錯了會繼續做並且每步都有十足信心。這個差異決定了你的 code review 要在 pre-execution 階段攔截，而不是 post-execution 看 diff。"
+      },
+      {
+        "title": "GCC 16 Release Series: Changes, New Features, and Fixes",
+        "url": "https://gcc.gnu.org/gcc-16/changes.html",
+        "score": 52,
+        "comments": 22,
+        "takeaway": "GCC 16 正式發布，含增強的 C23 支援、改進的 auto-vectorization、新的 analyzer 警告。如果你在跑 C/C++ 專案，這是值得排入下季升級計畫的 release。"
+      },
+      {
+        "title": "Show HN: WhatCable, a tiny menu bar app for inspecting USB-C cables",
+        "url": "https://github.com/darrylmorley/whatcable",
+        "score": 327,
+        "comments": 26,
+        "takeaway": "327 分的 Show HN 說明 USB-C 纜線規格混亂是真實的大眾痛點，不是小眾需求。這個問題沒有好的開源資料庫解法，builder 機會存在。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Show HN: WhatCable, a tiny menu bar app for inspecting USB-C cables",
+        "url": "https://github.com/darrylmorley/whatcable",
+        "score": 327,
+        "comments": 26
+      },
+      {
+        "title": "Your Website Is Not for You",
+        "url": "https://websmith.studio/blog/your-website-is-not-for-you/",
+        "score": 225,
+        "comments": 61
+      },
+      {
+        "title": "New copy of earliest poem in English, written 1,300 years ago, discovered in Rome",
+        "url": "https://www.tcd.ie/news_events/articles/2026/caedmons-hymn-discovery/",
+        "score": 189,
+        "comments": 14
+      },
+      {
+        "title": "AI uses less water than the public thinks",
+        "url": "https://californiawaterblog.com/2026/04/26/ai-water-use-distractions-and-lessons-for-california/",
+        "score": 179,
+        "comments": 41
+      },
+      {
+        "title": "Ask HN: Who is hiring? (May 2026)",
+        "url": "https://news.ycombinator.com/item?id=47975571",
+        "score": 165,
+        "comments": 152
+      },
+      {
+        "title": "An open letter asking NHS England to keep its code open",
+        "url": "https://keepthingsopen.com/",
+        "score": 164,
+        "comments": 5
+      },
+      {
+        "title": "The Gay Jailbreak Technique",
+        "url": "https://github.com/Exocija/ZetaLib/blob/main/The%20Gay%20Jailbreak/The%20Gay%20Jailbreak.md",
+        "score": 162,
+        "comments": 24
+      },
+      {
+        "title": "Canonical/Ubuntu have been under DDoS",
+        "url": "https://status.canonical.com/#/incident/KNms6QK9ewuzz-7xUsPsNylV20jEt5kyKsd8A-3ptQEHpOd8VQ40ZQs-KD81fboQXeGZB94okNHdHBGlCv58Sw==",
+        "score": 126,
+        "comments": 11
+      },
+      {
+        "title": "Running Adobe's 1991 PostScript Interpreter in the Browser",
+        "url": "https://www.pagetable.com/?p=1854",
+        "score": 106,
+        "comments": 10
+      },
+      {
+        "title": "Show HN: GhostBox – Borrow a disposable little machine from the Global Free Tier",
+        "url": "https://www.ghost.charity/",
+        "score": 104,
+        "comments": 26
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Mozilla's position on the Prompt API",
+        "url": "https://mastodon.social/@firefoxwebdevs/116492853483021978",
+        "score": 82,
+        "comments": 15,
+        "tags": [
+          "web"
+        ]
+      },
+      {
+        "title": "You can beat the binary search",
+        "url": "https://lemire.me/blog/2026/04/27/you-can-beat-the-binary-search/",
+        "score": 53,
+        "comments": 25,
+        "tags": [
+          "performance"
+        ]
+      },
+      {
+        "title": "GCC 16 Release Series: Changes, New Features, and Fixes",
+        "url": "https://gcc.gnu.org/gcc-16/changes.html",
+        "score": 52,
+        "comments": 22,
+        "tags": [
+          "compilers",
+          "release"
+        ]
+      },
+      {
+        "title": "If I Could Make My Own GitHub",
+        "url": "https://matduggan.com/if-i-could-make-my-own-github/",
+        "score": 44,
+        "comments": 20,
+        "tags": [
+          "programming"
+        ]
+      },
+      {
+        "title": "The LLM Is Not a Junior Engineer",
+        "url": "https://jacobharr.is/personal/llm-not-junior-engineer",
+        "score": 41,
+        "comments": 16,
+        "tags": [
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "Why I Don't Vibe Code",
+        "url": "https://jacobharr.is/personal/i-dont-vibe-code",
+        "score": 32,
+        "comments": 1,
+        "tags": [
+          "practices",
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "A life update from Zach Oakes: Zig, AI, unemployment, and more",
+        "url": "https://www.youtube.com/watch?v=DhhPUrizZcw",
+        "score": 26,
+        "comments": 4,
+        "tags": [
+          "person",
+          "video"
+        ]
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "「振動編碼」語意分裂：practitioner 貶義 vs 機構行銷詞",
+      "body": "Jacob Harr 今天在 Lobsters 同一天發出兩篇批評文章（73 分合計），Gary Marcus 在 Substack 把「vibe-coded」當作品管失控的同義詞，Zach Oakes 分享 AI + 失業的個人經歷——同一個 feed 裡，Google AI Blog 正在為六月的「AI Agents Vibe Coding Course」招募學員。這個語意裂縫的機制是：Karpathy 的原始定義（自然語言驅動快速生成）足夠模糊，讓兩個社群都能用同一個詞說不同的事。裂縫一旦固化，你的 team onboarding 文件、PR 模板、code review checklist 就需要選邊——繼續用「vibe coding」這個詞或用更精確的替代詞（LLM-assisted development、supervised agent coding）。",
+      "evidence": "Lobsters：Jacob Harr 雙文 41+32=73 分；Gary Marcus Substack「vibe-coded AI disasters」；Google AI Blog 6 月課程公告；SegmentFault 問題「AI在vibe coding中表现如何」同天出現。四個獨立 source 同天交叉。",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 4,
+      "percentile": "top 25%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 19,
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "The LLM Is Not a Junior Engineer",
+          "url": "https://jacobharr.is/personal/llm-not-junior-engineer",
+          "score": 41
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Why I Don't Vibe Code",
+          "url": "https://jacobharr.is/personal/i-dont-vibe-code",
+          "score": 32
+        },
+        {
+          "platform": "Gary Marcus",
+          "title": "Dario Amodei, hype, AI safety, and the explosion of vibe-coded AI disasters",
+          "url": "https://garymarcus.substack.com/p/dario-amodei-hype-ai-safety-and-the"
+        },
+        {
+          "platform": "Google AI Blog",
+          "title": "Join the new AI Agents Vibe Coding Course from Google and Kaggle",
+          "url": "https://blog.google/innovation-and-ai/technology/developers-tools/kaggle-genai-intensive-course-vibe-coding-june-2026/"
+        }
+      ],
+      "product_opportunity": "提供「supervised agent coding」工作流工具：強制每個 LLM action 在執行前顯示 diff 並等待人工確認，同時生成 machine-readable audit log（timestamp + action + human decision）。目標客群是有合規要求的 fintech/healthcare team，他們需要的不是更強的 agent，而是更透明的 agent。"
+    },
+    {
+      "title": "OSS 主權問題從工具層擴展到公共基礎設施層",
+      "body": "「OSS 商業模式在 AI 競爭壓力下的授權翻轉浪潮」這個 pattern 過去 16 天的案例都在工具層（Cal.com 關閉商業授權、OpenAI 收購 Astral、Ghostty 離開 GitHub）。今天 NHS England 是不同的尺度：國家醫療系統的程式碼如果關閉，整條 UK 醫療 IT 供應鏈——所有在 NHS 開放程式碼上建立系統的 supplier——都需要重新談合約，不是換個工具那麼簡單。Mozilla 的 Prompt API 反對也是同一個 pattern 在瀏覽器層的變體：Google 把 AI 功能嵌入 browser runtime，控制分發層。兩件事的共同 upstream cause：AI 功能進入臨界基礎設施，控制 AI 的人就掌握了下游的軟體生態系。",
+      "evidence": "LWN #1「Eden: NHS goes to war against open source」；HN 164 分 keepthingsopen.com；Lobsters #1 Mozilla Prompt API 反對聲明（82 分）。兩個獨立 source，跨 systems/web 兩個領域。",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "oss-licensing-ai-pressure",
+      "day_count": 17,
+      "source_links": [
+        {
+          "platform": "LWN",
+          "title": "Eden: NHS goes to war against open source",
+          "url": "https://lwn.net/Articles/1070864/"
+        },
+        {
+          "platform": "HN",
+          "title": "An open letter asking NHS England to keep its code open",
+          "url": "https://keepthingsopen.com/",
+          "score": 164
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Mozilla's position on the Prompt API",
+          "url": "https://mastodon.social/@firefoxwebdevs/116492853483021978",
+          "score": 82
+        }
+      ],
+      "product_opportunity": "「公共程式碼主權稽核」工具：掃描政府/醫療 IT 系統的相依關係，標記哪些屬於開放授權、哪些有單一供應商鎖定風險，輸出 vendor-dependency.md。可以從 NHS toolkit 開始，作為 UK public sector procurement 的標準 checklist。"
+    },
+    {
+      "title": "DeepSeek agent 平台敘事降溫：兩天後從 feed 消失",
+      "body": "deepseek-ai/awesome-deepseek-agent（4 月 29 日首次出現，56★，OSChina 連結）在 4 月 29–30 日是「模型競爭者轉型 agent platform」的重要訊號，在記憶體的 DeepSeek agent 平台敘事裡連出現兩天。今天的四個 fetcher 裡沒有任何一條 DeepSeek agent ecosystem 的新訊號——HN、Lobsters、GitHub Trending、search.json 全部靜默。這個消失不等於 platform 轉型失敗，但代表初始的輿論關注沒有被後續的 repo 活動或社群反應維持。如果 DeepSeek 真的在往 agent platform 走，下一個明確訊號應該是一個有具體 integration 說明的 repo，而不是 awesome-list。",
+      "evidence": "data/staging/unified.json、trending.json、search.json 今天全數無 DeepSeek agent ecosystem 相關訊號，對比 4/29–4/30 兩天的連續出現。",
+      "type": "降溫中",
+      "strength": "弱訊號",
+      "cross_source": 0,
+      "percentile": "無排行",
+      "source_links": [],
+      "product_opportunity": "如果你在評估要不要對 DeepSeek agent API 做 integration，這個降溫訊號建議先等待具體的 API 文件和 production-ready 的 SDK，而不是現在就開始 integration 工作。"
+    }
+  ],
+  "dev_watch": {
+    "global": [
+      {
+        "developer": "NVIDIA",
+        "followers": 25180,
+        "repo": "NVIDIA/cell-eval",
+        "url": "https://github.com/NVIDIA/cell-eval",
+        "language": null,
+        "hours_ago": 1,
+        "description": "Comprehensive suite for evaluating perturbation prediction models——NVIDIA 進入生物 AI 評估工具領域，perturbation prediction 是計算生物學裡預測基因敲除後細胞反應的核心任務。1 小時前建立，0★，目前無 README。"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 118653,
+        "repo": "microsoft/adoptionpulse",
+        "url": "https://github.com/microsoft/adoptionpulse",
+        "language": "HTML",
+        "hours_ago": 23,
+        "description": "HTML-only repo，0★，無說明。名稱「adoptionpulse」暗示 AI 工具採用率追蹤或 enterprise 採用分析 dashboard——在 GitHub Copilot 轉向用量計費後，Microsoft 有強烈動機追蹤企業 AI 工具採用指標。"
+      },
+      {
+        "developer": "facebook",
+        "followers": 35251,
+        "repo": "facebook/haptics-studio",
+        "url": "https://github.com/facebook/haptics-studio",
+        "language": "TypeScript",
+        "hours_ago": 71,
+        "description": "Haptics Studio 是 Meta 的桌面 app，用於設計觸覺回饋。TypeScript，71 小時前建立，目前 15★——Meta 在 AR/VR 硬體的觸覺層開源工具。"
+      }
+    ],
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4378,
+        "repo": "doggy8088/dictionary-of-ai-coding",
+        "url": "https://github.com/doggy8088/dictionary-of-ai-coding",
+        "language": null,
+        "hours_ago": 7,
+        "description": "AI coding 術語中英對照字典，7 小時前建立，0★。",
+        "local_context": "🇹🇼 doggy8088（Will 保哥）在 AI coding 術語標準化上發力——當「vibecoding」語意分裂的辯論正在 Lobsters 發燒，台灣社群開始建立中英術語對照的基礎設施。"
+      },
+      {
+        "developer": "kkdai",
+        "followers": 1667,
+        "repo": "kkdai/bwai2026-sample",
+        "url": "https://github.com/kkdai/bwai2026-sample",
+        "language": "Go",
+        "hours_ago": 2,
+        "description": "Go，2 小時前建立，0★。名稱暗示與 BWAI 2026 活動相關的範例程式碼。",
+        "local_context": "🇹🇼 kkdai 持續在 Go 生態系與 AI 工具交叉點活躍，新 repo 緊跟台灣 AI 活動週期出現。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 821,
+        "repo": "strategist922/fastmcp",
+        "url": "https://github.com/strategist922/fastmcp",
+        "language": null,
+        "hours_ago": 31,
+        "description": "FastMCP 的 fork——快速、Pythonic 的 MCP server 和 client 建構工具，31 小時前建立，0★。",
+        "local_context": "🇹🇼 strategist922 上週建立 free-claude-code，今天轉向 MCP server 工具鏈，是台灣開發者在 Claude Code 生態系第十七波（信任審計期）的工具化動作。"
+      }
+    ]
+  },
+  "sleeper": {
+    "name": "GammaLabTechnologies/harmonist",
+    "url": "https://github.com/GammaLabTechnologies/harmonist",
+    "description": "Portable AI agent orchestration with mechanical protocol enforcement。186 個 agent，零 runtime 依賴，Python。1,030★，今日首次進入 topic:llm 搜尋前十。",
+    "why_asymmetric": "大多數 agent orchestration 框架（LangChain、LlamaIndex、CrewAI）假設你有一個 Python venv 或 Docker container——它們的依賴樹動輒幾百個套件。harmonist 假設你什麼都沒有，從一個乾淨的 Python 標準庫開始執行 186 個 agent。這讓它成為三類使用場景的稀缺解法：邊緣裝置部署（製造業 IoT）、secure enclave 執行（金融/醫療合規環境）、CI pipeline 嵌入（不想在 runner 上安裝 runtime 的情況）。今天 Lobsters 的「mechanical supervision」辯論剛好點名了這個設計哲學——在合規壓力上升的背景下，零依賴比功能豐富更有護城河。",
+    "commercial_path": "OSS 版本吸引 edge/embedded AI builder 社群，enterprise 版加上 compliance audit log（符合 ISO 27001、FedRAMP 的 agent action 記錄格式）和 SLA 技術支援。定價可以對標 Temporal.io 的 workflow orchestration 商業模式：開源 orchestration + enterprise observability。",
+    "stars": 1030
+  },
+  "contrarian": {
+    "claim": "Mozilla 擋不住 Chrome Prompt API，它不會因為一個聲明就消失",
+    "body": "Lobsters 留言裡最清醒的分析已經指出了這件事：W3C 標準化需要兩個主要 browser engine 的支援，Chrome + Safari，不是 Chrome + Firefox。Mozilla 的市佔不到 4%，在標準委員會的談判力遠低於 Google 和 Apple。Apple 在 iOS 18 推出 Apple Intelligence，自己也在做 on-device LLM，它有動機支持 browser-native AI API——只要 API 不要求一個特定的 Google model。更可能的走向：Google 在 API 設計上做一個不綁定 Gemini Nano 名字的版本，讓它在語意上符合「model-agnostic」，然後繼續推進標準化。Mozilla 的聲明在輿論上有效果，在實際的投票上沒有決定性。歷史前例：Web Bluetooth 在 Mozilla 反對的情況下，仍然在 Chrome 持續 GA；Web NFC 也是同樣路徑。",
+    "rationale": "Mozilla 的「反對」通常轉化為 API 細節上的修改，不是讓 API 消失。「官方反對 + API 繼續運行」是 Chrome 在 W3C 爭議中的常態結果。",
+    "prediction_text": "到 2026-12-31，Chrome Prompt API（或移除了 model-specific 綁定的改版）在 Chrome stable channel 保持 GA 狀態，W3C WICG/chrome-ai 提案沒有正式被 shelve 或撤回（以 Chrome Platform Status feature page 狀態或 WICG GitHub repo 的 active/closed 狀態為準）。",
+    "resolution_date": "2026-12-31"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-anthropic-skill-management",
+      "text": "到 2026-07-31，Anthropic 在 Claude Code 官方文件或 changelog 中發布內建 skill 管理介面或 official skill registry（以 anthropic.com 官方 blog 或 claude.ai changelog 為準）。",
+      "status": "pending",
+      "created": "2026-04-27",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-copilot-flat-rate-return",
+      "text": "到 2026-09-30，GitHub 會重新推出 Copilot Enterprise 的固定費率定價選項（以 github.blog 官方公告或 GitHub Universe 2026 keynote 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-github-ai-content-policy",
+      "text": "到 2026-12-31，GitHub 在 repository settings 中加入「AI-generated content policy」標記選項，讓 maintainer 聲明是否接受 AI 生成的 issues/PRs（以 GitHub changelog 或 GitHub Universe 2026 公告為準）。",
+      "status": "pending",
+      "created": "2026-04-30",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-granite41-benchmark-gap",
+      "text": "到 2026-08-31，在 HumanEval Plus 或 SWE-bench Verified 的公開 leaderboard 上，Granite 4.1 8B 的得分不超過同榜最高 32B MoE 開源模型得分的 90%（以 EvalPlus leaderboard 或 SWE-bench.com 公開數字為準）。",
+      "status": "pending",
+      "created": "2026-05-01",
+      "resolution_date": "2026-08-31"
+    },
+    {
+      "id": "pred-prompt-api-w3c",
+      "text": "到 2026-12-31，Chrome Prompt API（或移除了 model-specific 綁定的改版）在 Chrome stable channel 保持 GA 狀態，W3C WICG/chrome-ai 提案沒有正式被 shelve 或撤回（以 Chrome Platform Status feature page 狀態或 WICG GitHub repo 的 active/closed 狀態為準）。",
+      "status": "pending",
+      "created": "2026-05-02",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "07c0b4ac-a50c-4458-bca6-3aad56510fbe",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-01T20:25:08.460Z",
+    "analyze_duration_ms": 1358606,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 161
+      },
+      "trending": {
+        "ok": true,
+        "count": 9
+      },
+      "search": {
+        "ok": true,
+        "count": 49
+      },
+      "developers": {
+        "ok": true,
+        "count": 14
+      }
+    },
+    "degraded_sources": []
+  }
+}
