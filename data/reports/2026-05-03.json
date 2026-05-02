@@ -1,0 +1,557 @@
+{
+  "date": "2026-05-03",
+  "lead": {
+    "html": "<h3>microsoft/adoptionpulse：Copilot 用量計費之後，Microsoft 需要自己知道有多少人真的在用</h3>\n\n<h4>發生了什麼</h4>\n<p>兩天前在 <code>microsoft</code> org 出現了一個叫 <code>adoptionpulse</code> 的 repo（HTML，0★，47 小時前建立）。沒有 README，沒有描述，只有一個空的 HTML 倉庫。這個命名在 Microsoft 的 enterprise IT 語彙裡有非常明確的含義：adoption metrics，也就是「追蹤員工或客戶實際使用某個工具的比例」。</p>\n<p>上下文是這樣的：4 月 28 日，GitHub Copilot Enterprise 把定價從月費制改成用量計費。那天 HN 有 367 分的討論，platform engineering 社群的主要反應是：「我怎麼知道這個月的帳單到底代表什麼？」用量計費的前提是你能拆解用量——哪個 team 用了多少、哪種操作消耗了多少 token、哪個 IDE 外掛貢獻了多少請求。沒有這層測量，usage-based 的帳單就是一個黑盒數字。</p>\n<p>同一天，<code>NVIDIA/cell-eval</code>（0★，25 小時前）也在 developers.json 裡出現——這個是針對生物細胞擾動預測模型的評估套件，說明 NVIDIA 在把 GPU 基礎設施往 bio-AI evaluation 方向延伸。兩個都是 0 星的空倉庫，但指向的方向完全不同：Microsoft 在解決已知的 enterprise billing 透明度問題，NVIDIA 在打開一個還沒人充分測量過的 bio-AI benchmark 空間。</p>\n\n<h4>為什麼重要</h4>\n<p>如果你是 platform engineering team，或者你在公司內部維護一個「AI 工具採購決策」的評估框架，<code>adoptionpulse</code> 指向的問題你現在就有：你的 Copilot / Cursor / Claude Code 訂閱實際上有幾個人在用？每週有幾個 active session？這些數字現在都需要你自己去 GitHub API event log 裡拼。</p>\n<p>這個空 repo 的訊號是：Microsoft 正在用第一方工具解決這個問題，代表他們知道 enterprise 客戶在問這個問題。但第一方工具的問題是它只能測量 Copilot 的用量，不能橫跨 Copilot + Cursor + Claude Code。如果你的公司在用三個 AI coding tool，你需要一個 vendor-agnostic 的測量層。</p>\n<p>這也跟 Codex CLI 0.128.0 新增 <code>/goal</code> 功能形成一個模式：agent 工具鏈的下一層問題不是「agent 能做什麼」，而是「agent 做了什麼、誰用了多少、為什麼用這麼多」。session observability（Inndy/ccxray）→ 用量追蹤（adoptionpulse）→ 成本歸因是同一條線上的三個點。</p>\n\n<h4>社群怎麼看</h4>\n<p>Lobsters 今天的 #1 是 Bitwarden 的安全警告（52分，42 留言），但第二個顯眼的故事是「Why I Don't Vibe Code」（72分，16 留言）。Jacob Harr 的文章在 Lobsters 現在已經循環第二天——留言裡有人說 \"vibe coding is just what we used to call prototyping\"，有人說 \"the problem isn't vibe coding, it's not knowing when to stop vibe coding\"。與此同時，Google 今天宣布 6 月要在 Kaggle 開一門「AI Agents Vibe Coding Course」，把 vibe coding 當作行銷詞。同一個詞，Lobsters 社群在用它描述技術債，Google 在用它賣課。這個語意裂縫本身就是信號：vibe coding 的共識語意還沒確立，就已經開始被商業化。</p>\n<p>Gary Marcus 今天發了兩篇文章——一篇說 Richard Dawkins 被 Claude「騙了」（〈Richard Dawkins and The Claude Delusion〉），另一篇說〈A model that produces code which compiles and passes the tests it was given is not the same as a model that produces correct, secure, maintainable, well-architected software〉。Marcus 的引用文章本身就是今天 Lobsters 「Why I Don't Vibe Code」的理論根基。這不是巧合，而是同一個社群分叉在不同媒體發酵的同步。</p>\n\n<h4>行動建議</h4>\n<p>如果你的公司有三個以上 AI coding tool 訂閱，這週可以跑一個快速 audit：從 GitHub API 的 <code>/orgs/ORG/audit-log</code> 抓 Copilot 相關的 <code>copilot.seat_assigned_seat</code> 和 <code>copilot.seat_cancelled_seat</code> 事件，加上 VS Code 的 telemetry export（如果公司允許），生成一個每人每週 AI tool active day 的簡單 CSV。這個數字跟你的訂閱帳單一對比，你會立刻發現哪些 seat 是付了但沒在用的。在你的 infra repo 加一個 <code>ai-tool-adoption.md</code>，紀錄目前每個工具的 active user ratio——等 <code>adoptionpulse</code> 公開之後，你已經有 baseline 可以比較。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "Copilot 用量黑盒解碼器：GitHub Audit Log × VS Code telemetry → 每個 team 的 AI 工具實際使用率",
+      "projects": [
+        {
+          "name": "microsoft/adoptionpulse",
+          "url": "https://github.com/microsoft/adoptionpulse",
+          "note": "Microsoft 內部 AI adoption 追蹤工具，目前 0★ 空 repo，方向明確"
+        },
+        {
+          "name": "iamzhihuix/skills-manage",
+          "url": "https://github.com/iamzhihuix/skills-manage",
+          "note": "跨平台 skill 管理，1,493★，TypeScript，有 usage tracking 的架構參考"
+        }
+      ],
+      "description": "你是一家 200 人公司的 platform engineer，公司訂了 Copilot Enterprise、Cursor Team、Claude Code Team 三個 AI coding tool，這個月帳單是 $18,000，但工程師回報說有人根本沒開過 IDE。問題是你不知道哪些 seat 是真正 active 的，因為每個 vendor 的 usage dashboard 都是孤島。GitHub Audit Log API（<code>/orgs/{org}/audit-log?phrase=copilot</code>）記錄了所有 Copilot seat 的分配和取消事件，加上 GitHub API 的 <code>copilot_usage</code> endpoint，可以重建每個 user 的每日 active day。Cursor 的 Team 帳戶提供 CSV export。Claude Code 在有企業帳戶的情況下可以從帳單 API 拿用量。把三個來源 JOIN 在一起，按 team 分組，就能算出每個 team 的「AI tool spend per merged PR」——這個數字能立刻告訴你哪個 team 在真正用這些工具，哪個 team 在浪費訂閱費。整個 pipeline 是三個 Python 腳本 + 一個 DuckDB 檔案，不需要任何外部服務。",
+      "use_case": "你是 platform engineer，負責公司 AI tool 訂閱成本控制，面對來自 CFO 的「AI tool ROI 是什麼」的問題，需要在下週的 QBR 前拿出數字。",
+      "tech_stack": "Python + GitHub REST API + DuckDB + Cursor Team CSV export + Claude Code billing API",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "需熟悉 GitHub API + Python + SQL",
+      "dependencies": "GitHub org admin token（免費）+ 各 AI tool 的管理員帳號存取",
+      "difficulty": 3,
+      "dev_time": "週末 POC",
+      "first_step": "curl -H 'Authorization: token $GITHUB_TOKEN' 'https://api.github.com/orgs/YOUR_ORG/copilot/usage' | jq '.total_active_users'",
+      "market_evidence": "Copilot Enterprise 用量計費上線後，LinkedIn 上「AI adoption metrics」職缺超過 200 個；HN Copilot billing 討論串（4/28，367分）top comment 是 \"we have no idea what we're paying for\""
+    },
+    {
+      "format": "remix",
+      "title": "graphify × context-engine：40K★ RAG codebase 技能 + 純 Python token budget 層的 end-to-end 組合",
+      "projects": [
+        {
+          "name": "safishamsi/graphify",
+          "url": "https://github.com/safishamsi/graphify",
+          "note": "把 codebase 轉成 graph + RAG 可查詢結構，40,620★，topic:rag"
+        },
+        {
+          "name": "strategist922/context-engine",
+          "url": "https://github.com/strategist922/context-engine",
+          "note": "純 Python context 管理層：retrieval、re-ranking、memory decay、token-budget 強制"
+        }
+      ],
+      "description": "你在做一個 codebase Q&A agent，讓工程師可以問「這個函式在哪裡被呼叫」「這個 API 的 error handling 有沒有缺口」。你用 graphify 把整個 repo 的 AST 轉成 node-edge graph，然後用 graph traversal 檢索相關的函式、class、import 鏈。問題來了：graphify 的 retrieval 是 breadth-first 的，一個問題可以拉回 25 個 node，每個 node 平均 300 tokens，輕易把 32K context window 打爆。strategist922/context-engine 正是在解這個問題——它有 memory decay（舊的 context 自動降權）、re-ranking（按 relevance score 重新排序）、token-budget enforcement（硬性截斷到你設定的 limit）。把 graphify 的輸出 pipe 進 context-engine 的 budget enforcer，你就有了一個「能回答 codebase 問題、又不會 OOM 的 agent context pipeline」。graphify 的 40K 星代表需求已經驗證，context-engine 是週末就能 clone 的台灣本地 repo，兩個加起來的 integration 大概是 200 行 Python。",
+      "use_case": "你在做一個內部 codebase Q&A tool，repo 有 800 個檔案，graphify RAG 效果很好但每次問題都超出 context window。",
+      "tech_stack": "Python + graphify + context-engine + 任意 LLM API",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "需熟悉 Python + RAG pipeline 設計",
+      "dependencies": "LLM API key（OpenAI / Anthropic，月費 ~$10-30 depending on 使用量）",
+      "difficulty": 3,
+      "dev_time": "週末 POC",
+      "first_step": "pip install graphify && git clone https://github.com/strategist922/context-engine",
+      "market_evidence": "safishamsi/graphify 在 topic:rag 類別有 40,620★，是同類工具裡最高星數的 30 天內新 repo；Houseofmvps/codesight（1,023★）顯示「codebase context 壓縮」本身是獨立的需求"
+    },
+    {
+      "format": "remix",
+      "title": "Dolt × 醫療記錄稽核：在不開放原始碼的情況下讓資料庫本身可 diff 可審計",
+      "projects": [
+        {
+          "name": "Prolly trees（LWN #2）",
+          "url": "https://lwn.net/Articles/1068864/",
+          "note": "LWN 深度報導：用 probabilistic B-tree 做 content-addressable database versioning"
+        },
+        {
+          "name": "Dolt（DoltHub）",
+          "url": "https://github.com/dolthub/dolt",
+          "note": "用 Prolly tree 實作的 Git-for-databases，支援 SQL + branch + merge + diff"
+        }
+      ],
+      "description": "NHS England 這週宣布準備關閉旗下軟體的原始碼（LWN #1）。這個決定的核心問題在於：醫療 IT 系統的透明度不只是「原始碼可不可以看」，更是「資料有沒有被竄改、流程有沒有跑對」。Prolly tree（probabilistic B-tree）是一種讓資料庫 snapshot 可以 content-addressed hash 的資料結構——就像 git commit 一樣，每次資料變動都有一個可驗證的 hash，可以做 branch、merge、diff。Dolt 是目前最完整的 Prolly tree 實作，它是一個完整的 MySQL-compatible SQL 資料庫，但每個 commit 都能用 `dolt diff` 像 git diff 一樣看到哪些 row 變了。如果 NHS 的病歷系統是用 Dolt 儲存的，就算關掉原始碼，稽核員還是可以跑 `dolt log --oneline` 看完整的異動歷史。這個 POC 的設計：建一個模擬的 NHS 病患記錄資料庫（Dolt schema），跑幾個模擬的臨床操作，然後用 `dolt diff` + Python 自動生成一份「本週異動稽核報告」。這不是產品，是一個可以展示給 NHSX / EU EHDS 政策討論的技術論點。",
+      "use_case": "你是一個 GovTech 或醫療 IT 的 open source 倡議者，要在 6 月的 EU EHDS 工作組會議上論證「關閉原始碼不等於喪失可稽核性」，需要一個可展示的技術 demo。",
+      "tech_stack": "Dolt + Python + SQL + dolt diff API + 自動報告生成（Jinja2 或類似）",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "需熟悉 SQL + 對資料庫 versioning 有基本概念",
+      "dependencies": "docker run -it dolthub/dolt bash（免費）",
+      "difficulty": 4,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "docker run -it dolthub/dolt bash",
+      "market_evidence": "NHS England 管理 66M 病患記錄；EU EHDS 法規要求稽核軌跡；LWN #1 + 前日 HN 164分雙源報導說明社群高度關注"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "NetHack 5.0.0",
+      "url": "https://nethack.org/v500/release.html",
+      "desc": "NetHack 首次大版本更新，距離上一個穩定版本已有數年。HN 226分，28 留言。作為 AI agent 評估 benchmark 的標準環境，這個版本更新會影響 NetHack-based agent 測試的基線。",
+      "source": "HN 226分",
+      "repo_age": "1987 年建立，2026 年 5.0.0",
+      "stars": null
+    },
+    {
+      "name": "Codex CLI 0.128.0 /goal",
+      "url": "https://simonwillison.net/2026/Apr/30/codex-goals/#atom-everything",
+      "desc": "Codex CLI 新增 /goal 指令，讓 agent 跨 session 持久化追蹤目標。Simon Willison 報導。這是 CLI-level agent memory 的第一個主流實作——不需要外掛 memory 系統，goal 直接跟著 CLI session 走。",
+      "source": "Simon Willison",
+      "repo_age": "2025 年建立",
+      "stars": null
+    },
+    {
+      "name": "VideoLAN Dav2d — open-source AV2 decoder",
+      "url": "https://www.phoronix.com/news/Dav2d-Open-Source-AV2-Decode",
+      "desc": "VideoLAN 發布 dav2d，針對 AV2 編解碼標準（AV1 的繼任者）。Phoronix 報導。對做 VLM 或 video generation 的人，AV2 是未來五年的 video encoding 標準，現在開始追蹤這個 decoder 的效能。",
+      "source": "Phoronix",
+      "repo_age": "2026 年建立",
+      "stars": null
+    },
+    {
+      "name": "safishamsi/graphify",
+      "url": "https://github.com/safishamsi/graphify",
+      "desc": "把任何 codebase、SQL schema、設計文件轉成 graph 結構，提供給 AI coding agent 做 RAG 查詢。支援 Claude Code、Codex、Cursor、Gemini CLI 等主流工具。40,620★ 是本週 topic:rag 類別最高星數的 30 天內新 repo。",
+      "source": "topic:rag · 40620★ · 近30天",
+      "repo_age": "本月新增",
+      "stars": 40620
+    },
+    {
+      "name": "machinepulse-ai/world2agent",
+      "url": "https://github.com/machinepulse-ai/world2agent",
+      "desc": "W2A（World2Agent）開放協議，標準化 AI agent 如何感知真實世界的輸入——感測器、API、環境狀態。TypeScript，1,059★，topic:agent。定義了 agent perception layer 的協議介面，有別於 MCP 的工具呼叫層。",
+      "source": "topic:agent · 1059★ · 近30天",
+      "repo_age": "本月新增",
+      "stars": 1059
+    },
+    {
+      "name": "GammaLabTechnologies/harmonist",
+      "url": "https://github.com/GammaLabTechnologies/harmonist",
+      "desc": "186 個 agent 的可攜式 orchestration，零 runtime 依賴，用機械式協議強制執行（mechanical protocol enforcement）而不是 prompt engineering。1,135★，Python。上週進入追蹤，今天在 search.json 有兩次出現。",
+      "source": "topic:llm · 1135★ · 近30天",
+      "repo_age": "本月新增",
+      "stars": 1135
+    },
+    {
+      "name": "R6410418/Jackrong-llm-finetuning-guide",
+      "url": "https://github.com/R6410418/Jackrong-llm-finetuning-guide",
+      "desc": "Jupyter Notebook 格式的 LLM fine-tuning 完整指南，1,084★，涵蓋 LoRA、QLoRA、FSDP 等主流方法。topic:llm + topic:fine-tuning 雙標籤命中，說明有 structured fine-tuning curriculum 的需求。",
+      "source": "topic:fine-tuning · 1084★ · 近30天",
+      "repo_age": "本月新增",
+      "stars": 1084
+    },
+    {
+      "name": "qData v1.3.0",
+      "url": "https://www.oschina.net/news/437671/qdata-1-3-0-released",
+      "desc": "中文社群資料中台開源版 v1.3.0，新增 ChatBI（智能問數）功能——用自然語言查詢 SQL 資料倉庫，不需要寫 SQL。OSChina 勞動節獻禮版本。對做 Text-to-SQL 或 enterprise data agent 的人，這個版本提供了一個可 fork 的中文基線。",
+      "source": "OSChina",
+      "repo_age": "2025 年建立",
+      "stars": null
+    },
+    {
+      "name": "Bitwarden CLI 供應鏈攻擊警告",
+      "url": "https://changelog.com/news/185",
+      "desc": "Checkmarx 供應鏈攻擊波及 Bitwarden CLI npm 包。Lobsters #1（52分），Changelog 報導。這是本月第二起 AI/開發工具鏈供應鏈攻擊（第一起是 PyTorch Lightning，HN 221分，5/1）。如果你的 CI/CD 有安裝 bitwarden-cli，這週要確認版本。",
+      "source": "Lobsters 52分 + Changelog",
+      "repo_age": "2023 年建立",
+      "stars": null
+    },
+    {
+      "name": "ruvnet/ruflo",
+      "url": "https://github.com/ruvnet/ruflo",
+      "desc": "Claude Agent SDK 為基礎的多 agent swarm orchestration 平台，36,519★，TypeScript，Trending #2。標榜「the leading agent orchestration platform for Claude」——這是繼 ruvnet/RuView 之後 ruvnet 的第二個大規模 Claude 生態系工具。",
+      "source": "GitHub Trending #2",
+      "repo_age": "本月新增",
+      "stars": 36519
+    },
+    {
+      "name": "strategist922/context-engine",
+      "url": "https://github.com/strategist922/context-engine",
+      "desc": "純 Python context 管理層，涵蓋 retrieval、re-ranking、memory decay、token-budget 強制。台灣開發者 strategist922（前 Alipay ML infra）14 小時前建立，0★。這是本週 Taiwan 開發者動態裡技術最完整的 spec。",
+      "source": "GitHub Developers (Taiwan) · 0★ · 14h",
+      "repo_age": "本週新增",
+      "stars": 0
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Why I Don't Vibe Code（Jacob Harr）× Google AI Agents Vibe Coding Course（Kaggle）",
+        "url": "https://jacobharr.is/personal/i-dont-vibe-code",
+        "score": 72,
+        "takeaway": "同一個詞在同一天被兩個社群用來描述相反的事：Lobsters 社群說 vibe coding = 你不知道你在幹嘛，Google 說 vibe coding = 現代 agent 開發的入口。當一個術語同時被批評者和行銷部門採用，它的定義就死了——對 builder 的意義是：你在 PR description 裡用「vibe coding」這個詞的時候，對方腦補的場景可能跟你完全不同。",
+        "action": "在你的 team 文件裡加一段「我們說的 vibe coding 是指什麼 / 不是指什麼」，避免術語語意分裂影響 code review 討論"
+      },
+      {
+        "title": "NHS England vs open source：英國醫療系統關閉旗下軟體原始碼",
+        "url": "https://lwn.net/Articles/1070864/",
+        "takeaway": "LWN #1。不是一家新創公司關閉授權，而是管理 66M 病患記錄的國家醫療系統。這個事件把「OSS 主權問題」從開發者工具層推到公共基礎設施層。如果你在做任何醫療、政府、或公共基礎設施的 open source tooling，這是一個需要在你的 repo 裡加上 public benefit clause 的時機點。",
+        "action": "如果你的 repo 有公共基礎設施的用途，這週在 LICENSE 旁邊加一個 PUBLIC-BENEFIT.md，說明哪些使用場景是你明確支持的（參考 CERN Open Hardware Licence 的 benefit statement 格式）"
+      },
+      {
+        "title": "AI self-preferencing in algorithmic hiring（arxiv 2509.00462）",
+        "url": "https://arxiv.org/abs/2509.00462",
+        "score": 308,
+        "takeaway": "HN 308分，40 留言。實證研究發現 AI 招聘工具系統性地偏好 AI 相關背景的候選人。同一天 Dev.to #1 是「Big Tech Is Firing Humans to Buy More GPUs」。兩個信號一起看：AI 工具在挑選「最適合使用 AI 工具的人」，而被篩掉的是「不用 AI 工具的人」——hiring loop 開始自我強化。對 builder 的意義：如果你在寫招聘流程的 AI 工具，hardcode 一個「job description 裡不能含有 AI 偏好詞」的 linter。"
+      },
+      {
+        "title": "Version-controlled databases using Prolly trees（LWN）",
+        "url": "https://lwn.net/Articles/1068864/",
+        "takeaway": "LWN #2。Prolly tree 讓資料庫 snapshot 可以 content-addressed hash，實現 git-like branch/merge/diff on data。Dolt 是目前最完整的實作（MySQL-compatible SQL + git 語意）。對在做 agent state management 或 experiment tracking 的人：你的 vector DB / embedding store 的 snapshot 是不是也應該是 diffable 的？Dolt 今天就可以替換 SQLite 試試。"
+      },
+      {
+        "title": "Anthropic Claude for Creative Work 發布",
+        "url": "https://www.anthropic.com/news/claude-for-creative-work",
+        "takeaway": "Anthropic News 本週 #1。這是 Anthropic 在 OpenClaw 爭議後第一個主動發出的產品訊息——選擇的方向是創意工作而不是 coding。這個選擇說明 Anthropic 在有意識地拓展 Claude 的 use case 多樣性，不讓「Claude = coding agent」的印象固化。對 builder 的意義：如果你在做非 coding 的 AI 工具（設計、寫作、音樂），Anthropic 現在是對齊你的合作夥伴，有第一方 blog post 可以引用。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Why does it take so long to release black fan versions?",
+        "url": "https://www.noctua.at/en/expertise/blog/how-can-it-take-so-long-to-release-black-fan-versions",
+        "score": 636,
+        "comments": 38
+      },
+      {
+        "title": "Ti-84 Evo",
+        "url": "https://education.ti.com/en/products/calculators/graphing-calculators/ti-84-evo",
+        "score": 558,
+        "comments": 98
+      },
+      {
+        "title": "Show HN: WhatCable, a tiny menu bar app for inspecting USB-C cables",
+        "url": "https://github.com/darrylmorley/whatcable",
+        "score": 522,
+        "comments": 35
+      },
+      {
+        "title": "New research suggests people can communicate and practice skills while dreaming",
+        "url": "https://www.newyorker.com/culture/annals-of-inquiry/its-possible-to-learn-in-our-sleep-should-we",
+        "score": 429,
+        "comments": 70
+      },
+      {
+        "title": "Artemis II Photo Timeline",
+        "url": "https://artemistimeline.com/#artemis-ii-walkout-nhq202604010003",
+        "score": 325,
+        "comments": 13
+      },
+      {
+        "title": "AI Self-preferencing in Algorithmic Hiring: Empirical Evidence and Insights",
+        "url": "https://arxiv.org/abs/2509.00462",
+        "score": 308,
+        "comments": 40
+      },
+      {
+        "title": "NetHack 5.0.0",
+        "url": "https://nethack.org/v500/release.html",
+        "score": 226,
+        "comments": 28
+      },
+      {
+        "title": "How fast is a macOS VM, and how small could it be?",
+        "url": "https://eclecticlight.co/2026/05/02/how-fast-is-a-macos-vm-and-how-small-could-it-be/",
+        "score": 197,
+        "comments": 13
+      },
+      {
+        "title": "Why are there both TMP and TEMP environment variables? (2015)",
+        "url": "https://devblogs.microsoft.com/oldnewthing/20150417-00/?p=44213",
+        "score": 172,
+        "comments": 13
+      },
+      {
+        "title": "Open Design: Use Your Coding Agent as a Design Engine",
+        "url": "https://github.com/nexu-io/open-design",
+        "score": 140,
+        "comments": 17
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Why I Don't Vibe Code",
+        "url": "https://jacobharr.is/personal/i-dont-vibe-code",
+        "score": 72,
+        "comments": 16,
+        "tags": [
+          "practices",
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "I Do Not Recommend Bitwarden",
+        "url": "https://マリウス.com/i-do-not-recommend-bitwarden/",
+        "score": 52,
+        "comments": 42,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "Inverse Sapir-Whorf and programming languages",
+        "url": "https://lukeplant.me.uk/blog/posts/inverse-sapir-whorf-and-programming-languages/",
+        "score": 50,
+        "comments": 15,
+        "tags": [
+          "programming"
+        ]
+      },
+      {
+        "title": "combat LLM spam by building a web of trust",
+        "url": "https://blog.tangled.org/vouching/",
+        "score": 42,
+        "comments": 32,
+        "tags": [
+          "vcs"
+        ]
+      },
+      {
+        "title": "Screw you Realtek",
+        "url": "https://www.growse.com/2026/05/02/screw-you-realtek.html",
+        "score": 28,
+        "comments": 5,
+        "tags": [
+          "linux",
+          "networking",
+          "vibecoding"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "strategist922",
+        "followers": 821,
+        "repo": "strategist922/context-engine",
+        "url": "https://github.com/strategist922/context-engine",
+        "language": null,
+        "hours_ago": 14,
+        "description": "純 Python context 管理層：retrieval、re-ranking、memory decay、token-budget enforcement，讓 LLM pipeline 不需要框架依賴就能管好 context",
+        "local_context": "台灣社群在 context management 問題上的 ground-up 工程回應——上週 Codex CLI 加了 /goal，今天 strategist922 從底層把 token budget 問題做成函式庫"
+      },
+      {
+        "developer": "doggy8088",
+        "followers": 4382,
+        "repo": "doggy8088/codex-pet-willh",
+        "url": "https://github.com/doggy8088/codex-pet-willh",
+        "language": null,
+        "hours_ago": 14,
+        "description": "Will 保哥的 Codex Pet 實驗性專案，14 小時前建立",
+        "local_context": "台灣知名技術社群 Will 保哥開始測試 Codex，代表 OpenAI Codex CLI 在台灣開發社群的滲透已到達知名技術部落客層"
+      }
+    ],
+    "global": [
+      {
+        "developer": "midudev",
+        "followers": 37771,
+        "repo": "midudev/scrapping-amazon-prices",
+        "url": "https://github.com/midudev/scrapping-amazon-prices",
+        "language": "TypeScript",
+        "hours_ago": 50,
+        "description": "Amazon 價格爬蟲，TypeScript，15★，50 小時前建立。midudev 是西班牙語開發圈最大的技術 YouTuber（37K followers）"
+      },
+      {
+        "developer": "bradtraversy",
+        "followers": 75822,
+        "repo": "bradtraversy/eye-break",
+        "url": "https://github.com/bradtraversy/eye-break",
+        "language": "JavaScript",
+        "hours_ago": 52,
+        "description": "20-20-20 護眼規則的 cross-platform Electron app，52 小時前建立。Brad Traversy（75K followers）從複雜 AI 工具退回去做簡單健康工具"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Vibe coding 語意完全裂解：批評者和行銷部門同時採用同一個詞",
+      "body": "Jacob Harr 的「Why I Don't Vibe Code」在 Lobsters 今天仍以 72 分循環（文章昨天發），同一天 Google 宣布在 Kaggle 開一門「AI Agents Vibe Coding Course」for June 2026。這不是 Google 不知道這個詞已被批評——這是 Google 刻意採用它，因為行銷需要一個有「fun + accessible」感的術語。當批評者和行銷部門同時使用同一個術語，這個術語在技術討論裡就失去了精確含義。Lobsters 的 Screw you Realtek（28分）也被打上了 vibecoding tag——說明社群已開始把 vibecoding 當作「看不懂自己在做什麼的工程操作」的通稱，而不只是 AI coding 的代名詞。這個語意漂移現在已經進入 pull request review 層：同一個 PR，一個 reviewer 可能說「這是 vibecoding，要審」，另一個說「這是 vibecoding，沒問題，正常操作」。",
+      "evidence": "Lobsters 72分（top 5%）× Google AI Blog 官方課程公告 × Lobsters vibecoding tag 使用範圍擴大到非 AI 脈絡（Realtek 帖）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 19,
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "Why I Don't Vibe Code",
+          "url": "https://jacobharr.is/personal/i-dont-vibe-code",
+          "score": 72
+        },
+        {
+          "platform": "Google AI Blog",
+          "title": "Join the new AI Agents Vibe Coding Course from Google and Kaggle",
+          "url": "https://blog.google/innovation-and-ai/technology/developers-tools/kaggle-genai-intensive-course-vibe-coding-june-2026/"
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Screw you Realtek",
+          "url": "https://www.growse.com/2026/05/02/screw-you-realtek.html",
+          "score": 28
+        }
+      ],
+      "product_opportunity": "一個「vibe coding signal detector」PR bot——分析 PR diff，標記出哪些部分有「written without understanding」的 pattern（例如：copy-paste error handler、未使用的 import 路徑超過 3 個、test coverage 突然從 80% 掉到 20%），讓 reviewer 有具體數字而不是主觀判斷"
+    },
+    {
+      "title": "Copilot 用量計費 → enterprise AI adoption measurement 成為新需求類別",
+      "body": "microsoft/adoptionpulse（0★，47 小時前，HTML）出現在 microsoft org 是今天最明確的 anomaly 訊號。命名直接：adoption（採用率）+ pulse（心跳監測）。GitHub Copilot 4 月 28 日改成用量計費後，enterprise 客戶需要知道「我的帳單來自哪個 team、哪個 IDE、哪種操作」。Microsoft 正在用第一方工具解決這個問題，代表這個需求已經足夠大到值得內部投資。Codex CLI 0.128.0 新增 /goal 也是同一個方向：不只是「agent 能做什麼」，而是「agent 做了什麼、目標是什麼、有沒有完成」——這是 observability 的 goal-tracking 層，是 session log 之上的抽象。",
+      "evidence": "microsoft/adoptionpulse（0★，47h ago）+ Copilot Enterprise 用量計費轉換（4/28，HN 367分）+ iamzhihuix/skills-manage 1,493★（cross-platform skill management = cross-platform usage tracking 的前驅）",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 19,
+      "source_links": [
+        {
+          "platform": "GitHub Developers",
+          "title": "microsoft/adoptionpulse",
+          "url": "https://github.com/microsoft/adoptionpulse"
+        },
+        {
+          "platform": "HN (4/28)",
+          "title": "GitHub Copilot 用量計費",
+          "url": "https://github.com"
+        }
+      ],
+      "product_opportunity": "一個 vendor-agnostic 的 AI tool adoption tracker：從 GitHub Audit Log、Cursor Team CSV export、Claude Code billing API 三個來源合并，生成每個 team 的「AI tool spend per merged PR」，讓 engineering manager 有跨工具的 ROI 數字"
+    },
+    {
+      "title": "供應鏈攻擊目標從 dev 工具升級為安全工具：Bitwarden CLI 事件",
+      "body": "Bitwarden CLI npm 包被 Checkmarx 供應鏈攻擊波及（Lobsters #1，52分；Changelog 報導）。這是本月第二起攻擊——五月一日的 PyTorch Lightning malware（HN 221分）是第一起。兩次攻擊的升級路線很清楚：PyTorch Lightning 是 AI 訓練 stack，Bitwarden CLI 是密碼管理工具。密碼管理工具在 CI/CD pipeline 裡的角色是儲存 API key 和 secret，被攻擊的後果是 credential exfiltration，不只是訓練資料污染。如果你的 CI 有 `npm install @bitwarden/cli`，這週要鎖定版本並驗證 hash。",
+      "evidence": "Lobsters 52分（top 10%）× Changelog + 本月第二起供應鏈攻擊",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 20,
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "I Do Not Recommend Bitwarden",
+          "url": "https://マリウス.com/i-do-not-recommend-bitwarden/",
+          "score": 52
+        },
+        {
+          "platform": "Changelog",
+          "title": "Bitwarden CLI compromised",
+          "url": "https://changelog.com/news/185"
+        }
+      ],
+      "product_opportunity": "一個 CI/CD dependency security scanner，專門追蹤 AI/dev tool 的 npm/PyPI 包的 hash drift——發現 installed hash 跟 pinned hash 不同時立刻發 Slack alert，並自動 file GitHub security advisory"
+    },
+    {
+      "title": "OSS 主權問題從開發工具層擴展到公共醫療基礎設施層",
+      "body": "NHS England 關閉旗下軟體原始碼（LWN #1）是「OSS 商業模式在 AI 競爭壓力下的授權翻轉浪潮」這條 pattern 本月最大的制度級案例——不是一家私人公司關授權，而是管理 66M 病患記錄的國家醫療系統。這與 5 月 2 日 Mozilla 反對 Chrome Prompt API 的邏輯相似：都是說「我們不能讓一個關鍵基礎設施的控制權落到單一私人實體手上」。不同的是，NHS 的行動方向是相反的——Mozilla 在防止私有化，NHS 在推進私有化。這個矛盾出現在同一週，說明「公共基礎設施是否應該開源」已經從工程討論進入政策層。",
+      "evidence": "LWN #1 + 前日 HN 164分（跨源）+ 接續 Mozilla 反對 Chrome Prompt API（5/2，Lobsters 82分）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "oss-licensing-ai-pressure",
+      "day_count": 18,
+      "source_links": [
+        {
+          "platform": "LWN",
+          "title": "Eden: NHS goes to war against open source",
+          "url": "https://lwn.net/Articles/1070864/"
+        }
+      ],
+      "product_opportunity": "針對公共基礎設施的「OSS audit trail as alternative to open source」工具包——用 Prolly tree（Dolt）做資料庫 versioning，讓政府系統在關閉原始碼的同時仍然能提供可驗證的稽核軌跡，滿足 EU EHDS 等法規要求"
+    }
+  ],
+  "sleeper": {
+    "name": "machinepulse-ai/world2agent",
+    "url": "https://github.com/machinepulse-ai/world2agent",
+    "stars": 1059,
+    "description": "W2A（World2Agent）是定義 AI agent 如何感知真實世界的開放協議，TypeScript，1,059★。與 MCP 不同：MCP 處理的是 agent 如何呼叫工具，W2A 處理的是 agent 如何接收環境輸入（感測器讀值、API 事件、物理空間狀態）。這個區別在 agent 要控制機器人、感測器網路、或 IoT 裝置的時候變得關鍵。",
+    "why_asymmetric": "1,059★ 在 topic:agent 裡處於中等水位，但 W2A 瞄準的是 agent perception layer——這個問題在純軟體 agent 時代不重要，但在 humanoid robot（Tesla Optimus、Figure 等）開始規模化部署的 12-18 個月後會成為基礎設施。如果 W2A 協議被兩個以上 robot OS 採用，它的地位就類似 MCP 在工具呼叫層的地位。",
+    "commercial_path": "協議標準化後，machinepulse-ai 可以提供 W2A-compatible 的 hosted sensor gateway（類似 HuggingFace 對 model 的角色），每個接入 W2A gateway 的 IoT 裝置按流量計費。"
+  },
+  "contrarian": {
+    "claim": "safishamsi/graphify（40,620★）的高星數反映了對「codebase-as-graph RAG」這個概念的期待，但這個架構在超過 10 萬行的真實 repo 上的實際查詢品質並不會明顯優於 simple embedding-based RAG。",
+    "body": "40K 星對一個 30 天內新 repo 是不正常的高速度。graphify 把 codebase 轉成 node-edge graph 的想法在理論上很優雅——AST traversal 能抓到 call graph，比 chunk-based embedding 更理解依賴關係。但這個優勢在實際使用上有兩個問題：第一，對大型 repo，graph 的 node 數量爆炸（10 萬行 codebase 可能有 50K+ AST node），graph traversal 的 latency 遠高於 embedding cosine similarity；第二，現有 LLM 的 context window 已經大到可以直接放入相關的幾個檔案全文，graph-based 的 selective retrieval 只在 context window 嚴重不足的情況下才有明顯優勢。40K 星更多是「graph RAG = 更聰明」的直覺，而不是 benchmark 數字驗證。",
+    "rationale": "目前沒有公開的 benchmark 比較 graphify 和 naive embedding RAG 在真實 codebase Q&A task 上的表現。高星數是採用意願，不是效果驗證。",
+    "prediction": "到 2026-11-30，safishamsi/graphify 沒有發布在任何主要 code Q&A benchmark（SWE-bench、DevBench、CodeRAG-Bench）上優於 simple top-k embedding RAG 15% 以上的公開評估結果（以 graphify GitHub repo 的 README 或 releases 頁面為準）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-github-ai-content-policy",
+      "text": "到 2026-12-31，GitHub 在 repository settings 中加入「AI-generated content policy」標記選項，讓 maintainer 聲明是否接受 AI 生成的 issues/PRs（以 GitHub changelog 或 GitHub Universe 2026 公告為準）。",
+      "status": "pending",
+      "created": "2026-04-30",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-prompt-api-w3c",
+      "text": "到 2026-12-31，Chrome Prompt API（或移除了 model-specific 綁定的改版）在 Chrome stable channel 保持 GA 狀態，W3C WICG/chrome-ai 提案沒有正式被 shelve 或撤回（以 Chrome Platform Status feature page 狀態或 WICG GitHub repo 的 active/closed 狀態為準）。",
+      "status": "pending",
+      "created": "2026-05-02",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-graphify-no-benchmark",
+      "text": "到 2026-11-30，safishamsi/graphify 沒有發布在任何主要 code Q&A benchmark（SWE-bench、DevBench、CodeRAG-Bench）上優於 simple top-k embedding RAG 15% 以上的公開評估結果（以 graphify GitHub repo 的 README 或 releases 頁面為準）。",
+      "status": "pending",
+      "created": "2026-05-03",
+      "resolution_date": "2026-11-30"
+    },
+    {
+      "id": "pred-adoptionpulse-public",
+      "text": "到 2026-08-31，microsoft/adoptionpulse 發布帶有 README 說明的 v0.1 版本（以 repo README 非空且有 install/usage 說明為準）。",
+      "status": "pending",
+      "created": "2026-05-03",
+      "resolution_date": "2026-08-31"
+    }
+  ],
+  "meta": {
+    "run_id": "91dd812c-a59d-4164-838c-ac81ff0be3a3",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-02T20:15:34.580Z",
+    "analyze_duration_ms": 845398,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 8
+      },
+      "search": {
+        "ok": true,
+        "count": 49
+      },
+      "developers": {
+        "ok": true,
+        "count": 8
+      }
+    },
+    "degraded_sources": []
+  }
+}
