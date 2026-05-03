@@ -1,0 +1,591 @@
+{
+  "date": "2026-05-04",
+  "lead": {
+    "html": "<h3>Gary Marcus 今天放了兩篇文章——合在一起，是過去三個月對 vibe coding 敘事最精準的一次外科手術</h3>\n\n<h4>發生了什麼</h4>\n<p>Gary Marcus 在同一天發了兩篇 Substack：第一篇〈Richard Dawkins and The Claude Delusion〉記錄了達金斯——全球最著名的理性主義者、《自私的基因》作者——在接觸 Claude 之後公開表示「被打動了」；Marcus 的論點是：如果連訓練自己不被說服的人都被說服，這本身就是一個關於 AI persuasion capability 的訊號，而不只是 AI 「真的理解」的訊號。第二篇直接點題：「a model that produces code which compiles and passes the tests it was given is not the same as a model that produces correct, secure, maintainable, well-architected software」。</p>\n<p>同一天，HN 出現了一個 140 分的 Show HN：〈State of the Art of Coding Models, According to Hacker News Commenters〉（hnup.date/hn-sota）——用 HN 留言當作非正式 benchmark 的群眾來源，去衡量哪個 coding model 真的在日常任務上表現最好。HN top comment 是：「這不是 benchmark，這是 vibes」。</p>\n\n<h4>為什麼重要</h4>\n<p>Marcus 的第二篇文章講的機制是：現有 benchmark（pass@k, HumanEval, SWE-bench）只量「能不能產生一個讓測試通過的答案」，不量「這個答案在六個月後還能被另一個工程師 maintain 嗎」。這個 gap 在 2024 年就有人說過，但今天它的 timing 不是巧合——它跟 vibe coding 語意裂解的第二週同步出現，跟「HN commenters as benchmark」的出現同步出現。</p>\n<p>upstream cause 是：coding benchmark 設計在 2025-2026 年間完成了第一輪快速演進（HumanEval → SWE-bench → OSWorld），但這輪演進基本跳過了「maintainability / security / architecture」這一整層——因為這層很難自動評分。現在 model 能力超過了 benchmark 可以量的範圍，builder 社群自發用 HN 留言來填補這個 blind spot，這是一個奇怪但合理的 workaround。</p>\n<p>對在寫 production code 的 builder 而言，這個空缺意味著：你今天讓 Claude Code 寫的 function 通過了你的 unit test，但你不知道三個月後 refactor 時它會不會是地雷。沒有工具幫你量這件事。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 對 hnup.date/hn-sota 的反應分裂：一部分人認為「HN 留言作為 benchmark 比 vendor 自己公布的數字更可信，因為是真實任務」；另一部分人認為「這只是 HN 用戶的審美偏好，跟 coding ability 沒有直接關係」。分裂本身說明了問題：builder 社群沒有共識的 ground truth，所以才出現這種 crowd-sourced workaround。Lobsters 方面，同日〈Open Source Does Not Imply Open Community〉（59分）和〈A GitHub for maintainers〉（49分）持續推進 GitHub 平台信任弧，但 Gary Marcus 的 coding quality 論點沒有在 Lobsters 出現交叉討論——systems 圈跟 AI 應用圈的 concern 仍然是兩條平行線。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 codebase 有超過 30% 的新 commit 是 AI 生成的（Claude Code / Copilot / Cursor），這週可以做一件具體的事：在 CI 加一個 「architecture drift detector」——用 dependency-cruiser（Node 生態）或 deptrac（PHP）或 rustdoc 的 crate-level graph 自動抓「新 commit 有沒有越過預設的層級邊界（e.g., infrastructure 層直接 import domain 層）」。這不能替代 code review，但它能讓你在 merge 前知道「這個 AI 生成的 PR 有沒有破壞 layer 邊界」，而不是三個月後 refactor 才發現。dependency-cruiser 在 npm 上每週下載量 400 萬次，設定 20 分鐘可以跑起來。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "World-agent 安全審計層：實體世界感知 agent 的 behavior diff 工具",
+      "projects": [
+        {
+          "name": "machinepulse-ai/world2agent",
+          "url": "https://github.com/machinepulse-ai/world2agent",
+          "note": "open protocol for AI agent world perception"
+        },
+        {
+          "name": "GammaLabTechnologies/harmonist",
+          "url": "https://github.com/GammaLabTechnologies/harmonist",
+          "note": "186 agents, zero runtime dependencies, protocol enforcement"
+        }
+      ],
+      "description": "world2agent 定義了一個 agent 如何用標準化協定感知攝影機、感測器、IoT 裝置的 open protocol；harmonist 提供零 runtime 依賴的 agent 協調層。把兩者串起來的缺口是：當 agent 的 action 會影響物理環境時（轉動攝影機、發送警報、控制機器手臂），你需要一個能比較「agent 說它做了什麼」跟「感測器資料顯示實際發生了什麼」的 behavior diff harness。核心機制：每個 agent action 在執行前寫入 intent log，執行後把 world-state snapshot 跟 intent 做 diff，超過閾值的 divergence 觸發 rollback 或人工審核佇列。Gary Marcus 的論點是「code compiles ≠ correct」——在實體世界 agent 這個場景，「action executes ≠ safe」的問題更嚴重，因為 rollback 的成本是物理的。",
+      "use_case": "你是一家工廠自動化 startup 的 CTO，部署了用 world2agent protocol 接入 3 條生產線攝影機的 QA agent；每月 false positive（agent 停線但實際沒問題）5 次，false negative（agent 沒停但實際有瑕疵品）2 次。你不知道這個分布是模型問題還是感知協定問題，因為沒有工具幫你 trace 到底是哪一步出錯。",
+      "tech_stack": "Python + world2agent protocol + harmonist agent harness + SQLite for intent log + Prometheus for divergence metrics",
+      "hardware": "純 CPU 可跑，有攝影機/感測器 feed 即可",
+      "skill_level": "需熟悉 async Python + 基本 time-series 比對邏輯",
+      "dependencies": "world2agent TypeScript SDK（可用 pyworld2agent wrapper）+ harmonist Python package，完全免費自架",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/machinepulse-ai/world2agent && 看 protocol/spec.md 的 action schema",
+      "market_evidence": "工廠 AI QA 系統的 false positive 成本：每次非計劃停線平均 $10k-$50k（Rockwell Automation 2025 調查）；現有 agent observability 工具（如 LangSmith）全都假設 agent 活在純文字環境，沒有處理 physical state divergence 的原生支援"
+    },
+    {
+      "format": "remix",
+      "title": "SHARP 超解析度截圖管線：零後端、純瀏覽器的圖像增強工具",
+      "projects": [
+        {
+          "name": "bring-shrubbery/ml-sharp-web",
+          "url": "https://github.com/bring-shrubbery/ml-sharp-web",
+          "note": "Apple SHARP running in browser via ONNX runtime web"
+        },
+        {
+          "name": "lzhgus/Capso",
+          "url": "https://github.com/lzhgus/Capso",
+          "note": "open-source macOS screenshot + screen recording, Swift 6.0"
+        }
+      ],
+      "description": "Apple 的 SHARP（Super-resolution with Hardware Agnostic Reconstruction Pipeline）今天以 Show HN 的形式跑進了瀏覽器，機制是 ONNX Runtime Web 的 WebGPU backend 把模型推論搬到 GPU shader 層。Capso 是台灣開發者 lzhgus 寫的免費 CleanShot X 替代方案（739★），內建截圖、錄影、標注。把兩者串起來：使用者截圖後，在本地瀏覽器直接跑 SHARP 做 2x-4x 超解析度增強，再匯出或上傳——整條管線 data 不離本機。這對合規敏感環境（醫療、法律、政府）是真實的差異化：CleanShot 的雲端上傳功能在這些環境根本不能用。實作核心是把 Capso 截圖的 PNG output 透過 postMessage 傳入一個 hidden iframe 跑 SHARP ONNX pipeline，再把增強後的圖片回傳。",
+      "use_case": "你是一家醫療影像 SaaS 的前端工程師，使用者每天要截取 DICOM viewer 的局部畫面做文件記錄；現有截圖工具要麼解析度太低，要麼需要上傳到第三方伺服器（HIPAA 紅線）。你需要一個完全在本機運行的截圖增強工具。",
+      "tech_stack": "Swift（Capso extension hook）+ ONNX Runtime Web（WebGPU backend）+ vanilla JS postMessage bridge",
+      "hardware": "需要支援 WebGPU 的現代瀏覽器（Chrome 113+, Safari 17+），純 CPU 可跑但慢 5-10x",
+      "skill_level": "需熟悉 Swift macOS extension + 基本 ONNX Runtime Web API",
+      "dependencies": "SHARP ONNX model 權重可從 bring-shrubbery/ml-sharp-web 直接取用，Capso 已 MIT 授權，完全免費自架",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "git clone https://github.com/bring-shrubbery/ml-sharp-web && npm install && npm run dev 在瀏覽器驗證 SHARP 速度",
+      "market_evidence": "CleanShot X 年費 $29；在 App Store 的醫療類截圖工具幾乎全部要求 iCloud 或第三方同步，符合 HIPAA 的本機截圖增強工具在 ProductHunt 搜不到任何結果"
+    },
+    {
+      "format": "solo",
+      "title": "細胞擾動預測評估平台：讓小型濕實驗室也能跑 NVIDIA cell-eval",
+      "projects": [
+        {
+          "name": "NVIDIA/cell-eval",
+          "url": "https://github.com/NVIDIA/cell-eval",
+          "note": "comprehensive suite for evaluating perturbation prediction models"
+        }
+      ],
+      "description": "NVIDIA 在 49 小時前建立了 cell-eval——一個評估「細胞擾動預測模型」的完整評估套件（2★，目前 README 稀薄但 description 清楚）。「擾動預測」的任務是：給定一個基因或藥物的擾動輸入，預測細胞狀態的改變（基因表現變化、蛋白質豐度、表現型）。這是新藥研發 in silico 篩選的核心瓶頸：Genentech、Recursion、Insitro 都有內部的這類評估管線，但小型生物科技公司和學術實驗室沒有標準工具。NVIDIA 建這個 repo 的 timing 暗示 BioNeMo 平台正在推進 perturbation prediction 方向。機制：cell-eval 應該會包含 benchmark 資料集（scPerturb 或 LINCS L1000 的 subset）+ 標準化 metric（Pearson correlation on perturbed gene expression, Wasserstein distance on cell state distribution）+ 模型評估 harness。side project 角度：把 cell-eval 包裝成一個帶 web UI 的本地評估服務，讓沒有 CUDA 環境的 dry-lab 分析師可以用 CPU-only mode 跑基礎評估，並輸出 shareable PDF report 給濕實驗室夥伴。",
+      "use_case": "你是一家 10 人生物科技 startup 的計算生物學家，手上有三個 scRNA-seq perturbation dataset，想評估 Geneformer vs scGPT vs CellOracle 哪個模型在你的細胞系上表現最好；但三個模型的輸出格式不同，評估 metric 的實作散落在三個不同 GitHub repo，每次比較要花兩天手工對齊格式。你需要一個統一的評估層。",
+      "tech_stack": "Python + AnnData/Scanpy + NVIDIA cell-eval harness + Streamlit（web UI）+ WeasyPrint（PDF export）",
+      "hardware": "純 CPU 可跑基礎評估（單個 dataset 約 20-30 分鐘），GPU 加速約 5x；不需要 8-GPU cluster",
+      "skill_level": "需熟悉 scRNA-seq 資料格式（AnnData, h5ad）+ 基本 Python ML pipeline",
+      "dependencies": "NVIDIA/cell-eval（即將開放，目前監測 repo 活動）+ scPerturb 公開資料集（免費）+ Scanpy（MIT 授權）",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "watch https://github.com/NVIDIA/cell-eval 等 README 更新；同時 pip install cell2sentence scperturb 讀入一個 LINCS L1000 dataset 確認格式",
+      "market_evidence": "scPerturb benchmark 論文（2023, Nature Methods）被引 180 次；Recursion Pharmaceuticals 市值 ~$3B 建立在擾動預測上；學術圈的標準評估工具缺口在 Bioinformatics Twitter 是持續的討論熱點，每次有新模型都要重新手工對齊格式"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "ruvnet/ruflo",
+      "url": "https://github.com/ruvnet/ruflo",
+      "desc": "Claude 多 agent 協調平台，TypeScript，本週 GitHub Trending #1，38,565★",
+      "source": "GitHub Trending #1",
+      "stars": 38565,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "TauricResearch/TradingAgents",
+      "url": "https://github.com/TauricResearch/TradingAgents",
+      "desc": "多 agent LLM 金融交易框架，Python，64,926★，OSChina + Trending 雙源確認",
+      "source": "GitHub Trending #2 + OSChina",
+      "stars": 64926,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "czlonkowski/n8n-mcp",
+      "url": "https://github.com/czlonkowski/n8n-mcp",
+      "desc": "讓 Claude Desktop / Claude Code / Cursor 直接建立 n8n workflows 的 MCP server，19,418★",
+      "source": "GitHub Trending #7",
+      "stars": 19418,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "bring-shrubbery/ml-sharp-web",
+      "url": "https://github.com/bring-shrubbery/ml-sharp-web",
+      "desc": "Apple SHARP 超解析度模型透過 ONNX Runtime Web 跑在瀏覽器；Show HN 139分，純客戶端推論，data 不離本機",
+      "source": "HN Show HN 139分 #1",
+      "stars": null,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "sambigeara/pollen",
+      "url": "https://github.com/sambigeara/pollen",
+      "desc": "無 control plane 的分散式 WASM runtime，單一 binary，HN 126分；agent 工具在邊緣節點執行的最小可行底層",
+      "source": "HN 126分",
+      "stars": null,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "NetHack 5.0.0",
+      "url": "https://nethack.org/v500/release.html",
+      "desc": "NetHack 5.0.0 正式發布，Lobsters 65分。1987 年以來的 roguelike 基準，新版本包含地牢生成重寫。",
+      "source": "Lobsters 65分",
+      "stars": null,
+      "repo_age": "1987 年建立，新版本 2026-05"
+    },
+    {
+      "name": "machinepulse-ai/world2agent",
+      "url": "https://github.com/machinepulse-ai/world2agent",
+      "desc": "AI agent 感知真實世界的 open protocol 標準；標準化 agent 如何接入攝影機、感測器、IoT 裝置，1,244★",
+      "source": "topic:agent · 1244★ · 25d",
+      "stars": 1244,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "GammaLabTechnologies/harmonist",
+      "url": "https://github.com/GammaLabTechnologies/harmonist",
+      "desc": "186 個 agent、零 runtime 依賴的 portable agent 協調框架，純 Python；1,208★",
+      "source": "topic:llm · 1208★ · 近期",
+      "stars": 1208,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "R6410418/Jackrong-llm-finetuning-guide",
+      "url": "https://github.com/R6410418/Jackrong-llm-finetuning-guide",
+      "desc": "實用 LLM fine-tuning 指南，Jupyter Notebook 形式，覆蓋 LoRA / QLoRA / RLHF 主流路線，1,090★",
+      "source": "topic:fine-tuning · 1090★ · 近期",
+      "stars": 1090,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "lzhgus/Capso",
+      "url": "https://github.com/lzhgus/Capso",
+      "desc": "macOS 免費截圖與錄影工具，Swift 6.0，CleanShot X 的開源替代，739★；MIT 授權",
+      "source": "topic:ocr · 739★ · 近期",
+      "stars": 739,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "YeQing17-2026/OmniAgent",
+      "url": "https://github.com/YeQing17-2026/OmniAgent",
+      "desc": "可自我演化並動態強化安全性的 agent 框架，Python，718★",
+      "source": "topic:agent · 718★ · 近期",
+      "stars": 718,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "NVIDIA/cell-eval",
+      "url": "https://github.com/NVIDIA/cell-eval",
+      "desc": "NVIDIA 官方細胞擾動預測模型評估套件，49 小時前建立；BioNeMo 方向的早期訊號",
+      "source": "NVIDIA org · 2★ · 49h ago",
+      "stars": 2,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "Brush v0.4",
+      "url": "https://www.phoronix.com/news/Brush-0.4-Shell-Released",
+      "desc": "Bourne Rusty Shell v0.4，Rust 實作的 POSIX-compatible shell；Phoronix 稱為「significant release」，新增 bash completion 支援",
+      "source": "Phoronix #1",
+      "stars": null,
+      "repo_age": "持續開發中"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Mercedes-Benz commits to bringing back physical buttons",
+        "url": "https://www.drive.com.au/news/mercedes-benz-commits-to-bringing-back-phycial-buttons/",
+        "score": 461,
+        "comments": 54,
+        "takeaway": "觸控介面 UX 的反動：Mercedes 在客戶抱怨之後承諾把實體按鈕帶回來。對做車用 / 工業 UI 的 builder：「什麼時候不應該用軟體控制」是比「怎麼用 AI 改進 UI」更值得問的問題。",
+        "action": "如果你正在設計任何需要在高認知負載下操作的 UI（車用、醫療、工廠），考慮在 user testing 時明確測試「實體 vs 觸控」的錯誤率，不只是偏好"
+      },
+      {
+        "title": "\"A model that produces code which compiles and passes the tests it was given is not the same as a model that produces correct, secure, maintainable, well-architected software\"",
+        "url": "https://garymarcus.substack.com/p/a-model-that-produces-code-which",
+        "takeaway": "Gary Marcus 引用了多個獨立評估報告，說明 AI 生成程式碼在「通過測試」跟「長期可維護性」之間有系統性落差。這是對 vibe coding 生態系最清晰的技術批評。",
+        "action": "這週在 CI 加入 dependency graph lint（dependency-cruiser 或 deptrac），自動抓 AI commit 是否越過架構層邊界"
+      },
+      {
+        "title": "NHS Goes To War Against Open Source",
+        "url": "https://shkspr.mobi/blog/2026/05/nhs-goes-to-war-against-open-source/",
+        "score": 85,
+        "comments": 6,
+        "takeaway": "NHS England 準備關閉旗下軟體原始碼，影響整條 UK 醫療 IT 供應鏈。Lobsters #1，LWN #1 雙源確認。對在醫療 / 公衛領域工作的 builder：你的上游依賴有沒有 NHS 系統的 fork？",
+        "action": "如果你有任何 NHS-derived codebase 依賴，這週 audit 一次替代方案"
+      },
+      {
+        "title": "A couple million lines of Haskell: Production engineering at Mercury",
+        "url": "https://blog.haskell.org/a-couple-million-lines-of-haskell/",
+        "score": 386,
+        "comments": 30,
+        "takeaway": "Mercury 的 fintech 後端跑在幾百萬行 Haskell 上，記錄了 production Haskell 的真實工程挑戰：型別系統幫他們抓住了很多 AI 生成程式碼無法抓到的邏輯錯誤。這是對「型別安全 vs AI 生成速度」trade-off 最具體的 case study。"
+      },
+      {
+        "title": "Open Source Does Not Imply Open Community",
+        "url": "https://blog.feld.me/posts/2026/04/open-source-does-not-imply-open-community/",
+        "score": 59,
+        "comments": 14,
+        "takeaway": "跟進上週 Ghostty 離開 GitHub 事件：開源授權和開放社群是兩件不同的事。一個 repo 可以 MIT 授權但仍然是封閉式決策。這對用 AI 生成 PR 的 contributor 有直接含義。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Mercedes-Benz commits to bringing back physical buttons",
+        "url": "https://www.drive.com.au/news/mercedes-benz-commits-to-bringing-back-phycial-buttons/",
+        "score": 461,
+        "comments": 54
+      },
+      {
+        "title": "A couple million lines of Haskell: Production engineering at Mercury",
+        "url": "https://blog.haskell.org/a-couple-million-lines-of-haskell/",
+        "score": 386,
+        "comments": 30
+      },
+      {
+        "title": "Show HN: State of the Art of Coding Models, According to Hacker News Commenters",
+        "url": "https://hnup.date/hn-sota",
+        "score": 140,
+        "comments": 28
+      },
+      {
+        "title": "Show HN: Apple's SHARP running in the browser via ONNX runtime web",
+        "url": "https://github.com/bring-shrubbery/ml-sharp-web",
+        "score": 139,
+        "comments": 12
+      },
+      {
+        "title": "Denuvo has been cracked in all single-player games it previously protected",
+        "url": "https://www.tomshardware.com/video-games/pc-gaming/denuvo-has-been-bypassed-in-all-single-player-games-it-previously-protected-2k-games-and-denuvo-reportedly-retaliate-with-mandatory-14-day-online-checks",
+        "score": 139,
+        "comments": 13
+      },
+      {
+        "title": "Show HN: Pollen – distributed WASM runtime, no control plane, single binary",
+        "url": "https://github.com/sambigeara/pollen",
+        "score": 126,
+        "comments": 15
+      },
+      {
+        "title": "Metal Gear Solid 2's source code has been leaked on 4chan",
+        "url": "https://www.thegamer.com/mgs2-hd-edition-source-code-massive-leak/",
+        "score": 123,
+        "comments": 3
+      },
+      {
+        "title": "How far behind is each major Chromium browser?",
+        "url": "https://chromium-drift.pages.dev/",
+        "score": 118,
+        "comments": 14
+      },
+      {
+        "title": "A desktop made for one",
+        "url": "https://isene.org/2026/05/Audience-of-One.html",
+        "score": 110,
+        "comments": 14
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "NHS Goes To War Against Open Source",
+        "url": "https://shkspr.mobi/blog/2026/05/nhs-goes-to-war-against-open-source/",
+        "score": 85,
+        "comments": 6,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "What fun websites do you know?",
+        "score": 72,
+        "comments": 42,
+        "tags": [
+          "ask",
+          "web"
+        ]
+      },
+      {
+        "title": "NetHack 5.0.0",
+        "url": "https://nethack.org/v500/release.html",
+        "score": 65,
+        "comments": 8,
+        "tags": [
+          "games",
+          "release"
+        ]
+      },
+      {
+        "title": "The text mode lie: why modern TUIs are a nightmare for accessibility",
+        "url": "https://xogium.me/the-text-mode-lie-why-modern-tuis-are-a-nightmare-for-accessibility",
+        "score": 64,
+        "comments": 9,
+        "tags": [
+          "a11y"
+        ]
+      },
+      {
+        "title": "Open Source Does Not Imply Open Community",
+        "url": "https://blog.feld.me/posts/2026/04/open-source-does-not-imply-open-community/",
+        "score": 59,
+        "comments": 14,
+        "tags": [
+          "programming"
+        ]
+      },
+      {
+        "title": "A GitHub for maintainers",
+        "url": "https://nesbitt.io/2026/05/02/a-github-for-maintainers.html",
+        "score": 49,
+        "comments": 5,
+        "tags": [
+          "vcs"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4384,
+        "repo": "doggy8088/opencc-rust",
+        "url": "https://github.com/doggy8088/opencc-rust",
+        "language": "Rust",
+        "hours_ago": 3,
+        "description": "純 Rust 實作的 OpenCC 繁簡轉換，內建完整字典、locale preset、自訂轉換器與 XML-compatible HTML 轉換",
+        "local_context": "台灣社群最高 follower 開發者之一在 Rust 重寫中文處理工具，接續本月 Rust 系統工具本地化浪潮（opencc-rust 是 doggy8088 繼上月幾個 Go 工具後首次進入 Rust）"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 821,
+        "repo": "strategist922/embedanything",
+        "url": "https://github.com/strategist922/embedanything",
+        "language": null,
+        "hours_ago": 6,
+        "description": "fork 了 embed-rs/embedanything：高效能、模組化、Memory Safe 的 Rust embedding 推論與索引框架",
+        "local_context": "strategist922 昨天剛建了 context-engine（Python context 管理層），今天 fork Rust embedding 框架，暗示在組裝一套完整的本地 embedding + context 管線"
+      },
+      {
+        "developer": "kkdai",
+        "followers": 1667,
+        "repo": "kkdai/bwai2026-sample",
+        "url": "https://github.com/kkdai/bwai2026-sample",
+        "language": "Go",
+        "hours_ago": 50,
+        "description": "BWAI 2026 活動的 Go 範例 repo",
+        "local_context": "Taiwan Go 社群核心開發者為 BWAI 2026（推測為台灣 AI builder 活動）準備 sample code，Go + AI 組合在台灣社群持續活躍"
+      },
+      {
+        "developer": "qazbnm456",
+        "followers": 1046,
+        "repo": "qazbnm456/chromiumoxide",
+        "url": "https://github.com/qazbnm456/chromiumoxide",
+        "language": null,
+        "hours_ago": 12,
+        "description": "fork 了 Rust Chrome DevTools Protocol API；qazbnm456 是台灣知名資安研究員",
+        "local_context": "資安研究員 fork Rust CDP 工具，可能用於自動化安全測試或 headless 瀏覽器攻擊研究——Mozilla vs Chrome Prompt API 爭議的背景下，CDP 工具的關注度上升"
+      }
+    ],
+    "global": [
+      {
+        "developer": "NVIDIA",
+        "followers": 25227,
+        "repo": "NVIDIA/cell-eval",
+        "url": "https://github.com/NVIDIA/cell-eval",
+        "language": null,
+        "hours_ago": 49,
+        "description": "細胞擾動預測模型的完整評估套件，NVIDIA BioNeMo 方向的早期 public signal"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 118761,
+        "repo": "microsoft/adoptionpulse",
+        "url": "https://github.com/microsoft/adoptionpulse",
+        "language": "HTML",
+        "hours_ago": 71,
+        "description": "Copilot Enterprise 用量計費後，Microsoft 建立第一方 adoption measurement 工具；仍是 0★ 空 repo"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "AI 程式碼的品質 blind spot：benchmark 量的是通過測試，不是可維護性",
+      "body": "Gary Marcus 今天兩篇文章的核心論點不是「AI 不能寫 code」，而是「我們量的不是對的東西」。現有主流 coding benchmark（HumanEval, SWE-bench, OSWorld）量的是 functional correctness 和 task completion rate，不量 architectural coherence、security posture、long-term maintainability。這個空缺讓 builder 社群自發用 HN 留言來填補——hnup.date/hn-sota 今天 140 分出現，本質是「用群眾智慧填補 benchmark 無法量的東西」。upstream cause：benchmark 設計是 2-3 年的研究週期，但 AI coding 工具的能力提升是 6-12 個月的週期，導致 benchmark frontier 永遠落後 capability frontier 一個身位。",
+      "evidence": "Gary Marcus 第二篇 Substack（今日）; HN hnup.date/hn-sota 140分 28 留言; Mercury 百萬行 Haskell 文章（HN 386分）明確提到型別系統在抓 AI 生成 bug 上的作用",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 20,
+      "product_opportunity": "一個專門量 AI 生成程式碼「可維護性」的 linter / CI plugin——不需要 ML，基於靜態分析（dependency graph integrity、cyclomatic complexity drift、test coverage delta），能在 merge 時給出「這個 AI PR 讓你的 architecture debt 增加了多少」的具體數字",
+      "source_links": [
+        {
+          "platform": "Gary Marcus",
+          "title": "\"A model that produces code which compiles and passes the tests it was given...\"",
+          "url": "https://garymarcus.substack.com/p/a-model-that-produces-code-which"
+        },
+        {
+          "platform": "HN",
+          "title": "Show HN: State of the Art of Coding Models, According to HN Commenters",
+          "url": "https://hnup.date/hn-sota",
+          "score": 140
+        }
+      ]
+    },
+    {
+      "title": "OSS 主權危機持續從開發工具層擴展到公共基礎設施層",
+      "body": "NHS Goes To War Against Open Source 今天拿下 Lobsters #1（85分）跟 LWN #1 雙源頂位，這是連續兩天同一個故事在兩個不同角度被報導：昨天是技術角度（Prolly tree 版控資料庫作為透明度的技術替代方案），今天是政治角度（NHS 關閉授權的具體影響範圍）。同日 Lobsters 的〈Open Source Does Not Imply Open Community〉（59分）和〈A GitHub for maintainers〉（49分）說明圍繞「誰擁有 code、誰控制 community」的問題已經形成連貫的討論節點。這條弧從 Cal.com 關閉商業授權（4月16日）開始，每週有新事件進入，到今天進入制度級規模——NHS 管轄的不是一個商業工具，是整條 UK 醫療 IT 供應鏈。",
+      "evidence": "Lobsters #1 NHS 85分（今日）+ LWN #1（今日）; Lobsters 59分 Open Source Does Not Imply Open Community; 4月16日 Cal.com 關閉授權; 4月30日 Ghostty 離開 GitHub（HN 3264分）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "oss-licensing-ai-pressure",
+      "day_count": 19,
+      "product_opportunity": "一個「OSS 供應鏈風險地圖」工具：給定一個 GitHub org 或 package.json，自動掃描依賴中哪些 repo 的 license 在過去 12 個月有過 CLA 變更、哪些 maintainer 公開表達過要關閉授權，輸出 risk score",
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "NHS Goes To War Against Open Source",
+          "url": "https://shkspr.mobi/blog/2026/05/nhs-goes-to-war-against-open-source/",
+          "score": 85
+        },
+        {
+          "platform": "LWN",
+          "title": "Eden: NHS goes to war against open source",
+          "url": "https://lwn.net/Articles/1070864/"
+        }
+      ]
+    },
+    {
+      "title": "台灣 builder 開始在本地組裝 Rust embedding + context 管線",
+      "body": "今天 72 小時內，台灣開發者社群出現了一個可能是協調的、更可能是獨立聚合的訊號：strategist922 昨天建了 context-engine（Python，memory decay + token budget），今天 fork 了 embedanything（Rust embedding 框架）；doggy8088 建了 opencc-rust（Rust 中文處理）；qazbnm456 fork 了 chromiumoxide（Rust CDP）。三個不同方向的 Rust 工具在同一個 72 小時視窗出現，共同指向一件事：台灣 builder 在組裝不依賴 OpenAI / Anthropic API 的本地推論 + 中文處理管線。這不是一個 organized initiative，而是 supply-side signal——API 成本 + 中文處理需求 + Rust 生態系成熟度三個因素的交叉點到了。",
+      "evidence": "strategist922/context-engine（昨日，Python，台灣）; strategist922/embedanything fork（今日，6h ago）; doggy8088/opencc-rust（今日，3h ago，Rust）; qazbnm456/chromiumoxide fork（今日，12h ago）",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 2,
+      "percentile": "top 50%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 21,
+      "product_opportunity": "一個「台灣繁體中文 LLM 工具鏈 meta-package」：把 opencc-rust + embedanything + context-engine 打包成一個零 API key 的本地繁體中文 RAG starter kit，附完整的 benchmark 數字（C-MTEB 台灣繁體中文子集）",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "doggy8088/opencc-rust",
+          "url": "https://github.com/doggy8088/opencc-rust"
+        },
+        {
+          "platform": "GitHub",
+          "title": "strategist922/embedanything",
+          "url": "https://github.com/strategist922/embedanything"
+        }
+      ]
+    },
+    {
+      "title": "實體按鈕的反動：Mercedes 的決定是對「軟體定義一切」敘事的市場否決票",
+      "body": "Mercedes-Benz 在 HN 今日最高分故事（461分，54留言）宣布要把實體按鈕帶回來，原因是客戶抱怨觸控介面在行車時危險且令人沮喪。機制是：觸控 UI 需要視覺確認（你要看螢幕才知道有沒有按到），實體按鈕允許觸覺確認（盲操作）。這跟 AI coding 的 benchmark 問題有一個深層類比：我們很擅長量「有沒有完成任務」，不擅長量「使用過程安全不安全」。HN 留言裡有一條值得引用：「The irony is that digital interfaces were supposed to be more flexible, but in practice they're less adaptable to the actual usage context」。",
+      "evidence": "HN #7，461分，54留言（今日最高分故事）",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 5%",
+      "product_opportunity": "一個「觸覺確認優先」的 UI component library，專為需要在高認知負載下操作的場景（車用、醫療設備、工廠 HMI）設計，提供 haptic feedback + 鍵盤優先 + accessibility 三位一體的 react / SwiftUI 組件",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Mercedes-Benz commits to bringing back physical buttons",
+          "url": "https://www.drive.com.au/news/mercedes-benz-commits-to-bringing-back-phycial-buttons/",
+          "score": 461
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "sambigeara/pollen",
+    "url": "https://github.com/sambigeara/pollen",
+    "description": "無 control plane 的分散式 WASM runtime，單一 binary，Go 實作。今天 HN Show HN 126分，核心設計：每個 Pollen node 都是對等的，沒有 master/worker 分層，任務透過 gossip 協定分發，WASM 是執行單元。",
+    "why_asymmetric": "agent 工具在邊緣節點執行的需求正在從「nice to have」變成「架構約束」：MCP experimental-ext-tasks 的 async task 模型、world2agent 的 IoT 感知節點、Cloudflare AI Platform——都假設 agent 需要在不一定有中央 coordinator 的環境下執行工作。Pollen 是第一個把「無 control plane」當成核心設計原則而不是 feature 的 WASM runtime，它解決的問題是「agent 的執行環境本身是 single point of failure」。",
+    "commercial_path": "從 open source 工具到 managed runtime：賣「Pollen Cloud」，讓開發者不需要管理 gossip cluster，只需要 push WASM binary 並定義 input/output schema；定價按 invocation 計費。競爭對手是 Cloudflare Workers（有 control plane）和 Deno Deploy（中央化）——Pollen 的差異化是「你的 agent 在任意邊緣節點崩潰後可以從另一個節點接續，不需要 coordinator 知道這件事」。",
+    "stars": null,
+    "repo_age": "本週新增"
+  },
+  "contrarian": {
+    "claim": "machinepulse-ai/world2agent 今天進入 shipped 並作為 idea #1 的核心，但 open protocol for AI agent world perception 在 2026-12-31 前不會有超過 3 個 production deployment 的公開 case study",
+    "body": "world2agent 的 description 說它「標準化 AI agent 如何感知真實世界」，1,244★ 表示有真實關注，但 open protocol 在感知硬體層面的歷史很難看：ROS（Robot Operating System）花了超過五年才有第一波 production non-research 用戶，Matter（smart home 協定）在 2022 正式發布後兩年仍然碎片化。AI agent 感知協定面對的問題比軟體協定更難：不同廠牌的攝影機、感測器、PLCs 有不同的 low-level driver，open protocol 只解決了中間層，上下兩層仍然需要大量整合工作。world2agent 的 1,244★ 很可能是 protocol 願景的 excitement，不是 production-ready 的信號。",
+    "rationale": "感知硬體標準化有前車之鑑：ROS 1 到 ROS 2 的遷移花了 7 年，Matter 在三大科技公司支持下仍然碎片化。單一開源 repo 在沒有大型硬體廠商背書的情況下突破這個整合壁壘的機率很低。",
+    "prediction": "到 2026-12-31，machinepulse-ai/world2agent repo 的 README 或 GitHub Discussions 中，可驗證的 production（非 demo / proof-of-concept）deployment case study 少於 3 個",
+    "resolution_date": "2026-12-31"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-qwen-swebench",
+      "text": "Qwen 系列模型在 2026-09-30 前，在 SWE-bench Verified 上的得分超過 Claude Opus 4.7 的公開 baseline（以 Anthropic 官方公告或 SWE-bench leaderboard 資料為準）。",
+      "status": "pending",
+      "created": "2026-04-17",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-github-ai-content-policy",
+      "text": "到 2026-12-31，GitHub 在 repository settings 中加入「AI-generated content policy」標記選項，讓 maintainer 聲明是否接受 AI 生成的 issues/PRs（以 GitHub changelog 或 GitHub Universe 2026 公告為準）。",
+      "status": "pending",
+      "created": "2026-04-30",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-prompt-api-w3c",
+      "text": "到 2026-12-31，Chrome Prompt API（或移除了 model-specific 綁定的改版）在 Chrome stable channel 保持 GA 狀態，W3C WICG/chrome-ai 提案沒有正式被 shelve 或撤回（以 Chrome Platform Status feature page 狀態或 WICG GitHub repo 的 active/closed 狀態為準）。",
+      "status": "pending",
+      "created": "2026-05-02",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-graphify-no-benchmark",
+      "text": "到 2026-11-30，safishamsi/graphify 沒有發布在任何主要 code Q&A benchmark（SWE-bench、DevBench、CodeRAG-Bench）上優於 simple top-k embedding RAG 15% 以上的公開評估結果（以 graphify GitHub repo 的 README 或 releases 頁面為準）。",
+      "status": "pending",
+      "created": "2026-05-03",
+      "resolution_date": "2026-11-30"
+    },
+    {
+      "id": "pred-world2agent-no-production",
+      "text": "到 2026-12-31，machinepulse-ai/world2agent repo 的 README 或 GitHub Discussions 中，可驗證的 production（非 demo / proof-of-concept）deployment case study 少於 3 個（以 repo 公開記錄為準）。",
+      "status": "pending",
+      "created": "2026-05-04",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "625e464f-94e8-415a-825c-bd4db11fc295",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-03T20:12:14.546Z",
+    "analyze_duration_ms": 619379,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 9
+      },
+      "search": {
+        "ok": true,
+        "count": 49
+      },
+      "developers": {
+        "ok": true,
+        "count": 6
+      }
+    },
+    "degraded_sources": []
+  }
+}
