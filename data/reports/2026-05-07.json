@@ -1,0 +1,600 @@
+{
+  "date": "2026-05-07",
+  "lead": {
+    "html": "<h3>Simon Willison 在 Code w/ Claude 2026 的直播第一行：「今天 Anthropic 說他們用 SpaceX Starlink 換到更高的 API 限額。」</h3><h4>發生了什麼</h4><p>今天有兩件事同時發生，理解它們要放在一起看才有意義。第一件：Anthropic 宣布與 SpaceX 算力合作，換取的不是錢而是更高的 Claude 使用量上限，同時 <code>anthropics/cwc-workshops</code> repo 在 16 小時前建立——Code with Claude 2026 活動正在進行中，Simon Willison 今天對整個活動做了即時 live blog。第二件：HN 今天 rank #6 的文章是〈The bottleneck was never the code〉（410 分，43 則留言），Gary Marcus 同日發文〈Breaking: Autonomous Agents are a Shitshow〉。這兩篇是彼此獨立的源頭，但指向同一個觀察：agent 的瓶頸不在生成能力，在判斷、上下文選擇、以及當任務真正複雜時什麼該停下來。</p><p>Cloudflare 同時發布 agents 可以建立 Cloudflare 帳號、購買網域、部署服務（HN 596 分，80 則留言），這是今天另一條 threshold-crossing 的事件：agent 可以刷卡了。Anthropic 的 financial-services repo（8,939★）今天在 GitHub Trending 第 9 位，昨天發布的十個金融服務 agent template 現在是有 production-ready 程式碼可以直接拿的東西。</p><p>SpaceX 合作的實質內容是：Anthropic 用 SpaceX 的算力（Starlink 衛星運算基礎設施）換取更高的 API rate limit。這不是一筆金錢交易，是算力互換——這在計算經濟裡是新的形式。對 builder 的直接影響：高頻使用 Claude API 的工具（大型 agent swarm、長批次分析、持續運行的 coding agent）碰到 rate limit 的機率降低。</p><h4>為什麼重要</h4><p>〈The bottleneck was never the code〉這篇 HN 文章的核心論點是：AI coding agent 的限制不是生成品質，而是開發者的決策帶寬——他們花了太多時間在「要不要接受這個 PR」「這個測試 fail 是 AI 的鍋還是我的 spec 問題」「要不要把這段 context 餵進去」。Gary Marcus 的批評是更根本的：agent 在真實複雜任務的失敗率，讓大多數「autonomous agent」其實還是需要人類監督每一步。</p><p>這兩個觀點同時出現在 Anthropic 辦 Code with Claude 2026 活動的同一天，不是巧合的 pattern，但也不是 Anthropic 失算的 pattern——是真實的市場對話：一邊是「API 限額提升了，去 build 更多東西」，一邊是「build 更多東西之前，先搞清楚瓶頸在哪」。</p><p>對在跑 agent pipeline 的 builder，這個對話有具體含義。Simon Willison 的第二篇文章「Vibe coding and agentic engineering are getting closer than I'd like」說的是他開始擔心低門檻的 vibe coding 和嚴肅的 agentic engineering 在工具層、認知層都在趨近，這讓「什麼情況下你該信任 agent 的輸出」變得更難判斷。</p><h4>社群怎麼看</h4><p>〈The bottleneck was never the code〉的 HN top comment 是：「真正的瓶頸是需求。AI 讓寫 code 更快，但沒有讓你知道要 build 什麼更快。」（73 讚）另一則 comment 指出：「說『瓶頸是 code 之外的東西』跟說『AI 很厲害』沒什麼兩樣——每個人心中的瓶頸都不同。」這個 meta 批評精準指出文章本身的弱點：沒有量化哪種類型的開發者在哪種任務上碰到哪個瓶頸。Gary Marcus 的 agent 批評文則在 HN 幾乎沒有討論（發文時間點偏晚），主要在他的 Substack 社群裡流傳。Cloudflare agents-can-buy-domains 的 HN 留言裡，有人 flag：「agent 買了 domain 然後你不能取消的場景，Cloudflare 怎麼處理？」目前沒有答案。</p><h4>行動建議</h4><p>如果你正在跑 Claude API 的 batch pipeline（批次文件分析、大量 PR review、agent swarm），這週可以主動測試新的 rate limit 上限邊界，並在 pipeline 的 retry 邏輯裡記下今天的 baseline 數字——下次碰到 429 的時候你會知道是否是真的 quota 問題還是 implementation bug。如果你在 build 有 Cloudflare Workers 的 agent，現在可以在 staging 環境試 Agents + Stripe Projects API 組合（Cloudflare 今天的 blog 有完整 sample code），關鍵測試點是 rollback behavior：agent 買了 domain 之後你的 error handler 能取消嗎？</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "Agent Action Canary：在 agent 對真實資源動刀之前先跑模擬",
+      "projects": [
+        {
+          "name": "tddworks/baguette",
+          "url": "https://github.com/tddworks/baguette",
+          "note": "684★，Swift，headless iOS Simulator manager，支援 iOS 26 的 60fps 手勢注入"
+        },
+        {
+          "name": "Cloudflare Agents + Stripe Projects",
+          "url": "https://blog.cloudflare.com/agents-stripe-projects/",
+          "note": "agent 可以建立帳號、購買 domain、部署服務"
+        }
+      ],
+      "description": "Cloudflare 今天讓 agent 有了刷卡能力。baguette 讓 agent 在 headless iOS Simulator 上做任何手勢操作。兩件事都是 agent 取得真實世界控制權的不同面向，都缺少同一個東西：在 agent 真的執行之前，有沒有辦法在沙盒裡跑一遍、確認不會炸掉？Action Canary 的概念是：每個有外部副作用的 agent tool call（支付、DNS 變更、app store submission、帳號建立）都先在 dry-run mode 跑一次，用 shadow API 或 simulator 驗證 rollback path 可行，才放行真實 call。實作上，你可以把 Cloudflare 的 Workers AI + D1 combo 用來記錄「agent 意圖做什麼」，用 baguette 的 iOS simulator farm 來跑 mobile action replay，再加上一個 diff-based approval UI——agent 的計畫 vs 模擬結果之間的 diff 給人 approve 或 deny。",
+      "use_case": "你是一家 fintech startup 的後端工程師，正在用 Claude + Cloudflare Workers 做一個自動處理客戶退款請求的 agent。退款邏輯涉及 Stripe refund API、帳戶狀態更新、客服系統回信三個步驟，你需要確保 agent 在每個步驟之前都有一個可以 dry-run 的路徑，而不是讓 agent 直接對著生產帳戶操作。",
+      "tech_stack": "Cloudflare Workers + D1（記錄 intent log）、Stripe sandbox API、baguette headless iOS Simulator（mobile action replay）、React diff UI",
+      "hardware": "純雲端 API 即可，本地測試需要 macOS（baguette 是 Swift）",
+      "skill_level": "需熟悉 Cloudflare Workers + webhook 架構，TypeScript",
+      "dependencies": "Cloudflare Workers 帳號（免費 tier 可起步）、Stripe sandbox key、baguette 需要 macOS Xcode",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/tddworks/baguette && 讀 Cloudflare blog 的 agents-stripe-projects sample code",
+      "market_evidence": "Cloudflare 今天 HN 596 分的文章裡，top comment 直接問 rollback 機制——說明市場對「agent 有刷卡能力之後如何處理失敗」有即時需求。現在 GitHub 上沒有一個專門做 agent action dry-run 的 framework（搜 'agent dry-run' 只有零散 issue）。"
+    },
+    {
+      "format": "remix",
+      "title": "LLM 安全報告分流器：自動識別 AI 生成的漏洞回報並要求 PoC",
+      "projects": [
+        {
+          "name": "mukul975/cve-mcp-server",
+          "url": "https://github.com/mukul975/cve-mcp-server",
+          "note": "540★，Python，MCP server，27 個安全情報工具涵蓋 21 個 API（CVE lookup、EPSS scoring、CISA KEV）"
+        },
+        {
+          "name": "LWN: LLM-driven security reports disrupt coordinated disclosure",
+          "url": "https://lwn.net/Articles/1070698/"
+        }
+      ],
+      "description": "LWN 今天的頭條：LLM 工具開始大量生成漏洞回報，已經在衝擊 coordinated disclosure 流程。安全研究人員收到的報告量暴增，但其中大量是 LLM hallucination——看起來像真的漏洞，但沒有可重現的 PoC，沒有版本資訊，細節模糊。同時，cve-mcp-server 讓 Claude 可以查 27 個安全情報資料庫。兩件事結合起來的 gap：目前沒有工具能在報告進入人工審查之前自動分流。Build 一個 triage layer：接收安全報告 email/form，用 Claude + cve-mcp-server 查對應 CVE 資料庫，判斷報告是否有 PoC 支撐、版本 pinning、可重現步驟。沒有的話自動回信要求 PoC，並把報告標記為「待驗證」。有的話進入正常 disclosure 流程。這個工具的客戶是 CERT 協調中心、開源 project 的 security@ inbox、中型 SaaS 公司的 security team。",
+      "use_case": "你負責一個有 2000+ 個下游使用者的 open source Python library 的 security@ inbox。過去一個月收到的報告從每週 3 封增加到每週 17 封，其中有 12 封沒有可重現步驟。你每封要花 20 分鐘確認是不是真的漏洞。你需要一個 filter：先讓 Claude 讀報告，查 cve-mcp-server 的 EPSS 分數和 CISA KEV，如果報告缺 PoC 就自動回信，如果 EPSS < 0.01 就降優先級。",
+      "tech_stack": "Python（FastAPI 接 webhook）、Claude API（claude-sonnet-4-6）、cve-mcp-server MCP 工具、PostgreSQL 記錄分流決定",
+      "hardware": "純 CPU 可跑，雲端 API 即可",
+      "skill_level": "需熟悉 Python + email parsing，MCP tool calling 有基本理解",
+      "dependencies": "Claude API key（月費 ~$10 中等用量）、cve-mcp-server 免費自架、NIST NVD API key 免費",
+      "difficulty": 2,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/mukul975/cve-mcp-server && pip install anthropic mcp",
+      "market_evidence": "LWN 今天 rank #1 的文章直接描述這個 pain point 正在爆發。HackerOne 和 Bugcrowd 都沒有 LLM-generated report detection 功能（截至 2026-05 公開 feature list）。coordinated disclosure 社群（Openwall、oss-security mailing list）過去 30 天有多則抱怨 AI 生成報告淹沒收件匣的 thread。"
+    },
+    {
+      "format": "remix",
+      "title": "CARA 機器人腦的任務感知模型切換器：根據任務隊列熱載不同專用模型",
+      "projects": [
+        {
+          "name": "CARA 2.0 Robot Dog",
+          "url": "https://www.aaedmusa.com/projects/cara2",
+          "note": "HN 409 分，使用 NVIDIA Jetson Orin 作為主控腦"
+        },
+        {
+          "name": "PCIe 8.0 Draft 0.5",
+          "url": "https://www.phoronix.com/news/PCIe-8.0-Draft-0.5",
+          "note": "1TB/s 雙向頻寬，PCI-SIG 今天發布"
+        }
+      ],
+      "description": "CARA 2.0 用 Jetson Orin（最多 64GB unified memory）跑視覺 + 運動模型。今天 PCI-SIG 發布 PCIe 8.0 Draft 0.5：x16 lane 的雙向頻寬達到 1TB/s。這個數字的含義是：model weight 的載入速度接近 GPU VRAM 內的 tensor 移動速度，意味著「hot-swap 不同專用模型」的 overhead 從「太慢，不實際」降到「跟 inference 延遲同量級」。現在 Jetson Orin 平台的大部分機器人都是載入一個大模型跑所有任務（視覺辨識 + 路徑規劃 + 手臂控制全擠在同一個 checkpoint）。更好的做法是根據任務隊列動態切換：抓取任務載 grasping specialist（訓練在 1M 抓取軌跡上），導航任務載 nav specialist（訓練在 VLA/RT-2 格式上）。Build 一個 model-switching middleware：task queue 管理 + PCIe DMA aware 的 weight 載入 scheduler + 每個 specialist 的 latency budget 設定。目前公開的 Jetson 機器人框架（Isaac ROS、ROS 2 navigation）都沒有這個功能。",
+      "use_case": "你在做一個 Jetson Orin 32GB 的小型物流機器人，需要在同一個 run 裡做三件事：貨架上的物件辨識（YOLOv8-class）、抓取路徑規劃（需要 depth estimation + grasp pose）、導航避障（需要 360° lidar fusion）。三個任務的 model 加起來超過 20GB，放不進同一個 inference session。你需要一個 scheduler，在機器人走路時載 nav model，到定點後熱切換到 grasp model，辨識完再切回去。",
+      "tech_stack": "C++（Jetson 底層 memory management）、CUDA Unified Memory API、ROS 2 action server（任務隊列）、TensorRT engine 的 deserialize 機制",
+      "hardware": "NVIDIA Jetson Orin 32GB 或 64GB，PCIe 8.0 測試需要桌機級 PCIe 8.0 主機板（2027 年量產前可在 PCIe 5.0 上做原型）",
+      "skill_level": "需熟悉 CUDA memory 管理 + ROS 2，C++ 必須",
+      "dependencies": "Jetson Orin devkit（約 NT$30,000）、TensorRT 免費、ROS 2 Humble 免費",
+      "difficulty": 4,
+      "dev_time": "1 個月+",
+      "first_step": "在現有的 Jetson Orin 上測量 TensorRT engine deserialize 時間：`trtexec --loadEngine=model.engine --iterations=10`，確認你的 baseline swap time",
+      "market_evidence": "CARA 2.0 今天 HN 409 分說明 DIY robotics 社群規模夠大。Boston Dynamics 和 Figure AI 的 job postings 過去 90 天有「on-device model serving optimization」相關職缺（GitHub jobs + LinkedIn）。PCIe 8.0 今天發布 Draft 0.5 說明硬體端已在移動——軟體框架先準備好的人有 12-18 個月的先發優勢。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Cloudflare Agents + Stripe Projects：agent 現在可以建帳號、買 domain、部署",
+      "url": "https://blog.cloudflare.com/agents-stripe-projects/",
+      "desc": "agent 取得 Cloudflare 帳號管理權 + Stripe 支付能力，是今天最重要的 agent capability threshold-crossing。HN top comment 立刻問 rollback 機制。",
+      "source": "HN 596分",
+      "repo_age": "公告今日"
+    },
+    {
+      "name": "Anthropic × SpaceX 算力合作：更高 API 使用上限",
+      "url": "https://www.anthropic.com/news/higher-limits-spacex",
+      "desc": "Anthropic 用 SpaceX 算力換取更高 Claude API rate limit。算力互換模式，非金錢合作。對高頻 agent pipeline 有直接影響。",
+      "source": "Anthropic News",
+      "repo_age": "公告今日"
+    },
+    {
+      "name": "anthropics/cwc-workshops",
+      "url": "https://github.com/anthropics/cwc-workshops",
+      "desc": "Code with Claude 2026 活動的 workshop repo，16 小時前建立，Simon Willison 今日即時 live blog。TypeScript。",
+      "source": "GitHub Developers (Anthropic)",
+      "stars": 7,
+      "repo_age": "今日建立"
+    },
+    {
+      "name": "anthropics/financial-services",
+      "url": "https://github.com/anthropics/financial-services",
+      "desc": "昨日發布的十個金融服務 agent template，今天進入 GitHub Trending #9（8,939★）。Python，包含貸款處理、合規審查、詐欺偵測等完整可跑的 agent。",
+      "source": "GitHub Trending #9",
+      "stars": 8939,
+      "repo_age": "昨日發布"
+    },
+    {
+      "name": "VS Code 1.119",
+      "url": "https://www.oschina.net/news/437705/vs-code-1-119-released",
+      "desc": "著重 agent 互動流暢度、增強的 observability、更高效的 trust management。OSChina rank #3。",
+      "source": "OSChina",
+      "repo_age": "本日發布"
+    },
+    {
+      "name": "InsForge/InsForge",
+      "url": "https://github.com/InsForge/InsForge",
+      "desc": "Postgres-based backend，內建 auth、storage、compute、hosting、AI gateway，專門為 coding agent 設計。GitHub Trending #7，8,353★。",
+      "source": "GitHub Trending #7",
+      "stars": 8353,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "PCIe 8.0 Spec Draft 0.5",
+      "url": "https://www.phoronix.com/news/PCIe-8.0-Draft-0.5",
+      "desc": "PCI-SIG 今日發布 PCIe 8.0 Draft 0.5，x16 lane 雙向頻寬達到 1TB/s。對 on-device AI model hot-swap 有長期影響。Phoronix #1。",
+      "source": "Phoronix",
+      "repo_age": "規格今日發布"
+    },
+    {
+      "name": "appergb/openless",
+      "url": "https://github.com/appergb/openless",
+      "desc": "按住 key 說話、放開後 AI 潤色文字直接出現在游標位置。macOS 和 Windows 的開源語音輸入工具。906★，HTML。",
+      "source": "topic:llm · 906★ · 近期建立",
+      "stars": 906,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "future-agi/future-agi",
+      "url": "https://github.com/future-agi/future-agi",
+      "desc": "開源的 LLM 和 AI agent 評估、觀測、改進平台。包含 tracing、evals、dataset 管理。846★，Python。",
+      "source": "topic:llm · 846★ · 近期建立",
+      "stars": 846,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "tddworks/baguette",
+      "url": "https://github.com/tddworks/baguette",
+      "desc": "Headless iOS Simulator manager，支援 iOS 26，host-side 手勢注入（tap、swipe、60fps multi-finger），讓 agent 可以操作 iOS app。684★，Swift。",
+      "source": "topic:agent · 684★ · 近期建立",
+      "stars": 684,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "walkinglabs/hands-on-modern-rl",
+      "url": "https://github.com/walkinglabs/hands-on-modern-rl",
+      "desc": "從基礎 RL 到 LLM alignment、RLVR、advanced agent 的完整開源課程。648★，Python，提供 Jupyter notebook 實作。",
+      "source": "topic:llm · 648★ · 近期建立",
+      "stars": 648,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "mukul975/cve-mcp-server",
+      "url": "https://github.com/mukul975/cve-mcp-server",
+      "desc": "MCP server，給 Claude 27 個安全情報工具，涵蓋 21 個 API：CVE lookup、EPSS scoring、CISA KEV、shodan 等。540★，Python。",
+      "source": "topic:mcp · 540★ · 近期建立",
+      "stars": 540,
+      "repo_age": "近期建立"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "The bottleneck was never the code",
+        "url": "https://www.thetypicalset.com/blog/thoughts-on-coding-agents",
+        "score": 410,
+        "comments": 43,
+        "source": "HN #6",
+        "takeaway": "AI coding agent 的瓶頸是開發者的決策帶寬和 spec 品質，不是 code 生成能力。Top comment：「真正的瓶頸是需求。AI 讓寫 code 更快，但沒有讓你知道要 build 什麼更快。」",
+        "action": "如果你的 agent 產出率高但 merge rate 低，先量一下 PR review 時間佔你工作日的百分比，再量 spec 撰寫時間——找真正的瓶頸再優化工具選擇。"
+      },
+      {
+        "title": "Valve releases Steam Controller CAD files under Creative Commons license",
+        "url": "https://www.digitalfoundry.net/news/2026/05/valve-releases-steam-controller-cad-files-under-creative-commons-license",
+        "score": 631,
+        "comments": 16,
+        "source": "HN #1",
+        "takeaway": "Valve 把 Steam Controller 的完整 CAD 檔案以 CC 授權釋出。對 embedded/robotics builder：這是一套有大量歷史用戶回饋驗證過的手把人因工學設計，可以免費用在你的 HID project 上。"
+      },
+      {
+        "title": "LLM-driven security reports disrupt coordinated disclosure",
+        "url": "https://lwn.net/Articles/1070698/",
+        "source": "LWN #1",
+        "takeaway": "LWN 記錄了 LLM 工具導致安全漏洞報告量激增的問題，大量報告沒有 PoC、沒有版本 pinning、細節模糊。如果你維護一個有 security@ inbox 的 open source project，現在就要考慮 triage automation。",
+        "action": "在你的安全報告接收流程裡加一個 auto-reply template，要求提交者附上可重現步驟和受影響版本號。這個 friction 對真實研究者幾乎沒影響，對 LLM-generated 報告有明顯過濾效果。"
+      },
+      {
+        "title": "Breaking: Autonomous Agents are a Shitshow",
+        "url": "https://garymarcus.substack.com/p/breaking-autonomous-agents-are-a",
+        "source": "Gary Marcus",
+        "takeaway": "Gary Marcus 整理了 autonomous agent 的失敗案例集。論點：當任務複雜度超過一定閾值，現有 agent 的失敗率讓「autonomous」這個形容詞站不住腳。對 builder：用 agent 之前先量你的任務複雜度，決定哪些步驟需要人工 checkpoint。"
+      },
+      {
+        "title": "Go is FIPS 140-3 certified",
+        "url": "https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/5247",
+        "score": 47,
+        "comments": 16,
+        "source": "Lobsters",
+        "tags": [
+          "cryptography",
+          "go"
+        ],
+        "takeaway": "Go 的 crypto 套件拿到 FIPS 140-3 認證（NIST Certificate #5247）。如果你在用 Go 做有 FedRAMP 或金融合規需求的 backend，這個認證讓你少一個文件問題。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Valve releases Steam Controller CAD files under Creative Commons license",
+        "url": "https://www.digitalfoundry.net/news/2026/05/valve-releases-steam-controller-cad-files-under-creative-commons-license",
+        "score": 631,
+        "comments": 16
+      },
+      {
+        "title": "Agents can now create Cloudflare accounts, buy domains, and deploy",
+        "url": "https://blog.cloudflare.com/agents-stripe-projects/",
+        "score": 596,
+        "comments": 80
+      },
+      {
+        "title": "The bottleneck was never the code",
+        "url": "https://www.thetypicalset.com/blog/thoughts-on-coding-agents",
+        "score": 410,
+        "comments": 43
+      },
+      {
+        "title": "CARA 2.0 – \"I Built a Better Robot Dog\"",
+        "url": "https://www.aaedmusa.com/projects/cara2",
+        "score": 409,
+        "comments": 15
+      },
+      {
+        "title": "Knitting bullshit",
+        "url": "https://katedaviesdesigns.com/2026/04/29/knitting-bullshit/",
+        "score": 380,
+        "comments": 27
+      },
+      {
+        "title": "Appearing productive in the workplace",
+        "url": "https://nooneshappy.com/article/appearing-productive-in-the-workplace/",
+        "score": 308,
+        "comments": 24
+      },
+      {
+        "title": "YouTube, your RSS feeds are broken",
+        "url": "https://openrss.org/blog/youtube-your-feeds-are-broken",
+        "score": 299,
+        "comments": 46
+      },
+      {
+        "title": "Multi-stroke text effect in CSS",
+        "url": "https://yuanchuan.dev/multi-stroke-text-effect-in-css",
+        "score": 276,
+        "comments": 9
+      },
+      {
+        "title": "245TB Micron 6600 ION Data Center SSD Now Shipping",
+        "url": "https://investors.micron.com/news-releases/news-release-details/industry-leading-245tb-micron-6600-ion-data-center-ssd-now",
+        "score": 219,
+        "comments": 22
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "RSS Feeds Send Me More Traffic Than Google",
+        "url": "https://shkspr.mobi/blog/2026/05/rss-feeds-send-me-more-traffic-than-google/",
+        "score": 97,
+        "comments": 49,
+        "tags": [
+          "web"
+        ]
+      },
+      {
+        "title": "Multi-stroke text effect in CSS",
+        "url": "https://yuanchuan.dev/multi-stroke-text-effect-in-css",
+        "score": 61,
+        "comments": 2,
+        "tags": [
+          "css",
+          "design"
+        ]
+      },
+      {
+        "title": "Go is FIPS 140-3 certified",
+        "url": "https://csrc.nist.gov/projects/cryptographic-module-validation-program/certificate/5247",
+        "score": 47,
+        "comments": 16,
+        "tags": [
+          "cryptography",
+          "go"
+        ]
+      },
+      {
+        "title": "Building the deployment tool I wish I had",
+        "url": "https://ruuda.nl/2026/deptool",
+        "score": 46,
+        "comments": 15,
+        "tags": [
+          "devops",
+          "release",
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "Principia Softwarica",
+        "url": "https://principia-softwarica.org/",
+        "score": 45,
+        "comments": 25,
+        "tags": [
+          "osdev"
+        ]
+      },
+      {
+        "title": "Why didn't IPv6 work in my home network?",
+        "url": "https://gowtham.dev/blog/ipv6-problems.html",
+        "score": 42,
+        "comments": 63,
+        "tags": [
+          "debugging",
+          "networking"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "jserv",
+        "followers": 4389,
+        "repo": "jserv/cellphone-prototype",
+        "url": "https://github.com/jserv/cellphone-prototype",
+        "language": "C",
+        "hours_ago": 63,
+        "description": "用 LVGL 框架實作的手機 UI demo",
+        "local_context": "jserv 持續在嵌入式 UI 方向產出，LVGL 是台灣嵌入式開發社群目前最常用的 GUI framework，這個 demo 可能是教學材料或 robotics 前端的原型。"
+      },
+      {
+        "developer": "doggy8088",
+        "followers": 4400,
+        "repo": "doggy8088/pdf-shrink",
+        "url": "https://github.com/doggy8088/pdf-shrink",
+        "language": "Rust",
+        "hours_ago": 25,
+        "description": "PDF 壓縮工具，Rust 實作",
+        "local_context": "台灣開發者繼續用 Rust 做 CLI 工具，doggy8088 這週的 Rust 工具是過去一個月台灣 Rust tooling 訊號的延續。"
+      },
+      {
+        "developer": "roberthsu2003",
+        "followers": 705,
+        "repo": "roberthsu2003/__11505_ai_tvdi__",
+        "url": "https://github.com/roberthsu2003/__11505_ai_tvdi__",
+        "language": null,
+        "hours_ago": 42,
+        "description": "職能發展學院 AI 協作程式開發班課程 repo",
+        "local_context": "職能發展學院的 AI 程式開發課程開班，代表台灣職訓體系正式把 AI 協作程式開發列入正式訓練，比企業培訓更早切入基層開發者市場。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "huggingface",
+        "followers": 63056,
+        "repo": "huggingface/nanowhale",
+        "url": "https://github.com/huggingface/nanowhale",
+        "language": "Python",
+        "hours_ago": 53,
+        "description": "53 小時前建立，105★，仍無 README 或描述。",
+        "local_context": "預測追蹤：pred-nanowhale-model-release 要求 2026-05-12 前有 README 和 model card。現在距截止 5 天，repo 仍空。"
+      },
+      {
+        "developer": "anthropics",
+        "followers": 54638,
+        "repo": "anthropics/cwc-workshops",
+        "url": "https://github.com/anthropics/cwc-workshops",
+        "language": "TypeScript",
+        "hours_ago": 16,
+        "description": "Code with Claude 2026 活動的 workshop 程式碼，今日活動進行中。",
+        "local_context": "Simon Willison 今天 live blog 整個 CwC 2026 活動，這個 repo 是活動的唯一公開程式碼 artifact。"
+      },
+      {
+        "developer": "google",
+        "followers": 71995,
+        "repo": "google/ai-abap-assist-eclipse",
+        "url": "https://github.com/google/ai-abap-assist-eclipse",
+        "language": null,
+        "hours_ago": 0,
+        "description": "0 小時前建立，空 repo，無描述。ABAP 是 SAP 的專有企業語言。",
+        "local_context": "Google 在 ABAP/SAP 生態系建立 AI coding 工具，瞄準 Fortune 500 企業 ERP 市場。SAP 生態系有數千萬行 ABAP 程式碼在全球企業系統中跑，這個空 repo 是 Google 進入這個市場的最早公開訊號。"
+      },
+      {
+        "developer": "vercel",
+        "followers": 28010,
+        "repo": "vercel/vc-runtime-lab",
+        "url": "https://github.com/vercel/vc-runtime-lab",
+        "language": "TypeScript",
+        "hours_ago": 4,
+        "description": "4 小時前建立，0★，空 repo。「vc-runtime-lab」暗示 Vercel 在測試自己的 runtime 方向。"
+      },
+      {
+        "developer": "apple",
+        "followers": 36528,
+        "repo": "apple/ml-headsup",
+        "url": "https://github.com/ml-headsup",
+        "language": "HTML",
+        "hours_ago": 26,
+        "description": "26 小時前建立，0★，HTML，無說明。ml-headsup 命名暗示 heads-up display 相關 ML 研究，WWDC 前出現。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Agent 取得真實世界財務控制權：Cloudflare 今天越線",
+      "body": "Cloudflare 今天讓 agent 可以建立帳號、購買 domain、部署服務，背後是 Stripe 支付整合。這不是一個「agent 可以寫 code」的升級，是一個「agent 可以花錢」的升級。過去 agent 的行動邊界是資訊處理和程式碼生成；今天這條線被跨過之後，agent pipeline 的設計必須加上財務影響的考量。HN 596 分、80 則留言，top comment 問的是 rollback——說明社群立刻跳到「怎麼處理失敗」而不是停在「這很酷」。Anthropic 同天的金融服務 agent template（anthropics/financial-services，8,939★，Trending #9）是這個 arc 的另一個數據點：agent + 金融行動能力是今天的主旋律。",
+      "evidence": "Cloudflare HN 596 分，80 留言；anthropics/financial-services Trending #9，8,939★",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 25,
+      "product_opportunity": "Agent 財務行動的 dry-run 框架（見今日 idea #1）。任何需要 agent 採購、支付、帳號建立的產品都需要一個 sandbox 測試層。",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Agents can now create Cloudflare accounts, buy domains, and deploy",
+          "url": "https://blog.cloudflare.com/agents-stripe-projects/",
+          "score": 596
+        },
+        {
+          "platform": "GitHub Trending",
+          "title": "anthropics/financial-services",
+          "url": "https://github.com/anthropics/financial-services"
+        }
+      ]
+    },
+    {
+      "title": "google/ai-abap-assist-eclipse：Google 悄悄進入 SAP 企業 ERP 市場",
+      "body": "0 小時前建立的空 repo，目標是 ABAP 語言（SAP 的專有企業程式語言，全球有超過 3,000 萬行 ABAP 在 Fortune 500 系統中運行）。Google 在 Eclipse 這個 ABAP 開發者主要用的 IDE 裡建 AI 輔助工具。這個動作的背景：SAP 上週宣布了自己的 Joule AI coding 助手，把 AI 導入 SAP 開發流程。Google 今天悄悄建立這個 repo，時間點和 SAP Joule 的發布對照非常直接。目前 Anthropic 和 OpenAI 都沒有公開的 ABAP 專用 coding 工具。這個空 repo 是 Google 在一個非常特定的企業垂直市場的先佔動作。",
+      "evidence": "google/ai-abap-assist-eclipse，0h ago，0★，Google org（71,995 followers）",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "anomaly class",
+      "product_opportunity": "ABAP 的 AI coding 工具目前市場空間大但入門門檻高（需要 SAP 系統存取）。如果你有 SAP ABAP 背景，現在是最早切入這個 niche 的時機——在 Google 正式發布之前建立自己的工具。",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google/ai-abap-assist-eclipse",
+          "url": "https://github.com/google/ai-abap-assist-eclipse"
+        }
+      ]
+    },
+    {
+      "title": "LLM 安全報告洪水：coordinated disclosure 的基礎設施撐不住了",
+      "body": "LWN 今天 rank #1 的文章記錄了一個正在爆發的問題：LLM 工具讓任何人都能快速生成看起來像真的漏洞報告，但缺乏可重現的 PoC。結果：CERT 協調中心和 open source project 的 security@ inbox 被淹沒，真正的漏洞報告被淹沒在雜訊裡。這個問題有一個在今天的數據裡找到的直接解法材料：mukul975/cve-mcp-server（540★）提供 27 個安全情報工具可以用來驗證報告的 claim。但這個工具本身還沒有被接到安全報告 triage 流程裡——這個 integration gap 是今天最具體的 builder 機會。coordinated disclosure 的基礎設施是整個 OSS 安全生態的基礎，它的損壞影響的是每一個 open source 使用者。",
+      "evidence": "LWN rank #1；mukul975/cve-mcp-server 540★",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 8,
+      "product_opportunity": "自動化安全報告 triage 層，見今日 idea #2。針對 CERT 協調中心和大型 open source project 的 security@ inbox。",
+      "source_links": [
+        {
+          "platform": "LWN",
+          "title": "LLM-driven security reports disrupt coordinated disclosure",
+          "url": "https://lwn.net/Articles/1070698/"
+        },
+        {
+          "platform": "GitHub",
+          "title": "mukul975/cve-mcp-server",
+          "url": "https://github.com/mukul975/cve-mcp-server"
+        }
+      ]
+    },
+    {
+      "title": "DeepSeek 估值 450 億美元 + Kimi 200 億美元：中國 AI 融資進入新量級",
+      "body": "OSChina 今天報導兩條：DeepSeek 進行成立以來首轮外部融資，估值逼近 450 億美元，國家大基金領投；Kimi（月之暗面）即將完成 20 億美元新一輪融資，投後估值超過 200 億美元。兩個數字都是本週新的公開數據點。DeepSeek 的 450 億估值讓它進入全球 top 5 未上市 AI 公司行列（GPT 系列、Anthropic、Cohere 之後），而且這是它的第一輪外部融資——之前完全是創辦人自行出資。對 builder 的含義：DeepSeek V4 Flash 和後續模型的 API 定價有國家資金做後盾，短期內不會為了收支平衡而漲價。",
+      "evidence": "OSChina rank #1（DeepSeek 450億）和 rank #2（Kimi 200億）",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "product_opportunity": "DeepSeek 融資後的 API 穩定性讓它成為中文 RAG pipeline 的可靠 backend 選項。如果你的 pipeline 需要低成本中文模型，現在是評估 DeepSeek API 的合適時機。",
+      "source_links": [
+        {
+          "platform": "OSChina",
+          "title": "DeepSeek 估值逼近 450 亿美元，国家大基金领投首轮外部融资",
+          "url": "https://www.oschina.net/news/437707"
+        },
+        {
+          "platform": "OSChina",
+          "title": "月之暗面将完成 20 亿美元新融资，估值破 200 亿美元",
+          "url": "https://www.oschina.net/news/437706"
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "chekusu/wanman",
+    "url": "https://github.com/chekusu/wanman",
+    "stars": 515,
+    "description": "515★，TypeScript，開源 agent matrix runtime，靈感來自日本的單人列車（one-man train）系統。概念是讓 agent 從主控角色退後，人類重新掌握控制——agent 在後台跑，但每個動作都需要人類確認。",
+    "why_asymmetric": "「The bottleneck was never the code」今天 HN 410 分、Gary Marcus「Autonomous Agents are a Shitshow」同日出現，說明市場對「agent 失控」的焦慮正在上升。wanman 的設計哲學恰好是這個焦慮的直接回應：不是讓 agent 更 autonomous，而是讓人類更容易 supervise。這個定位在六個月後可能是 mainstream。目前 515★ 對這個概念的重要性來說明顯低估。",
+    "commercial_path": "賣給有 compliance 需求的企業（金融、醫療）：agent 做分析，每個決策點需要人類簽核，完整 audit log。比全自動 agent 更容易進 enterprise，比純 RPA 更有彈性。"
+  },
+  "contrarian": {
+    "claim": "Cloudflare 的 agents-can-buy-domains 是今天最被高估的 demo",
+    "body": "Cloudflare 今天讓 agent 可以建立帳號、購買 domain、部署服務，HN 596 分，社群很興奮。但這個 capability 的實際使用場景比想像中窄：大多數 agent 部署的用途不是購買 infrastructure，而是處理資料、回答問題、呼叫 API。真正需要「agent 自己買 domain」的使用案例非常具體（自動建站工具、domain squatting bot 之類），而且大多數企業 IT 部門不會讓 agent 有帳單授權。更根本的問題：agent 失敗的原因很少是「沒有買 domain 的能力」，幾乎都是「做了錯誤的決策」。在沒有解決決策品質之前，給 agent 更多能力只是讓它犯更貴的錯誤。",
+    "prediction": "到 2026-12-31，Cloudflare 的 agents-stripe-projects 功能在 Cloudflare 的 developer survey 或 blog 中的 production use case 引用次數少於 50 個（以 Cloudflare 官方 blog 或 developer showcase 裡主動引用 agents + stripe projects 組合的案例為準）。沒有大量 production adoption 說明它是個好 demo 但不是 production killer feature。",
+    "resolution_date": "2026-12-31"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-prompt-api-w3c",
+      "text": "到 2026-12-31，Chrome Prompt API（或移除了 model-specific 綁定的改版）在 Chrome stable channel 保持 GA 狀態，W3C WICG/chrome-ai 提案沒有正式被 shelve 或撤回（以 Chrome Platform Status feature page 狀態或 WICG GitHub repo 的 active/closed 狀態為準）。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-nanowhale-model-release",
+      "text": "到 2026-05-12，huggingface/nanowhale 發布帶有 README 和 model card 的 initial release（以 repo README 非空且有 model description 為準）。",
+      "status": "pending",
+      "resolution_date": "2026-05-12"
+    },
+    {
+      "id": "pred-adoptionpulse-public",
+      "text": "到 2026-08-31，microsoft/adoptionpulse 發布帶有 README 說明的 v0.1 版本（以 repo README 非空且有 install/usage 說明為準）。",
+      "status": "pending",
+      "resolution_date": "2026-08-31"
+    },
+    {
+      "id": "pred-cloudflare-agents-adoption",
+      "text": "到 2026-12-31，Cloudflare 的 agents-stripe-projects 功能在 Cloudflare 官方 blog 或 developer showcase 裡主動引用的 production use case 案例少於 50 個（以 Cloudflare 官方內容為準）。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-google-abap-release",
+      "text": "到 2026-09-30，google/ai-abap-assist-eclipse 發布帶有 README 和 install 說明的公開版本（以 repo README 非空且有 usage 說明為準）。",
+      "status": "pending",
+      "resolution_date": "2026-09-30"
+    }
+  ],
+  "meta": {
+    "run_id": "d72be62c-8573-4445-8b59-c0f90e735bf0",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-06T20:13:28.298Z",
+    "analyze_duration_ms": 721360,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 15
+      },
+      "search": {
+        "ok": true,
+        "count": 47
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      }
+    },
+    "degraded_sources": []
+  }
+}
