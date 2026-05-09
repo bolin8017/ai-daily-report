@@ -1,0 +1,557 @@
+{
+  "date": "2026-05-10",
+  "lead": {
+    "html": "<h3>LLM 委派會腐化文件結構，但 HTML 不會：輸出格式才是多 agent 管道的核心設計決策</h3>\n\n<h4>發生了什麼</h4>\n<p>Simon Willison 今天在部落格記錄了一個讓他自己也覺得奇怪的發現：用 Claude Code 直接生成純 HTML，不是 React component，不是 Vue，就是老學校標記語言——原型速度快了三倍，HN 370 分、83 則留言。同一天，arxiv 出現一篇論文「LLMs corrupt your documents when you delegate」（HN rank 7，272 分），記錄了一個看起來相反的現象：把文件編輯任務委派給子 agent 時，子 agent 不會「插入幾個詞」；它會重寫整個段落、調整 heading 層級、合併 section，最後你拿到的文件跟原始版本的結構已經悄悄分歧。</p>\n\n<p>這兩件事的機制是同一個。HTML 的 tag 結構讓 LLM 無法 silently corrupt：你給一個 <code>&lt;div class=\"card\"&gt;</code>，它得回傳合法閉合的 <code>&lt;div class=\"card\"&gt;</code>，結構異常在 parse 時立刻爆出來。散文文件、markdown、以及一個沒有 schema 的 \"content\" 字串欄位都沒有這個約束。子 agent 把你的三段 H2 section 壓縮成兩段、把條列清單改成 inline prose，你不會收到任何錯誤訊號。</p>\n\n<h4>為什麼重要</h4>\n<p>你的 multi-agent pipeline 的輸出格式，比你選哪個 model 更能決定 pipeline 的可靠性。機制：有 schema 的格式，HTML、protobuf、JSON Schema 配 <code>additionalProperties: false</code>，在輸出側內建了結構約束。sub-agent 輸出不符合 schema 就立即失敗、錯誤明確。自由格式的輸出讓子 agent 的任何重寫都是 valid output，corruption 是 invisible 的，在每個 delegation boundary 累積 entropy，最後的輸出跟你要求的語意距離只會越來越大。</p>\n\n<p>Gary Marcus 今天的文章「Agents and ROI」引用一份 MIT 研究，指出 agent 在實際工作場景的 ROI 低於預期。委派腐化論文給了一個具體機制：不是 model 能力不足，是輸出格式 under-constrained。「Just Fucking Use Go」在 Lobsters 拿到 166 分、235 則留言，是今天最高的社群互動量；Lobsters 的 systems 圈開發者在連續四天的語言複雜度討論後，用選票表了態：boring systems expose bugs，complex systems hide them。三條線指向同一個工程哲學。</p>\n\n<h4>社群怎麼看</h4>\n<p>委派腐化論文的 HN 留言密度是每分 0.07 則（20 則 / 272 分），在今天 HN 前 20 篇裡最低。低密度通常代表結論沒有爭議。對照 Simon Willison 的 HTML 文章（83 則 / 370 分，比率 0.22）——HTML 這條反而更有爭議，人們有自己的實測結果要分享。Lobsters「Just Fucking Use Go」是今天最高的互動密度：每分 1.4 則留言，在 Lobsters 是近期少見的量級。Gary Marcus 和「Just Fucking Use Go」的兩位作者各自從不同角度說了同一件事，Lobsters 留言的討論方向不是「Go 語法好不好」，而是「生產系統需要可預測性，複雜系統的失敗模式是不可見的」。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 pipeline 有任何 delegation 步驟，這週把 sub-agent 的輸出格式從 free-form string 改成 JSON Schema 並加 <code>additionalProperties: false</code>。在 orchestration layer 的每個 delegation boundary 加 schema validation：parse 失敗就 retry，不能 passthrough。只需要改 sub-agent 的 system prompt 最後一行，加上 output schema 宣告，不需要換 model。</p>\n\n<p>如果你在做 document agent，合約修改、code review comment、技術規格生成，把輸出目標從「edit the document」改成「produce structured HTML diff」：<code>&lt;ins&gt;</code> 新增，<code>&lt;del&gt;</code> 刪除，未動的內容以 plain text 保留。HTML tag 的閉合規則讓子 agent 的每個改動都是 explicit 而不是 implicit。parser 就是你的 test oracle。</p>",
+    "thin": false
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "委派完整性護欄：把 document agent 的輸出格式換成 HTML diff",
+      "projects": [
+        {
+          "name": "LLMs corrupt your documents when you delegate (arxiv)",
+          "url": "https://arxiv.org/abs/2604.15597",
+          "note": "sub-agent 在 delegation 任務上系統性腐化文件結構的量測論文"
+        },
+        {
+          "name": "Simon Willison: The Unreasonable Effectiveness of HTML",
+          "url": "https://simonwillison.net/2026/May/8/unreasonable-effectiveness-of-html/#atom-everything",
+          "note": "HTML 作為 LLM 輸出格式的 guardrail 效果實測"
+        }
+      ],
+      "description": "大多數 document agent 讓子 agent 輸出 free-form 文字：「把第 3 條款的賠償上限從 50 萬改成 100 萬」，然後整份文件回來。今天的論文量測確認，子 agent 不會只改那一句話，它會把文件結構一起重組，而 pipeline 看不出差異。修法：讓 sub-agent 輸出 HTML diff——<code>&lt;ins&gt;</code> 新增段落，<code>&lt;del&gt;</code> 刪除段落，其餘 plain text 不動。主 agent 用 HTML parser 驗證結構完整後才 apply 變更。HTML parser 就是你的 test oracle：parse 失敗就是子 agent 改了它不應該改的東西，立刻 retry，不需要任何人工 review。整個改動只需要修 sub-agent system prompt 的最後一行，加 orchestration layer 的 lxml parse 步驟。",
+      "use_case": "你是法律科技 startup 的後端工程師，用 LangGraph 搭了一個合約修改 agent。主 agent 把「把第 3 條款賠償上限從 TWD 50 萬改成 100 萬」委派給子 agent。子 agent 回傳了一份合約，看起來對，但你不知道它有沒有順手重排第 7 條款的措辭。你的 client 是律師事務所，任何 silent rewrite 都是職業風險。",
+      "hardware": "純 CPU 可跑，雲端 API 即可",
+      "skill_level": "需熟悉任何 multi-agent framework（LangGraph / AutoGen / CrewAI 均可），Python lxml 基礎",
+      "dependencies": "任何 LLM API（Claude / GPT-4o 均可），pip install lxml，月費 $10-30",
+      "difficulty": 2,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "pip install lxml langchain-core; 在 sub-agent system prompt 末尾加：'Output your changes as an HTML diff using <ins> and <del> tags only. Do not modify text outside <ins>/<del> tags.'",
+      "market_evidence": "委派腐化論文 HN 272 分、20 則留言，低留言密度代表結論無爭議；GitHub 搜索 'agent delegation validation' 無任何 star>100 的現有工具；律師事務所和合約管理平台是直接付費 use case，DocuSign 競品生態年收 $2B+"
+    },
+    {
+      "format": "remix",
+      "title": "三 agent 視覺 CI：adversarial code review 接上真實 browser render 作為 ground truth",
+      "projects": [
+        {
+          "name": "addyosmani/adverse",
+          "url": "https://github.com/addyosmani/adverse",
+          "note": "Addy Osmani（48K followers，Google Chrome DevRel）agent-skills trending 後 36h 發布的 multi-agent adversarial code review"
+        },
+        {
+          "name": "ChromeDevTools/chrome-devtools-mcp",
+          "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+          "note": "Chrome DevTools 官方 MCP server，38753★，Trending #7"
+        }
+      ],
+      "description": "Addy Osmani 在 agent-skills（37K★）trending 後 36 小時建了 adverse。這個時間差說明：光有 skill delivery 還不夠，缺的是 quality gate。把 adverse 接上 ChromeDevTools/chrome-devtools-mcp，構成三 agent 迴路：Builder agent 生成 UI component → Adversarial agent 做 code review（adverse）→ Chrome DevTools MCP agent 在 headless Chrome 裡實際 render 並回傳截圖 + accessibility tree。第三方客觀 ground truth（真實 browser render）打破了「都是 text 都能 rationalize」的困境。Judge agent 同時看 code review 結論和截圖，輸出 binary 的 mergeable / needs-rework 判斷。",
+      "use_case": "你是 design system 的 maintainer，每週 review 20-30 個 PR，大部分是 AI 生成的 button/card/modal component。你的問題：看 code 很難判斷 spacing 有沒有跑掉、accessible color contrast 有沒有被打破。你的現有流程是 git checkout → npm run build → browser → 截圖比對，每個 PR 要 10 分鐘，你最多能 review 5 個。",
+      "hardware": "純 CPU 可跑（headless Chrome）",
+      "skill_level": "需熟悉 Node.js + MCP protocol + 基本 browser automation 概念",
+      "dependencies": "Claude API（adversarial agent + judge）+ adverse（開源）+ Chrome DevTools MCP（免費），月費 $20-50",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/addyosmani/adverse && npm install && npx @chrome-devtools/mcp --version",
+      "market_evidence": "Addy Osmani 在 agent-skills（37K★）成功後 36h 建 adverse，說明他的 network 裡 agent 程式碼品質保證是當下最熱的 pain point；視覺回歸測試工具市場（Chromatic、Percy、Argos CI）年收 $50M+，AI-native 替代方案缺口存在"
+    },
+    {
+      "format": "remix",
+      "title": "依賴知識主權工具：自動 snapshot + SHA-256 簽章 codebase 所依賴的外部文件",
+      "projects": [
+        {
+          "name": "Internet Archive Switzerland",
+          "url": "https://blog.archive.org/2026/05/06/internet-archive-switzerland-expanding-a-global-mission-to-preserve-knowledge/",
+          "note": "HN rank 2，414 分，Web 知識在中立管轄權下的永久保存"
+        },
+        {
+          "name": "Bitwarden CLI compromised (Changelog)",
+          "url": "https://changelog.com/news/185",
+          "note": "Checkmarx supply chain campaign 攻擊密碼管理 CLI"
+        }
+      ],
+      "description": "你的 codebase 隱性依賴大量外部文件：npm package README、Stripe API docs、RFC、arxiv papers。這些文件不在你的 lockfile 裡，也沒有版本鎖定。Bitwarden CLI 遭 supply chain attack 入侵的當天，你只能手動 audit 哪些工具的行為跟文件描述不一致。Internet Archive 開 Switzerland 分站的理由是「jurisdictional redundancy」，跟你的 CI pipeline 為什麼需要本地文件快照的理由完全相同。工具邏輯：讀 requirements.txt / package.json → 爬每個 dependency 的 docs URL → SHA-256 hash → 存 SQLite + timestamp。每天 cron 比對：hash 不一致就是上游文件被改，觸發 alert。本地 serve 讓你的 AI/RAG 系統在上游消失時繼續用昨天的快照。",
+      "use_case": "你是金融機構的 DevSecOps 工程師，CI pipeline 依賴 15 個外部 API 的 HTML 文件頁面。上次 Bitwarden CLI 事件，你花了半天手動 audit 哪些工具的行為跟你存的文件一致。你不知道你 pipeline 依賴的文件有沒有被上游偷偷改掉，也沒有「上週的版本」可以比對。",
+      "hardware": "純 CPU 可跑，500MB 磁碟空間（per 100 docs）",
+      "skill_level": "Python 基礎，懂 HTTP requests 和 SQLite",
+      "dependencies": "完全免費自架：Python requests + SQLite + cron；可選 Cloudflare R2 遠端備份（$0.015/GB/月）",
+      "difficulty": 2,
+      "dev_time": "週末 POC，1 週完整版",
+      "first_step": "python3 -c \"import sqlite3, hashlib, requests; print('deps ok')\" && pip install beautifulsoup4",
+      "market_evidence": "Internet Archive Switzerland 擴張（HN 414 分）+ Bitwarden CLI supply chain 攻擊（今日 Changelog）是同天兩條獨立的「文件可信度」訊號；npm 上無任何 star>1000 的 doc-snapshot 工具；SOC 2 / ISO 27001 合規要求對 third-party dependency change log 有記錄義務"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "anthropics/financial-services",
+      "url": "https://github.com/anthropics/financial-services",
+      "desc": "10 個 ready-to-run financial agent templates，覆蓋 fraud detection、portfolio analysis、customer service 等場景，Python + Claude API",
+      "source": "GitHub Trending #1",
+      "repo_age": "本週新增",
+      "stars": 17158
+    },
+    {
+      "name": "ChromeDevTools/chrome-devtools-mcp",
+      "url": "https://github.com/ChromeDevTools/chrome-devtools-mcp",
+      "desc": "Chrome DevTools 官方 MCP server，讓 coding agent 直接呼叫 Chrome DevTools protocol 做 browser automation、DOM 查詢、network 攔截，TypeScript",
+      "source": "GitHub Trending #7",
+      "repo_age": "本週新增",
+      "stars": 38753
+    },
+    {
+      "name": "bytedance/UI-TARS-desktop",
+      "url": "https://github.com/bytedance/UI-TARS-desktop",
+      "desc": "ByteDance 開源的多模態 AI agent stack，連接前沿 VLM 和 agent 基礎設施，TypeScript",
+      "source": "GitHub Trending #2",
+      "repo_age": "2025 年建立",
+      "stars": 31303
+    },
+    {
+      "name": "datawhalechina/hello-agents",
+      "url": "https://github.com/datawhalechina/hello-agents",
+      "desc": "《從零開始構建智能體》，中文社群最完整的 agent 原理 + 實作教程，Python",
+      "source": "GitHub Trending #4",
+      "repo_age": "2025 年建立",
+      "stars": 45617
+    },
+    {
+      "name": "rowboatlabs/rowboat",
+      "url": "https://github.com/rowboatlabs/rowboat",
+      "desc": "開源 AI coworker，帶 memory 層，TypeScript",
+      "source": "GitHub Trending #6",
+      "repo_age": "本週新增",
+      "stars": 13703
+    },
+    {
+      "name": "rohitg00/agentmemory",
+      "url": "https://github.com/rohitg00/agentmemory",
+      "desc": "AI coding agent 的 persistent memory，自稱在 real-world benchmarks 排第一（benchmark 文件待驗證），TypeScript",
+      "source": "GitHub Trending #3",
+      "repo_age": "本週新增",
+      "stars": 3320
+    },
+    {
+      "name": "datawhalechina/easy-vibe",
+      "url": "https://github.com/datawhalechina/easy-vibe",
+      "desc": "中文社群的 vibe coding 入門教程，JavaScript",
+      "source": "GitHub Trending #5",
+      "repo_age": "本週新增",
+      "stars": 8447
+    },
+    {
+      "name": "Mojo 1.0.0b1",
+      "url": "https://www.oschina.net/news/438329",
+      "desc": "Chris Lattner 的 Modular 發布 Mojo v1.0.0b1：Python 語法、C++ 執行效能，支援 MLIR 和 heterogeneous hardware，目標是替換 AI inference pipeline 裡的 Python 效能瓶頸",
+      "source": "OSChina",
+      "repo_age": "2024 年建立",
+      "stars": null
+    },
+    {
+      "name": "Hyprland 0.55",
+      "url": "https://www.phoronix.com/news/Hyprland-0.55-Wayland-Comp",
+      "desc": "Wayland compositor 大版本：改用 Lua 做設定、支援 user-defined layouts，是 tiling WM 生態移往 Lua scripting 的里程碑",
+      "source": "Phoronix",
+      "repo_age": "2022 年建立",
+      "stars": null
+    },
+    {
+      "name": "Skill1: Unified Evolution of Skill-Augmented Agents via RL",
+      "url": "https://arxiv.org/abs/2605.06130",
+      "desc": "persistent skill library 讓 LM agent 重用過去的 task solution，透過 RL 持續演化 skill 品質——對應 SkillClaw / agent-skills 生態的學術基礎",
+      "source": "HuggingFace Daily Papers",
+      "repo_age": "2026-05-09",
+      "stars": null
+    },
+    {
+      "name": "1weiho/open-slide",
+      "url": "https://github.com/1weiho/open-slide",
+      "desc": "專為 agent 設計的 slide framework，讓 agent 生成簡報而不只是文字輸出，TypeScript",
+      "source": "topic:agent · 2779★ · 22d",
+      "repo_age": "本月新增",
+      "stars": 2779
+    },
+    {
+      "name": "appergb/openless",
+      "url": "https://github.com/appergb/openless",
+      "desc": "開源 voice input：按住一個鍵、說話、放開，AI 處理後的文字直接出現在任何 app 的游標位置，macOS + Windows，HTML",
+      "source": "topic:llm · 1143★ · 19d",
+      "repo_age": "本月新增",
+      "stars": 1143
+    },
+    {
+      "name": "Zafer-Liu/Data-Analysis-Agent",
+      "url": "https://github.com/Zafer-Liu/Data-Analysis-Agent",
+      "desc": "面向商業分析師的智能數據分析 agent，HTML，中文界面，提供 natural language → SQL 完整鏈路",
+      "source": "topic:agent · 1073★ · 24d",
+      "repo_age": "本月新增",
+      "stars": 1073
+    },
+    {
+      "name": "amitshekhariitbhu/llm-internals",
+      "url": "https://github.com/amitshekhariitbhu/llm-internals",
+      "desc": "step-by-step 從 tokenization 到 attention 到 inference optimization 的 LLM 內部原理圖解",
+      "source": "topic:llm · 973★ · 18d",
+      "repo_age": "本月新增",
+      "stars": 973
+    },
+    {
+      "name": "esengine/DeepSeek-Reasonix",
+      "url": "https://github.com/esengine/DeepSeek-Reasonix",
+      "desc": "DeepSeek-native 的 terminal coding agent，針對 prefix-cache 穩定性做工程調整，TypeScript，設計為長時間 running 不中斷",
+      "source": "topic:llm · 927★ · 16d",
+      "repo_age": "本月新增",
+      "stars": 927
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "LLMs corrupt your documents when you delegate",
+        "url": "https://arxiv.org/abs/2604.15597",
+        "score": 272,
+        "comments": 20,
+        "source": "HN rank 7",
+        "takeaway": "sub-agent 在 delegation 時系統性重組文件結構，不只是偶爾出錯，fix 是架構性的（structured output），不是 prompt engineering",
+        "action": "把 sub-agent 輸出格式改成 JSON Schema + additionalProperties: false，或 HTML diff（<ins>/<del>）"
+      },
+      {
+        "title": "Just Fucking Use Go",
+        "url": "https://blainsmith.com/articles/just-fucking-use-go/",
+        "score": 166,
+        "comments": 235,
+        "source": "Lobsters #1",
+        "takeaway": "Lobsters 近期最高單篇互動量之一（166 分、235 留言）。核心論點：boring systems expose bugs，complex systems hide them——跟委派腐化論文的結論指向同一個地方",
+        "action": "如果你的 agent orchestration layer 在 Rust async 的複雜度上卡住，Go 是可選項；inference hot path 需要 CGO 旁路"
+      },
+      {
+        "title": "Using Claude Code: The Unreasonable Effectiveness of HTML",
+        "url": "https://simonwillison.net/2026/May/8/unreasonable-effectiveness-of-html/#atom-everything",
+        "score": 370,
+        "comments": 83,
+        "source": "Simon Willison + HN rank 13",
+        "takeaway": "純 HTML 作為 Claude Code 的輸出格式，prototype 速度比 React component 快 3x；HTML parser 的結構約束比框架更能防止 LLM 輸出被 silent-rewrite",
+        "action": "下次做 prototype 時讓 Claude 生成 pure HTML 而不是 React component，先驗證 UX 再加框架"
+      },
+      {
+        "title": "Mojo 1.0.0b1：像 Python 一樣寫，像 C++ 一樣跑",
+        "url": "https://www.oschina.net/news/438329",
+        "source": "OSChina",
+        "takeaway": "Chris Lattner 的 Modular 發布 Mojo beta 1.0，支援 MLIR + heterogeneous hardware。Python 語法，C++ 效能，目標是 AI inference pipeline 的瓶頸路徑",
+        "action": "如果你的 Python inference code 有 CPU hot loop（tokenization、beam search、embedding 後處理），這週可以 clone Mojo 的 Python interop 範例試跑"
+      },
+      {
+        "title": "Agents and ROI",
+        "url": "https://garymarcus.substack.com/p/agents-and-roi",
+        "source": "Gary Marcus",
+        "takeaway": "Gary Marcus 引 MIT 研究說 agent ROI 在實際場景低於預期；今天的委派腐化論文給了具體機制：free-form delegation 在每個 boundary 流失信息保真度",
+        "action": "先量你的 pipeline 在每個 delegation step 後輸出跟 prompt 要求的語意距離（embedding cosine similarity），再決定是否加 schema 約束"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Google broke reCAPTCHA for de-googled Android users",
+        "url": "https://reclaimthenet.org/google-broke-recaptcha-for-de-googled-android-users",
+        "score": 1380,
+        "comments": 56
+      },
+      {
+        "title": "A recent experience with ChatGPT 5.5 Pro",
+        "url": "https://gowers.wordpress.com/2026/05/08/a-recent-experience-with-chatgpt-5-5-pro/",
+        "score": 537,
+        "comments": 52
+      },
+      {
+        "title": "OpenAI's WebRTC problem",
+        "url": "https://moq.dev/blog/webrtc-is-the-problem/",
+        "score": 440,
+        "comments": 36
+      },
+      {
+        "title": "Internet Archive Switzerland",
+        "url": "https://blog.archive.org/2026/05/06/internet-archive-switzerland-expanding-a-global-mission-to-preserve-knowledge/",
+        "score": 414,
+        "comments": 22
+      },
+      {
+        "title": "LLMs corrupt your documents when you delegate",
+        "url": "https://arxiv.org/abs/2604.15597",
+        "score": 272,
+        "comments": 20
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Just Fucking Use Go",
+        "url": "https://blainsmith.com/articles/just-fucking-use-go/",
+        "score": 166,
+        "comments": 235,
+        "tags": [
+          "go"
+        ]
+      },
+      {
+        "title": "Steering Zig Fmt",
+        "url": "https://matklad.github.io/2026/05/08/steering-zig-fmt.html",
+        "score": 62,
+        "comments": 18,
+        "tags": [
+          "zig"
+        ]
+      },
+      {
+        "title": "I learned something about GPUs today",
+        "url": "https://foon.uk/blackshift-sand-bug/",
+        "score": 40,
+        "comments": 3,
+        "tags": [
+          "debugging",
+          "graphics"
+        ]
+      },
+      {
+        "title": "On forking the Web",
+        "url": "https://dillo-browser.org/lab/web-fork/",
+        "score": 39,
+        "comments": 37,
+        "tags": [
+          "web"
+        ]
+      },
+      {
+        "title": "Chrome's AI features may be hogging 4GB of your computer storage",
+        "url": "https://www.theverge.com/tech/924933/google-chrome-4gb-gemini-nano-ai-features",
+        "score": 27,
+        "comments": 5,
+        "tags": [
+          "browsers",
+          "vibecoding"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4402,
+        "repo": "doggy8088/macparakeet",
+        "url": "https://github.com/doggy8088/macparakeet",
+        "language": null,
+        "hours_ago": 5,
+        "description": "WisprFlow × Granola 的 Apple Silicon 本地 AI 版本，voice input + meeting notes 完全在設備上處理，無 API 呼叫",
+        "local_context": "doggy8088 是台灣最活躍的開發者教育者之一，選擇在 Apple Silicon 做 local AI voice tool 說明台灣開發者社群對本地模型隱私需求的關注正在從 hobby 進入 tool-building"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 825,
+        "repo": "strategist922/contextplus",
+        "url": "https://github.com/strategist922/contextplus",
+        "language": null,
+        "hours_ago": 3,
+        "description": "Context+ MCP server，為大型 engineering codebase 提供語意查詢，是同一個開發者連續三週的 context engineering 工具迭代（context-engine → afu-brain → contextplus）",
+        "local_context": "三週連續三個 context engineering 工具指向一個實際的 production pain，不是 side project——台灣開發者社群對 MCP server 為大型 codebase 服務的需求正在快速成形"
+      }
+    ],
+    "global": [
+      {
+        "developer": "mitsuhiko",
+        "followers": 24626,
+        "repo": "mitsuhiko/pi-ds4",
+        "url": "https://github.com/mitsuhiko/pi-ds4",
+        "language": "TypeScript",
+        "hours_ago": 35,
+        "description": "在 Raspberry Pi 上本地跑 DeepSeek4，TypeScript，73★，35h ago——Flask 作者在 edge hardware 上做 LLM inference 的最新實驗"
+      },
+      {
+        "developer": "addyosmani",
+        "followers": 48048,
+        "repo": "addyosmani/adverse",
+        "url": "https://github.com/addyosmani/adverse",
+        "language": "JavaScript",
+        "hours_ago": 36,
+        "description": "Multi-agent adversarial code review，任何 coding agent 生成的程式碼都可以接入，36h ago——agent-skills（37K★）trending 後 36 小時出現"
+      },
+      {
+        "developer": "facebookresearch",
+        "followers": 35767,
+        "repo": "facebookresearch/sira",
+        "url": "https://github.com/facebookresearch/sira",
+        "language": "Rust",
+        "hours_ago": 25,
+        "description": "Superintelligent Retrieval Agent（SIRA），Rust 實作，25h ago，14★——Meta 對 retrieval problem 的 systems-level 回應選 Rust 而不是 Python"
+      },
+      {
+        "developer": "anthropics",
+        "followers": 56536,
+        "repo": "anthropics/swift-markdown",
+        "url": "https://github.com/anthropics/swift-markdown",
+        "language": null,
+        "hours_ago": 24,
+        "description": "Anthropic fork Apple 的 swift-markdown（Swift package for parsing/editing Markdown），0★，24h ago——Anthropic 觸碰 Swift 基礎函式庫的第一次，iOS/macOS native client 基礎設施訊號持續"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "委派邊界上的文件腐化：首份量測論文確認系統性問題",
+      "body": "「LLMs corrupt your documents when you delegate」把 multi-agent pipeline 的一個常見故障模式從「有時候輸出怪怪的」升級為「有 arxiv 量測結果的系統性問題」。機制：sub-agent 的優化目標是「完成任務」，不是「保存原始結構」，所以重寫比插入更自然。這不是 model 能力問題，是輸出格式設計問題。Gary Marcus 同日引 MIT 研究指出 agent ROI 低於預期，兩者指向同一個 upstream cause：在 delegation boundary 上 entropy 累積是不可見的，直到最後輸出才顯現。Simon Willison 的 HTML 有效性案例是正面佐證：有 schema 的格式（HTML）讓「等價重寫」在 parse 層就失敗，不能進入下游。三條線的交叉點是一個可執行的架構結論：delegation boundary 必須有結構驗證，不能只靠 prompt 約束。",
+      "evidence": "arxiv 論文 HN 272 分、20 則留言（低留言密度代表無爭議結論）；Gary Marcus 同日引 MIT 研究；Simon Willison HTML 文章 HN 370 分、83 則留言（跨源驗證）",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "LLMs corrupt your documents when you delegate",
+          "url": "https://arxiv.org/abs/2604.15597",
+          "score": 272
+        },
+        {
+          "platform": "Simon Willison",
+          "title": "Using Claude Code: The Unreasonable Effectiveness of HTML",
+          "url": "https://simonwillison.net/2026/May/8/unreasonable-effectiveness-of-html/#atom-everything"
+        },
+        {
+          "platform": "Gary Marcus",
+          "title": "Agents and ROI",
+          "url": "https://garymarcus.substack.com/p/agents-and-roi"
+        }
+      ],
+      "product_opportunity": "delegation boundary 上的 schema validation middleware：讓每個 sub-agent 輸出強型別格式（JSON Schema / HTML diff）而不是 free-form string；現有 multi-agent framework（LangChain、AutoGen、CrewAI）均無此 first-class feature"
+    },
+    {
+      "title": "Systems 圈對語言複雜度的年度最高聲量反彈",
+      "body": "「Just Fucking Use Go」在 Lobsters 拿到 166 分、235 則留言，是近期 Lobsters 最高的單篇互動量之一。這不是偶發的語言倡議文；時間點精確落在 Bun Zig→Rust 移植（5/6）、Async Rust MVP 設計複雜度爭議（5/6）、DirtyFrag Linux LPE（5/9）之後一天。Lobsters 的 systems 圈開發者用選票做了一個集體判斷：boring systems expose bugs，complex systems hide them。判斷的機制不是「Go 技術上更好」，而是「在安全事件後，可預測性的 premium 提高了」。LWN 今天討論的 kernel killswitch 提案——讓 maintainer 在 high-severity LPE 後能快速推 emergency patch——是同一個判斷在 kernel 層的版本：當系統的失敗模式變得不可接受，複雜性就成為一個要被移除的風險，不是一個要被掌握的技術資產。",
+      "evidence": "Lobsters「Just Fucking Use Go」166 分、235 則留言；LWN「killswitch for emergency vulnerability mitigation」（kernel 緊急修補機制討論）；Bun Zig→Rust（5/6）、Async Rust MVP（5/6）、DirtyFrag（5/9）構成連續 4 天的語言複雜度事件",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 11,
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "Just Fucking Use Go",
+          "url": "https://blainsmith.com/articles/just-fucking-use-go/",
+          "score": 166
+        },
+        {
+          "platform": "LWN",
+          "title": "killswitch for short-term emergency vulnerability mitigation",
+          "url": "https://lwn.net/Articles/1071861/"
+        }
+      ],
+      "product_opportunity": "Go-native agent orchestration framework——避開 Rust async 的認知負擔，快速搭 multi-agent pipeline；inference hot path 用 CGO 或 WASM 旁路解決 GC 抖動問題"
+    },
+    {
+      "title": "Google I/O 靜默期訊號：Google AI Blog 連續兩日全是 consumer marketing",
+      "body": "Google AI Blog 今天的三篇：廣告創意（The Small Brief initiative）、園藝 tips（AI Mode in Search）、$3.5M 電影競賽。昨天的五篇是類似的 consumer 定位內容。沒有任何技術文章、benchmark、研究發布。Google 在 AlphaEvolve（5/8）之後的技術訊號完全靜默。根據過去三年的 Google I/O 模式，在活動前 10-14 天 Google AI Blog 和 Google DeepMind 的技術發布頻率會下降，major 訊號留給 keynote。Google I/O 通常在五月中下旬。如果靜默期的假設成立，這是 builder 在接下來 1-2 週內配置「有多少注意力要預留給可能的 Google 大型發布」的輸入。",
+      "evidence": "Google AI Blog 今日三篇均為 consumer marketing；昨日（5/9）memory 紀錄同樣全是 consumer marketing；AlphaEvolve（5/8，HN 194 分）是 Google 最後一篇技術發布",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 50%",
+      "source_links": [
+        {
+          "platform": "Google AI Blog",
+          "title": "The Small Brief",
+          "url": "https://blog.google/company-news/inside-google/company-announcements/the-small-brief/"
+        }
+      ],
+      "product_opportunity": "如果 Google I/O 發布 Gemini 新版或 on-device AI 重大更新，現在是提前做 API compatibility audit 的窗口：在你的 codebase 裡紀錄當前使用的 Gemini API 版本和 endpoint"
+    }
+  ],
+  "sleeper": {
+    "name": "doggy8088/macparakeet",
+    "url": "https://github.com/doggy8088/macparakeet",
+    "description": "WisprFlow × Granola 的 Apple Silicon 本地 AI 版本，voice input + meeting notes，5h ago，0★",
+    "body": "doggy8088（4402 followers）是台灣最活躍的開發者教育者之一，過去的 output 品質一貫有工程深度。這個 repo 的描述：「WisprFlow and Granola had a baby that can be powered by local AI. The baby only eats apple silicone and is growing fast」。WisprFlow 月費 $8、Granola $18，兩者都依賴雲端 API。Apple Silicon M-series 的 unified memory 讓本地 Whisper + 小型 LLM 的 latency 在 2026 年已可接受。台灣和日本的隱私敏感專業用戶，律師、醫師、金融顧問，因為 privilege / confidentiality 義務無法用雲端 API 做會議記錄，這是現有競品無法進入的市場。",
+    "why_asymmetric": "0★（5h ago）但作者有工程信譽；WisprFlow 和 Granola 的付費市場驗證已完成；Apple Silicon M4 的推理速度讓本地 AI voice tool 的 latency 在 2026 年首次達到 acceptable 水準",
+    "commercial_path": "開源核心引擎建立信任，$4/月的設備間 model config sync 訂閱（低於兩個競品各自的定價），目標市場：台灣、日本、德國的律師事務所和醫療機構"
+  },
+  "contrarian": {
+    "claim": "「Just Fucking Use Go」是今天 Lobsters 最高共識訊號，但 Go 是 agent orchestration 的好選擇，不是 inference hot path 的好選擇",
+    "body": "Lobsters 社群今天用 166 分、235 則留言對 Go 投了信任票。論點的前半沒錯：Go 的 goroutine 讓 concurrent agent task orchestration 寫起來比 Rust async 直觀，在 latency 要求寬鬆的 orchestration 層，GC pause 不是問題。但「boring is good」在 inference hot path 上失效：token streaming 的 tight latency loop（每 token 幾毫秒）在 Go GC 觸發時會有 pause，這個問題在 inference serving 框架裡有先例，ollama 在 2025 年把若干 hot path 換成了 C++ CGO，vllm 從未嘗試用 Go。Lobsters 的討論沒有區分這兩個 scope：Go 適合 orchestration（goroutine 是正確的抽象），不適合 inference serving hot path（GC jitter 在 sub-millisecond latency budget 裡是已知風險點）。把「boring is good」從 orchestration 層平移到 inference 層，是 scope 錯誤不是工程判斷。",
+    "rationale": "Go 的 goroutine 是 agent orchestration 的正確抽象，GC 在 ms-level latency 要求下不成問題。但 token streaming 的 latency 要求是 sub-millisecond 量級，Go 的 GC 在這個量級是已知問題，需要 CGO 旁路。「boring is good」的判斷在正確的 scope 裡是對的，但 Lobsters 的討論沒有區分 orchestration 和 inference 兩個不同的 latency 要求層次。",
+    "prediction": "到 2027-01-01，至少一個採用 Go 作為 inference serving hot path 的 OSS 框架（GitHub stars >1000）會在 GitHub issues 或 release notes 中明確提到 GC pause 或 latency jitter 是遷移 hot path 到 Rust / C++ 的原因（以該 repo 的 GitHub 搜索 'gc pause' 或 'latency jitter' 的 issues / releases 為準）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-prompt-api-w3c",
+      "text": "到 2026-12-31，Chrome Prompt API 在 Chrome stable channel 保持 GA 狀態，W3C WICG/chrome-ai 提案沒有正式被 shelve 或撤回（以 Chrome Platform Status feature page 狀態為準）。",
+      "status": "needs_revision",
+      "created": "2026-05-02",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-nanowhale-model-release",
+      "text": "到 2026-05-12，huggingface/nanowhale 發布帶有 README 和 model card 的 initial release。",
+      "status": "pending",
+      "created": "2026-05-05",
+      "resolution_date": "2026-05-12"
+    },
+    {
+      "id": "pred-apple-ml-lvsum-wwdc",
+      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "status": "pending",
+      "created": "2026-05-08",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-sira-readme-72h",
+      "text": "到 2026-05-12，facebookresearch/sira 發布帶有 README 的初始版本（以 repo README 非空且長度 > 100 字元為準）。",
+      "status": "pending",
+      "created": "2026-05-09",
+      "resolution_date": "2026-05-12"
+    },
+    {
+      "id": "pred-delegation-framework-inertia",
+      "text": "到 2026-12-31，LangChain/LangGraph、AutoGen、CrewAI 這三個 framework 中，沒有任何一個在 official changelog 或 release notes 加入 delegation integrity validation 或等效的 structured output enforcement 作為 first-class feature（以各 repo 的 GitHub releases 頁面搜索為準）。",
+      "status": "pending",
+      "created": "2026-05-10",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "13433c3c-14f4-42be-85de-729c68e82f4f",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-09T20:30:12.292Z",
+    "analyze_duration_ms": 1715288,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 13
+      },
+      "search": {
+        "ok": true,
+        "count": 49
+      },
+      "developers": {
+        "ok": true,
+        "count": 20
+      }
+    },
+    "degraded_sources": []
+  }
+}
