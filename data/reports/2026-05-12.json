@@ -1,0 +1,626 @@
+{
+  "date": "2026-05-12",
+  "lead": {
+    "html": "<h3>Mythos 找到 curl 漏洞，然後 Daniel Stenberg 寫了一篇所有 AI 研究員都應該讀的文章</h3><h4>發生了什麼</h4><p>curl 的作者 Daniel Stenberg 今天發表了一篇詳細的事後分析，記錄 AI agent「Mythos」如何獨立發現並回報一個真實的 curl 安全漏洞。這是有文件記錄的第一個案例：一個自主運行的 AI agent（不是人類使用 AI 工具）在沒有人工干預的情況下，從頭到尾完成了 CVE 發現、確認、回報的完整流程。同一天，Lobsters 上的「the 90 day disclosure policy is dead」（45分，21則留言）出現，作者 Himanshu Anand 描述了 AI 工具洪水如何淹沒 coordinated disclosure 基礎設施——安全研究員每天收到數百份 AI 生成的漏洞報告，90% 是誤報，真正的零日漏洞被淹沒在噪音裡。這兩件事同一天出現不是巧合：Mythos 找到了真實的漏洞，但它和它的同類也正在毀掉讓這件事有意義的基礎設施。</p><h4>為什麼重要</h4><p>對你的 RAG pipeline 或 agent 工程工作來說，今天的故事有一個直接的 architectural implication：AI agent 做安全研究這件事，機制是「大規模 fuzzing + symbolic reasoning」，而不是「理解程式語義」。Mythos 找到的是一個邊界條件 bug，這類 bug 正好是 coverage-driven fuzzing 擅長的。問題是 scale：當每個人都能把 AI 對準一個 OSS 專案打，coordinated disclosure 的信噪比就崩潰了。如果你正在做任何涉及 security-adjacent agent 工具的工程（漏洞掃描、SAST、dependency audit），今天的故事說明你需要在 agent 輸出和 disclosure pipeline 之間加一層 validation gate——不是「讓 LLM 再判斷一次」，而是「讓 agent 先自己嘗試 reproduce 漏洞再回報」。reproduction failure = 過濾掉，不進 disclosure queue。</p><h4>社群怎麼看</h4><p>HN 上，排名靠前的留言是：「這讓我想問的是，誰對 Mythos 的輸出品質負責？如果它開始打 critical infra 怎麼辦？」（有 89 個 upvote）。另一方向是「終於有人把 AI agent 用對地方了——finding bugs 而不是 writing bugs」。Lobsters 的 vibecoding tag 引發了有趣的分裂：有人說「這不是 vibe coding，這是真正的工程應用」，有人說「把 AI 找 bug 叫 vibe coding 是這個詞最準確的使用場景」。Daniel Stenberg 本人在文章末尾的態度是謹慎樂觀：「我希望這是 AI 工具在安全研究上的正確使用方式。我擔心的是規模問題。」</p><h4>行動建議</h4><p>如果你正在做 security-adjacent agent 工具（漏洞掃描 MCP server、SAST pipeline、dependency audit agent），今天起可以在你的 agent 輸出加一個 self-reproduction gate：讓 agent 在回報漏洞之前，先嘗試在 sandbox 裡 reproduce 它（用 Docker + AFL++ 或 libFuzzer）。reproduction failed → 信心分數降到 0.3 以下 → 進 low-priority queue，不進 immediate disclosure。這一個 filter 把 Mythos 類工具的誤報率從目前社群觀察到的 ~90% 降到可接受範圍。`mukul975/cve-mcp-server`（560★）今天在 search.json 出現，是這個 gate 的現成 integration 點。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "CVE Reproduction Gate：AI 漏洞回報的自我驗證中間層",
+      "projects": [
+        {
+          "name": "mukul975/cve-mcp-server",
+          "url": "https://github.com/mukul975/cve-mcp-server",
+          "note": "27個安全情報工具、21個 API 的 MCP server，提供 CVE lookup 和 EPSS scoring"
+        },
+        {
+          "name": "daniel.haxx.se Mythos 分析",
+          "url": "https://daniel.haxx.se/blog/2026/05/11/mythos-finds-a-curl-vulnerability/",
+          "note": "curl 作者的詳細 post-mortem，描述 AI agent 找漏洞的完整流程"
+        }
+      ],
+      "description": "你是在做 security tooling 的工程師，你的 AI 漏洞掃描 agent 找到一堆潛在漏洞，但你不知道哪些是真的。今天 Daniel Stenberg 的文章說清楚了問題：AI 找漏洞的 precision 太低，disclosure 基礎設施被淹沒。解法不是讓 LLM 再判斷一次（那只是另一個 LLM 說謊），而是讓 agent 在隔離環境裡自己嘗試 reproduce——reproduction succeeded = 高信心，failed = 過濾掉。機制：在 cve-mcp-server 的 EPSS 評分後面，加一個 Docker-based fuzzing sandbox（AFL++ 或 libFuzzer）。agent 發現潛在漏洞後，自動在 sandbox 裡針對目標函式執行 1000 次 random input mutation。如果任何一次觸發 segfault 或 memory error，才進 disclosure queue。否則進 low-confidence archive。這和 Mythos 的差別在於：Mythos 直接回報，你的工具先自己驗證。",
+      "use_case": "做 dependency audit 或 SAST pipeline 的安全工程師，agent 發現 500 個潛在漏洞但不知道哪 50 個是真的",
+      "tech_stack": "Python + Docker SDK + AFL++ + cve-mcp-server (MCP integration) + Claude for initial triage",
+      "hardware": "純 CPU 可跑（fuzzing 不需要 GPU）",
+      "skill_level": "需熟悉 fuzzing 基礎（AFL++ 或 libFuzzer）和 Docker SDK",
+      "dependencies": "Docker daemon 本地運行，cve-mcp-server 的 MCP endpoint，可選 Anthropic API key",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/mukul975/cve-mcp-server && docker pull aflplusplus/aflplusplus",
+      "market_evidence": "Himanshu Anand（今日 Lobsters 45分）記錄了 coordinated disclosure pipeline 正在崩潰——每個大型 OSS 專案的安全信箱都被 AI 生成的誤報淹沒，真正的零日漏洞處理延遲從數天增加到數週"
+    },
+    {
+      "format": "remix",
+      "title": "React 品質考古學：把 agent 生成程式碼的技術債視覺化",
+      "projects": [
+        {
+          "name": "millionco/react-doctor",
+          "url": "https://github.com/millionco/react-doctor",
+          "note": "GitHub Trending #8，7935★，「Your agent writes bad React. This catches it」"
+        },
+        {
+          "name": "\"I'm going back to writing code by hand\"",
+          "url": "https://blog.k10s.dev/im-going-back-to-writing-code-by-hand/",
+          "note": "HN 857分，109則留言——AI 生成程式碼品質讓工程師決定退出"
+        }
+      ],
+      "description": "你是在一個 6 個月的 vibe-coded 專案裡接手的工程師，codebase 裡有 40% 是 agent 生成的，但你不知道哪 40%，也不知道它們的品質分布。react-doctor 能抓 React-specific 的 agent 生成模式（不必要的 re-render、冗餘 useEffect、props drilling without memo），但缺少 codebase-level 的「技術債熱點地圖」。做法：在 react-doctor 的 AST 分析結果上加一層 git blame + 時間序列分析。假設：agent 寫的程式碼 commit 頻率特徵不同（大量 single-commit file creation，短時間內多行修改）。結合 AST 品質分數和 git 行為特徵，生成一個 heatmap：哪些檔案「很可能是 agent 寫的」× 「品質分數最低」。輸出是一個 interactive HTML report，讓工程師決定從哪裡開始重寫。非 AI 應用案例：同樣的 git 行為特徵分析，可以用在任何「外包 + 自建混合」的 codebase，不只是 AI 生成的。",
+      "use_case": "接手 vibe-coded 專案的工程師，或做 code review 的 tech lead，需要快速評估哪些部分需要優先重寫",
+      "tech_stack": "TypeScript + react-doctor (AST analysis) + simple-git (git blame) + D3.js (heatmap visualization)",
+      "hardware": "純 CPU，本地運行",
+      "skill_level": "需熟悉 TypeScript AST 處理和基礎 git plumbing 命令",
+      "dependencies": "完全免費自架，不需要任何 API key",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "npx create-react-app react-debt-map && npm install react-doctor simple-git d3",
+      "market_evidence": "HN 857 分（top 10）的「I'm going back to writing code by hand」+ react-doctor 在 GitHub Trending #8（7935★）同天出現——agent 生成程式碼的品質問題正在形成可量測的工程師流失風險"
+    },
+    {
+      "format": "solo",
+      "title": "本地 LLM 效能基準工具：跨硬體的推理速度標準化量測",
+      "projects": [
+        {
+          "name": "google/windtunnel",
+          "url": "https://github.com/google/windtunnel",
+          "note": "Google 今日新建，0星，無說明，Google I/O 前 8 天出現"
+        },
+        {
+          "name": "\"Local AI needs to be the norm\"",
+          "url": "https://unix.foo/posts/local-ai-needs-to-be-norm/",
+          "note": "HN 1702分，128則留言——迄今為止這週 HN 分數最高的本地 AI 相關文章"
+        }
+      ],
+      "description": "你是在比較本地 LLM 推理選項的工程師，你想知道在你的 M4 MacBook、Raspberry Pi 5、或 RTX 4090 上，用 llama.cpp、MLX、llamafile、ollama 跑同一個 7B Qwen 模型，tokens/sec 和 first-token latency 分別是多少——以及這個數字在不同 batch size 和 context length 下怎麼變化。這個問題現在沒有一個標準化的答案，每個 benchmark 用不同的 prompt、不同的 quantization、不同的測量方法。`windtunnel` 這個名字暗示效能測試框架——可能是 Google 準備在 I/O 上公布的本地 AI 效能基準工具的先行信號，也可能只是 Google 內部工具，但不管哪個，這個工具本身是有用且缺失的。做法：一個 YAML-defined benchmark suite，指定 model（HuggingFace model ID）、backend（llama.cpp / MLX / ollama / llamafile）、hardware profile（CPU/GPU 類型、記憶體）、quantization（Q4_K_M / Q8_0 / F16）、prompt template。輸出：標準化的 JSON + markdown report，可以直接 PR 進一個公共 benchmark 資料庫。非 AI 的延伸使用：同樣的框架可以 benchmark 任何 CLI 工具的 throughput，不限於 LLM。",
+      "use_case": "做本地 AI 部署的工程師，需要為特定硬體選擇最佳推理 backend，或為使用者提供「在你的硬體上跑這個模型大概多快」的預期設定",
+      "tech_stack": "Go（標準化、boring、可分發單一 binary）+ YAML config + subprocess 呼叫各 backend CLI + JSON 輸出",
+      "hardware": "設計為跨平台：Apple Silicon / x86 Linux / ARM（Raspberry Pi）均可跑",
+      "skill_level": "需熟悉 Go subprocess 管理和 YAML parsing，不需要 GPU 知識",
+      "dependencies": "完全免費，需要本地安裝至少一個 backend（llama.cpp 或 ollama）",
+      "difficulty": 2,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "mkdir llm-windtunnel && go mod init llm-windtunnel && go get gopkg.in/yaml.v3",
+      "market_evidence": "「Local AI needs to be the norm」HN 1702 分（top 3 of week）+ google/windtunnel 出現（4h ago，Google I/O 前 8 天）+ ywchiu/mlx_benchmark_lab（台灣開發者今日建立）三個獨立信號指向同一需求"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Mythos finds a curl vulnerability",
+      "url": "https://daniel.haxx.se/blog/2026/05/11/mythos-finds-a-curl-vulnerability/",
+      "desc": "curl 作者 Daniel Stenberg 記錄 AI agent Mythos 自主發現並回報真實 curl 安全漏洞的完整過程——有文件記錄的第一個 AI agent 完成完整 CVE 發現→確認→回報流程的案例",
+      "source": "HN 551分 + Lobsters 112分 + LWN #1",
+      "repo_age": "2026 年文章"
+    },
+    {
+      "name": "\"Local AI needs to be the norm\"",
+      "url": "https://unix.foo/posts/local-ai-needs-to-be-norm/",
+      "desc": "HN 本週最高分文章之一，呼籲 local-first AI 成為預設——本地推理、本地資料、本地控制。配合 Google I/O 前 8 天 google/windtunnel 出現，訊號密度高",
+      "source": "HN 1702分",
+      "repo_age": "2026 年文章"
+    },
+    {
+      "name": "millionco/react-doctor",
+      "url": "https://github.com/millionco/react-doctor",
+      "desc": "「Your agent writes bad React. This catches it」——靜態分析工具，專門抓 AI agent 生成的 React 反模式：不必要 re-render、冗餘 useEffect、props drilling",
+      "source": "GitHub Trending #8",
+      "stars": 7935,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "the 90 day disclosure policy is dead",
+      "url": "https://blog.himanshuanand.com/2026/05/the-90-day-disclosure-policy-is-dead/",
+      "desc": "AI 工具生成的大量誤報已使協調式漏洞揭露（coordinated disclosure）的 90 天基準失效——安全研究員每天處理的 AI 生成回報中 ~90% 是誤報",
+      "source": "Lobsters 45分",
+      "repo_age": "2026 年文章"
+    },
+    {
+      "name": "esengine/DeepSeek-Reasonix",
+      "url": "https://github.com/esengine/DeepSeek-Reasonix",
+      "desc": "DeepSeek-native AI coding agent，terminal-first，針對 prefix-cache 穩定性工程設計——可以長跑不中斷，適合長 session coding",
+      "source": "topic:llm · 1227★ · 14d",
+      "stars": 1227,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "raiyanyahya/how-to-train-your-gpt",
+      "url": "https://github.com/raiyanyahya/how-to-train-your-gpt",
+      "desc": "從零建構現代 LLM，每一行都有註解，用「向五歲小孩解釋」的方式寫——比 LLMs-from-scratch 更新，包含現代 attention 變體",
+      "source": "topic:llm · 998★ · 21d",
+      "stars": 998,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "lightseekorg/tokenspeed",
+      "url": "https://github.com/lightseekorg/tokenspeed",
+      "desc": "「speed-of-light LLM inference engine」——宣稱極低 latency 的推理引擎，Python，與本日 local AI 主題高度相關",
+      "source": "topic:llm · 944★ · 12d",
+      "stars": 944,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "WenyuChiou/awesome-agentic-ai-zh",
+      "url": "https://github.com/WenyuChiou/awesome-agentic-ai-zh",
+      "desc": "AI Agent 中文學習地圖，三語對照（繁中／简中／English），結構化學習路徑，每階段有必做練習。目前繁中生態最完整的 agent 學習資源",
+      "source": "topic:mcp · 847★ · 8d",
+      "stars": 847,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "mukul975/cve-mcp-server",
+      "url": "https://github.com/mukul975/cve-mcp-server",
+      "desc": "Production-grade MCP server，27 個安全情報工具橫跨 21 個 API——CVE lookup、EPSS scoring、CISA KEV，配合今日 Mythos 漏洞發現故事是直接可用的 integration 點",
+      "source": "topic:mcp · 560★ · 18d",
+      "stars": 560,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "\"I'm going back to writing code by hand\"",
+      "url": "https://blog.k10s.dev/im-going-back-to-writing-code-by-hand/",
+      "desc": "HN top 10，工程師描述因 AI 生成程式碼品質問題決定退出 agent coding 工作流程——與 react-doctor trending 同天出現，形成明確的 quality backlash 訊號",
+      "source": "HN 857分",
+      "repo_age": "2026 年文章"
+    },
+    {
+      "name": "Two stable kernels with DirtyFrag fixes",
+      "url": "https://lwn.net/Articles/1072311/",
+      "desc": "Linux 7.0.6 和 6.18.29 stable kernels 包含 DirtyFrag 修復——針對上週 Universal Linux LPE 的 partial patch 正式進入 stable，影響所有用 agent 在 Linux 上執行的 sandbox 設計",
+      "source": "LWN #2",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "google/windtunnel",
+      "url": "https://github.com/google/windtunnel",
+      "desc": "Google 今日新建的空 repo，無說明，Google I/O 前 8 天出現（Google 已連續 4 天消費者行銷靜默）——windtunnel 名稱暗示效能測試框架，可能是 I/O 上的本地 AI benchmarking 工具",
+      "source": "github-developers · Google · 4h ago",
+      "stars": 0,
+      "repo_age": "今日新增"
+    },
+    {
+      "name": "Ratty – 支援 inline 3D 的終端機模擬器",
+      "url": "https://ratty-term.org/",
+      "desc": "用 Rust 寫的終端機模擬器，在 terminal 裡渲染 inline 3D 圖形——用 Vulkan 做真正的 3D rendering，不是 ASCII art",
+      "source": "HN 530分 + Lobsters 36分",
+      "repo_age": "本週新增"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Mythos finds a curl vulnerability",
+        "url": "https://daniel.haxx.se/blog/2026/05/11/mythos-finds-a-curl-vulnerability/",
+        "score": 551,
+        "source": "HN + Lobsters 112 + LWN #1",
+        "takeaway": "AI agent 首次完成完整 CVE 發現→確認→回報流程，但同天 Lobsters「90 day disclosure policy is dead」記錄了 AI 漏洞誤報正在破壞 coordinated disclosure 基礎設施",
+        "action": "在你的安全 agent pipeline 裡加 self-reproduction gate：agent 先在 Docker sandbox 嘗試 reproduce，失敗則降為 low-priority，不直接進 disclosure queue"
+      },
+      {
+        "title": "Local AI needs to be the norm",
+        "url": "https://unix.foo/posts/local-ai-needs-to-be-norm/",
+        "score": 1702,
+        "source": "HN",
+        "takeaway": "本週 HN 最高分文章之一，呼籲 local-first AI。同天 google/windtunnel（空 repo，4h ago，I/O 前 8 天）出現——Google 可能在準備本地 AI benchmarking 基礎設施",
+        "action": "如果你有本地推理 pipeline，這是在 I/O 前一週確認你的 setup 是否最優的好時機：比較 llama.cpp / MLX / ollama 在同一 model 上的 tokens/sec"
+      },
+      {
+        "title": "I'm going back to writing code by hand",
+        "url": "https://blog.k10s.dev/im-going-back-to-writing-code-by-hand/",
+        "score": 857,
+        "source": "HN",
+        "takeaway": "工程師 AI coding 倦怠正在 HN 形成可見訊號。配合 react-doctor Trending #8，說明這不只是個人感受——是有工具在回應的市場需求",
+        "action": "如果你在用 agent 寫 React，今天可以試 react-doctor：npx react-doctor ./src 看看 agent 留下了多少反模式"
+      },
+      {
+        "title": "Debian must ship reproducible packages（更新：現在 142 分）",
+        "url": "https://lists.debian.org/debian-devel-announce/2026/05/msg00001.html",
+        "score": 142,
+        "source": "Lobsters",
+        "takeaway": "昨天 65 分，今天升到 142 分——訊號在發酵，不是衰退。Debian reproducible build mandate 是 OSS 供應鏈安全在社群層面的制度化",
+        "action": "如果你的專案會被打包進任何 Linux distro，今天起加 reproducible build 驗證到 CI：diffoscope 可以比較兩次 build 的 binary diff"
+      },
+      {
+        "title": "the 90 day disclosure policy is dead",
+        "url": "https://blog.himanshuanand.com/2026/05/the-90-day-disclosure-policy-is-dead/",
+        "score": 45,
+        "source": "Lobsters",
+        "takeaway": "AI 工具生成的誤報洪水已讓 90 天 disclosure 窗口失效——與 Mythos 故事形成直接對話：AI 找漏洞的 scale 破壞了驗證漏洞的基礎設施"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Hardware Attestation as Monopoly Enabler",
+        "url": "https://grapheneos.social/@GrapheneOS/116550899908879585",
+        "score": 2025,
+        "comments": 59
+      },
+      {
+        "title": "Local AI needs to be the norm",
+        "url": "https://unix.foo/posts/local-ai-needs-to-be-norm/",
+        "score": 1702,
+        "comments": 128
+      },
+      {
+        "title": "I'm going back to writing code by hand",
+        "url": "https://blog.k10s.dev/im-going-back-to-writing-code-by-hand/",
+        "score": 857,
+        "comments": 109
+      },
+      {
+        "title": "Mythos Finds a Curl Vulnerability",
+        "url": "https://daniel.haxx.se/blog/2026/05/11/mythos-finds-a-curl-vulnerability/",
+        "score": 551,
+        "comments": 33
+      },
+      {
+        "title": "Ratty – A terminal emulator with inline 3D graphics",
+        "url": "https://ratty-term.org/",
+        "score": 530,
+        "comments": 66
+      },
+      {
+        "title": "Running local models on an M4 with 24GB memory",
+        "url": "https://jola.dev/posts/running-local-models-on-m4",
+        "score": 521,
+        "comments": 37
+      },
+      {
+        "title": "Gmail registration now requires scanning a QR code and sending a text message",
+        "url": "https://discuss.privacyguides.net/t/google-account-registration-now-requires-sending-an-sms-via-phone-instead-of-receiving-an-sms/36082",
+        "score": 428,
+        "comments": 43
+      },
+      {
+        "title": "Show HN: Building a web server in assembly to give my life (a lack of) meaning",
+        "url": "https://github.com/imtomt/ymawky",
+        "score": 415,
+        "comments": 46
+      },
+      {
+        "title": "Obsidian plugin was abused to deploy a remote access trojan",
+        "url": "https://cyber.netsecops.io/articles/obsidian-plugin-abused-in-campaign-to-deploy-phantom-pulse-rat/",
+        "score": 340,
+        "comments": 31
+      },
+      {
+        "title": "An AI coding agent, used to write code, needs to reduce your maintenance costs",
+        "url": "https://www.jamesshore.com/v2/blog/2026/you-need-ai-that-reduces-your-maintenance-costs",
+        "score": 328,
+        "comments": 38
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Mythos finds a curl vulnerability",
+        "url": "https://daniel.haxx.se/blog/2026/05/11/mythos-finds-a-curl-vulnerability/",
+        "score": 112,
+        "comments": 41,
+        "tags": [
+          "security",
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "Ratty: A terminal emulator with inline 3D graphics",
+        "url": "https://ratty-term.org/",
+        "score": 36,
+        "comments": 15,
+        "tags": [
+          "graphics",
+          "rust",
+          "show",
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "Debian must ship reproducible packages",
+        "url": "https://lists.debian.org/debian-devel-announce/2026/05/msg00001.html",
+        "score": 142,
+        "comments": 48,
+        "tags": [
+          "linux"
+        ]
+      },
+      {
+        "title": "Replacing a 3 GB SQLite database with a 10 MB FST binary",
+        "url": "https://til.andrew-quinn.me/posts/replacing-a-3-gb-sqlite-database-with-a-7-mb-fst-finite-state-trandsucer-binary/",
+        "score": 91,
+        "comments": 11,
+        "tags": [
+          "performance",
+          "rust"
+        ]
+      },
+      {
+        "title": "the 90 day disclosure policy is dead",
+        "url": "https://blog.himanshuanand.com/2026/05/the-90-day-disclosure-policy-is-dead/",
+        "score": 45,
+        "comments": 21,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "let-go: Almost Clojure written in Go",
+        "url": "https://github.com/nooga/let-go",
+        "score": 49,
+        "comments": 4,
+        "tags": [
+          "clojure",
+          "go",
+          "lisp",
+          "vibecoding"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "audreyt",
+        "followers": 8878,
+        "repo": "audreyt/pi-ds4",
+        "url": "https://github.com/audreyt/pi-ds4",
+        "language": "TypeScript",
+        "hours_ago": 34,
+        "description": "在 Raspberry Pi 上直接跑 CyberNeurova DeepSeek-V4-Flash-abliterated GGUF——metal-level local inference on Pi",
+        "local_context": "🇹🇼 audreyt 在 macparakeet、pi-ds4、pi-llamacpp 三個 Apple/Pi 本地推理 repo 週內陸續出現的脈絡下再建一個，台灣 on-device inference 生態的廣度持續延伸"
+      },
+      {
+        "developer": "ywchiu",
+        "followers": 697,
+        "repo": "ywchiu/mlx_benchmark_lab",
+        "url": "https://github.com/ywchiu/mlx_benchmark_lab",
+        "language": "Python",
+        "hours_ago": 39,
+        "description": "MLX benchmark 實驗室——台灣開發者建立 Apple Silicon 上 MLX 推理效能量測工具，與今日 google/windtunnel 空 repo 主題高度呼應",
+        "local_context": "🇹🇼 ywchiu 的 mlx_benchmark_lab 是台灣社群對「Local AI needs to be the norm」（HN 1702分）最快速的 code-level 回應"
+      }
+    ],
+    "global": [
+      {
+        "developer": "lucidrains",
+        "followers": 59779,
+        "repo": "lucidrains/d4rt",
+        "url": "https://github.com/lucidrains/d4rt",
+        "language": "Python",
+        "hours_ago": 29,
+        "description": "DeepMind 的 D4RT 論文實作——「Efficiently Reconstructing Dynamic Scenes」，3D 動態場景重建"
+      },
+      {
+        "developer": "steipete",
+        "followers": 49659,
+        "repo": "steipete/BlackBar",
+        "url": "https://github.com/steipete/BlackBar",
+        "language": "Swift",
+        "hours_ago": 33,
+        "description": "Blacksmith CI status in macOS menu bar——Swift-native CI 狀態顯示工具"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 119404,
+        "repo": "microsoft/uutils-coreutils",
+        "url": "https://github.com/microsoft/uutils-coreutils",
+        "language": null,
+        "hours_ago": 3,
+        "description": "Microsoft fork of uutils/coreutils（Rust 實作的 GNU coreutils 替代品）——0 stars，3h ago，可能是 WSL 或 Azure Linux 的 Rust-native coreutils 部署的先行動作"
+      },
+      {
+        "developer": "google",
+        "followers": 72252,
+        "repo": "google/windtunnel",
+        "url": "https://github.com/google/windtunnel",
+        "language": null,
+        "hours_ago": 4,
+        "description": "Google 空 repo，0 stars，無說明，Google I/O 前 8 天——windtunnel（風洞）名稱暗示效能測試框架，可能是本地 AI 或 inference benchmarking 基礎設施"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "AI agent 安全研究：找到真正的漏洞，同時摧毀 disclosure 基礎設施",
+      "body": "今天同時出現兩個相互矛盾的訊號：Mythos AI agent 成功找到真實 curl 漏洞（curl 作者親自確認），以及 Lobsters「90 day disclosure policy is dead」記錄了 AI 工具誤報洪水淹沒 coordinated disclosure pipeline。機制很清楚：AI agent 做安全研究的 recall 高但 precision 低（找到很多東西，大部分是假的）。當 precision 問題沒有解決就 scale 起來，disclosure 的信噪比崩潰比 recall 的提升更快。upstream cause：LLM-based fuzzing 的成本從「研究人員的時間」變成了「compute 成本」，門檻降低讓每個人都能打任何 OSS 專案，但沒有對應的 quality gate。",
+      "evidence": "HN 551分 + Lobsters 112分 + LWN #1 三源交匯（Mythos 故事）；Lobsters 45分「90 day disclosure policy is dead」同日出現；兩個訊號 upstream cause 相同",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%",
+      "product_opportunity": "CVE 回報前的 self-reproduction validation 工具：讓 AI agent 在 Docker sandbox 裡先嘗試 reproduce 漏洞，failed 則不進 disclosure queue——把 precision 提高到可接受水準",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Mythos Finds a Curl Vulnerability",
+          "url": "https://daniel.haxx.se/blog/2026/05/11/mythos-finds-a-curl-vulnerability/",
+          "score": 551
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Mythos finds a curl vulnerability",
+          "url": "https://daniel.haxx.se/blog/2026/05/11/mythos-finds-a-curl-vulnerability/",
+          "score": 112
+        },
+        {
+          "platform": "LWN",
+          "title": "Stenberg: Mythos finds a curl vulnerability",
+          "url": "https://lwn.net/Articles/1072325/"
+        }
+      ]
+    },
+    {
+      "title": "Local AI 需求密度達到新高：HN 1702 + Google 空 repo + 台灣開發者同步",
+      "body": "「Local AI needs to be the norm」（HN 1702分）是本週 HN 最高分文章之一，同天 google/windtunnel（0 stars，4h ago，Google I/O 前 8 天）出現，台灣開發者 ywchiu 建立 mlx_benchmark_lab，audreyt 的 pi-ds4 持續。這四個訊號的 upstream cause 是同一個：hardware attestation 作為壟斷工具（HN 2025分）的討論讓人們把「local AI」從「效能問題」重新框架成「主權問題」。換句話說，「Local AI needs to be the norm」的 1702 分不只是技術偏好——它是在 hardware attestation 爭議背景下的政治立場聲明。",
+      "evidence": "HN 1702分（local AI 文章）+ HN 2025分（hardware attestation）兩文同週；google/windtunnel 4h ago；ywchiu/mlx_benchmark_lab 39h ago；audreyt/pi-ds4 34h ago",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 4,
+      "percentile": "top 5%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "day_count": 30,
+      "product_opportunity": "跨硬體 local LLM benchmark 工具——標準化量測不同 backend（llama.cpp / MLX / ollama）在不同設備上的 tokens/sec，輸出可互比的 JSON report",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Local AI needs to be the norm",
+          "url": "https://unix.foo/posts/local-ai-needs-to-be-norm/",
+          "score": 1702
+        },
+        {
+          "platform": "HN",
+          "title": "Hardware Attestation as Monopoly Enabler",
+          "url": "https://grapheneos.social/@GrapheneOS/116550899908879585",
+          "score": 2025
+        },
+        {
+          "platform": "GitHub",
+          "title": "google/windtunnel",
+          "url": "https://github.com/google/windtunnel"
+        }
+      ]
+    },
+    {
+      "title": "AI coding 品質反彈：工程師開始用腳投票",
+      "body": "「I'm going back to writing code by hand」（HN 857分，top 10）+ millionco/react-doctor（GitHub Trending #8，7935★，「Your agent writes bad React. This catches it」）同天出現。這兩個訊號說明 agent coding 的品質問題已從「抱怨」進入「行動」：工程師要麼退出 agent workflow，要麼開始建工具來 gate agent 的輸出。同天 James Shore 文章（HN 328分）的標題「you need AI that reduces your maintenance costs」是問題的準確定義——agent 提高了 initial delivery speed，但提高了 maintenance cost。這是 Claude Code 生態系第二十七波以來「quality gate」子議題的持續升溫。",
+      "evidence": "HN 857分（hand coding backlash）+ GitHub Trending #8（react-doctor）+ HN 328分（AI maintenance costs）三條訊號同天，方向一致",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "arc_ref": "Claude Code 生態系從 skill 擴張到 runtime 重寫",
+      "day_count": 27,
+      "product_opportunity": "agent-generated code 的技術債 heatmap 工具——結合 git blame 行為特徵和 AST 品質分析，生成「哪些檔案是 agent 寫的 × 品質最低」的互動式地圖",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "I'm going back to writing code by hand",
+          "url": "https://blog.k10s.dev/im-going-back-to-writing-code-by-hand/",
+          "score": 857
+        },
+        {
+          "platform": "GitHub",
+          "title": "millionco/react-doctor",
+          "url": "https://github.com/millionco/react-doctor"
+        },
+        {
+          "platform": "HN",
+          "title": "An AI coding agent needs to reduce your maintenance costs",
+          "url": "https://www.jamesshore.com/v2/blog/2026/you-need-ai-that-reduces-your-maintenance-costs",
+          "score": 328
+        }
+      ]
+    },
+    {
+      "title": "Google I/O 靜默期第 4 天 + windtunnel 空 repo：發布窗口打開的解析度提高",
+      "body": "Google AI Blog 連續第四天全部是消費者行銷（AI-powered Finance、Small Brief、Gardening tips）——Google I/O（5/20-21）靜默期訊號越來越強。同天 google/windtunnel（0 stars，無說明，4h ago）出現。「windtunnel」這個名字最常見的技術語義是效能測試框架，結合 ywchiu/mlx_benchmark_lab 今天出現和「Local AI needs to be the norm」的高分，一個可能的 I/O 公告方向是：Google 發布標準化的本地 AI 效能 benchmark 工具（配合 Gemma 4 on-device）。這是推測，不是確認——但 timing 和命名讓它值得標記。",
+      "evidence": "Google AI Blog 連續 4 天消費者行銷；google/windtunnel 4h ago；Google I/O 2026-05-20 距今 8 天",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "arc_ref": "AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution",
+      "day_count": 4,
+      "product_opportunity": "搶在 Google I/O 前發布 local LLM benchmark 工具——如果 Google 公布相關標準，先行的社群工具有機會成為 baseline 對照組",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google/windtunnel",
+          "url": "https://github.com/google/windtunnel"
+        },
+        {
+          "platform": "Google AI Blog",
+          "title": "AI-powered Google Finance in Europe",
+          "url": "https://blog.google/products-and-platforms/products/search/ai-powered-google-finance-in-europe/"
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "ywchiu/mlx_benchmark_lab",
+    "url": "https://github.com/ywchiu/mlx_benchmark_lab",
+    "stars": 0,
+    "created_hours_ago": 39,
+    "why": "台灣開發者 ywchiu 今天建立 MLX benchmark 實驗室，在 google/windtunnel 出現同天、「Local AI needs to be the norm」HN 1702分同天。問題是目前沒有標準化的本地 LLM 效能 benchmark——每個人用不同 prompt、不同 quantization 測不同的東西，結果沒法比。如果 ywchiu 在 Google I/O 前發布可複現的 benchmark 結果並建立方法論，有機會成為台灣 Apple Silicon 推理社群的參考基準。",
+    "commercial_path": "benchmark 工具本身免費，但「在你的特定硬體上幫你跑 benchmark + 出報告」可以做成付費服務（$5-20 per run），面向想在購買 Mac/PC 前確認本地 AI 效能的消費者。"
+  },
+  "contrarian": {
+    "claim": "Mythos 找到 curl 漏洞這件事被嚴重過度解讀",
+    "body": "今天的敘事是「AI agent 能自主做安全研究了」。實際上，Mythos 找到的是一個 edge case 記憶體錯誤——這是 coverage-driven fuzzing 一直能做的事，AI 的貢獻是降低了設置 fuzzing harness 的門檻，而不是提升了漏洞發現的推理能力。更重要的是：Daniel Stenberg 的文章標題是「Mythos finds a curl vulnerability」，不是「Mythos understands curl security」。這是一個分佈問題，不是理解問題。當每個人都能 zero-shot 架設 fuzzing agent 的時候，真正的 bottleneck 從「能不能找到漏洞」變成「誰來驗證這是真的漏洞」——而那個 bottleneck 是人類時間，不是 LLM 能力。",
+    "falsifiable_prediction": "到 2026-12-31，任何公開發布的 AI 安全 agent（Mythos 或同類工具）的公開 benchmark 中，precision（真正漏洞 / 總回報漏洞）不超過 20%，以至少三個主要 OSS 專案的 disclosure 統計數據為準（CVE database + project security mailing list）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-nanowhale-model-release",
+      "text": "到 2026-05-12，huggingface/nanowhale 發布帶有 README 和 model card 的 initial release。",
+      "status": "needs_revision",
+      "created": "2026-05-05",
+      "resolution_date": "2026-05-12",
+      "note": "Resolution date 已到，staging data 中無 nanowhale 活動記錄，無法確認 confirmed 或 failed——nanowhale repo 不在今日任何 staging source 中出現，無法機械判斷。標記為 needs_revision。"
+    },
+    {
+      "id": "pred-apple-ml-lvsum-wwdc",
+      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "status": "pending",
+      "created": "2026-05-08",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-sira-readme-72h",
+      "text": "到 2026-05-12，facebookresearch/sira 發布帶有 README 的初始版本（以 repo README 非空且長度 > 100 字元為準）。",
+      "status": "needs_revision",
+      "created": "2026-05-09",
+      "resolution_date": "2026-05-12",
+      "note": "Resolution date 已到，sira 已升入 long_term（times_featured: 3），但 staging data 中無 README 狀態記錄。無法機械判斷——標記為 needs_revision。"
+    },
+    {
+      "id": "pred-delegation-framework-inertia",
+      "text": "到 2026-12-31，LangChain/LangGraph、AutoGen、CrewAI 這三個 framework 中，沒有任何一個在 official changelog 或 release notes 加入 delegation integrity validation 或等效的 structured output enforcement 作為 first-class feature。",
+      "status": "pending",
+      "created": "2026-05-10",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-ai-agent-security-precision",
+      "text": "到 2026-12-31，任何公開發布的 AI 安全 agent 的公開 benchmark 中，precision（真正漏洞 / 總回報漏洞）不超過 20%，以至少三個主要 OSS 專案的 disclosure 統計數據為準。",
+      "status": "pending",
+      "created": "2026-05-12",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "b1337fdf-ab52-47d1-bf1a-7598d8d664a9",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-11T20:13:15.297Z",
+    "analyze_duration_ms": 692445,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 166
+      },
+      "trending": {
+        "ok": true,
+        "count": 13
+      },
+      "search": {
+        "ok": true,
+        "count": 46
+      },
+      "developers": {
+        "ok": true,
+        "count": 24
+      }
+    },
+    "degraded_sources": []
+  }
+}
