@@ -1,0 +1,587 @@
+{
+  "date": "2026-05-14",
+  "lead": {
+    "html": "<h3>cactus-compute/needle：把 Gemini 的 tool calling 蒸餾進 26M 參數模型，HN #1，607 分</h3>\n\n<h4>發生了什麼</h4>\n<p>cactus-compute 的 Show HN 今天拿下 607 分，排名第一。他們做的事情說起來簡單，但意義不小：把 Gemini 的 tool calling 能力，用行為克隆（behavioral cloning）蒸餾進一個 26M 參數的小模型，然後開源。26M 參數的概念：比 GPT-2 小，但可以在 CPU 上跑到 sub-100ms 延遲。</p>\n\n<p>同一天，huggingface（63K followers）悄悄建了 <code>huggingface/agentfinder</code>（35h ago，2 stars，空 README）。名字很直接——一個 agent 發現 / 路由機制。這兩件事加在一起，指向同一個方向：agent 生態系正在從「一個大模型扛所有工具」往「很多小的專業 agent + 一個 registry 路由」的方向移動。</p>\n\n<p>同週 Karpathy 的 Substack 仍掛著「Coming soon」（第四天）。Google AI Blog 今天繼續是 consumer 內容（AI Finance Europe 擴展、廣告小品牌活動、園藝搜尋建議），Google I/O 前靜默期進入第五天——距離 5/20-21 還有六天。</p>\n\n<h4>為什麼重要</h4>\n<p>needle 的機制是把 tool calling 蒸餾出來，而不是把整個模型蒸餾。這個切分很重要：它意味著 tool calling 能力是可以獨立萃取的，你不需要跑 70B 模型來決定「現在要呼叫 search tool 還是 calculator tool」。如果這個方法可以推廣，你可以為每個 MCP tool 蒸餾一個對應的 26M dispatcher，把路由決策從 inference 熱路徑拉出來。</p>\n\n<p>對在跑 MCP server 的人來說，今天的問題是：tool selection 佔了 latency 的多少？如果你的 agent 每次都要進入主模型的完整 forward pass 才能決定要呼叫哪個 tool，needle 給了一個方向——不一定要用 needle 本身，而是這個 distillation 方向。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 留言第一條（高讚）問的是訓練資料來源問題：「How did you get the tool calling traces from Gemini? Is this violating ToS?」作者回覆說他們用的是公開的 tool calling datasets + synthetic generation，沒有直接呼叫 Gemini API 蒸餾輸出。這個答案說服了部分人，但也說明 behavioral distillation 的 legal surface 還沒有社群共識。另一條留言測了本地跑的 benchmark：「Tried it on M3 Pro, 23ms average on the test suite. This is wild.」反向有一條說：「26M is impressive but tool calling without world knowledge is basically just a router. The 'intelligence' is still in the tool implementations.」這個批評有道理——needle 不解決 tool execution 的問題，只解決 tool selection 的問題。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 MCP agent 目前的 tool selection latency 超過 200ms（用 <code>--debug</code> 開啟 trace 量一下），這週可以 <code>git clone https://github.com/cactus-compute/needle</code> 跑一下官方 benchmark，確認你的 tool spec 格式是否和 needle 的 input schema 相容。needle 的 distillation pipeline 是開源的——如果你有自己的 tool calling traces，可以微調 needle 的 base checkpoint 到你的 domain，比從頭蒸餾成本低很多。注意：needle 只解決 tool selection，tool execution 和 context reasoning 仍然需要主模型。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "針對每個 MCP tool 蒸餾一個 26M 的專屬 dispatcher，建一個本地 agent registry",
+      "projects": [
+        {
+          "name": "cactus-compute/needle",
+          "url": "https://github.com/cactus-compute/needle",
+          "note": "tool calling 蒸餾基礎模型"
+        },
+        {
+          "name": "huggingface/agentfinder",
+          "url": "https://github.com/huggingface/agentfinder",
+          "note": "HuggingFace 新建的 agent 發現機制（35h ago，仍空）"
+        }
+      ],
+      "description": "你在做一個有 20+ MCP tools 的 agent，每次 tool selection 都要走主模型的完整 forward pass，latency 和 cost 都是問題。needle 的蒸餾流程是開源的，可以複製：給定一個 tool 的 JSON schema，生成合成的 tool calling traces，再 behavioral clone 到 26M 模型。如果你為每個 tool 或每組相近的 tools 蒸餾一個 micro-dispatcher，你就有了一個本地的 tool routing 層——請求進來先過 26M dispatcher 決定呼叫哪個 tool，再把 payload 傳給主模型做 execution。這個架構的好處是：dispatcher 在 CPU 上跑，不佔 GPU；可以在 edge 部署；tool selection 的 latency 從 200ms 降到 23ms（M3 Pro 的實測數字）。",
+      "use_case": "你是一個 AI coding agent startup 的工程師，手上的 agent 有 file search、git、code execution、web search 四個 MCP tools，每次 tool selection 要 180ms。你想把 routing 層從主模型拉出來，讓主模型只做 reasoning 和 execution，不做 dispatch 決定。",
+      "tech_stack": "Python + HuggingFace Transformers（needle checkpoint）+ MCP Python SDK",
+      "hardware": "純 CPU 可跑（26M 模型，23ms on M3 Pro）",
+      "skill_level": "熟悉 fine-tuning pipeline 和 MCP tool schema 格式",
+      "dependencies": "needle 開源 distillation 流程；需要自己的 tool calling trace 資料（可合成生成）",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/cactus-compute/needle && python benchmark.py --tools your_tools.json 量一下你的 tool spec 和 needle 的相容性",
+      "market_evidence": "HN 607 分 + 「23ms on M3 Pro」的實測留言；MCP ecosystem 今年工具數量爆增，tool selection 成本問題開始出現在 HN 留言串"
+    },
+    {
+      "format": "remix",
+      "title": "用開源 OrcaSlicer 取代 Bambu Lab 雲端後端：Raspberry Pi + 本地 LLM + MCP bridge",
+      "projects": [
+        {
+          "name": "geerlingguy/OrcaSlicer-bambulab",
+          "url": "https://github.com/geerlingguy/OrcaSlicer-bambulab",
+          "note": "Jeff Geerling（26K followers）17h ago fork，配合他今天的 Bambu Lab OSS 批評文章"
+        },
+        {
+          "name": "keijiro/UnityMCP-Testbed",
+          "url": "https://github.com/keijiro/UnityMCP-Testbed",
+          "note": "keijiro（23K followers）的 Unity × MCP 實驗（34h ago）"
+        }
+      ],
+      "description": "Bambu Lab 把社群貢獻的 OrcaSlicer 程式碼收進去之後，用 DRM + 雲端認證鎖住，不讓用戶離線操作。Jeff Geerling（26K followers）今天寫了批評文章、同時 fork 了 OrcaSlicer-bambulab 做備份（17h ago）——這是社群對硬體廠商 OSS 濫用的具體行動，不只是抱怨。MCP 提供了一個更乾淨的解法：在 Raspberry Pi 5 上跑 OrcaSlicer，加一個 MCP server expose 印表機控制 API（溫度監控、列印佇列、錯誤處理），讓本地 LLM agent 代替 Bambu 的 cloud backend。keijiro 的 Unity MCP Testbed 驗證了硬體控制 + MCP 是可行的組合，哪怕是遊戲引擎這種複雜 runtime 也能用 MCP 橋接。結果是一個完全本地的智慧印表機控制系統：沒有訂閱費、沒有雲端、沒有廠商鎖定。",
+      "use_case": "你有一台 Bambu Lab X1C，手邊有 Raspberry Pi 5。你不想讓 Bambu 的伺服器知道你在印什麼（NDA 設計稿），也不想付 Bambu Connect 的月費。你想用 Claude 或本地 LLM 監控列印進度、在失敗時自動暫停。",
+      "tech_stack": "Python + OrcaSlicer API（Bambu MQTT protocol 已有逆向文件）+ MCP Python SDK + llamacpp 或 mlx",
+      "hardware": "Raspberry Pi 5 + Bambu Lab 3D 印表機（或任何支援 MQTT 的印表機）",
+      "skill_level": "熟悉 MQTT 協定和 MCP server 開發；不需要 ML 背景",
+      "dependencies": "Bambu Lab MQTT 協定文件（社群已逆向，存在 GitHub）；OrcaSlicer fork 開源；不需要 API key",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "閱讀 https://github.com/bambulab/BambuStudio/wiki/MQTT-protocol 了解印表機控制協定，再看 keijiro/UnityMCP-Testbed 的 C# MCP bridge 架構",
+      "market_evidence": "Lobsters 135 分的 Bambu Lab OSS 批評文 + Jeff Geerling（26K followers）同天行動 fork；Bambu Lab 在 3D printing 社群的用戶基數極大，「斷網用不了」是論壇持續投訴的 #1 痛點"
+    },
+    {
+      "format": "solo",
+      "title": "針對長期運行 agent session 的 seccomp sandbox harness：以 Fragnesia/Dirty Frag 類 LPE 為威脅模型",
+      "projects": [
+        {
+          "name": "trycua/cua",
+          "url": "https://github.com/trycua/cua",
+          "note": "開源 computer-use agent 基礎設施，16K stars，GitHub Trending"
+        }
+      ],
+      "description": "δ-mem 論文提出 differential KV memory 更新讓 LLM 可以維持長期 session 而不會 OOM，這是 agent 架構上的突破。但長期 session 有一個沒人討論的安全問題：agent process 如果跑 24 小時，在這段時間內任何一個 kernel LPE（像 Dirty Frag 或本週的 Fragnesia）都可以讓攻擊者從 agent 的沙盒逃出去提權。目前主流 agent sandbox（Docker + seccomp）的假設是 session 是短暫的。如果 session 是長期的，seccomp profile 需要 tighter：關閉所有不必要的 syscall，用 user namespaces 隔離，每個 memory read/write 操作寫 audit log（delta 記錄，不是 full dump）。這個 harness 可以從 trycua/cua 的基礎設施出發，加一層 seccomp policy generator——根據 agent 的 tool spec 自動推斷最小必要的 syscall 集合。目標客群：需要在政府規定的 on-premises 環境跑 agent 的 GovTech 團隊。",
+      "use_case": "你在幫某個縣市政府建一個文件審查 agent，agent 需要持續跑 8-12 小時處理上千份公文，並且法規要求所有操作必須有 audit trail。目前的 Docker 部署對 Fragnesia 類 LPE 沒有防護——一旦 kernel 被打穿，所有公文都曝光。你需要一個 harness，讓 agent 的 syscall 被靜態限制到最小，且所有 file access 都有可驗證的 delta log。",
+      "tech_stack": "Go（seccomp policy generator）+ Python（agent harness + audit logger）+ Linux user namespaces + libseccomp",
+      "hardware": "x86_64 Linux 伺服器（需要 kernel ≥ 5.15 支援完整的 user namespace + seccomp-bpf 組合）",
+      "skill_level": "需要熟悉 Linux syscall 層和 seccomp-bpf 語法；有 kernel security 背景會加速開發，但不是必須",
+      "dependencies": "libseccomp（MIT license，完全免費）；trycua/cua 作為 agent runtime 基礎；不需要雲端 API",
+      "difficulty": 4,
+      "dev_time": "1 個月+",
+      "first_step": "閱讀 https://man7.org/linux/man-pages/man2/seccomp.2.html 和 trycua/cua 的 sandbox 架構，然後用 strace 記錄一個簡單 agent session 的 syscall trace 作為 baseline",
+      "market_evidence": "Fragnesia（Phoronix + LWN 雙源）確認 Dirty Frag 類 LPE 是一個持續的類別而非單一事件；LWN 上 kernel 維護者正在討論 fast-patch killswitch；GovTech agent 採購案開始出現 on-premises + audit log 強制要求"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "cactus-compute/needle",
+      "url": "https://github.com/cactus-compute/needle",
+      "desc": "把 Gemini 的 tool calling 能力蒸餾進 26M 參數模型，CPU 上 23ms，開源 distillation pipeline",
+      "source": "HN 607分 Show HN",
+      "repo_age": "本週新增",
+      "stars": 607
+    },
+    {
+      "name": "Anthropic: Claude for Small Business",
+      "url": "https://www.anthropic.com/news/claude-for-small-business",
+      "desc": "Anthropic 推出中小企業套餐，包含 Claude API 接入 + 現成 agent template。同週公布 SpaceX 算力合作協議（非金錢交換）。",
+      "source": "Anthropic News",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Anthropic: Finance Agents — 10 個金融服務 agent template",
+      "url": "https://www.anthropic.com/news/finance-agents",
+      "desc": "10 個 ready-to-run agent template 覆蓋最常見金融場景；anthropics/financial-services repo 在 memory 中已有 18593★",
+      "source": "Anthropic News",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "trycua/cua",
+      "url": "https://github.com/trycua/cua",
+      "desc": "開源 Computer-Use Agent 基礎設施：sandbox、SDK、benchmark，16K stars，GitHub Trending #18",
+      "source": "GitHub Trending #18",
+      "repo_age": "近期活躍",
+      "stars": 16482
+    },
+    {
+      "name": "Erlang/OTP 29.0",
+      "url": "https://www.erlang.org/news/188",
+      "desc": "Erlang/OTP 29.0 正式發布，Lobsters 43 分；actor model 在 agent orchestration 討論中重新獲得關注",
+      "source": "Lobsters 43分",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Simon Willison — datasette 1.0a29",
+      "url": "https://simonwillison.net/2026/May/12/datasette/",
+      "desc": "datasette alpha 系列持續推進，Simon Willison 同日也在實驗 CSP Allow-list 保護 HTML injection（和 agent delegation 腐化問題有關聯）",
+      "source": "Simon Willison",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "GammaLabTechnologies/harmonist",
+      "url": "https://github.com/GammaLabTechnologies/harmonist",
+      "desc": "零 runtime 依賴的 portable AI agent orchestration，186 個 agent，機械式協定強制執行（mechanical protocol enforcement）",
+      "source": "topic:llm · 1616★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1616
+    },
+    {
+      "name": "Open-Less/openless",
+      "url": "https://github.com/Open-Less/openless",
+      "desc": "按住按鍵說話、放開鍵後 AI 潤稿文字出現在游標位置，macOS + Windows，開源語音輸入替代方案",
+      "source": "topic:llm · 1264★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1264
+    },
+    {
+      "name": "WenyuChiou/awesome-agentic-ai-zh",
+      "url": "https://github.com/WenyuChiou/awesome-agentic-ai-zh",
+      "desc": "AI Agent 中文學習地圖，三語對照（繁中/简中/English），結構化學習路徑，台灣社群維護",
+      "source": "topic:mcp · 1215★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1215
+    },
+    {
+      "name": "raiyanyahya/how-to-train-your-gpt",
+      "url": "https://github.com/raiyanyahya/how-to-train-your-gpt",
+      "desc": "從零建現代 LLM，每一行都有注釋，用 Jupyter Notebook 寫，定位「解釋給五歲小孩聽」",
+      "source": "topic:llm · 1370★ · 近期新增",
+      "repo_age": "近期新增",
+      "stars": 1370
+    },
+    {
+      "name": "Phoronix — GCC 16 vs LLVM Clang 22 benchmark",
+      "url": "https://www.phoronix.com/review/gcc-16-vs-clang-22",
+      "desc": "GCC 16.1 產生比 GCC 15 更快的 binary，和 LLVM Clang 22 正面競爭。對用 C 寫 inference kernel 的人有直接參考價值。",
+      "source": "Phoronix",
+      "repo_age": "本週發布"
+    },
+    {
+      "name": "Linux Fragnesia — 第二個 Dirty Frag 類 LPE",
+      "url": "https://www.phoronix.com/news/Linux-Fragnesia",
+      "desc": "繼 Dirty Frag 後，Fragnesia 是第二個同類型 Linux 本地提權漏洞（page cache fragmentation + UAF），說明這是一個漏洞類別，不是單一事件",
+      "source": "Phoronix + LWN 雙源",
+      "repo_age": "本週揭露"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Show HN: Needle — Distilled Gemini Tool Calling into a 26M Model",
+        "url": "https://github.com/cactus-compute/needle",
+        "score": 607,
+        "comments": 40,
+        "takeaway": "Tool selection 能力可以從主模型蒸餾出來；26M 模型在 CPU 上 23ms。意味著 tool routing 不必佔用 inference 熱路徑的 GPU 資源。",
+        "action": "git clone 後用 benchmark.py 測你的 MCP tool spec 相容性"
+      },
+      {
+        "title": "Bambu Lab is abusing the open source social contract",
+        "url": "https://www.jeffgeerling.com/blog/2026/bambu-lab-abusing-open-source-social-contract/",
+        "score": 135,
+        "comments": 10,
+        "takeaway": "Jeff Geerling 記錄了 Bambu Lab 如何接受 GPL 授權的 OrcaSlicer 社群貢獻，然後用 DRM + 雲端強制登入鎖住功能。同天他 fork 了 OrcaSlicer-bambulab 做備份。對在用 Bambu 印表機做 hardware prototyping 的人：離線備份計畫現在是必要的。",
+        "source": "Lobsters"
+      },
+      {
+        "title": "I moved my digital stack to Europe",
+        "url": "https://monokai.com/articles/how-i-moved-my-digital-stack-to-europe/",
+        "score": 769,
+        "comments": 95,
+        "takeaway": "具體的遷移路線：email → Proton，storage → Infomaniak，DNS → Cloudflare（仍在 US），VCS → Codeberg/Forgejo。對需要 EU data residency 的服務：這是一個可以直接 fork 的 baseline"
+      },
+      {
+        "title": "Leaving GitHub for Forgejo",
+        "url": "https://jorijn.com/en/blog/leaving-github-for-forgejo/",
+        "score": 456,
+        "comments": 43,
+        "takeaway": "具體的遷移步驟 + 坑的記錄（GitHub Actions → Forgejo Actions 的相容性問題）。Lobsters「Leaving GitHub for Forgejo」和「I moved my digital stack to Europe」同週出現，歐洲開發者的平台遷移從討論進入行動。"
+      },
+      {
+        "title": "LWN: Friction in Fedora over AI developer desktop initiative",
+        "url": "https://lwn.net/Articles/1071949/",
+        "takeaway": "Red Hat 員工推動 Fedora「AI Developer Desktop」spin，社群反對理由是「每個人需要的 AI tooling 不一樣，無法標準化成一個 spin」。對在建 AI dev 工具鏈的人：這場爭論的結論會定義 Linux distro 層的 AI tooling convention。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "I moved my digital stack to Europe",
+        "url": "https://monokai.com/articles/how-i-moved-my-digital-stack-to-europe/",
+        "score": 769,
+        "comments": 95
+      },
+      {
+        "title": "Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model",
+        "url": "https://github.com/cactus-compute/needle",
+        "score": 607,
+        "comments": 40
+      },
+      {
+        "title": "Leaving GitHub for Forgejo",
+        "url": "https://jorijn.com/en/blog/leaving-github-for-forgejo/",
+        "score": 456,
+        "comments": 43
+      },
+      {
+        "title": "Setting up a free *.city.state.us locality domain (2025)",
+        "url": "https://fredchan.org/blog/locality-domains-guide/",
+        "score": 372,
+        "comments": 27
+      },
+      {
+        "title": "Deterministic Fully-Static Whole-Binary Translation Without Heuristics",
+        "url": "https://arxiv.org/abs/2605.08419",
+        "score": 282,
+        "comments": 15
+      },
+      {
+        "title": "Kickstarter is forced to ban adult content by payment processors",
+        "url": "https://kotaku.com/kickstarter-is-the-latest-platform-seemingly-forced-to-ban-adult-content-by-payment-processors-2000695648",
+        "score": 275,
+        "comments": 26
+      },
+      {
+        "title": "Open Source Resistance: keep OSS alive on company time",
+        "url": "https://ossresistance.com/",
+        "score": 205,
+        "comments": 17
+      },
+      {
+        "title": "Show HN: TikTok but for scientific papers",
+        "url": "https://andreaturchet.github.io/website/index.html",
+        "score": 183,
+        "comments": 37
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Bambu Lab is abusing the open source social contract",
+        "url": "https://www.jeffgeerling.com/blog/2026/bambu-lab-abusing-open-source-social-contract/",
+        "score": 135,
+        "comments": 10,
+        "tags": [
+          "hardware",
+          "law"
+        ]
+      },
+      {
+        "title": "Redis and the Cost of Ambition",
+        "url": "https://charlesleifer.com/blog/redis-and-the-cost-of-ambition/",
+        "score": 121,
+        "comments": 39,
+        "tags": [
+          "databases"
+        ]
+      },
+      {
+        "title": "Sovereign Tech Fund invests over €1 million in KDE software development",
+        "url": "https://kde.org/announcements/sovereign-tech-fund-invests-kde/",
+        "score": 51,
+        "comments": 8,
+        "tags": [
+          "linux"
+        ]
+      },
+      {
+        "title": "Erlang/OTP 29.0 Release",
+        "url": "https://www.erlang.org/news/188",
+        "score": 43,
+        "comments": 6,
+        "tags": [
+          "erlang"
+        ]
+      },
+      {
+        "title": "what 262,715 regex questions on stack overflow haven't answered",
+        "url": "https://iev.ee/blog/what-262715-regex-questions-havent-answered/",
+        "score": 67,
+        "comments": 5,
+        "tags": [
+          "compsci",
+          "performance"
+        ]
+      },
+      {
+        "title": "What is BusyBox?",
+        "url": "https://specular.fi/post/what-is-busybox",
+        "score": 40,
+        "comments": 24,
+        "tags": [
+          "linux"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "pan93412",
+        "followers": 663,
+        "repo": "pan93412/zhtw-mcp",
+        "url": "https://github.com/pan93412/zhtw-mcp",
+        "language": null,
+        "hours_ago": 14,
+        "description": "繁體中文語言 linter，MCP server 格式，讓 AI agent 在生成繁中文字時可以做語言正確性檢查",
+        "local_context": "繁中 MCP linter + 同週 WenyuChiou/awesome-agentic-ai-zh（1215★）雙雙出現，台灣社群在 MCP 生態的中文工具層快速補白"
+      },
+      {
+        "developer": "wiwikuan",
+        "followers": 572,
+        "repo": "wiwikuan/offline-taiwan-dic",
+        "url": "https://github.com/wiwikuan/offline-taiwan-dic",
+        "language": "Shell",
+        "hours_ago": 41,
+        "description": "離線台灣中文字典，Shell 腳本，完全本地，無需網路連線",
+        "local_context": "離線字典在 LLM 時代聽起來復古，但和今天 HN 769 分的「moved my digital stack to Europe」訴求一致：本地工具，不依賴雲端服務"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 826,
+        "repo": "strategist922/librai",
+        "url": "https://github.com/strategist922/librai",
+        "language": null,
+        "hours_ago": 7,
+        "description": "iOS app，AI 驅動的有聲書體驗，含 TTS 和背景圖像生成，開發中",
+        "local_context": "台灣開發者在 AI audiobook 方向的實驗，和 on-device inference 成熟的整體趨勢對應"
+      },
+      {
+        "developer": "Inndy",
+        "followers": 507,
+        "repo": "Inndy/pvelab",
+        "url": "https://github.com/Inndy/pvelab",
+        "language": "Go",
+        "hours_ago": 28,
+        "description": "Proxmox VE 一次性實驗 VM 快速啟動工具，cloud-init 克隆 + SSH 設定 + TTL 自動清理，自述為「AI slop」但功能完整",
+        "local_context": "Go 語言寫的 devops 工具；作者自嘲「AI slop」與近期 HN 857 分的手寫 code 反彈形成有趣對照"
+      }
+    ],
+    "global": [
+      {
+        "developer": "keijiro",
+        "followers": 23617,
+        "repo": "keijiro/UnityMCP-Testbed",
+        "url": "https://github.com/keijiro/UnityMCP-Testbed",
+        "language": "C#",
+        "hours_ago": 34,
+        "description": "Unity 引擎的 MCP 協定測試台，keijiro 是 Unity Japan 的技術藝術家，這是 MCP 進入遊戲引擎生態的早期訊號"
+      },
+      {
+        "developer": "geerlingguy",
+        "followers": 26889,
+        "repo": "geerlingguy/OrcaSlicer-bambulab",
+        "url": "https://github.com/geerlingguy/OrcaSlicer-bambulab",
+        "language": null,
+        "hours_ago": 17,
+        "description": "Jeff Geerling fork 的 OrcaSlicer Bambu Lab 版本，他說：「做備份，以防 Bambu 繼續關閉開源存取」——和他今天的批評文章同步行動"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 63349,
+        "repo": "huggingface/agentfinder",
+        "url": "https://github.com/huggingface/agentfinder",
+        "language": "Python",
+        "hours_ago": 35,
+        "description": "HuggingFace 新建的 agentfinder，README 仍空，但名字和 HuggingFace Hub/Spaces 基礎設施暗示一個 agent 發現 / registry 機制——MCP server 版的 Hub"
+      },
+      {
+        "developer": "wesbos",
+        "followers": 35478,
+        "repo": "wesbos/amaran-BLE-control",
+        "url": "https://github.com/wesbos/amaran-BLE-control",
+        "language": "TypeScript",
+        "hours_ago": 2,
+        "description": "直接用 Bluetooth 控制 Amaran 補光燈，不需要廠商的 desktop app。TypeScript，開源，無雲端依賴——和 Bambu Lab OSS 故事形成直接對照"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Tool calling 能力開始可以被蒸餾和分發：從單一大模型到 micro-dispatcher 生態",
+      "body": "cactus-compute/needle 在今天拿下 HN #1（607 分）代表的不只是一個好用的工具，而是一個架構轉向的訊號：tool calling 是可以獨立萃取的能力，不需要捆綁在完整的推理模型裡。同週 huggingface/agentfinder（35h ago）出現，雖然仍是空 repo，但名字指向 agent 發現 / registry 基礎設施。這兩個訊號的共同方向是：agent 生態系正在從「一個大模型 + 所有工具」往「多個專業 micro-agent + discovery layer」轉移。上週的 addyosmani/agent-skills（38K★）和本週 K-Dense-AI/scientific-agent-skills（21K★，GitHub Trending）是同一個趨勢的 application layer。這個轉向的 upstream cause 是 MCP 的普及——一旦工具呼叫有標準化格式，tool selection 能力就可以被量化和蒸餾。",
+      "evidence": "HN 607 分（top 5%）；M3 Pro 上 23ms 實測；huggingface/agentfinder 35h ago（63K followers org）；K-Dense-AI/scientific-agent-skills 21K★ GitHub Trending",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 29,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Show HN: Needle",
+          "url": "https://github.com/cactus-compute/needle",
+          "score": 607
+        },
+        {
+          "platform": "GitHub",
+          "title": "huggingface/agentfinder",
+          "url": "https://github.com/huggingface/agentfinder"
+        }
+      ],
+      "product_opportunity": "一個針對 MCP tool spec 的自動蒸餾服務：給定工具的 JSON schema，輸出一個 26M 級別的 tool dispatcher checkpoint，可以直接部署在 edge 設備上做本地 routing"
+    },
+    {
+      "title": "硬體廠商的 OSS 濫用模式：接受社群貢獻 → 上線 DRM 鎖住 → 逼用戶付雲端費",
+      "body": "Jeff Geerling 今天的 Bambu Lab 批評文（Lobsters 135 分，top 5%）和他同天 fork 的 OrcaSlicer-bambulab（17h ago）是今天最有行動力的 OSS 訊號——不是只寫文章，而是馬上 fork 做備份。Bambu Lab 的問題：他們把 GPL 授權的 OrcaSlicer 社群貢獻吸收進去，然後用雲端認證 + DRM 讓核心功能只能在連網狀態下使用。這個模式在 3D printing 社群以外正在擴散：Bambu 的 MQTT protocol 已有社群逆向文件，說明生態系正在自發地建立逃脫路徑。「OSS 商業模式在 AI 競爭壓力下的授權翻轉浪潮」這條敘事軌跡今天多了一個硬體維度——不只是軟體公司，硬體廠商也學會了這個操作。",
+      "evidence": "Lobsters 135 分（top 5%）；geerlingguy（26K followers）同天 fork；Bambu MQTT 社群逆向文件存在",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%",
+      "arc_ref": "oss-licensing-ai-pressure",
+      "day_count": 12,
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "Bambu Lab is abusing the open source social contract",
+          "url": "https://www.jeffgeerling.com/blog/2026/bambu-lab-abusing-open-source-social-contract/",
+          "score": 135
+        },
+        {
+          "platform": "GitHub",
+          "title": "geerlingguy/OrcaSlicer-bambulab",
+          "url": "https://github.com/geerlingguy/OrcaSlicer-bambulab"
+        }
+      ],
+      "product_opportunity": "一個「硬體廠商 OSS 依賴審計」工具：掃描某家公司的產品韌體和配套軟體，找出其中使用 GPL/AGPL 授權程式碼但沒有合規開源的部分，輸出可用於法律投訴的報告"
+    },
+    {
+      "title": "歐洲資料主權運動從個人選擇進入工程文件：兩篇高分遷移指南同週出現",
+      "body": "「I moved my digital stack to Europe」（HN 769 分）和「Leaving GitHub for Forgejo」（HN 456 分）同週出現，而且都是具體的遷移記錄，不是觀點文章。769 分的文章提供了 email（Proton）、storage（Infomaniak）、VCS（Codeberg）的具體選擇；456 分的文章記錄了 GitHub Actions → Forgejo Actions 的實際坑。這兩篇的同時高分說明一件事：歐洲開發者的資料主權需求已從「我覺得應該這樣做」到「我在這樣做，我來告訴你怎麼做」。這和台灣開發者今天同時建 offline-taiwan-dic 和 zhtw-mcp 的方向一致：本地工具、不依賴境外雲端。",
+      "evidence": "HN 769 分 + HN 456 分，兩篇同週；合計 138 則留言；pan93412/zhtw-mcp（14h ago）+ wiwikuan/offline-taiwan-dic（41h ago）台灣側同步",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 14,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "I moved my digital stack to Europe",
+          "url": "https://monokai.com/articles/how-i-moved-my-digital-stack-to-europe/",
+          "score": 769
+        },
+        {
+          "platform": "HN",
+          "title": "Leaving GitHub for Forgejo",
+          "url": "https://jorijn.com/en/blog/leaving-github-for-forgejo/",
+          "score": 456
+        }
+      ],
+      "product_opportunity": "一個 self-hosted AI 服務遷移工具包：把現有的 OpenAI/Anthropic API 呼叫自動 rewrite 成指向本地 Ollama endpoint 或 Forgejo + Gitea Actions 的等價呼叫，針對需要 EU data residency 的開發團隊"
+    },
+    {
+      "title": "Google I/O 前靜默期第五天：google/windtunnel 仍是唯一的具體訊號",
+      "body": "Google AI Blog 今天繼續是 consumer 內容（AI Finance Europe 擴展、Small Brief 廣告活動、園藝搜尋）——這是連續第五天沒有任何 research 或 developer 向的發布。google/windtunnel（52h ago，0 stars，仍空 README）在這個背景下是唯一的具體 pre-announce 訊號。名稱「windtunnel」暗示 performance testing / benchmarking 框架，最可能的方向是本地 AI 的 benchmark 工具——和「Local AI needs to be the norm」（上週 HN 1702 分）的主題對齊。Google I/O 2026 在 5/20-21，距今六天。Karpathy 的「Coming soon」placeholder 仍在（第四天），暗示他的公告可能和 I/O 時間點協調。",
+      "evidence": "Google AI Blog 連續 5 天 consumer-only（AI Finance Europe / Small Brief / Gardening tips / 其他）；google/windtunnel 52h ago；Google I/O 2026: 5/20-21",
+      "type": "持續趨勢",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 25%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 5,
+      "source_links": [
+        {
+          "platform": "Google AI Blog",
+          "title": "AI-powered Google Finance expanding to Europe",
+          "url": "https://blog.google/products-and-platforms/products/search/ai-powered-google-finance-in-europe/"
+        },
+        {
+          "platform": "GitHub",
+          "title": "google/windtunnel",
+          "url": "https://github.com/google/windtunnel"
+        }
+      ],
+      "product_opportunity": "如果 windtunnel 確認是本地 AI benchmarking 工具，最快回應是建立一個 open-source 版本：針對 on-device LLM 的 latency / throughput / memory footprint benchmark，相容 MLX、llamacpp、Ollama 等常見 runtime"
+    }
+  ],
+  "sleeper": {
+    "name": "pan93412/zhtw-mcp",
+    "url": "https://github.com/pan93412/zhtw-mcp",
+    "description": "繁體中文語言 linter，以 MCP server 形式存在，14h ago 建立，目前 0 stars",
+    "why_asymmetric": "繁體中文是 MCP 生態裡幾乎沒有本地語言工具的方向。pan93412 是台灣活躍開發者（663 followers），這個 repo 同時命中「MCP 工具擴張」和「台灣本地 AI 工具鏈」兩個正在加速的趨勢。最近一週 WenyuChiou/awesome-agentic-ai-zh（1215★）說明繁中 AI 社群的內容需求確實存在，而 zhtw-mcp 是供給側的回應。如果 MCP ecosystem 繼續擴張，繁中 linter 的 TAM（target addressable market）是所有用 Claude/GPT 生成繁中內容的 pipeline。",
+    "commercial_path": "把 zhtw-mcp 包裝成一個可付費的「繁體中文品質保證 API」：按呼叫次數計費，針對媒體、出版社、政府機關等需要繁中正確性的 B2B 客戶。台灣的政府標案有明確的中文品質規格要求，這個工具可以直接接入採購流程。"
+  },
+  "contrarian": {
+    "claim": "cactus-compute/needle 的蒸餾方法在 HN 607 分的光環下被過度解讀：它解決了 tool selection 的問題，但這從來都不是 agent 的主要延遲源頭。",
+    "body": "needle 的 23ms tool selection 聽起來很快，但一個典型的 agent loop 裡，tool selection 佔 latency 的比例遠低於 10%。真正的延遲是：(1) tool execution 本身（搜尋、程式碼執行）、(2) 主模型的 reasoning pass、(3) context window 管理。把 tool selection 從 200ms 降到 23ms，在一個 5-10 秒的 agent step 裡幾乎是不可量測的改善。needle 真正有意義的情境是 edge device 或完全離線的部署——這個市場是真實的，但它不等於「tool calling 蒸餾是 agent 性能優化的主要方向」這個更大的宣稱。",
+    "rationale": "Tool selection latency 在典型 agent loop 中佔比低；needle 的 23ms 是在孤立 benchmark 下測的，不是端到端 agent pipeline。",
+    "prediction": "到 2026-12-31，在 LangGraph、AutoGen、CrewAI 這三個框架的 performance 相關 issue / PR 中，tool selection latency 佔總 latency 的 issue 數量不超過 10%（以 GitHub issue 的 label 或 title keyword 統計），說明這不是社群認可的主要瓶頸。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。huggingface/agentfinder 的出現提供了側面佐證：registry 問題已有大廠介入，但 MCP 官方 registry 仍是空缺。",
+      "status": "pending",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-apple-ml-lvsum-wwdc",
+      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "status": "pending",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-delegation-framework-inertia",
+      "text": "到 2026-12-31，LangChain/LangGraph、AutoGen、CrewAI 這三個 framework 中，沒有任何一個在 official changelog 或 release notes 加入 delegation integrity validation 或等效的 structured output enforcement 作為 first-class feature。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-ai-agent-security-precision",
+      "text": "到 2026-12-31，任何公開發布的 AI 安全 agent 的公開 benchmark 中，precision（真正漏洞 / 總回報漏洞）不超過 20%，以至少三個主要 OSS 專案的 disclosure 統計數據為準。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-google-io-local-ai-benchmark",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel 發布帶有 README 的初始版本，或 Google 在 I/O 上公布一個本地 AI performance benchmark 工具（以 repo README 非空或 Google I/O 官方 session 紀錄為準）。",
+      "status": "pending",
+      "resolution_date": "2026-05-21"
+    },
+    {
+      "id": "pred-needle-tool-selection-latency",
+      "text": "到 2026-12-31，在 LangGraph、AutoGen、CrewAI 的 performance 相關 GitHub issue 中，tool selection latency 佔比不超過 10%，說明 needle 所解決的問題不是社群認可的主要 agent 瓶頸。",
+      "status": "pending",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "e6291929-e1af-491b-96ab-d50794f9fd4e",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-13T20:20:56.894Z",
+    "analyze_duration_ms": 1172480,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 19
+      },
+      "search": {
+        "ok": true,
+        "count": 47
+      },
+      "developers": {
+        "ok": true,
+        "count": 20
+      }
+    },
+    "degraded_sources": []
+  }
+}
