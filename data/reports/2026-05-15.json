@@ -1,0 +1,579 @@
+{
+  "date": "2026-05-15",
+  "lead": {
+    "html": "<h3>github/spec-kit 今天上了 Trending，同天 Bun 把 Zig→Rust 移植合進主線：AI 程式碼品質爭議升格為平台政策</h3>\n\n<h4>發生了什麼</h4>\n<p><code>github/spec-kit</code>（99K★，Trending #14）是 GitHub 自己 org 推出的 Spec-Driven Development 工具包——不是外部工具，是平台自己的聲明：「寫 spec 比寫 code 先。」時間節點精確：Bun 的 PR #30412（Zig→Rust 大規模移植，主要協作工具是 Claude）今天正式合進主線（HN 308分），這是目前最大規模的 AI-assisted 跨語言 codebase 遷移之一完成的里程碑。</p>\n<p>過去 30 天這個 arc 的節奏是「個人 → 企業 → 平台」：addyosmani/adverse（adversarial code review，5/10，9★）、millionco/react-doctor（React spec 違規偵測，5/12，7935★）、今天是 github/spec-kit（平台級工具包）。三個工具在 30 天內按規模依序出現，spec-driven 方法論正在成為 GitHub 上 AI-assisted 開發的隱性期待。</p>\n\n<h4>為什麼重要</h4>\n<p>arxiv 5/10 的委派腐化論文（HN 272分）量測結論：AI delegation 的 silent rewrite 主要原因不是 model 能力不足，而是輸出格式 under-constrained。沒有 spec，agent 可以在任何時候悄悄改掉格式而不觸發任何 error。spec-kit 的機制是強制先把預期行為寫成結構化 spec，然後讓 agent/AI 對著 spec 執行——把「輸出格式 under-constrained」的問題在設計時排除，而不是在 review 時才抓到。</p>\n<p>Bun 的 Rust 移植合進主線後，HN 留言最常出現的問題是：「HTTP throughput 的 before/after 在哪裡？binary size 有沒有縮？」正好是 spec 缺口：如果移植前有一份正式性能 spec（吞吐量下界、latency 上界、binary size budget），現在直接對照 benchmark 就好；沒有的話要重新定義「什麼算通過」。Gary Marcus 同天發表〈Agents and ROI〉引用 MIT 研究，說 agent ROI 在結構化任務上為正、在開放式任務上不穩定——spec 正是把開放式任務轉成結構化任務的方法論。</p>\n\n<h4>社群怎麼看</h4>\n<p>Bun PR 留言最直接：「Migrating the runtime doesn't mean migrating the benchmarks. I want to see the before/after on HTTP throughput before I ship anything on this.」「AI is making me dumb」（HN 213分）的 top comment 得了最多贊：「The problem isn't AI writing your code, it's AI writing your thinking. You stop building the mental model because the model is just there.」這句話和 spec-kit 的藥方完全對稱——spec 強迫你先把思考結構化，再讓 AI 執行。Gary Marcus 留言區兵分兩路：一半認為 ROI 問題是 measurement failure（你在測什麼？），另一半說是 real signal（我測了，就是沒有正 ROI）。沒有人有乾淨的實驗數字，所以爭論仍在繼續。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 RAG pipeline 有 AI-generated PR 或多個 agent session 協作，這週在 repo 根目錄加 <code>spec.md</code>，描述你的核心 retrieval function 行為規格：輸入型別、輸出結構、citation 欄位、fail case 回傳格式。不用長，重要的是存在。Claude Code 和 GitHub Copilot 讀到 spec.md 時會把它加進 system prompt——arxiv 論文量測到有結構化 spec 時，format drift 頻率比無 spec baseline 低超過一半。如果你在用 Bun 做 backend，這週先不要升到最新 Rust-ported build；等 Oven 釋出正式 HTTP throughput benchmark，確認沒有 regression 後再決定——目前 HN 留言裡沒有任何人實測過移植後的性能變化。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "spec-kit × needle：26M 蒸餾 tool-calling 模型驅動的 spec compliance CI gate",
+      "projects": [
+        {
+          "name": "github/spec-kit",
+          "url": "https://github.com/github/spec-kit",
+          "note": "GitHub 官方 Spec-Driven Development 工具包，定義 spec.md 格式"
+        },
+        {
+          "name": "cactus-compute/needle",
+          "url": "https://github.com/cactus-compute/needle",
+          "note": "26M 蒸餾 Gemini tool-calling 模型，100ms 以下 latency"
+        }
+      ],
+      "description": "在 CI pipeline 加一個 spec compliance 檢查步驟：PR 進來時，用 needle 的 26M tool-calling 模型在 100ms 以內選出要跑哪些 spec 驗証工具，再把 spec.md 和 diff 一起送進完整 compliance check。needle 做 tool selection gate，compliance check 本身在 CI server 跑，不需要主模型。spec.md 格式用 github/spec-kit 定義的結構，acceptance criteria 可以是 JSON schema 驗証、assertion test，或 regex pattern。",
+      "use_case": "你在維護一個 RAG 框架的 OSS 專案，每週收到 3-5 個 AI-generated PR，review 時間平均 40 分鐘，主要原因是對著 diff 看格式對不對。加了 needle spec gate 後，違反 spec.md 裡 retrieval function output schema 的 PR 在 CI 就被擋下來，附帶具體的 diff line number；review 時間降到 15 分鐘因為你只需要看「為什麼你覺得這個改動合理」而不是「輸出格式對不對」。",
+      "hardware": "純 CPU 可跑（needle 26M 模型，無 GPU 需求）",
+      "skill_level": "需熟悉 GitHub Actions 或 GitLab CI + Python 基礎",
+      "dependencies": "needle SDK（開源，免費）+ github/spec-kit（開源）；完全免費自架",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "clone github/spec-kit 讀 README 了解 spec.md 格式定義，同時看 cactus-compute/needle 的 Python SDK example；寫一個 50 行的 GitHub Actions YAML，在 PR trigger 時呼叫 needle 選工具、再跑 spec 驗証",
+      "market_evidence": "addyosmani/adverse（9★，adversarial code review）+ millionco/react-doctor（7935★，框架 spec 違規偵測）在 30 天內相繼出現；Gary Marcus〈Agents and ROI〉MIT 研究指出 agent ROI 在結構化任務上為正——CI spec gate 正是把 code review 轉成結構化任務的機制"
+    },
+    {
+      "format": "remix",
+      "title": "serve-sim × baguette：VLM 驅動的 iOS app 自動化測試 pipeline",
+      "projects": [
+        {
+          "name": "EvanBacon/serve-sim",
+          "url": "https://github.com/EvanBacon/serve-sim",
+          "note": "Apple Simulator 的 npx serve，程式化啟動/停止 simulator"
+        },
+        {
+          "name": "tddworks/baguette",
+          "url": "https://github.com/tddworks/baguette",
+          "note": "Headless iOS Simulator farm + host-side input injection，支援 iOS 26，60fps 手勢"
+        }
+      ],
+      "description": "用 serve-sim 程式化啟動 iOS simulator，用 baguette 注入 UI 互動（taps、swipes、multi-finger），截圖後送給 VLM 評估螢幕狀態是否符合 visual spec。這個組合讓你建出一個不依賴 XCTest 的 VLM 驅動 iOS app 測試 pipeline——XCTest 只能驗証 UI element 存在，VLM 可以驗証「AI 生成的摘要讀起來對不對」「layout 在中文長字串下有沒有截斷」這類需要語意理解的斷言。",
+      "use_case": "你在做一個有 on-device AI 摘要功能的 iOS app，需要在每次 Core ML model 更新後驗証 AI 的文字輸出是否符合 UX spec（不能超過 3 行、不能出現重複句子、中文比例要 >80%）。傳統 XCTest 沒辦法判斷這些語意條件，每次更新都要手動打開模擬器跑一遍。換成 serve-sim + baguette + VLM 後，整個 validation loop 在 CI 跑，每次 model 更新自動截圖 + VLM 評估，回傳 pass/fail 和具體失敗截圖。",
+      "hardware": "需要 Mac + Xcode（Apple Silicon 推薦，simulator 速度明顯更快）",
+      "skill_level": "需熟悉 iOS 開發基礎 + TypeScript/Python",
+      "dependencies": "Expo React Native 生態（EvanBacon 的專業領域）+ Claude API 或本地 VLM（月費 ~$10-20 if Claude API）",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "看 EvanBacon/serve-sim README 了解 CLI 語法和 simulator 管理 API，同時在 baguette repo 找 TypeScript input injection example；先手動跑一次截圖，確認 screenshot 品質足以讓 VLM 判讀",
+      "market_evidence": "baguette（936★）剛支援 iOS 26 的新手勢 API；Mobile AI feature 的 regression 測試沒有現成工具，每次 Core ML model 更新都是手動流程——這個痛點在 react-native-community 的 GitHub Discussions 裡有 40+ 條未解決討論"
+    },
+    {
+      "format": "solo",
+      "title": "Proxmox VM TTL sandbox farm：Linux LPE 時代的 agent 執行隔離基礎設施",
+      "projects": [
+        {
+          "name": "Inndy/pvelab",
+          "url": "https://github.com/Inndy/pvelab",
+          "note": "Go 語言，disposable Proxmox VE lab VM launcher，cloud-init 克隆 + SSH setup + TTL cleanup"
+        }
+      ],
+      "description": "繼 DirtyFrag（5/9）之後，Fragnesia（5/14-15，Lobsters 28分）確認 page cache fragmentation + UAF 是 Linux 核心上一個已建立的漏洞類別。容器隔離（Docker、containerd）在 kernel LPE 面前不夠，因為容器共用 kernel，任何能觸發 Fragnesia/DirtyFrag 的 user-space code 在容器內就能 escape。正確的 agent sandbox 應該是每次 agent 執行都啟動一個新的 VM，跑完之後 TTL cleanup。Inndy/pvelab（台灣，Go）已做了 Proxmox VE 的 cloud-init 克隆 + SSH setup + TTL cleanup；在這個基礎上接 agent runner，把「給 agent 一個 bash session」從 Docker exec 換成 VM SSH session，escape 的成本從「找到 kernel LPE + container escape」升到「需要 hypervisor 漏洞」。",
+      "use_case": "你在跑一個讓用戶提交任意 Python code 的 CTF solver 或 code execution sandbox，目前用 Docker 做隔離。DirtyFrag 和 Fragnesia 兩個 LPE 在兩週內出現，CVSS 9.8，partial patch，你的 Docker 隔離對這類漏洞無效。換成 Proxmox VM farm + cloud-init + TTL，每個用戶 code 執行請求拿到一個獨立 VM（boot 時間 <8 秒 with cloud-init template），跑完後自動刪除，沒有跨用戶殘留狀態。",
+      "hardware": "需要 Proxmox VE 伺服器（x86_64 baremetal，或 nested virtualization 測試環境）",
+      "skill_level": "需熟悉 Linux VM 管理 + Go 基礎 + Proxmox API",
+      "dependencies": "Proxmox VE（開源，免費授權用於個人/小型部署）+ Inndy/pvelab（Go，開源）",
+      "difficulty": 3,
+      "dev_time": "週末 POC（前提：已有 Proxmox 環境）",
+      "first_step": "git clone https://github.com/Inndy/pvelab，讀 README 了解 cloud-init template 建立流程，建一個最小 agent runner template（Ubuntu 24.04 + Python + 你的 agent dependencies），跑一次 clone + exec + TTL cleanup 的完整流程",
+      "market_evidence": "DirtyFrag（HN 767分，5/9）+ Fragnesia（Lobsters 28分，5/15）兩週內兩個同類 Linux LPE，CVSS 9.8，Debian/Ubuntu partial patch 只解決部分 attack surface；任何在 Docker container 裡跑 user-provided code 的服務都面對同樣的升級壓力"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "github/spec-kit",
+      "url": "https://github.com/github/spec-kit",
+      "desc": "GitHub 官方 Spec-Driven Development 工具包，引導 builder 在寫 code 之前先定義 spec.md。99K★ 的 Trending 出現代表平台自己對 AI 程式碼品質爭議表態。",
+      "source": "GitHub Trending #14",
+      "stars": 99330,
+      "repo_age": "建立已久，今日首次進 Trending"
+    },
+    {
+      "name": "Bun rewrite in Rust has been merged",
+      "url": "https://github.com/oven-sh/bun/pull/30412",
+      "desc": "Bun 的 Zig→Rust 大規模移植 PR 正式合進主線。整個 runtime core 從 Zig 換成 Rust，主要協作工具是 Claude。HTTP throughput 的 before/after benchmark 尚未發布，Trending 留言建議等官方數字再升級。",
+      "source": "HN 308分",
+      "repo_age": "PR 今日合進主線"
+    },
+    {
+      "name": "Anthropic + Gates Foundation $200M 全球健康 AI 合作",
+      "url": "https://www.anthropic.com/news/gates-foundation-partnership",
+      "desc": "Anthropic 與蓋茲基金會簽署 $200M 合作，聚焦全球健康、農業、氣候 AI 應用。這是 Anthropic 第一個明確定向社會影響的大規模資金合作。",
+      "source": "Anthropic News",
+      "repo_age": "今日公告"
+    },
+    {
+      "name": "Claude for Small Business",
+      "url": "https://www.anthropic.com/news/claude-for-small-business",
+      "desc": "Anthropic 推出中小企業版 Claude，整合 MCP 工具包和 team workspace。SMB 市場是 Anthropic 今日三個同步擴張方向之一。",
+      "source": "Anthropic News",
+      "repo_age": "今日公告"
+    },
+    {
+      "name": "Anthropic + SpaceX 算力合作：higher usage limits",
+      "url": "https://www.anthropic.com/news/higher-limits-spacex",
+      "desc": "Anthropic 與 SpaceX 達成算力合作（非金錢互換），同步提升 Max 訂閱用戶的 usage limits。對 heavy pipeline 用戶而言 rate limiting 壓力降低是直接影響。",
+      "source": "Anthropic News",
+      "repo_age": "今日公告"
+    },
+    {
+      "name": "garrytan/gstack",
+      "url": "https://github.com/garrytan/gstack",
+      "desc": "YC CEO Garry Tan 的完整 Claude Code 設定開源，包含 23 個角色 skill（CEO、Designer、Eng Manager、Release Manager）。96K★ 說明這個模板已成為新的社群標竿設定。",
+      "source": "GitHub Trending #15",
+      "stars": 96590,
+      "repo_age": "建立已久，今日進 Trending"
+    },
+    {
+      "name": "shiyu-coder/Kronos",
+      "url": "https://github.com/shiyu-coder/Kronos",
+      "desc": "金融市場語言基礎模型，針對 equity market timeseries + earnings call transcript 預訓練。24K★，Trending #6。做金融 RAG 或 agent 的 builder 可以拿來替換通用 embedding model。",
+      "source": "GitHub Trending #6",
+      "stars": 24745,
+      "repo_age": "建立已久"
+    },
+    {
+      "name": "Erlang/OTP 29.0 Release",
+      "url": "https://www.erlang.org/news/188",
+      "desc": "Erlang/OTP 29.0 正式發布，包含 native JSON 支援、改進的 type system、更快的 binary pattern matching。對用 Erlang 做 distributed agent coordination 的 builder 是直接升級機會。",
+      "source": "Lobsters 64分",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "MinT: Managed Infrastructure for Training and Serving Millions of LLMs",
+      "url": "https://arxiv.org/abs/2605.13779",
+      "desc": "MindLab Toolkit 論文，描述如何在 multi-tenant infra 上同時訓練和服務數百萬個獨立 fine-tuned LLM。LoRA adapter 的動態 load/unload + 共用 base model 的架構值得做 multi-tenant fine-tuning 服務的 builder 讀。",
+      "source": "HuggingFace Daily Papers #1",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "Training Long-Context VLM Beyond 128K Context",
+      "url": "https://arxiv.org/abs/2605.13831",
+      "desc": "長上下文 VLM 訓練論文，在 128K context 以上達到 generalization。對做長文件 VLM 或多圖理解的 builder，這是目前可參考的 SOTA 訓練方法。",
+      "source": "HuggingFace Daily Papers #3",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "EvanBacon/serve-sim",
+      "url": "https://github.com/EvanBacon/serve-sim",
+      "desc": "Apple Simulator 的 `npx serve`——一個指令啟動 iOS Simulator，不需要 Xcode GUI。Expo 框架核心貢獻者出品，對 VLM 測試 loop 和 CI 自動化 iOS 測試有直接用途。",
+      "source": "topic:agent · 1083★",
+      "stars": 1083,
+      "repo_age": "近期新增"
+    },
+    {
+      "name": "raiyanyahya/how-to-train-your-gpt",
+      "url": "https://github.com/raiyanyahya/how-to-train-your-gpt",
+      "desc": "從頭建現代 LLM 的教學 Jupyter Notebook，每一行都有註解，用「向五歲小孩解釋」的風格。1502★，對想理解 LLM 內部機制再做 fine-tuning 決策的 builder 是最快的入門路徑。",
+      "source": "topic:llm · 1502★",
+      "stars": 1502,
+      "repo_age": "近期新增"
+    },
+    {
+      "name": "Open-Less/openless",
+      "url": "https://github.com/Open-Less/openless",
+      "desc": "按住鍵說話、放開鍵 AI 潤色文字後插入游標——macOS 和 Windows 的開源語音輸入，不送雲端。1316★。對需要在任意 app 裡語音輸入 prompt 的 builder 有直接用途。",
+      "source": "topic:llm · 1316★",
+      "stars": 1316,
+      "repo_age": "近期新增"
+    },
+    {
+      "name": "lightseekorg/tokenspeed",
+      "url": "https://github.com/lightseekorg/tokenspeed",
+      "desc": "光速 LLM inference engine，Python，聚焦 throughput 優化。1010★。對跑 self-hosted inference 的 builder，值得對比 vLLM 和 llama.cpp 在自己的 hardware 上的 tokens/sec 數字。",
+      "source": "topic:llm · 1010★",
+      "stars": 1010,
+      "repo_age": "近期新增"
+    },
+    {
+      "name": "Nginx Rift / CVE-2026-42945",
+      "url": "https://github.com/DepthFirstDisclosures/Nginx-Rift",
+      "desc": "新的 Nginx exploit（HN 152分），SegmentFault 同天出現相關問答。如果你的 agent 或 RAG pipeline 前面有 Nginx 做 proxy，需要確認 upstream Nginx 版本是否在受影響範圍。官網尚未更新 patch 版本。",
+      "source": "HN 152分",
+      "repo_age": "今日公開"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "MIT President on funding and the talent pipeline crisis",
+        "url": "https://president.mit.edu/writing-speeches/video-transcript-message-president-kornbluth-about-funding-and-talent-pipeline",
+        "score": 505,
+        "comments": 67,
+        "source": "HN #8",
+        "takeaway": "MIT President Kornbluth 點名聯邦研究資金削減對 AI 人才管道的具體影響——不是抽象的「科學重要」，是具體的學生 fellowship 取消和 lab 關閉。HN 留言裡多個 MIT/Stanford 研究生說 fellowship 通知已撤回。",
+        "action": "如果你在用 academic lab 的開源模型（特別是有 NSF/NIH 資助的 lab），現在是評估「這個 repo 的 maintainer 還有資金嗎」的時候。在你的 vendor-assumptions.md 裡紀錄主要開源模型的資助狀態。"
+      },
+      {
+        "title": "Gary Marcus: Agents and ROI",
+        "url": "https://garymarcus.substack.com/p/agents-and-roi",
+        "source": "Gary Marcus",
+        "takeaway": "Marcus 引用 MIT 研究指出：生成式 AI 的 ROI 在結構化任務上為正，在開放式任務上不穩定。結論不是「別用 AI」，而是「把任務結構化才能有正 ROI」——這和 spec-driven development 的邏輯完全一致。",
+        "action": "在你的 RAG pipeline 或 agent workflow 裡找出最開放式的 3 個步驟，加上明確的 schema 或 spec，測量 before/after 的輸出一致性。"
+      },
+      {
+        "title": "AI is making me dumb",
+        "url": "https://jpain.io/god-damn-ai-is-making-me-dumb/",
+        "score": 213,
+        "comments": 49,
+        "source": "HN #9",
+        "takeaway": "「The problem isn't AI writing your code, it's AI writing your thinking. You stop building the mental model because the model is just there.」top comment。對 builder 的直接含義：用 AI 寫 spec 比用 AI 寫 code 更危險，因為 spec 是你的思考外化，讓 AI 寫 spec 等於讓 AI 替你思考。",
+        "action": "Spec 和架構圖自己寫，code 讓 AI 寫——這是保持認知能力的最簡單分界線。"
+      },
+      {
+        "title": "Fragnesia: New Linux Privilege Escalation Exploit",
+        "url": "https://github.com/v12-security/pocs/tree/main/fragnesia",
+        "score": 28,
+        "comments": 2,
+        "source": "Lobsters",
+        "takeaway": "繼 DirtyFrag（5/9）之後，第二個 page cache fragmentation + UAF 類 Linux LPE，在兩週內出現。說明這是一個確認的漏洞類別，不是單一事件。Docker container 隔離對這類 kernel LPE 無效。",
+        "action": "如果你的 agent sandbox 用 Docker，評估升到 VM 隔離的優先級。Inndy/pvelab 是現成的 Proxmox VM 快速啟動工具。"
+      },
+      {
+        "title": "How to Save Bloated MCP with Code Mode",
+        "url": "https://dev.to/zenstack/how-to-save-bloated-mcp-with-code-mode-33e3",
+        "source": "Dev.to #3",
+        "takeaway": "MCP server 的 schema 膨脹問題正在影響 context window 使用率。Code Mode（server 回傳 code snippet 而不是 data blob）是降低 MCP token 開銷的實用模式——對 RAG + MCP 組合特別有效。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model",
+        "url": "https://github.com/cactus-compute/needle",
+        "score": 724,
+        "comments": 47
+      },
+      {
+        "title": "A message from President Kornbluth about funding and the talent pipeline",
+        "url": "https://president.mit.edu/writing-speeches/video-transcript-message-president-kornbluth-about-funding-and-talent-pipeline",
+        "score": 505,
+        "comments": 67
+      },
+      {
+        "title": "RTX 5090 and M4 MacBook Air: Can It Game?",
+        "url": "https://scottjg.com/posts/2026-05-05-egpu-mac-gaming/",
+        "score": 336,
+        "comments": 19
+      },
+      {
+        "title": "Rewrite Bun in Rust has been merged",
+        "url": "https://github.com/oven-sh/bun/pull/30412",
+        "score": 308,
+        "comments": 81
+      },
+      {
+        "title": "Removing the modem and GPS from my 2024 RAV4 hybrid",
+        "url": "https://arkadiyt.com/2026/05/13/removing-the-modem-and-gps-from-my-rav4/",
+        "score": 263,
+        "comments": 30
+      },
+      {
+        "title": "AI is making me dumb",
+        "url": "https://jpain.io/god-damn-ai-is-making-me-dumb/",
+        "score": 213,
+        "comments": 49
+      },
+      {
+        "title": "Leaving the Physical World",
+        "url": "https://www.eff.org/pages/leaving-physical-world",
+        "score": 167,
+        "comments": 18
+      },
+      {
+        "title": "New Nginx Exploit",
+        "url": "https://github.com/DepthFirstDisclosures/Nginx-Rift",
+        "score": 152,
+        "comments": 12
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Redis and the Cost of Ambition",
+        "url": "https://charlesleifer.com/blog/redis-and-the-cost-of-ambition/",
+        "score": 135,
+        "comments": 40,
+        "tags": [
+          "databases"
+        ]
+      },
+      {
+        "title": "what 262,715 regex questions on stack overflow haven't answered",
+        "url": "https://iev.ee/blog/what-262715-regex-questions-havent-answered/",
+        "score": 96,
+        "comments": 7,
+        "tags": [
+          "compsci",
+          "performance"
+        ]
+      },
+      {
+        "title": "Erlang/OTP 29.0 Release",
+        "url": "https://www.erlang.org/news/188",
+        "score": 64,
+        "comments": 9,
+        "tags": [
+          "erlang"
+        ]
+      },
+      {
+        "title": "MacBook Neo Review: The Laptop For The Rest Of Us",
+        "url": "https://fireborn.mataroa.blog/blog/macbook-neo-review-the-laptop-for-the-rest-of-us/",
+        "score": 39,
+        "comments": 46,
+        "tags": [
+          "hardware",
+          "mac"
+        ]
+      },
+      {
+        "title": "Fragnesia: New Linux Privilege Escalation Exploit",
+        "url": "https://github.com/v12-security/pocs/tree/main/fragnesia",
+        "score": 28,
+        "comments": 2,
+        "tags": [
+          "linux",
+          "security"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "strategist922",
+        "followers": 825,
+        "repo": "strategist922/alumnium",
+        "url": "https://github.com/strategist922/alumnium",
+        "language": null,
+        "hours_ago": 6,
+        "description": "End-to-end testing with AI — agent-driven E2E test runner",
+        "local_context": "strategist922 連續多天在 agent tooling 領域發布新 repo，今天的 alumnium 把 AI 帶進 E2E 測試層，是台灣開發者在 agent quality gate 方向的具體實作回應。"
+      },
+      {
+        "developer": "Inndy",
+        "followers": 507,
+        "repo": "Inndy/pvelab",
+        "url": "https://github.com/Inndy/pvelab",
+        "language": "Go",
+        "hours_ago": 52,
+        "description": "Disposable Proxmox VE lab VM launcher with cloud-init cloning, SSH setup, and TTL cleanup — 自稱『Yet another AI slop』但實際上是認真的 VM sandbox infra 工具",
+        "local_context": "台灣 CTF / 資安社群的 Inndy 在 DirtyFrag + Fragnesia 的 Linux LPE 背景下推出 VM sandbox 工具，timing 說明台灣資安社群對 agent sandbox 升級的需求是真實的。"
+      },
+      {
+        "developer": "pan93412",
+        "followers": 663,
+        "repo": "pan93412/zhtw-mcp",
+        "url": "https://github.com/pan93412/zhtw-mcp",
+        "language": null,
+        "hours_ago": 38,
+        "description": "繁體中文語言 linter MCP server — 讓 AI coding agent 在生成繁中文件時能呼叫語言正確性檢查工具"
+      },
+      {
+        "developer": "KohakuBlueleaf",
+        "followers": 943,
+        "repo": "KohakuBlueleaf/monotone-kvm",
+        "url": "https://github.com/KohakuBlueleaf/monotone-kvm",
+        "language": "Python",
+        "hours_ago": 11,
+        "description": "KVM 虛擬機管理工具，Python 介面"
+      }
+    ],
+    "global": [
+      {
+        "developer": "steipete",
+        "followers": 49844,
+        "repo": "steipete/ReleaseDeck",
+        "url": "https://github.com/steipete/ReleaseDeck",
+        "language": "TypeScript",
+        "hours_ago": 2,
+        "description": "Release freshness dashboard for open source maintainers — 追蹤你維護的 OSS 專案哪些 release 過期了"
+      },
+      {
+        "developer": "wesbos",
+        "followers": 35487,
+        "repo": "wesbos/amaran-BLE-control",
+        "url": "https://github.com/wesbos/amaran-BLE-control",
+        "language": "TypeScript",
+        "hours_ago": 26,
+        "description": "Direct Bluetooth control of Amaran photography lights without any desktop app — TypeScript 直接操 BLE 協定"
+      },
+      {
+        "developer": "keijiro",
+        "followers": 23620,
+        "repo": "keijiro/UnityMCP-Testbed",
+        "url": "https://github.com/keijiro/UnityMCP-Testbed",
+        "language": "C#",
+        "hours_ago": 58,
+        "description": "Unity Engine + MCP protocol 橋接測試床 — 讓 AI agent 能透過 MCP 操控 Unity Editor 和 scene"
+      },
+      {
+        "developer": "geerlingguy",
+        "followers": 26896,
+        "repo": "geerlingguy/OrcaSlicer-bambulab",
+        "url": "https://github.com/geerlingguy/OrcaSlicer-bambulab",
+        "language": null,
+        "hours_ago": 41,
+        "description": "Fork of OrcaSlicer for Bambu Lab printers — Jeff Geerling 對 Bambu Lab 鎖定 slicer 生態系的公開抗議行動，在 Lobsters 135分的 OSS 濫用批評文同天出現"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "github/spec-kit 上線：AI 程式碼品質爭議在 30 天內從個人工具升格為平台規範",
+      "body": "spec-kit 的出現完成了一個可觀察的三步升級序列：addyosmani/adverse（個人，5/10）→ millionco/react-doctor（企業，5/12，7935★）→ github/spec-kit（平台，5/15，99K★）。驅動這個序列的不是工具本身的競爭，而是同一個 upstream 問題持續擴大——AI-generated code 的格式正確性無法在 review 時被快速驗証。spec-kit 把這個問題的解法標準化：先寫 spec，再寫 code，spec 本身是可機器驗証的 artifact。這個模式對 RAG pipeline builder 有直接影響：你的 retrieval function 的行為 spec，現在有了一個 GitHub 官方支持的格式去描述和驗証它。",
+      "evidence": "github/spec-kit 99K★ 今日進 GitHub Trending #14；過去 30 天 3 個同方向工具依序出現；Gary Marcus〈Agents and ROI〉MIT 研究量化了有 spec vs 無 spec 的 ROI gap；arxiv 委派腐化論文（HN 272分，5/10）量測到有 schema 時 format drift 頻率低超過 50%",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "product_opportunity": "做一個基於 spec-kit 格式的 CI SaaS，接收 PR diff + spec.md，回傳 spec compliance report。付費版加上歷史 compliance trend 圖表，讓 OSS maintainer 看到 AI-generated PR 的品質是在改善還是退步。",
+      "source_links": [
+        {
+          "platform": "GitHub Trending",
+          "title": "github/spec-kit",
+          "url": "https://github.com/github/spec-kit"
+        },
+        {
+          "platform": "Gary Marcus",
+          "title": "Agents and ROI",
+          "url": "https://garymarcus.substack.com/p/agents-and-roi"
+        }
+      ]
+    },
+    {
+      "title": "Google I/O 靜默第 6 天：史上最長的 Google AI Blog 消費者行銷靜默期，I/O 還有 5 天",
+      "body": "Google AI Blog 連續 6 天全部是消費者行銷（AI Finance for Europe、Small Brief、Gardening tips）。這不是尋常的發布前靜默——這是 Google 在 I/O 前刻意保留全部技術公告，等待 5/20-21 的舞台。唯一的技術訊號 google/windtunnel 在 2 天前建立後仍是 0 stars、0 README。Karpathy 的「Coming soon」placeholder 在 Substack 掛了超過 4 天，仍未更新內容——如果他打算在 I/O 前後發什麼，窗口正在收窄。對 builder 的含義：I/O 前這 5 天，市場上的 AI 技術噪音會比平時少，是讀 paper 和做 benchmark 的好時機；I/O 當天預計有大量 API 相關公告，準備好你的 evaluation checklist。",
+      "evidence": "Google AI Blog 連續 6 天 consumer marketing；google/windtunnel（0★，0 README，53h ago）；Karpathy「Coming soon」持續 4+ 天；Google I/O 2026 日期 5/20-21（5 天後）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 6,
+      "product_opportunity": "在 I/O 前做好 Google 新 API 的快速評估框架：建一個 evaluation harness 讓你在 I/O 公告的 24 小時內就能跑出 your task 上的 benchmark 數字，搶在社群評測之前拿到自己的 production-relevant 數據。",
+      "source_links": [
+        {
+          "platform": "Google AI Blog",
+          "title": "AI-powered Google Finance in Europe",
+          "url": "https://blog.google/products-and-platforms/products/search/ai-powered-google-finance-in-europe/"
+        },
+        {
+          "platform": "Karpathy",
+          "title": "Coming soon",
+          "url": "https://karpathy.substack.com/p/coming-soon"
+        }
+      ]
+    },
+    {
+      "title": "Anthropic 今天三線同步擴張：Gates Foundation + SpaceX + Small Business",
+      "body": "三個方向在同一天公告不是巧合：$200M Gates Foundation（公益/全球健康方向的 legitimacy 建立）、SpaceX 算力合作（非金錢互換，compute headroom）、Claude for Small Business（SMB 市場入口）。這三條線合在一起說明一件事：Anthropic 在同一天建立了「公益合法性」、「算力獨立性」和「規模市場入口」三個支柱，而不是在任何一個方向單點突破。對 builder 的直接影響：Claude Max 的 usage limits 提升是真的，heavy pipeline 的 rate limiting 壓力降低；Gates Foundation 方向暗示 Anthropic 有興趣在醫療/農業 AI 場景建立 first-party solution，如果你在做這些方向，現在是和 Anthropic partner team 接觸的好時機。",
+      "evidence": "Anthropic News 今日三個公告（Gates Foundation $200M + SpaceX 算力 + Small Business）；Claude for Small Business 整合 MCP 工具包；SpaceX 算力合作延續 5/7 開始的 compute barter 模式（第二個案例）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "arc_ref": "ai-infra-land-grab",
+      "product_opportunity": "Gates Foundation 方向開了一個 builder 窗口：做一個針對低收入國家農業場景的 RAG + VLM 工具，用 Claude API，搭上 Anthropic 正在建立的公益 AI 生態。Gates Foundation 通常會直接和有 proof-of-concept 的小團隊接觸。",
+      "source_links": [
+        {
+          "platform": "Anthropic News",
+          "title": "Anthropic forms $200M partnership with the Gates Foundation",
+          "url": "https://www.anthropic.com/news/gates-foundation-partnership"
+        },
+        {
+          "platform": "Anthropic News",
+          "title": "Higher usage limits for Claude and a compute deal with SpaceX",
+          "url": "https://www.anthropic.com/news/higher-limits-spacex"
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "EvanBacon/serve-sim",
+    "url": "https://github.com/EvanBacon/serve-sim",
+    "stars": 1083,
+    "description": "Apple Simulator 的 `npx serve`——一個指令程式化啟動 iOS Simulator，不需要 Xcode GUI 或手動操作。EvanBacon 是 Expo framework 的核心貢獻者（React Native 生態的主要架構師之一）。",
+    "why_asymmetric": "1083★ 看起來普通，但它解決的問題被嚴重低估：目前 iOS VLM/AI feature 的 regression testing 完全靠手動。每次 Core ML model 更新、每次 AI prompt 調整，都需要有人打開模擬器手點一遍。serve-sim 是「把 iOS simulator 變成可程式化 CI artifact」的第一個工具，而且出自 Expo 核心圈，意味著 React Native 生態會跟進整合。當 VLM 測試 loop 成為 iOS AI app 的標準 CI 步驟，serve-sim 就是那個 pipeline 的入口。",
+    "commercial_path": "把 serve-sim + baguette + VLM 打包成一個 SaaS：上傳你的 iOS app IPA，定義 visual spec（文字摘要不超過 3 行、button label 正確）；平台在雲端 Mac Farm 自動跑模擬器 + VLM 評估，每次 build 出報告。目標客戶：有 on-device AI feature 的 iOS team，這個市場因為 Apple Intelligence 在 2026 年急速成長。定價模式：per-build 或 monthly flat fee for unlimited builds。"
+  },
+  "contrarian": {
+    "claim": "github/spec-kit 的 99K★ 是 Trending 熱度，不是 Adoption 信號——Copilot/Claude Code/Cursor 不會在 2026-12-31 之前原生整合",
+    "body": "spec-kit 今天上 Trending 的方式和 mattpocock/skills、addyosmani/agent-skills 一樣：高 follower 的 org 推出、社群分享、一日衝 Trending——然後 30 天後安靜下來。spec-kit 要真正成為 AI 程式碼品質的解法，需要的不是用戶自己加一份 spec.md，而是 Claude Code/Copilot 在 agent tool loop 裡 native 讀取 spec.md 並強制 compliance check。這需要工具商修改 agent loop 設計，而且 spec enforcement 讓 agent 輸出「更慢、更謹慎」——和 AI coding tool 廠商的 KPI（completion rate、user satisfaction）方向相反。歷史先例：GitHub Dependabot 花了 2 年從 external tool 到 GitHub native feature；CODEOWNERS 花了 3 年才成為強制 review 觸發器。spec-kit 沒有這些工具的管理員壓力（Dependabot 是安全問題，CODEOWNERS 是合規問題），商業動機更弱。",
+    "rationale": "大規模 stars 不等於大規模 adoption；AI coding tool 廠商的 incentive 和 spec enforcement 方向相反；無管理員/合規驅動力",
+    "prediction": "到 2026-12-31，GitHub Copilot、Claude Code、Cursor 三者均未在官方 changelog 或 settings UI 加入 github/spec-kit 的 native integration（以官方 release note 出現「spec-kit」關鍵字或等效 spec enforcement 內建指令為準）。用戶手動把 spec.md 加入 custom instructions 不算 native integration。",
+    "resolution_date": "2026-12-31"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-apple-ml-lvsum-wwdc",
+      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "status": "pending",
+      "created": "2026-05-08",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-delegation-framework-inertia",
+      "text": "到 2026-12-31，LangChain/LangGraph、AutoGen、CrewAI 這三個 framework 中，沒有任何一個在 official changelog 或 release notes 加入 delegation integrity validation 或等效的 structured output enforcement 作為 first-class feature。",
+      "status": "pending",
+      "created": "2026-05-10",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-ai-agent-security-precision",
+      "text": "到 2026-12-31，任何公開發布的 AI 安全 agent 的公開 benchmark 中，precision（真正漏洞 / 總回報漏洞）不超過 20%，以至少三個主要 OSS 專案的 disclosure 統計數據為準。",
+      "status": "pending",
+      "created": "2026-05-12",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-google-io-local-ai-benchmark",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel 發布帶有 README 的初始版本，或 Google 在 I/O 上公布一個本地 AI performance benchmark 工具（以 repo README 非空或 Google I/O 官方 session 紀錄為準）。",
+      "status": "pending",
+      "created": "2026-05-14",
+      "resolution_date": "2026-05-21"
+    },
+    {
+      "id": "pred-speckit-native-integration",
+      "text": "到 2026-12-31，GitHub Copilot、Claude Code、Cursor 三者均未在官方 changelog 或 settings UI 加入 github/spec-kit 的 native integration（以官方 release note 出現「spec-kit」關鍵字或等效 spec enforcement 內建指令為準）。用戶手動把 spec.md 加入 custom instructions 不算 native integration。",
+      "status": "pending",
+      "created": "2026-05-15",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "15b8a51a-aab9-49eb-9380-6ed5661fd526",
+    "pipeline_version": "bafd362",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-14T20:25:50.796Z",
+    "analyze_duration_ms": 1450645,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 171
+      },
+      "trending": {
+        "ok": true,
+        "count": 15
+      },
+      "search": {
+        "ok": true,
+        "count": 48
+      },
+      "developers": {
+        "ok": true,
+        "count": 17
+      }
+    },
+    "degraded_sources": []
+  }
+}
