@@ -21,7 +21,7 @@ Stage 1 (`src/collect.js`) 已經幫你準備好以下檔案（跟 ai-builder le
 - `data/staging/search.json` — GitHub Search by topic (含 lens overlay 的 `kv-cache` / `local-llm` / `on-device-ai` / `llm-app`)
 - `data/staging/developers.json` — top GitHub developers' new repos
 
-**⚠️ Scope filtering 規則（重要）**：每個 staging item 有一個 `_scope` 陣列欄位。**你只能用 `_scope` 包含 `"global"` 或 `"phison-aidaptiv"` 的 item**。忽略其他 lens 專屬的 item。多數 global 訊號（HN / GitHub Trending / 通用 RSS）標 `["global"]`、Phison-overlay 來的（Phison Blog / vLLM Blog / LMCache Blog / kv-cache topic 等）標 `["global", "phison-aidaptiv"]`。
+**⚠️ Scope filtering 規則（重要）**：每個 staging item 有一個 `_scope` 陣列欄位。**你只能用 `_scope` 包含 `"global"` 或 `"phison-aidaptiv"` 的 item**。忽略其他 lens 專屬的 item。多數 global 訊號（HN / GitHub Trending / 通用 RSS）標 `["global"]`、Phison-overlay 來的（Phison Blog / vLLM Releases / LMCache Releases / kv-cache topic 等）標 `["global", "phison-aidaptiv"]`。
 
 也讀：
 - `data/memory/phison-aidaptiv.json` — lens 自己的 memory（persona_coverage / open_questions / rejected_axes）。**如果檔案不存在**，視為初始空狀態：

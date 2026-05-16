@@ -57,11 +57,25 @@ async function main() {
   banner('building snapshot');
   buildSnapshot(raw.feeds);
 
-  // Phase 3 — condense per-source for prompt-size control
+  // Phase 3 — tag scope on RAW items BEFORE condense.
+  // Items from global sources get ["global"]; items also matching a lens's
+  // sources_overlay get ["global", "<lens-id>"]. Tagging here (rather than
+  // post-condense) lets condense reserve quota for lens-tagged items so
+  // low-star lens-overlay signals (e.g. niche github topics like kv-cache)
+  // aren't crowded out by popular global items.
+  for (const fetcherKey of ['feeds', 'trending', 'search', 'developers']) {
+    if (raw[fetcherKey] && Array.isArray(raw[fetcherKey].items)) {
+      raw[fetcherKey].items = raw[fetcherKey].items.map((item) =>
+        tagItemScope(item, config.lenses),
+      );
+    }
+  }
+
+  // Phase 4 — condense per-source for prompt-size control (scope-aware)
   banner('condensing');
   const condensed = condenseAll(raw);
 
-  // Phase 4 — write staging files for Stage 2 (agent analysis)
+  // Phase 5 — write staging files for Stage 2 (agent analysis)
   banner('writing staging data');
   mkdirSync('data/staging', { recursive: true });
 
@@ -89,22 +103,12 @@ async function main() {
   // Validate metadata against schema before writing (contract with Stage 2)
   StagingMetadataSchema.parse(files['data/staging/metadata.json']);
 
-  // Tag each staging item with _scope (which lenses can see it).
-  // Items from global sources get ["global"]; items also matching a lens's
-  // sources_overlay get ["global", "<lens-id>"]. metadata.json has no items
-  // array — the if-guard skips it.
-  for (const data of Object.values(files)) {
-    if (data && Array.isArray(data.items)) {
-      data.items = data.items.map((item) => tagItemScope(item, config.lenses));
-    }
-  }
-
   for (const [path, data] of Object.entries(files)) {
     writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
     console.error(`  ✓ ${path}`);
   }
 
-  // Phase 5 — commit + push
+  // Phase 6 — commit + push
   if (SKIP_PUSH) {
     banner('SKIP_PUSH — stopping before commit');
     return;

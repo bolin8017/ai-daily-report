@@ -88,11 +88,29 @@ function condenseUnifiedFeeds(data, caps, descMax) {
   return { ...data, items };
 }
 
+// Reserve up to ⌊cap × LENS_QUOTA_FRACTION⌋ of slots for lens-tagged items
+// (items whose _scope array has more than just ["global"]). Without this,
+// popular global items crowd out low-star lens-overlay signals (e.g. niche
+// github topics like kv-cache where the top repo is 200★ vs llm topic where
+// the top repo is 20K★). If no lens-tagged items exist, all slots flow to
+// global ranking — backward-compatible. Requires src/collect.js to tag
+// scope before invoking condenseAll.
+const LENS_QUOTA_FRACTION = 0.25;
+
 function condenseFlat(data, cap, descMax) {
-  const items = (data.items || [])
-    .slice()
+  const sorted = (data.items || []).slice().sort(sortByImportance);
+
+  const lensQuota = Math.floor(cap * LENS_QUOTA_FRACTION);
+  const lensTagged = sorted
+    .filter((i) => (i._scope || []).length > 1)
+    .slice(0, lensQuota);
+  const reserved = new Set(lensTagged);
+  const globalSlots = cap - lensTagged.length;
+  const globalItems = sorted.filter((i) => !reserved.has(i)).slice(0, globalSlots);
+
+  // Re-sort merged set so output is still importance-ordered for the agent
+  const items = [...lensTagged, ...globalItems]
     .sort(sortByImportance)
-    .slice(0, cap)
     .map((it) => condenseItem(it, descMax));
   return { ...data, items };
 }
