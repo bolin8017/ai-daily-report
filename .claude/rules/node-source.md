@@ -43,6 +43,6 @@ When adding a new fetcher, register it in `src/fetchers/all.js` (the parallel ru
 
 When changing data shapes:
 1. Update the Zod schema in `src/schemas/` first
-2. Update the agent prompt (`.claude/agents/daily-report.md`) if the field is agent-produced
+2. Update the agent prompt (`.claude/lenses/ai-builder.md`) if the field is agent-produced
 3. Update 11ty templates (`site/_includes/`) if the field is rendered
 4. Run `npm test` to verify schema fixtures still pass

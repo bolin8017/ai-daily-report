@@ -1,6 +1,6 @@
 ---
 paths:
-  - ".claude/agents/*.md"
+  - ".claude/lenses/*.md"
   - ".claude/daily-report-quality.md"
 ---
 
@@ -8,12 +8,12 @@ paths:
 
 ## These files are the quality lever
 
-`.claude/agents/daily-report.md` (~485 lines) and `.claude/daily-report-quality.md` are the core prompts that drive the LLM-produced daily report. Changes here directly affect report quality, schema compliance, and voice.
+`.claude/lenses/ai-builder.md` (~485 lines) and `.claude/daily-report-quality.md` are the core prompts that drive the LLM-produced daily report. Changes here directly affect report quality, schema compliance, and voice.
 
 ## How they are consumed
 
 `scripts/analyze.sh` concatenates them at runtime:
-1. `.claude/agents/daily-report.md` (workflow steps, section definitions, schema references)
+1. `.claude/lenses/ai-builder.md` (workflow steps, section definitions, schema references)
 2. `.claude/daily-report-quality.md` (voice rules, slop test, anti-patterns, Chinese translation-smell checklist)
 3. Today's date injected at the end
 
