@@ -13,6 +13,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { runFetchers } from './fetchers/all.js';
 import { commitAndPush } from './lib/commit.js';
 import { condenseAll } from './lib/condense.js';
+import config from './lib/config.js';
+import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
@@ -86,6 +88,16 @@ async function main() {
 
   // Validate metadata against schema before writing (contract with Stage 2)
   StagingMetadataSchema.parse(files['data/staging/metadata.json']);
+
+  // Tag each staging item with _scope (which lenses can see it).
+  // Items from global sources get ["global"]; items also matching a lens's
+  // sources_overlay get ["global", "<lens-id>"]. metadata.json has no items
+  // array — the if-guard skips it.
+  for (const data of Object.values(files)) {
+    if (data && Array.isArray(data.items)) {
+      data.items = data.items.map((item) => tagItemScope(item, config.lenses));
+    }
+  }
 
   for (const [path, data] of Object.entries(files)) {
     writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
