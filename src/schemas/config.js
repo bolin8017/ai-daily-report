@@ -4,6 +4,7 @@
 // Also available standalone via `npm run validate:config`.
 
 import { z } from 'zod';
+import { LensConfigSchema } from './lens.js';
 
 export const FeedSourceSchema = z.discriminatedUnion('type', [
   z.object({
@@ -61,6 +62,9 @@ export const ConfigSchema = z.object({
       new_repo_window_hours: z.number().int().positive(),
     }),
   }),
+  // Lens definitions for multi-lens fan-out. At least one lens required
+  // (the default lens, ai-builder, drives the existing daily report).
+  lenses: z.array(LensConfigSchema).min(1),
   report: z.object({
     language: z.string(),
     max_featured_items: z.number().int().positive(),
