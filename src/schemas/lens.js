@@ -3,7 +3,7 @@
 // Stage 2 fan-out reads lenses[] and runs claude -p once per enabled lens.
 
 import { z } from 'zod';
-import { FeedSourceSchema } from './config.js';
+import { FeedSourceSchema } from './feed-source.js';
 
 export const LensConfigSchema = z
   .object({
