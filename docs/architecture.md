@@ -80,7 +80,7 @@ flowchart TD
 1. **Nested `claude -p` deadlock** — CCR sessions are themselves `claude` processes, so spawning `claude -p` as a subprocess produced 74-minute SSE keepalive hangs with zero streamed tokens. Small test prompts succeeded (response <10 bytes, streaming channel never strained) which masked the issue until real-payload runs.
 2. **10K-token Read-tool limit** — the agent design needed to Read a merged digest of 4 condensed sources (~19-30K tokens total). The Read tool refused anything over 10K per call. Splitting into multiple Reads worked, but by that point the design was hostile to CCR's constraints.
 
-A plain VM sidesteps both: `claude -p` is the primary process (no nesting), and in-process data flow has no tool-mediated size limits. The original `.claude/agents/daily-report.md` prompt became the text body passed to `claude -p` with an appended "output only JSON" instruction, keeping the voice/slop rules while shedding the agent-loop framing.
+A plain VM sidesteps both: `claude -p` is the primary process (no nesting), and in-process data flow has no tool-mediated size limits. The original `.claude/lenses/ai-builder.md` prompt became the text body passed to `claude -p` with an appended "output only JSON" instruction, keeping the voice/slop rules while shedding the agent-loop framing.
 
 ## Data flow
 
@@ -153,7 +153,7 @@ This means:
 
 ## Agent prompt as the design surface
 
-The agent prompt at `.claude/agents/daily-report.md` (~485 lines) is the single biggest lever for output quality on this project, and it's designed around a specific philosophy: **outcome-oriented prompting**, not mechanism-prescriptive rule-listing.
+The agent prompt at `.claude/lenses/ai-builder.md` (~485 lines) is the single biggest lever for output quality on this project, and it's designed around a specific philosophy: **outcome-oriented prompting**, not mechanism-prescriptive rule-listing.
 
 ### Why outcome-oriented
 
@@ -207,7 +207,7 @@ Prompt iteration happens locally via two complementary paths:
 - `bash scripts/run.sh --skip-push` — runs Stage 1 + Stage 2 without pushing, useful for end-to-end validation of a prompt change.
 - `bash scripts/run.sh --analyze` — runs Stage 2 only (reuses existing staging data), useful for rapid prompt iteration without re-fetching sources. The inner loop is ~2-3 minutes per prompt tweak.
 
-The agent prompt (`.claude/agents/daily-report.md`) is read fresh on every invocation, so editing the prompt doesn't require a rebuild.
+The agent prompt (`.claude/lenses/ai-builder.md`) is read fresh on every invocation, so editing the prompt doesn't require a rebuild.
 
 **The convergence bar**: "would I personally want to read this report if I wasn't the one writing it?" Three iteration rounds (v1-initial → v2-audience-lock → v3-slug-precision) were needed to reach convergence on the current prompt. The one-shot refactor (giving up the 10-step agent workflow in favour of a single `claude -p` call that reasons through Steps 2-6 internally) was validated against the same convergence bar during the VM migration.
 
@@ -307,7 +307,7 @@ The timer unit (`ai-daily-report.timer`) fires `ai-daily-report.service`, which 
 
 **Stage 2 — Analyze** (agent session, `scripts/analyze.sh`):
 
-1. Assemble the prompt from `.claude/agents/daily-report.md` + `.claude/daily-report-quality.md` + memory context
+1. Assemble the prompt from `.claude/lenses/ai-builder.md` + `.claude/daily-report-quality.md` + memory context
 2. Invoke `claude -p --allowedTools Read,Write --model claude-opus-4-6` — the agent reads staging files via the Read tool, synthesizes the report, and writes `data/reports/YYYY-MM-DD.json` + `data/memory.json` directly via the Write tool
 3. Validate outputs: `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
 4. `commitAndPush({ date })` — stages the report and memory files, commits as `report: <date> daily creative brief`, pushes to `HEAD:main` using `x-access-token:$GITHUB_TOKEN` URL rewrite

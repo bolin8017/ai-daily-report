@@ -1,0 +1,259 @@
+<div class="tab-bar" role="tablist" aria-label="報告分區">
+  <div class="tab-bar-inner">
+    <a href="#build" class="tab active" role="tab" id="tab-build" aria-controls="build" aria-selected="true" tabindex="0" data-tab="build">動手做</a>
+    <a href="#shipped" class="tab" role="tab" id="tab-shipped" aria-controls="shipped" aria-selected="false" tabindex="-1" data-tab="shipped">今日上線</a>
+    <a href="#pulse" class="tab" role="tab" id="tab-pulse" aria-controls="pulse" aria-selected="false" tabindex="-1" data-tab="pulse">社群脈動</a>
+    <a href="#signal" class="tab" role="tab" id="tab-signal" aria-controls="signal" aria-selected="false" tabindex="-1" data-tab="signal">趨勢訊號</a>
+  </div>
+</div>
+
+{# ===== 動手做 ===== #}
+<section class="section-build tab-panel active" id="build" role="tabpanel" aria-labelledby="tab-build">
+  <h2>動手做 — 混搭靈感</h2>
+  {%- for idea in report.ideas %}
+  {% include "idea-card.njk" %}
+  {%- endfor %}
+</section>
+
+{# ===== 今日上線 ===== #}
+<section class="section-shipped tab-panel" id="shipped" role="tabpanel" aria-labelledby="tab-shipped">
+  <h2>今日上線 — 新鮮出爐的專案</h2>
+
+  <div class="source-filter">
+    <button type="button" class="filter-btn active" aria-pressed="true" data-filter="all">全部</button>
+    <button type="button" class="filter-btn" aria-pressed="false" data-filter="shipped-hot">熱門精選</button>
+    <button type="button" class="filter-btn" aria-pressed="false" data-filter="shipped-devwatch">開發者動態</button>
+  </div>
+
+  <div class="filter-group" data-group="shipped-hot">
+    <h3 class="sub-section-title">熱門專案與精選</h3>
+    <ol class="shipped-list">
+      {%- for item in report.shipped %}
+      {% include "shipped-item.njk" %}
+      {%- endfor %}
+    </ol>
+  </div>
+
+  {% if report.dev_watch %}
+  <div class="filter-group" data-group="shipped-devwatch">
+    <h3 class="sub-section-title">開發者動態 — 知名開發者的新專案</h3>
+    <p class="section-intro">過去 {{ config.sources.github_developers.new_repo_window_hours }} 小時內，全球與台灣高影響力開發者新建的 public repo。</p>
+
+    {% if report.dev_watch.taiwan and (report.dev_watch.taiwan | length) %}
+    <h4 class="sub-section-title">🇹🇼 台灣</h4>
+    <ol class="shipped-list">
+      {%- for d in report.dev_watch.taiwan %}
+      <li>
+        <strong>{{ d.developer }}</strong>
+        {% if d.followers %}<span class="score">{{ d.followers | formatNum }} followers</span>{% endif %}
+        → <a href="{{ d.url }}">{{ d.repo }}</a>
+        {% if d.language %}<code class="lang-tag">{{ d.language }}</code>{% endif %}
+        {% if d.hours_ago %}<span class="time-ago">{{ d.hours_ago }}h ago</span>{% endif %}
+        {% if d.description %}<span class="takeaway">{{ d.description }}</span>{% endif %}
+        {% if d.local_context %}<span class="local-context">{{ d.local_context }}</span>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+    {% endif %}
+
+    {% if report.dev_watch.global and (report.dev_watch.global | length) %}
+    <h4 class="sub-section-title">🌐 全球</h4>
+    <ol class="shipped-list">
+      {%- for d in report.dev_watch.global %}
+      <li>
+        <strong>{{ d.developer }}</strong>
+        {% if d.followers %}<span class="score">{{ d.followers | formatNum }} followers</span>{% endif %}
+        → <a href="{{ d.url }}">{{ d.repo }}</a>
+        {% if d.language %}<code class="lang-tag">{{ d.language }}</code>{% endif %}
+        {% if d.hours_ago %}<span class="time-ago">{{ d.hours_ago }}h ago</span>{% endif %}
+        {% if d.description %}<span class="takeaway">{{ d.description }}</span>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+    {% endif %}
+  </div>
+  {% endif %}
+</section>
+
+{# ===== 社群脈動 ===== #}
+<section class="section-pulse tab-panel" id="pulse" role="tabpanel" aria-labelledby="tab-pulse">
+  <h2>社群脈動 — 今日熱門討論</h2>
+
+  <div class="pulse-toggle">
+    <button type="button" class="pulse-btn active" aria-pressed="true" data-mode="relevant">與我相關</button>
+    <button type="button" class="pulse-btn" aria-pressed="false" data-mode="hot">熱門總覽</button>
+  </div>
+
+  {# ===== 與我相關 模式 ===== #}
+  <div class="pulse-mode active" id="pulse-relevant">
+    <ol class="shipped-list">
+      {%- for item in report.pulse.curated %}
+      <li class="source-rss">
+        <span class="curated-source" data-source="{{ item.source | safeSlug }}">{{ item.source }}</span>
+        {% if item.url %}<a href="{{ item.url }}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+        {% if item.relevance %}<span class="relevance-tag">{{ item.relevance }}</span>{% endif %}
+        {% if item.severity %}<span class="severity severity-{{ item.severity }}">{{ item.severity }}</span>{% endif %}
+        <span class="takeaway">{{ item.takeaway }}</span>
+        {% if item.action %}<span class="action-item">→ {{ item.action }}</span>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+  </div>
+
+  {# ===== 熱門總覽 模式 ===== #}
+  <div class="pulse-mode" id="pulse-hot">
+
+    <div class="source-filter">
+      <button type="button" class="filter-btn active" aria-pressed="true" data-filter="all">全部</button>
+      {% if report.pulse.hn | length %}<button type="button" class="filter-btn" aria-pressed="false" data-filter="hot-hn">Hacker News</button>{% endif %}
+      {% if report.pulse.lobsters | length %}<button type="button" class="filter-btn" aria-pressed="false" data-filter="hot-lobsters">Lobsters</button>{% endif %}
+      {%- for cat, items in rssByCategory %}
+      <button type="button" class="filter-btn" aria-pressed="false" data-filter="rss-{{ cat | safeSlug }}">{{ cat }}</button>
+      {%- endfor %}
+    </div>
+
+    {% if report.pulse.hn | length %}
+    <div class="filter-group" data-group="hot-hn">
+      <h3 class="sub-section-title">Hacker News</h3>
+      <ol class="shipped-list">
+        {%- for item in report.pulse.hn %}
+        <li>
+          {% if item.url %}<a href="{{ item.url }}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+          <span class="score">{% if item.score %}{{ item.score }}分{% endif %}{% if item.comments %} / {{ item.comments }}留言{% endif %}</span>
+          {% if item.takeaway %}<span class="takeaway">{{ item.takeaway }}</span>{% endif %}
+        </li>
+        {%- endfor %}
+      </ol>
+    </div>
+    {% endif %}
+
+    {% if report.pulse.lobsters | length %}
+    <div class="filter-group" data-group="hot-lobsters">
+      <h3 class="sub-section-title">Lobsters</h3>
+      <ol class="shipped-list">
+        {%- for item in report.pulse.lobsters %}
+        <li>
+          {% if item.url %}<a href="{{ item.url }}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+          <span class="score">{% if item.score %}{{ item.score }}分{% endif %}{% if item.comments %} / {{ item.comments }}留言{% endif %}</span>
+          {% if item.tags %}{%- for tag in item.tags %}<span class="rss-feed-tag">{{ tag }}</span>{%- endfor %}{% endif %}
+          {% if item.takeaway %}<span class="takeaway">{{ item.takeaway }}</span>{% endif %}
+        </li>
+        {%- endfor %}
+      </ol>
+    </div>
+    {% endif %}
+
+    {%- for cat, items in rssByCategory %}
+    <div class="filter-group" data-group="rss-{{ cat | safeSlug }}">
+      <h3 class="sub-section-title">{{ cat }}</h3>
+      <ol class="shipped-list">
+        {%- for item in items %}
+        <li class="source-rss">
+          {% if item.url %}<a href="{{ item.url }}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+          <span class="rss-feed-tag">{{ item.feed_name }}</span>
+        </li>
+        {%- endfor %}
+      </ol>
+    </div>
+    {%- endfor %}
+
+  </div>
+</section>
+
+{# ===== 趨勢訊號 ===== #}
+<section class="section-signal tab-panel" id="signal" role="tabpanel" aria-labelledby="tab-signal">
+  <h2>趨勢訊號 — 觀察與預測</h2>
+
+  <div class="source-filter">
+    <button type="button" class="filter-btn active" aria-pressed="true" data-filter="all">全部</button>
+    <button type="button" class="filter-btn" aria-pressed="false" data-filter="sig-lead">今日焦點</button>
+    {% if report.signals and (report.signals | length) %}<button type="button" class="filter-btn" aria-pressed="false" data-filter="sig-signals">訊號分析</button>{% endif %}
+    {% if report.sleeper and report.sleeper.name %}<button type="button" class="filter-btn" aria-pressed="false" data-filter="sig-sleeper">潛力股</button>{% endif %}
+    {% if report.contrarian and report.contrarian.body %}<button type="button" class="filter-btn" aria-pressed="false" data-filter="sig-contrarian">唱反調</button>{% endif %}
+    {% if report.predictions and (report.predictions | length) %}<button type="button" class="filter-btn" aria-pressed="false" data-filter="sig-predictions">預測</button>{% endif %}
+  </div>
+
+  <div class="filter-group" data-group="sig-lead">
+    <div class="signal-card lead-card">
+      <h3 class="sub-section-title">今日焦點</h3>
+      <div class="lead-body">{{ report.lead.html | safe }}</div>
+    </div>
+  </div>
+
+  <div class="filter-group" data-group="sig-signals">
+    {%- for sig in report.signals %}
+    <h3>
+      訊號 {{ loop.index }}：{{ sig.title }}
+      {% if sig.strength %}<span class="signal-strength signal-{{ sig.strength }}">{{ sig.strength }}</span>{% endif %}
+      {% if sig.day_count %}<span class="arc-badge">第 {{ sig.day_count }} 天</span>{% endif %}
+    </h3>
+    <div class="signal-card">
+      {% if sig.type or sig.cross_source or sig.percentile %}
+      <div class="signal-meta">
+        {% if sig.type %}<span class="signal-type">{{ sig.type }}</span>{% endif %}
+        {% if sig.cross_source %}<span class="signal-xsrc">跨 {{ sig.cross_source }} 平台</span>{% endif %}
+        {% if sig.percentile %}<span class="signal-pct">{{ sig.percentile }}</span>{% endif %}
+      </div>
+      {% endif %}
+      <p>{{ sig.body | safe }}</p>
+      <p class="signal-evidence"><strong>量化佐證</strong>：{{ sig.evidence | safe }}</p>
+      {% if sig.source_links and (sig.source_links | length) %}
+      <div class="signal-sources">
+        <strong>參考來源</strong>
+        <ul>
+          {%- for link in sig.source_links %}
+          <li>
+            {%- if link is string -%}
+              <a href="{{ link }}">{{ link | hostname }}</a>
+            {%- else -%}
+              {% if link.platform %}<span class="rss-feed-tag">{{ link.platform }}</span>{% endif %}
+              {% if link.url %}<a href="{{ link.url }}">{{ link.title or (link.url | hostname) }}</a>{% else %}{{ link.title }}{% endif %}
+              {% if link.score %}<span class="score">{{ link.score }}分</span>{% endif %}
+            {%- endif -%}
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if sig.product_opportunity %}<p class="product-opp">💡 <strong>產品機會</strong>：{{ sig.product_opportunity }}</p>{% endif %}
+    </div>
+    {%- endfor %}
+  </div>
+
+  {% if report.sleeper and report.sleeper.name %}
+  <div class="filter-group" data-group="sig-sleeper">
+    <h3>潛力股</h3>
+    <div class="signal-card sleeper">
+      <p>
+        <a href="{{ report.sleeper.url }}">{{ report.sleeper.name }}</a>
+        {% if report.sleeper.stars %}<code>⭐{{ report.sleeper.stars | formatNum }}</code>{% endif %}
+        {% if report.sleeper.body %} — {{ report.sleeper.body }}{% endif %}
+      </p>
+      {% if report.sleeper.commercial_path %}<p class="product-opp">💡 <strong>商業化路徑</strong>：{{ report.sleeper.commercial_path }}</p>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if report.contrarian and report.contrarian.body %}
+  <div class="filter-group" data-group="sig-contrarian">
+    <h3>唱反調</h3>
+    <div class="signal-card contrarian">
+      <p>{{ report.contrarian.body | safe }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if report.predictions and (report.predictions | length) %}
+  <div class="filter-group" data-group="sig-predictions">
+    <h3>預測（可驗偽）</h3>
+    {%- for pred in report.predictions %}
+    <div class="prediction">
+      <p><strong>{{ loop.index }}.</strong>
+        {% if pred.status %}<span class="pred-status pred-{{ pred.status }}">{{ pred.status }}</span>{% endif %}
+        {{ (pred.text or pred.prediction) | safe }}
+      </p>
+    </div>
+    {%- endfor %}
+  </div>
+  {% endif %}
+</section>

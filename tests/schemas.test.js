@@ -48,6 +48,59 @@ describe('schemas', () => {
       expect(result.success).toBe(true);
     },
   );
+
+  it('ConfigSchema accepts lenses[] with ai-builder default', () => {
+    const minimal = {
+      sources: {
+        rsshub_urls: ['https://rsshub.example.com'],
+        feeds: [],
+        github_topics: { enabled: true, topics: [], limit_per_topic: 10 },
+        github_developers: {
+          enabled: true,
+          global_limit: 10,
+          global_min_followers: 100,
+          regions: [],
+          new_repo_window_hours: 24,
+        },
+      },
+      lenses: [
+        {
+          id: 'ai-builder',
+          name: '今日 AI',
+          prompt_file: '.claude/lenses/ai-builder.md',
+          output_paths: {
+            report: 'data/reports/{date}.json',
+            memory: 'data/memory.json',
+          },
+        },
+      ],
+      report: { language: 'zh-TW', max_featured_items: 12, style: 'creative' },
+    };
+    const result = ConfigSchema.safeParse(minimal);
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
+  });
+
+  it('ConfigSchema rejects empty lenses[] array', () => {
+    const minimal = {
+      sources: {
+        rsshub_urls: ['https://rsshub.example.com'],
+        feeds: [],
+        github_topics: { enabled: true, topics: [], limit_per_topic: 10 },
+        github_developers: {
+          enabled: true,
+          global_limit: 10,
+          global_min_followers: 100,
+          regions: [],
+          new_repo_window_hours: 24,
+        },
+      },
+      lenses: [],
+      report: { language: 'zh-TW', max_featured_items: 12, style: 'creative' },
+    };
+    const result = ConfigSchema.safeParse(minimal);
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('feed item shape', () => {

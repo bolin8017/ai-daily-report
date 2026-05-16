@@ -140,3 +140,52 @@
   window.addEventListener('hashchange', onHash);
   if (location.hash) onHash();
 })();
+
+// Lens-tab controller — distinct from the report-internal [role="tab"]
+// driver above. Selects [data-lens-tab] to avoid namespace collision with
+// existing in-pane tabs (動手做 / 今日上線 / 社群脈動 / 趨勢訊號). Hash
+// pattern is #lens=<id>, also distinct from the in-pane hashes (#build,
+// #shipped, #pulse, #signal) so back/forward navigation routes correctly.
+(() => {
+  const lensTabs = Array.from(document.querySelectorAll('[data-lens-tab]'));
+  const lensPanes = Array.from(document.querySelectorAll('.lens-pane'));
+  if (lensTabs.length === 0) return; // No lens tabs on this page
+
+  const activateLens = (id) => {
+    lensTabs.forEach((t) => {
+      const active = t.dataset.lensTab === id;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    lensPanes.forEach((p) => {
+      p.hidden = p.id !== `lens-${id}`;
+    });
+  };
+
+  lensTabs.forEach((tab) => {
+    tab.addEventListener('click', (e) => {
+      e.preventDefault();
+      const id = tab.dataset.lensTab;
+      history.pushState(null, '', `#lens=${id}`);
+      activateLens(id);
+    });
+  });
+
+  // Initial activation from URL hash if it specifies a lens
+  const lensMatch = location.hash.match(/^#lens=([a-z0-9-]+)$/);
+  if (lensMatch) {
+    const id = lensMatch[1];
+    if (lensTabs.some((t) => t.dataset.lensTab === id)) {
+      activateLens(id);
+    }
+  }
+
+  // Respond to back/forward navigation for the lens hash specifically.
+  // (The in-pane controller above handles #build/#shipped/#pulse/#signal;
+  // hash-based dispatching keeps the two controllers from stepping on
+  // each other when the user navigates with browser back.)
+  window.addEventListener('hashchange', () => {
+    const m = location.hash.match(/^#lens=([a-z0-9-]+)$/);
+    if (m) activateLens(m[1]);
+  });
+})();

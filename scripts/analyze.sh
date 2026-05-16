@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Stage 2: Analysis. Invokes Claude Code to produce the daily report.
+# Stage 2: Analysis. Invokes Claude Code to produce daily reports per lens.
 #
-# Reads condensed data from data/staging/ (committed by Stage 1),
-# assembles the agent prompt + quality rules, invokes claude -p with
-# tool access, then validates output and commits.
+# Reads condensed data from data/staging/ (committed by Stage 1), and for
+# each enabled lens in config.json → lenses[], assembles the lens-specific
+# agent prompt + shared quality rules, invokes claude -p, validates output,
+# and commits.
+#
+# Critical lenses (e.g., ai-builder) abort the deploy on failure; non-critical
+# lenses (e.g., phison-aidaptiv) log degraded and continue.
 #
 # Prerequisites:
 #   - Claude CLI authenticated (~/.claude valid)
@@ -19,16 +23,12 @@ if [ -f .env ]; then
 fi
 
 DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%Y-%m-%d)
-MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
+MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
 SKIP_PUSH="${SKIP_PUSH:-0}"
-# node -p "Date.now()" is portable across Linux and macOS — BSD date on
-# macOS does not recognize %3N and would emit a literal "%3N" that breaks
-# the subsequent arithmetic.
-ANALYZE_STARTED_MS=$(node -p "Date.now()")
 
 # ── Preflight checks ──────────────────────────────────────────────
 
-for f in data/staging/metadata.json .claude/agents/daily-report.md .claude/daily-report-quality.md; do
+for f in data/staging/metadata.json .claude/daily-report-quality.md; do
   if [ ! -f "$f" ]; then
     echo "[analyze] FATAL: ${f} not found" >&2
     exit 1
@@ -49,125 +49,212 @@ if [ "$STAGING_DATE" != "$DATE" ]; then
   fi
 fi
 
-echo "[analyze] $(date -Iseconds) — starting analysis for ${DATE} (model: ${MODEL})"
+# ── Build lens execution order ────────────────────────────────────
+# Critical lenses run first so their failure aborts immediately;
+# non-critical lenses run after and degrade gracefully on failure.
+LENSES=$(node -e '
+  const config = JSON.parse(require("fs").readFileSync("config.json","utf8"));
+  const sorted = (config.lenses || [])
+    .filter(l => l.enabled !== false)
+    .sort((a, b) => (b.critical === true) - (a.critical === true));
+  console.log(sorted.map(l => l.id).join("\n"));
+')
 
-# ── Build prompt ──────────────────────────────────────────────────
-# Concatenate agent prompt + quality rules + today's date, then pipe
-# to claude -p with tool access. The agent reads data files via the
-# Read tool, analyzes per Steps 2-7, and writes output via Write.
-
-PROMPT_FILE=$(mktemp /tmp/analyze-prompt-XXXXXX.txt)
-CLAUDE_STDERR=$(mktemp /tmp/analyze-claude-stderr-XXXXXX.log)
-trap 'rm -f "$PROMPT_FILE" "$CLAUDE_STDERR"' EXIT
-
-{
-  cat .claude/agents/daily-report.md
-  printf '\n---\n\n## Quality rules (must not violate)\n\n'
-  cat .claude/daily-report-quality.md
-  printf '\n---\n\n## Today'\''s date: %s\n' "$DATE"
-  printf '\nExecute the workflow above. Read input files, analyze the data, and write output files.\n'
-} > "$PROMPT_FILE"
-
-# ── Invoke Claude ─────────────────────────────────────────────────
-# Claude runs in the background so we can attach a liveness watchdog
-# (scripts/watchdog.sh) that tracks /proc/$PID/io + CPU instead of using
-# a wall-clock timeout — LLM pipeline runtime varies too much for a
-# fixed cap to be safe. stderr is streamed live AND captured to a file
-# so the failure path can show a tail without forcing operators to open
-# journalctl.
-
-# Run claude with stderr redirected to the capture file (stderr starts
-# empty to avoid tail racing with claude's first write).
-: > "$CLAUDE_STDERR"
-claude -p \
-  --output-format text \
-  --model "$MODEL" \
-  --allowedTools Read Write Grep Glob \
-  < "$PROMPT_FILE" 2> "$CLAUDE_STDERR" &
-CLAUDE_PID=$!
-
-# Stream stderr to our own stderr as it lands, so journalctl still sees
-# live progress. tail --pid=PID auto-exits when CLAUDE_PID dies.
-tail -F --pid="$CLAUDE_PID" -n +1 "$CLAUDE_STDERR" >&2 &
-TAIL_PID=$!
-
-# Watchdog: monitor claude's /proc/$PID/io + CPU ticks; kill claude with
-# SIGTERM if both stagnate for 15 minutes (configurable via env).
-bash "$(dirname "$0")/watchdog.sh" "$CLAUDE_PID" &
-WATCHDOG_PID=$!
-
-CLAUDE_EXIT=0
-wait "$CLAUDE_PID" || CLAUDE_EXIT=$?
-
-# Reap the helpers (tail should already be gone via --pid; defensive kill
-# is harmless if already exited).
-kill "$WATCHDOG_PID" 2>/dev/null || true
-wait "$WATCHDOG_PID" 2>/dev/null || true
-wait "$TAIL_PID" 2>/dev/null || true
-
-if [ "$CLAUDE_EXIT" -ne 0 ]; then
-  echo "═══════════════════════════════════════════════════════════════" >&2
-  case "$CLAUDE_EXIT" in
-    143) echo "[analyze] FATAL: claude -p killed by SIGTERM (exit 143) — likely watchdog liveness failure" >&2 ;;
-    137) echo "[analyze] FATAL: claude -p killed by SIGKILL (exit 137) — OOM or watchdog escalation" >&2 ;;
-    *)   echo "[analyze] FATAL: claude -p exited with code ${CLAUDE_EXIT}" >&2 ;;
-  esac
-  echo "[analyze] stderr tail (last 50 lines):" >&2
-  echo "───────────────────────────────────────────────────────────────" >&2
-  tail -n 50 "$CLAUDE_STDERR" >&2 || true
-  echo "═══════════════════════════════════════════════════════════════" >&2
-  exit "$CLAUDE_EXIT"
-fi
-
-ANALYZE_FINISHED_MS=$(node -p "Date.now()")
-ANALYZE_DURATION_MS=$((ANALYZE_FINISHED_MS - ANALYZE_STARTED_MS))
-echo "[analyze] $(date -Iseconds) — claude session complete (${ANALYZE_DURATION_MS}ms)"
-
-# ── Validate output ───────────────────────────────────────────────
-
-REPORT_FILE="data/reports/${DATE}.json"
-
-if [ ! -f "$REPORT_FILE" ]; then
-  echo "[analyze] FATAL: ${REPORT_FILE} not created by agent" >&2
+if [ -z "$LENSES" ]; then
+  echo "[analyze] FATAL: no enabled lenses in config.json" >&2
   exit 1
 fi
 
-# Inject observability metadata from staging + timing (before validation so
-# the schema check covers the meta block too). Staging metadata carries the
-# run_id and pipeline_version generated at Stage 1 start; analyze.sh adds
-# model + timings. Skips injection silently if the staging data predates the
-# observability upgrade (no run_id present) — meta is optional in the schema.
-echo "[analyze] injecting meta block..."
-ANALYZE_DURATION_MS="$ANALYZE_DURATION_MS" \
-MODEL="$MODEL" \
-REPORT_FILE="$REPORT_FILE" \
-node -e '
-  const fs = require("node:fs");
-  const staging = JSON.parse(fs.readFileSync("data/staging/metadata.json", "utf8"));
-  const reportPath = process.env.REPORT_FILE;
-  const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
-  if (!staging.run_id || !staging.pipeline_version) {
-    console.error("[analyze] staging lacks run_id/pipeline_version — skipping meta injection");
-    process.exit(0);
-  }
-  report.meta = {
-    run_id: staging.run_id,
-    pipeline_version: staging.pipeline_version,
-    model: process.env.MODEL,
-    generated_at: new Date().toISOString(),
-    analyze_duration_ms: Number(process.env.ANALYZE_DURATION_MS),
-    source_health: staging.sources,
-    degraded_sources: staging.degraded || [],
-  };
-  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
-  console.error(`[analyze] meta injected: run_id=${report.meta.run_id.slice(0,8)} version=${report.meta.pipeline_version}`);
-'
+echo "[analyze] $(date -Iseconds) — starting analysis for ${DATE} (model: ${MODEL})"
+echo "[analyze] enabled lenses: $(echo "$LENSES" | tr '\n' ' ')"
 
-echo "[analyze] validating report..."
-node src/lib/validate.js report "$REPORT_FILE"
+# Files to include in the final commit (per-lens report + memory pairs).
+COMMIT_PATHS=()
 
-echo "[analyze] validating memory..."
-node src/lib/validate.js memory data/memory.json
+# ── Per-lens loop ─────────────────────────────────────────────────
+
+for lens_id in $LENSES; do
+  echo "[analyze] $(date -Iseconds) — starting lens: ${lens_id}"
+
+  LENS_PROMPT_FILE=$(node -e "
+    const c = JSON.parse(require('fs').readFileSync('config.json','utf8'));
+    const l = c.lenses.find(x => x.id === '${lens_id}');
+    console.log(l.prompt_file);
+  ")
+  LENS_CRITICAL=$(node -e "
+    const c = JSON.parse(require('fs').readFileSync('config.json','utf8'));
+    const l = c.lenses.find(x => x.id === '${lens_id}');
+    console.log(l.critical === true ? 'true' : 'false');
+  ")
+  LENS_REPORT_PATH=$(node -e "
+    const c = JSON.parse(require('fs').readFileSync('config.json','utf8'));
+    const l = c.lenses.find(x => x.id === '${lens_id}');
+    const tpl = l.output_paths.report;
+    console.log(tpl.replace(/{id}/g, '${lens_id}').replace(/{date}/g, '${DATE}'));
+  ")
+  LENS_MEMORY_PATH=$(node -e "
+    const c = JSON.parse(require('fs').readFileSync('config.json','utf8'));
+    const l = c.lenses.find(x => x.id === '${lens_id}');
+    const tpl = l.output_paths.memory;
+    console.log(tpl.replace(/{id}/g, '${lens_id}'));
+  ")
+
+  if [ ! -f "$LENS_PROMPT_FILE" ]; then
+    echo "[analyze] FATAL: lens prompt file missing: ${LENS_PROMPT_FILE}" >&2
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$LENS_REPORT_PATH")" "$(dirname "$LENS_MEMORY_PATH")"
+
+  PROMPT_FILE=$(mktemp "/tmp/analyze-prompt-${lens_id}-XXXXXX.txt")
+  CLAUDE_STDERR=$(mktemp "/tmp/analyze-claude-stderr-${lens_id}-XXXXXX.log")
+
+  # Build per-lens prompt
+  {
+    cat "$LENS_PROMPT_FILE"
+    printf '\n---\n\n## Quality rules (must not violate)\n\n'
+    cat .claude/daily-report-quality.md
+    printf '\n---\n\n## Today'\''s date: %s\n' "$DATE"
+    printf '\n## Output paths for this lens\n\n'
+    printf -- '- Report: `%s`\n' "$LENS_REPORT_PATH"
+    printf -- '- Memory: `%s`\n' "$LENS_MEMORY_PATH"
+    printf '\nExecute the workflow above. Read input files, analyze the data, and write to the paths above.\n'
+  } > "$PROMPT_FILE"
+
+  # ── Invoke Claude ───────────────────────────────────────────────
+  # Watchdog tracks /proc/$PID/io + CPU ticks instead of using a wall-clock
+  # timeout — LLM pipeline runtime varies too much for a fixed cap to be safe.
+
+  LENS_STARTED_MS=$(node -p "Date.now()")
+
+  : > "$CLAUDE_STDERR"
+  claude -p \
+    --output-format text \
+    --model "$MODEL" \
+    --allowedTools Read Write Grep Glob \
+    < "$PROMPT_FILE" 2> "$CLAUDE_STDERR" &
+  CLAUDE_PID=$!
+
+  tail -F --pid="$CLAUDE_PID" -n +1 "$CLAUDE_STDERR" >&2 &
+  TAIL_PID=$!
+
+  bash "$(dirname "$0")/watchdog.sh" "$CLAUDE_PID" &
+  WATCHDOG_PID=$!
+
+  CLAUDE_EXIT=0
+  wait "$CLAUDE_PID" || CLAUDE_EXIT=$?
+
+  kill "$WATCHDOG_PID" 2>/dev/null || true
+  wait "$WATCHDOG_PID" 2>/dev/null || true
+  wait "$TAIL_PID" 2>/dev/null || true
+
+  if [ "$CLAUDE_EXIT" -ne 0 ]; then
+    echo "═══════════════════════════════════════════════════════════════" >&2
+    case "$CLAUDE_EXIT" in
+      143) echo "[analyze] lens=${lens_id} claude -p killed by SIGTERM (exit 143) — likely watchdog liveness failure" >&2 ;;
+      137) echo "[analyze] lens=${lens_id} claude -p killed by SIGKILL (exit 137) — OOM or watchdog escalation" >&2 ;;
+      *)   echo "[analyze] lens=${lens_id} claude -p exited with code ${CLAUDE_EXIT}" >&2 ;;
+    esac
+    echo "[analyze] stderr tail (last 50 lines):" >&2
+    echo "───────────────────────────────────────────────────────────────" >&2
+    tail -n 50 "$CLAUDE_STDERR" >&2 || true
+    echo "═══════════════════════════════════════════════════════════════" >&2
+
+    rm -f "$PROMPT_FILE" "$CLAUDE_STDERR"
+
+    if [ "$LENS_CRITICAL" = "true" ]; then
+      echo "[analyze] FATAL: critical lens ${lens_id} failed — aborting deploy" >&2
+      exit "$CLAUDE_EXIT"
+    else
+      echo "[analyze] non-critical lens ${lens_id} failed (exit ${CLAUDE_EXIT}) — degraded, continuing" >&2
+      rm -f "$LENS_REPORT_PATH"
+      continue
+    fi
+  fi
+
+  LENS_FINISHED_MS=$(node -p "Date.now()")
+  LENS_DURATION_MS=$((LENS_FINISHED_MS - LENS_STARTED_MS))
+  echo "[analyze] lens=${lens_id} claude session complete (${LENS_DURATION_MS}ms)"
+
+  rm -f "$PROMPT_FILE" "$CLAUDE_STDERR"
+
+  # ── Validate output exists ──────────────────────────────────────
+
+  if [ ! -f "$LENS_REPORT_PATH" ]; then
+    if [ "$LENS_CRITICAL" = "true" ]; then
+      echo "[analyze] FATAL: ${LENS_REPORT_PATH} not created by agent (critical lens)" >&2
+      exit 1
+    else
+      echo "[analyze] non-critical lens ${lens_id} did not write report — degraded" >&2
+      continue
+    fi
+  fi
+
+  # ── Meta injection (ai-builder only — ReportSchema requires it) ─
+
+  if [ "$lens_id" = "ai-builder" ]; then
+    echo "[analyze] injecting meta block for ${lens_id}..."
+    ANALYZE_DURATION_MS="$LENS_DURATION_MS" \
+    MODEL="$MODEL" \
+    REPORT_FILE="$LENS_REPORT_PATH" \
+    node -e '
+      const fs = require("node:fs");
+      const staging = JSON.parse(fs.readFileSync("data/staging/metadata.json", "utf8"));
+      const reportPath = process.env.REPORT_FILE;
+      const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+      if (!staging.run_id || !staging.pipeline_version) {
+        console.error("[analyze] staging lacks run_id/pipeline_version — skipping meta injection");
+        process.exit(0);
+      }
+      report.meta = {
+        run_id: staging.run_id,
+        pipeline_version: staging.pipeline_version,
+        model: process.env.MODEL,
+        generated_at: new Date().toISOString(),
+        analyze_duration_ms: Number(process.env.ANALYZE_DURATION_MS),
+        source_health: staging.sources,
+        degraded_sources: staging.degraded || [],
+      };
+      fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + "\n");
+      console.error(`[analyze] meta injected: run_id=${report.meta.run_id.slice(0,8)} version=${report.meta.pipeline_version}`);
+    '
+  fi
+
+  # ── Validate report + memory ────────────────────────────────────
+
+  echo "[analyze] validating ${lens_id} report..."
+  if [ "$lens_id" = "ai-builder" ]; then
+    if ! node src/lib/validate.js report "$LENS_REPORT_PATH"; then
+      if [ "$LENS_CRITICAL" = "true" ]; then
+        echo "[analyze] FATAL: critical lens ${lens_id} report failed validation" >&2
+        exit 1
+      else
+        echo "[analyze] non-critical lens ${lens_id} report validation failed — degraded" >&2
+        rm -f "$LENS_REPORT_PATH"
+        continue
+      fi
+    fi
+    if [ -f "$LENS_MEMORY_PATH" ]; then
+      node src/lib/validate.js memory "$LENS_MEMORY_PATH"
+    fi
+  else
+    if ! node src/lib/validate-lens-report.js "$LENS_REPORT_PATH" "$lens_id"; then
+      if [ "$LENS_CRITICAL" = "true" ]; then
+        echo "[analyze] FATAL: critical lens ${lens_id} report failed validation" >&2
+        exit 1
+      else
+        echo "[analyze] non-critical lens ${lens_id} report validation failed — degraded" >&2
+        rm -f "$LENS_REPORT_PATH"
+        continue
+      fi
+    fi
+  fi
+
+  # Mark for commit
+  [ -f "$LENS_REPORT_PATH" ] && COMMIT_PATHS+=("$LENS_REPORT_PATH")
+  [ -f "$LENS_MEMORY_PATH" ] && COMMIT_PATHS+=("$LENS_MEMORY_PATH")
+
+done
 
 # ── Commit + push to data branch ──────────────────────────────────
 # src/lib/commit.js builds the commit with git plumbing so main's
@@ -177,9 +264,12 @@ node src/lib/validate.js memory data/memory.json
 if [ "$SKIP_PUSH" = "1" ]; then
   echo "[analyze] SKIP_PUSH — skipping commit and push"
 else
-  echo "[analyze] committing report to data branch..."
-  node src/lib/commit.js "$DATE" "report: ${DATE} daily creative brief" \
-    "$REPORT_FILE" "data/memory.json"
+  if [ "${#COMMIT_PATHS[@]}" -eq 0 ]; then
+    echo "[analyze] no successful lens outputs — skipping commit" >&2
+    exit 1
+  fi
+  echo "[analyze] committing ${#COMMIT_PATHS[@]} files to data branch..."
+  node src/lib/commit.js "$DATE" "report: ${DATE} daily creative brief" "${COMMIT_PATHS[@]}"
 fi
 
 echo "[analyze] $(date -Iseconds) — done"

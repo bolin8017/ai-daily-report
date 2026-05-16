@@ -102,3 +102,84 @@ describe('condenseAll', () => {
     expect(out.developers.items).toEqual([]);
   });
 });
+
+describe('condenseFlat scope-quota reservation', () => {
+  // Build a search payload mixing 30 high-star global items (1000-971★) with
+  // 4 low-star lens-tagged items (200★, 150★, 100★, 90★). Without quota,
+  // global ranking culls all 4 lens items (they fall outside the top 25).
+  function mockSearchMixedScope() {
+    const globalItems = Array.from({ length: 30 }, (_, i) => ({
+      source: 'github-search',
+      topic: 'llm',
+      full_name: `popular/repo-${i}`,
+      url: `https://github.com/popular/repo-${i}`,
+      description: 'mainstream LLM project',
+      stars: 1000 - i,
+      _scope: ['global'],
+    }));
+    const lensItems = [200, 150, 100, 90].map((stars, i) => ({
+      source: 'github-search',
+      topic: 'kv-cache',
+      full_name: `niche/kvcache-${i}`,
+      url: `https://github.com/niche/kvcache-${i}`,
+      description: 'low-star but lens-targeted',
+      stars,
+      _scope: ['global', 'phison-aidaptiv'],
+    }));
+    return { ok: true, items: [...globalItems, ...lensItems] };
+  }
+
+  it('reserves slots for lens-tagged items even when out-ranked by global items', () => {
+    const raw = {
+      feeds: { ok: true, items: [] },
+      trending: { ok: true, items: [] },
+      search: mockSearchMixedScope(),
+      developers: { ok: true, items: [] },
+    };
+    const out = condenseAll(raw);
+    const lensTaggedKept = out.search.items.filter(
+      (i) => (i._scope || []).includes('phison-aidaptiv'),
+    );
+    // First-attempt search cap = 25, quota fraction = 0.25 → ⌊25 × 0.25⌋ = 6.
+    // We supplied 4 lens-tagged items, so all 4 should survive.
+    expect(lensTaggedKept.length).toBe(4);
+  });
+
+  it('preserves _scope field through condense', () => {
+    const raw = {
+      feeds: { ok: true, items: [] },
+      trending: { ok: true, items: [] },
+      search: mockSearchMixedScope(),
+      developers: { ok: true, items: [] },
+    };
+    const out = condenseAll(raw);
+    for (const item of out.search.items) {
+      expect(item._scope).toBeDefined();
+      expect(Array.isArray(item._scope)).toBe(true);
+    }
+  });
+
+  it('falls back to pure global ranking when no lens-tagged items exist', () => {
+    const allGlobal = {
+      ok: true,
+      items: Array.from({ length: 30 }, (_, i) => ({
+        source: 'github-search',
+        topic: 'llm',
+        full_name: `repo/${i}`,
+        url: `https://github.com/repo/${i}`,
+        stars: 500 - i,
+        _scope: ['global'],
+      })),
+    };
+    const raw = {
+      feeds: { ok: true, items: [] },
+      trending: { ok: true, items: [] },
+      search: allGlobal,
+      developers: { ok: true, items: [] },
+    };
+    const out = condenseAll(raw);
+    // Sorted by stars desc — first item must be the highest-star one
+    expect(out.search.items[0].stars).toBe(500);
+    expect(out.search.items.length).toBeLessThanOrEqual(25);
+  });
+});

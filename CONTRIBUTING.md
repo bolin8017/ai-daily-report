@@ -24,13 +24,13 @@ npm run validate:report  # Validate latest report against schema
 
 ## Iterating on the agent prompt
 
-The agent prompt (`.claude/agents/daily-report.md`) is the primary quality lever. To iterate without running the full pipeline:
+The agent prompt (`.claude/lenses/ai-builder.md`) is the primary quality lever. To iterate without running the full pipeline:
 
 ```bash
 # 1. Run Stage 1 to get fresh staging data
 npm start
 
-# 2. Edit .claude/agents/daily-report.md or .claude/daily-report-quality.md
+# 2. Edit .claude/lenses/ai-builder.md or .claude/daily-report-quality.md
 
 # 3. Run Stage 2 only against existing staging data (no push)
 SKIP_PUSH=1 bash scripts/run.sh --analyze
@@ -50,7 +50,7 @@ npm run validate:report
 1. Add an entry to `config.json` under `sources.feeds[]`
 2. Test: `node src/fetchers/feeds.js | jq '.feeds_ok'`
 3. Run `npm start` to verify end-to-end
-4. If it's a new category, update the **Inputs** section of `.claude/agents/daily-report.md`
+4. If it's a new category, update the **Inputs** section of `.claude/lenses/ai-builder.md`
 
 ## Architecture
 

@@ -13,6 +13,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { runFetchers } from './fetchers/all.js';
 import { commitAndPush } from './lib/commit.js';
 import { condenseAll } from './lib/condense.js';
+import config from './lib/config.js';
+import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
@@ -55,11 +57,25 @@ async function main() {
   banner('building snapshot');
   buildSnapshot(raw.feeds);
 
-  // Phase 3 — condense per-source for prompt-size control
+  // Phase 3 — tag scope on RAW items BEFORE condense.
+  // Items from global sources get ["global"]; items also matching a lens's
+  // sources_overlay get ["global", "<lens-id>"]. Tagging here (rather than
+  // post-condense) lets condense reserve quota for lens-tagged items so
+  // low-star lens-overlay signals (e.g. niche github topics like kv-cache)
+  // aren't crowded out by popular global items.
+  for (const fetcherKey of ['feeds', 'trending', 'search', 'developers']) {
+    if (raw[fetcherKey] && Array.isArray(raw[fetcherKey].items)) {
+      raw[fetcherKey].items = raw[fetcherKey].items.map((item) =>
+        tagItemScope(item, config.lenses),
+      );
+    }
+  }
+
+  // Phase 4 — condense per-source for prompt-size control (scope-aware)
   banner('condensing');
   const condensed = condenseAll(raw);
 
-  // Phase 4 — write staging files for Stage 2 (agent analysis)
+  // Phase 5 — write staging files for Stage 2 (agent analysis)
   banner('writing staging data');
   mkdirSync('data/staging', { recursive: true });
 
@@ -92,7 +108,7 @@ async function main() {
     console.error(`  ✓ ${path}`);
   }
 
-  // Phase 5 — commit + push
+  // Phase 6 — commit + push
   if (SKIP_PUSH) {
     banner('SKIP_PUSH — stopping before commit');
     return;

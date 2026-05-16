@@ -1,6 +1,6 @@
 # Daily Report Quality Rules
 
-This file is the quality-control companion to `.claude/agents/daily-report.md`.
+This file is the quality-control companion to `.claude/lenses/ai-builder.md`.
 Read that file first for the workflow (Steps 1–6 section descriptions), then apply these rules.
 
 ---

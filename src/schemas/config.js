@@ -4,35 +4,12 @@
 // Also available standalone via `npm run validate:config`.
 
 import { z } from 'zod';
+import { FeedSourceSchema } from './feed-source.js';
+import { LensConfigSchema } from './lens.js';
 
-const FeedSourceSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('rsshub'),
-    name: z.string(),
-    route: z.string().startsWith('/'),
-    normalize: z.enum(['hackernews']).optional(),
-    category: z.string(),
-    limit: z.number().int().positive(),
-    enabled: z.boolean().optional(),
-  }),
-  z.object({
-    type: z.literal('rss'),
-    name: z.string(),
-    url: z.url(),
-    category: z.string(),
-    limit: z.number().int().positive(),
-    enabled: z.boolean().optional(),
-  }),
-  z.object({
-    type: z.literal('json'),
-    name: z.string(),
-    url: z.url(),
-    normalize: z.enum(['lobsters']).optional(),
-    category: z.string(),
-    limit: z.number().int().positive(),
-    enabled: z.boolean().optional(),
-  }),
-]);
+// Re-export for backwards compatibility with any consumer that did
+// `import { FeedSourceSchema } from '../schemas/config.js'`.
+export { FeedSourceSchema };
 
 export const ConfigSchema = z.object({
   sources: z.object({
@@ -61,6 +38,9 @@ export const ConfigSchema = z.object({
       new_repo_window_hours: z.number().int().positive(),
     }),
   }),
+  // Lens definitions for multi-lens fan-out. At least one lens required
+  // (the default lens, ai-builder, drives the existing daily report).
+  lenses: z.array(LensConfigSchema).min(1),
   report: z.object({
     language: z.string(),
     max_featured_items: z.number().int().positive(),

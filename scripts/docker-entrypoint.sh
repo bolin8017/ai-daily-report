@@ -10,7 +10,7 @@
 # Expected environment:
 #   GITHUB_TOKEN       — PAT with Contents:read/write scope for clone + push
 #   REPORT_TIMEZONE    — optional, defaults to Asia/Taipei
-#   CLAUDE_MODEL       — optional, defaults to claude-opus-4-6
+#   CLAUDE_MODEL       — optional, defaults to claude-sonnet-4-6
 #   ~/.claude           — bind-mounted claude CLI auth state (host's ~/.claude, read-only)
 #   /workspace         — Docker named volume (persistent across runs)
 
