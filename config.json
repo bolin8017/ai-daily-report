@@ -152,6 +152,31 @@
         "report": "data/reports/{date}.json",
         "memory": "data/memory.json"
       }
+    },
+    {
+      "id": "phison-aidaptiv",
+      "name": "Phison aiDAPTIV+",
+      "enabled": true,
+      "critical": false,
+      "prompt_file": ".claude/lenses/phison-aidaptiv.md",
+      "sources_overlay": {
+        "feeds": [
+          { "type": "rss", "name": "Phison Blog", "url": "https://phisonblog.com/feed/", "category": "phison-vendor", "limit": 10 },
+          { "type": "rss", "name": "vLLM Blog", "url": "https://blog.vllm.ai/feed.xml", "category": "kv-cache-research", "limit": 10 },
+          { "type": "rss", "name": "LMCache Blog", "url": "https://blog.lmcache.ai/en/feed.xml", "category": "kv-cache-research", "limit": 10 },
+          { "type": "rss", "name": "NVIDIA Developer", "url": "https://developer.nvidia.com/blog/feed", "category": "kv-cache-research", "limit": 10 },
+          { "type": "rss", "name": "SK Hynix News", "url": "https://news.skhynix.com/feed/", "category": "ssd-vendor", "limit": 10 },
+          { "type": "rss", "name": "BlocksAndFiles", "url": "https://blocksandfiles.com/feed/", "category": "ssd-vendor", "limit": 10 }
+        ],
+        "github_topics": {
+          "topics": ["kv-cache", "local-llm", "on-device-ai", "llm-app"]
+        }
+      },
+      "rotation": { "starvation_threshold_days": 7 },
+      "output_paths": {
+        "report": "data/reports/lenses/{id}/{date}.json",
+        "memory": "data/memory/{id}.json"
+      }
     }
   ],
   "report": {
