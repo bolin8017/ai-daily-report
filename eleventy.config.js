@@ -100,6 +100,36 @@ export default function (eleventyConfig) {
     return sanitizeReport(raw);
   });
 
+  // Per-lens reports — scan data/reports/lenses/<lens-id>/ for the latest
+  // YYYY-MM-DD.json per lens. Returns { [lensId]: <sanitized report> } so
+  // templates can do `{% set lens = lensReports['phison-aidaptiv'] %}` or
+  // iterate. Sanitized via the same sanitizeReport used for ai-builder so
+  // the indirect-XSS path (compromised RSS → prompt injection → malicious
+  // HTML in lens report) is closed for every lens uniformly.
+  eleventyConfig.addGlobalData('lensReports', () => {
+    const lensesDir = path.join(__dirname, 'data', 'reports', 'lenses');
+    if (!fs.existsSync(lensesDir)) return {};
+
+    const result = {};
+    for (const lensId of fs.readdirSync(lensesDir)) {
+      const lensDir = path.join(lensesDir, lensId);
+      if (!fs.statSync(lensDir).isDirectory()) continue;
+      const files = fs
+        .readdirSync(lensDir)
+        .filter((f) => /^\d{4}-\d{2}-\d{2}\.json$/.test(f))
+        .sort()
+        .reverse();
+      if (files.length === 0) continue;
+      try {
+        const raw = JSON.parse(fs.readFileSync(path.join(lensDir, files[0]), 'utf8'));
+        result[lensId] = sanitizeReport(raw);
+      } catch (err) {
+        console.error(`[eleventy] lensReports: failed to read ${lensId}: ${err.message}`);
+      }
+    }
+    return result;
+  });
+
   // Archive links for footer (last 7 dates)
   eleventyConfig.addGlobalData('archiveLinks', () => {
     return getReportFiles()
