@@ -1,0 +1,41 @@
+---
+permalink: /feed/phison-aidaptiv.xml
+eleventyExcludeFromCollections: true
+---
+{%- set lens = lensReports["phison-aidaptiv"] -%}
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>AI Creative Daily — Phison aiDAPTIV+</title>
+    <link>https://bolin8017.github.io/ai-daily-report/#lens=phison-aidaptiv</link>
+    <description>Daily creative ideation for Phison aiDAPTIV+ commercialization — OEM channel + ISV channel signals (legal/medical/finance regulated verticals, individual creators, dev/OSS-infra).</description>
+    <language>zh-TW</language>
+    <atom:link href="https://bolin8017.github.io/ai-daily-report/feed/phison-aidaptiv.xml" rel="self" type="application/rss+xml"/>
+    {%- if lens %}
+    <item>
+      <title>{{ lens.date }} — {{ lens.focus_idea.title }}</title>
+      <link>https://bolin8017.github.io/ai-daily-report/#lens=phison-aidaptiv</link>
+      <guid isPermaLink="false">phison-aidaptiv-{{ lens.date }}</guid>
+      <pubDate>{{ lens.date }}T08:00:00+08:00</pubDate>
+      <description><![CDATA[
+<h3>{{ lens.focus_idea.title }}</h3>
+{%- if lens.focus_idea.path %}
+<p><strong>Path:</strong> {{ lens.focus_idea.path }}</p>
+{%- endif %}
+<p>{{ lens.focus_idea.description }}</p>
+{%- if lens.focus_idea.demo_path %}
+<p><strong>Demo path:</strong> {{ lens.focus_idea.demo_path }}</p>
+{%- endif %}
+{%- if lens.oss_pulse and lens.oss_pulse.length > 0 %}
+<h4>今日 OSS 食材</h4>
+<ul>
+{%- for item in lens.oss_pulse %}
+<li><a href="{{ item.url }}">{{ item.name }}</a>{% if item.description %} — {{ item.description }}{% endif %}</li>
+{%- endfor %}
+</ul>
+{%- endif %}
+      ]]></description>
+    </item>
+    {%- endif %}
+  </channel>
+</rss>
