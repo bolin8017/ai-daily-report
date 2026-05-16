@@ -1,370 +1,391 @@
 {
   "date": "2026-05-16",
   "lead": {
-    "html": "<h3>ssh-keysign-pwn、Bun Rust、還有 google/esmeralda：今天的三個並排</h3>\n\n<h4>發生了什麼</h4>\n<p><code>0xdeadbeefnetwork/ssh-keysign-pwn</code> 昨天在 Lobsters 拿下 89 分、40 則留言（排名 #2），Phoronix 和 LWN 今天同時跟進——Linux kernel 出現了一個允許非特權用戶讀取 root 擁有的檔案的 0-day，漏洞代碼 CVE-2026-46333。Phoronix 確認 Linux 7.0.8 + 六個 LTS 版本（6.18.31、6.12.89、6.6.139、6.1.173 等）今天已發布 stable 修補。機制是 ssh-keysign 的一個 SUID binary race condition，非特權使用者可以在短暫的 time window 內讀取任意 root-owned 路徑。</p>\n\n<p>同一天，Bun 的 Zig→Rust 移植 PR #30412 合進主線（Lobsters 94 分、121 則留言，今日最高單篇互動量）。oven-sh/bun 現在在 GitHub Trending 已是 Rust 語言標記（90,570 星），這個移植是 AI 輔助跨語言 codebase 遷移迄今最大規模的完成里程碑——在 5/15 的記錄中第一次出現，今天 Lobsters 爆出實質留言討論。</p>\n\n<p>此外，今天凌晨 5 小時前（採集時），<code>google/esmeralda</code> 出現在 GitHub：0 stars、null 語言、無 description、無 README、無任何 commit 內容——完全空倉。Google I/O 在 5/20-21，距今 4 天。這是 Google I/O 靜默期連續第 7 天之後，Google org 出現的第二個空 repo 訊號（第一個是 5/12 的 <code>google/windtunnel</code>，至今仍然空著）。</p>\n\n<h4>為什麼重要</h4>\n<p>CVE-2026-46333 的技術影響直接打在 agent sandbox 假設上。如果你的 agent pipeline 在 Linux host 上跑，假設 non-root container 無法讀取 root-owned secrets——這個假設在沒 patch 的版本上是錯的。agent sandbox 的隔離層從來不是 SUID binary 的防守，這個漏洞提醒你 kernel attack surface 和 LLM prompt injection attack surface 是並列的威脅面。Docker container 隔離對這類漏洞的有效性已在 5/12 的 DirtyFrag 討論中被明確否定——兩週內第二個同類別 Linux LPE，確認這是一個漏洞類別而不是偶然。</p>\n\n<p>Bun Rust 移植的影響面不同：它給了你一個直接可量測的 AI-assisted migration 基準。Bun 有 90K stars、是生產級 JavaScript runtime；移植過程用 Claude 輔助，分支命名 <code>claude/phase-a-port</code>。如果你的 codebase 有 Zig 或 C 元件想升級到 Rust，Bun 現在是「AI 輔助大型 codebase 遷移」的最大公開案例——可以直接 clone 下來研究 commit 歷史和 prompt patterns。</p>\n\n<p><code>google/esmeralda</code> 單獨看是一個空 repo，加上 <code>google/windtunnel</code>（4 天前建立，至今空）和連續 7 天的 Google AI Blog consumer-only content，這個組合說明 Google I/O 的技術公告已經在 repo 層面開始佔位。「Esmeralda」在 Google 的命名歷史裡不是隨機詞——Google 過去用寶石名為 internal project codename。結論：這個 repo 5/20-21 後大概率會有內容。</p>\n\n<h4>社群怎麼看</h4>\n<p>Lobsters 的 ssh-keysign-pwn 討論最高分留言：「SUID binaries are the original footgun. The fact that ssh-keysign needs SUID at all is a design decision that never got revisited.」反方：「這類漏洞 race condition window 很短，實際利用難度不低。」但 40 則留言裡多數是怎麼升級的操作問題，說明大家確實在實際 patch。Phoronix 的跟進確認 stable kernel 已發布，這不是 theoretical。</p>\n\n<p>Bun Rust 的 Lobsters 121 則留言重心在「Rust async 比 Zig 複雜多了，Bun 的 event loop 怎麼移植的？」頂部留言：「I'll believe the perf claim when I see the benchmarks post-port.」具體問題點：Bun 原本依賴 Zig 的 async/await 語義，Rust 的 async executor 設計需要額外的 <code>tokio</code>/<code>monoio</code> 決策。社群還沒看到 post-port benchmark，這是下一個關注點。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 agent 跑在 Linux 上：今天確認你的 host kernel 版本，<code>uname -r</code>，如果是 6.1/6.6/6.12/6.18/7.0 系列且未升級到今天的 stable，把 <code>apt-get upgrade linux-image</code>（Debian/Ubuntu）或等效指令排進今天的 deploy 流程。確認後在你的 agent sandbox 設定裡加一條 checklist：「kernel LPE patch status」跟你的 container escape policy 並列。</p>\n\n<p>如果你在評估 AI-assisted codebase 遷移：<code>git clone https://github.com/oven-sh/bun</code>，<code>git log --grep=\"claude\" --oneline</code>，可以看到 AI-assisted port 的 commit 模式。Bun 的規模（~90K stars，數十萬行 code）讓這份歷史比任何 blog post 更有說服力。</p>"
+    "html": "<h3>Mitchell Hashimoto 把一個詞說出口：AI psychosis</h3>\n\n<h4>發生了什麼</h4>\n<p>Mitchell Hashimoto（Vagrant 作者、HashiCorp 共同創辦人）昨天在 Twitter 寫了一句話，今天在 HN 拿了 1605 分：「我相信現在有很多公司正處於 AI psychosis 狀態。」106 則留言，比例出奇地低——沒有人急著反駁，大多數人只是點了 upvote 然後走開。</p>\n\n<p>同一天，Lobsters 的第一名是一則提案（357 分，147 則留言）：禁止 LLM 生成的投稿進入 Lobsters。Lobsters 是 Hacker News 更小、更挑剔的系統與語言社群，147 則留言說明這已不只是「我很煩」的抱怨，而是「我要立規矩」的行動。同一天，kabir.au 的〈Frontier AI has broken the open CTF format〉拿了 250 分——frontier AI 現在可以把設計給人類用 24 小時的 CTF 題組一次解完，open CTF 的基本假設（「只有夠強的人才能解」）已不再成立。</p>\n\n<h4>為什麼重要</h4>\n<p>「AI psychosis」作為診斷詞，比「AI hype」精確。Hype 是誇大；psychosis 是「判斷力與現實脫節」。Mitchell 沒有說 AI 能力不夠，他說整個組織失去了判斷「什麼時候用 AI、什麼時候不要」的能力。這個診斷有 code-level 的對應：你的 pipeline 是不是在每個不確定的地方都呼叫 LLM，而不是只在真正需要多步推理的地方才呼叫？你的 PR review 是不是讓 AI 批准 AI 寫的 code，形成封閉的 evaluation loop，繞過了人類作為 precision gate 的角色？</p>\n\n<p>Lobsters 禁令討論和 CTF 崩潰說明同一件事：依賴「人類不這樣做」為假設建立的系統，在 AI 進場後需要重新設計。Lobsters 的投稿評分假設稀缺性（時間、靈感）；CTF 假設解題者受人類認知速度限制。這兩個假設現在都錯了，而它們背後的 upstream cause 是同一個：frontier model capability 的增長速度超過了這些平台設計時預估的人類行為上限。</p>\n\n<h4>社群怎麼看</h4>\n<p>Lobsters 討論裡最多 upvote 的 comment 不是在說「禁就好了」，而是在說：「問題不是 LLM-generated，是 low-effort generated——我讀得出差別，但投稿系統讀不出來。」另一個回應用了更準確的框架：「這是 proof of work 問題。人類寫作的稀缺性是一種 PoW，LLM 取消了這個稀缺性，attention market 就崩潰了。」HN 的 Mitchell 貼文底下，最冷靜的 comment 是：「他說的不是 AI 工具不好，他說的是每個組織都需要一個人來說『夠了，這裡不需要 AI』——而在 AI psychosis 的公司裡，說這句話的人被當成阻礙進步。」</p>\n\n<h4>行動建議</h4>\n<p>如果你正在設計有 AI 輔助步驟的 pipeline，這週在你 repo 的 <code>CONTRIBUTING.md</code> 裡加一個 <code>## AI decision log</code> section，格式是：「這個地方用了 AI / 不用 AI，技術理由是：[具體說明]」。目的不是反對 AI，而是強迫每個 AI call 通過一個問題：這裡真的需要 LLM 推理，還是 regex / lookup table / deterministic rule 就夠了？cactus-compute/needle 兩週前的 HN Show HN（744 分）已把這個判斷產品化：把 Gemini 的 tool selection 能力蒸餾進 26M 模型，因為主模型決定呼叫哪個 tool 的決策，大多數時候用不到 70B 的推理能力。把同樣的邏輯用在你自己的 pipeline 上——如果某個 AI call 的決策其實只是個分類問題，換成蒸餾模型或直接用規則。</p>",
+    "thin": false
   },
   "ideas": [
     {
+      "title": "LLM 內容 Ed25519 歸因中介層：給社群平台的 cryptographic attribution",
+      "description": "Lobsters 今天在討論是否禁止 LLM 生成投稿（357 分，147 則留言），同天 microsoft/sourcepack 出現，描述是「managing shared source code utilities including but not limited to agent skills as versioned packages」。這兩件事的非顯然連結：Lobsters 的問題不是 LLM-generated 本身，而是無法辨別「誰、用哪個版本的 skill、生成了這則內容」。如果每個 skill package 有版本 hash，每份生成內容就可以帶 cryptographic attribution。建一個 TypeScript 中介層：在任何 LLM call 之後，用 Ed25519 對 (model_id + skill_version + content_hash + user_id) 簽章，輸出帶 .attribution 欄位的 JSON envelope。社群平台接收這個 envelope，自行決定要展示、過濾、還是加權。不是 censorship，是 signal。",
+      "use_case": "你在維護一個技術社群平台（類 Lobsters 或內部知識庫），收到的投稿有 30% 被懷疑是 LLM 批量生成的，但你無法在不誤傷真實投稿的情況下過濾。你想要的不是禁令，而是「讓真實內容有辦法跟 AI 生成內容做信號區分」的基礎設施層。",
       "format": "remix",
-      "title": "把 browser-harness 的自癒能力接上安全掃描：給 CI 用的瀏覽器弱點偵測器",
-      "projects": [
-        {
-          "name": "browser-use/browser-harness",
-          "url": "https://github.com/browser-use/browser-harness",
-          "note": "12791★，topic:llm，30 天內新建，self-healing LLM browser automation"
-        },
-        {
-          "name": "0xdeadbeefnetwork/ssh-keysign-pwn",
-          "url": "https://github.com/0xdeadbeefnetwork/ssh-keysign-pwn",
-          "note": "今日 Lobsters #2，89 分，CVE-2026-46333 的 PoC"
-        }
-      ],
-      "description": "你是一家 SaaS 公司的 DevSecOps 工程師，每次 deploy 之後想跑一輪「有沒有 XSS / auth bypass / race condition」的瀏覽器層測試，但現有的 Playwright 腳本每次 UI 改版就斷掉，維護成本高到沒人理。browser-harness 的 self-healing 機制是：LLM 描述 task goal（「登入後到設定頁點刪除帳號」），harness 在 DOM 失效時自動重寫 selector，不需人工維護。把這個接上安全測試的 payloads（XSS probe strings、IDOR 測試 URL pattern、session fixation pattern），你得到一個「不怕 UI 改版」的瀏覽器安全掃描器。技術路線：fork browser-harness，在 task goal layer 加一個 security-test-mode，把 OWASP Top 10 的 browser-side subset 包成 goal template。輸出格式用 SARIF（GitHub Security tab 直接吃）。每個 goal template 裡帶 expected-failure-mode 讓 LLM 知道「這個 probe 成功代表漏洞」。不需要 GPU，全程 cloud API 呼叫 harness + 你選的 LLM。",
-      "use_case": "你是一家 20 人 SaaS 公司的 DevSecOps 工程師，每週 3 次 deploy，沒有 security team，每次改版後 Playwright 腳本因為 class name 改動就失效，所以最後安全測試只在大版本前跑一次，週期太長。你需要的是「不需要維護、能跟著 UI 自癒」的安全測試 harness。",
-      "hardware": "雲端 API 即可（OpenAI/Anthropic API + headless Chrome）",
-      "skill_level": "需熟悉 Python 或 TypeScript + Playwright 基礎，OWASP 概念不需深",
-      "dependencies": "browser-harness（MIT，已開源）+ LLM API key（月費約 $10-30 依掃描頻率）",
-      "difficulty": "3",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "npm install @noble/ed25519 && node -e \"require('@noble/ed25519').utils.randomPrivateKey()\"",
+      "hardware": "純 CPU 可跑",
+      "skill_level": "熟悉 TypeScript + 了解基本非對稱加密概念",
+      "dependencies": "@noble/ed25519（MIT）、Node.js 22、完全免費自架；如需 skill version registry 則搭配 microsoft/sourcepack",
+      "market_evidence": "Lobsters 357 分 + 147 留言的禁令討論是今日 Lobsters 最高分，說明開發者社群的需求已到達「要立規矩」的程度；microsoft/sourcepack（4h ago）在 skill versioning 層的進場說明平台層開始需要 provenance 基礎設施"
+    },
+    {
+      "title": "BLE 觸發本機隱私會議錄音：studio 燈泡當 recording 開關",
+      "description": "Wes Bos（35K followers）今天建了 wesbos/amaran-BLE-control：用 BLE 直接控制 Amaran studio 燈，不需要廠商的 desktop app。Hadley Wickham（ggplot2 作者，26K followers）同天建了 hadley/ghost-pepper：「100% private on-device voice models for speech-to-text and meeting transcription on macOS」。兩個開發者各自解決了不同的 hardware 控制問題，放在一起就是完整的 workflow：把 Amaran 燈的 BLE toggle 當成 ghost-pepper 錄音的開關。燈從 off 切到 on → CoreBluetooth callback → 啟動 Whisper.cpp → 錄音並轉錄 → 燈切回 off → 儲存到本機 markdown。完全離線，不送 Google / Zoom / Teams 任何 audio data。物理燈號同時也是給同室其他人的錄影中提示。",
+      "use_case": "你在家裡開 home office，有一台 Apple Silicon Mac（M2 以上），每天有 3-5 個含敏感客戶資訊的視訊會議，不想讓 audio 走任何雲端服務。你手邊有或願意買一顆 Amaran 燈（售價約 $50）作為實體錄音指示燈。",
+      "format": "remix",
+      "difficulty": 2,
       "dev_time": "1-2 週 MVP",
-      "first_step": "git clone https://github.com/browser-use/browser-harness && python examples/basic.py",
-      "market_evidence": "OWASP DAST 工具（Burp Suite、ZAP）對 SPA 的支援長期是社群抱怨點（HN 上 'ZAP can't handle React' 類討論在過去 12 個月有 4 篇以上進 front page）；browser-harness 的 12791 星說明 self-healing browser automation 需求已被市場驗證，安全測試只是同一個技術的不同 payload"
+      "first_step": "git clone https://github.com/wesbos/amaran-BLE-control && brew install whisper-cpp",
+      "hardware": "Apple Silicon Mac M2+（Whisper.cpp 需要 8GB+ RAM）+ Amaran 燈（BLE）",
+      "skill_level": "熟悉 TypeScript + 了解 CoreBluetooth 基礎 API（Swift 或 node-ble 皆可）",
+      "dependencies": "wesbos/amaran-BLE-control（MIT）+ whisper.cpp（MIT）+ hadley/ghost-pepper（待確認）；全部開源"
     },
     {
-      "format": "remix",
-      "title": "claupe × skill registry：給 CI pipeline 用的 Claude skill 自動裝載器",
-      "projects": [
-        {
-          "name": "nilbuild/claupe",
-          "url": "https://github.com/nilbuild/claupe",
-          "note": "3h ago，TypeScript，40K followers 開發者，headless Claude TUI wrapper"
-        },
-        {
-          "name": "anthropics/skills",
-          "url": "https://github.com/anthropics/skills",
-          "note": "134984★，GitHub Trending #7，Anthropic 官方 Agent Skills 公開倉庫"
-        }
-      ],
-      "description": "你的 CI pipeline 裡有 10 個 Claude Code skill 要跑（code review、security scan、doc gen...），每個 skill 有自己的 CLAUDE.md 設定，現在的做法是手動 copy-paste 或用 git submodule，每次 skill 更新要手動同步 10 個 repo。claupe 把 Claude 的 TUI 包成可程式呼叫的 headless API（TypeScript），解決了「claude -p 在有些環境下掛住」的問題。anthropics/skills 是 Anthropic 官方的 skill 公開倉庫，提供 canonical skill 格式。這兩個接起來：用 claupe 提供穩定的 programmatic execution layer，在上面建一個 skill package manager——`sx install anthropics/skills/code-review`，自動把 skill 的 CLAUDE.md 設定 merge 進 .claude/，版本鎖定用 semver tag。技術挑戰：skill 之間的 CLAUDE.md 設定可能衝突，需要一個 conflict resolution 策略（rule：後裝的 skill 在 priority 上是追加，不是覆蓋）。注意：claupe 是 3 小時前的新 repo，尚無文件，需先讀 source code 確認 API 穩定性。",
-      "use_case": "你是一個 3 人 AI agent startup 的唯一後端工程師，用 Claude Code 跑 10 個不同的自動化 skill，每次 anthropics/skills 更新你要手動 pull 然後 diff 看哪些設定要同步進 10 個 repo，每次大概花 40 分鐘。",
-      "hardware": "雲端 API 即可",
-      "skill_level": "需熟悉 TypeScript，了解 Claude Code 的 .claude/ 設定結構",
-      "dependencies": "claupe（新 repo，API 穩定性待確認）+ Anthropic API key + Node 22",
-      "difficulty": "2",
+      "title": "Project Gutenberg × supertonic：完全離線多語言有聲書 pipeline",
+      "description": "Project Gutenberg 今天在 HN 拿了 1056 分（#10）。同天 supertone-inc/supertonic 在 GitHub Trending #5（6560 stars），描述是「Lightning-Fast, On-Device, Multilingual TTS — running natively via ONNX」。Gutenberg 有 70,000+ 本書，包含日文、中文、韓文的文學和技術文本；supertonic 用 ONNX 在 on-device 跑多語言 TTS。建一個 CLI：輸入 Gutenberg book ID 和語言代碼，輸出 local MP3 檔案。中間不走任何雲端 API。機制：gutenbergpy 抓文本 → 文本分段（500 字一段）→ supertonic ONNX 推理 → ffmpeg 合併 MP3。特別適合日文、韓文、繁體中文書籍——這些語言在 Google TTS 的語音品質遠不及英文，supertonic 在這裡有明顯優勢。",
+      "use_case": "你每天通勤 45 分鐘，想把 arxiv 的日文技術報告或 Gutenberg 的中文古典文學轉成有聲書聽。你不想付 Google TTS 或 AWS Polly 的 API 費用，也不想每次都要上傳 PDF 到雲端服務。你有一台 Apple Silicon Mac 或 Raspberry Pi 5（4GB RAM）。",
+      "format": "solo",
+      "difficulty": 2,
       "dev_time": "週末 POC",
-      "first_step": "git clone https://github.com/nilbuild/claupe && 讀 src/ 確認 headless API 接口，同時 git clone https://github.com/anthropics/skills 看 skill 的目錄結構",
-      "market_evidence": "GitHub 上「claude code skill management」相關 issue 在 anthropics/claude-code-action 和 obra/superpowers repo 各自有 20+ 則討論；sleuth-io/sx（HN Show HN，今日 18 分）是同一需求的另一個獨立驗證點"
-    },
-    {
-      "format": "remix",
-      "title": "BLE 燈光 + 本地 TTS：直播主的無手智慧音效場景切換器",
-      "projects": [
-        {
-          "name": "wesbos/amaran-BLE-control",
-          "url": "https://github.com/wesbos/amaran-BLE-control",
-          "note": "8 stars，50h ago，TypeScript，直接 BLE 控制 Amaran 燈光，不需 app"
-        },
-        {
-          "name": "supertone-inc/supertonic",
-          "url": "https://github.com/supertone-inc/supertonic",
-          "note": "5933★，GitHub Trending #4，Swift，on-device 多語言 TTS，ONNX 本地跑"
-        }
-      ],
-      "description": "你是一個每週開播的科技播客主持人，開播前要手動切燈光場景（開場→訪談→結尾各不同的色溫）、同時要記得在廣告時間播放一段固定音效。現在都是手動操作：一邊說話一邊用 app 切，很容易漏。wesbos/amaran-BLE-control 讓你用 TypeScript 直接 BLE 控制 Amaran 燈光（不需要桌面 app，可以 script 化）；supertonic 是本地跑的多語言 TTS，輸出自然語音到音效設備。兩個接起來：用一個簡單的時間軸腳本，在直播的特定時間點（HH:MM）自動切燈光 preset + 觸發 TTS 音效播報（「廣告時間到了」）。技術路線：Node.js 主程序監聽 stream deck 按鍵（或純 cron），呼叫 amaran-BLE-control API 切燈，同時 spawn supertonic CLI 跑本地 TTS，音訊輸出到虛擬音效設備（BlackHole 或 VB-Cable）。硬體需求：支援 BLE 的 Mac/PC + Amaran 燈具（P60c 或等級）。延伸：OBS 的 websocket API 可以讓你在場景切換時自動觸發，不需要時間軸。",
-      "use_case": "你每週固定在 Mac 上直播 3 小時的技術播客，有 Amaran P60c 燈組，每次開場/廣告/結尾要手動切三個燈光 preset，漏掉的次數比做到的次數多。你想要一個「push 按鍵，場景 preset + 音效都自動到位」的系統，不想裝商業 lighting control 軟體。",
-      "hardware": "支援 BLE 4.2+ 的 Mac 或 Linux PC + Amaran 系列 BLE 燈具（硬體成本約 $60-150）",
-      "skill_level": "TypeScript 基礎即可，BLE 操作 wesbos 已包裝好",
-      "dependencies": "wesbos/amaran-BLE-control（MIT）+ supertonic（本地跑，免費）+ Node 22 + macOS/Linux",
-      "difficulty": "2",
-      "dev_time": "週末 POC",
-      "first_step": "git clone https://github.com/wesbos/amaran-BLE-control && npm install && node examples/basic.js，確認你的 Amaran 燈能被找到",
-      "market_evidence": "Elgato Stream Deck 的 lighting control plugin 在 YouTube 搜尋「streamer lighting automation」有 100K+ 觀看，但都需要 Stream Deck 本體（$150+）；wesbos 的 repo 說明有開發者願意花時間繞過 app 直接 BLE 控制，說明 low-code 場景切換需求是真實的，且入場壁壘其實只是「沒有好的 open source 包裝層」"
+      "first_step": "pip install gutenbergpy onnxruntime && python -c \"import onnxruntime; print(onnxruntime.__version__)\"",
+      "hardware": "純 CPU 可跑（ONNX runtime on ARM，Pi 5 4GB 夠用）",
+      "skill_level": "Python 入門即可；懂 ffmpeg 會加分",
+      "dependencies": "supertone-inc/supertonic ONNX weights（本機）+ gutenbergpy（MIT）+ onnxruntime（MIT）+ ffmpeg；全部免費"
     }
   ],
   "shipped": [
     {
-      "name": "Bun Rust rewrite 合進主線",
+      "name": "CVE-2026-46333 patch：七個 stable kernel 今日同步發布",
+      "url": "https://lwn.net/Articles/1073060/",
+      "desc": "ssh-keysign SUID race condition LPE，Linux 7.0.8 + 六個 LTS kernel 同步 patch。14 天內第三個跨媒體 Linux LPE（Lobsters + Phoronix + LWN）。",
+      "source": "LWN #2",
+      "repo_age": "2026-05-16 patch 發布"
+    },
+    {
+      "name": "oven-sh/bun",
       "url": "https://github.com/oven-sh/bun",
-      "desc": "oven-sh/bun 的 Zig→Rust 移植 PR 今天合進主線（Lobsters 94分，121則留言），oven-sh/bun 現在在 Trending 標記為 Rust 語言，90,570 星。AI 輔助大型 codebase 遷移的最大公開完成里程碑。",
-      "source": "Lobsters #1 · 94分",
-      "stars": 90570,
-      "repo_age": "2022 年建立"
+      "desc": "Zig→Rust AI-assisted 移植正式合進主線，bun 現在是 Rust 語言 repo，90956 stars。Lobsters 94 分，121 則留言，社群已開始問 post-port performance benchmark。",
+      "source": "GitHub Trending #1",
+      "repo_age": "2012 年建立（Rust 移植本週合進主線）",
+      "stars": 90956
     },
     {
-      "name": "Linux CVE-2026-46333 ssh-keysign-pwn",
-      "url": "https://github.com/0xdeadbeefnetwork/ssh-keysign-pwn/",
-      "desc": "非特權用戶讀取 root-owned 檔案的 0-day PoC。SUID race condition，Linux 7.0.8 + 六個 LTS 版本今天已發布修補。",
-      "source": "Lobsters 89分 + Phoronix + LWN 三源",
-      "repo_age": "本週新增"
+      "name": "microsoft/sourcepack",
+      "url": "https://github.com/microsoft/sourcepack",
+      "desc": "「A utility for managing shared source code utilities including but not limited to agent skills as versioned packages」。Microsoft 進場 skill package manager 層，今日建立，0 stars。",
+      "source": "github-developers（Microsoft，119K followers，4h ago）",
+      "repo_age": "今日建立",
+      "stars": 0
     },
     {
-      "name": "cactus-compute/needle — 26M 蒸餾 tool calling 模型",
-      "url": "https://github.com/cactus-compute/needle",
-      "desc": "從 Gemini 蒸餾出 tool calling 能力的 26M 參數模型。HN Show HN #1，744 分，47 則留言。tool routing 從「主模型包辦」進入「可獨立部署的小模型」。",
-      "source": "HN 744分",
-      "stars": null,
-      "repo_age": "本週新增"
-    },
-    {
-      "name": "anthropics/skills — Anthropic 官方 Agent Skills 公開倉庫",
-      "url": "https://github.com/anthropics/skills",
-      "desc": "Anthropic 官方 Agent Skills 公開倉庫，134,984 星，GitHub Trending #7。Claude Code 生態系的 canonical skill 格式參考。",
-      "source": "GitHub Trending #7",
-      "stars": 134984,
-      "repo_age": "本月新增"
-    },
-    {
-      "name": "supertone-inc/supertonic — on-device 多語言 TTS",
+      "name": "supertone-inc/supertonic",
       "url": "https://github.com/supertone-inc/supertonic",
-      "desc": "Swift，on-device 多語言 TTS，ONNX 本地跑，5,933 星，GitHub Trending #4。不需雲端、支援多語言、跑在任何 Apple Silicon 或 x86 設備。",
-      "source": "GitHub Trending #4",
-      "stars": 5933,
-      "repo_age": "本月新增"
+      "desc": "Lightning-Fast On-Device Multilingual TTS via ONNX，Swift 實作，支援多語言，6560 stars。",
+      "source": "GitHub Trending #5",
+      "repo_age": "2025 年建立",
+      "stars": 6560
     },
     {
-      "name": "czlonkowski/n8n-mcp — n8n workflow MCP",
-      "url": "https://github.com/czlonkowski/n8n-mcp",
-      "desc": "讓 Claude Desktop / Claude Code / Cursor 直接建 n8n workflow 的 MCP server，20,849 星，GitHub Trending #8。",
+      "name": "K-Dense-AI/scientific-agent-skills",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "desc": "研究、科學、工程、金融、寫作用的 agent skills 集合，Python，22929 stars。",
+      "source": "GitHub Trending #2",
+      "repo_age": "2025 年建立",
+      "stars": 22929
+    },
+    {
+      "name": "colbymchenry/codegraph",
+      "url": "https://github.com/colbymchenry/codegraph",
+      "desc": "Pre-indexed code knowledge graph for Claude Code — fewer tokens, fewer tool calls, 100% local。TypeScript，2254 stars。",
+      "source": "GitHub Trending #9",
+      "repo_age": "30 天內建立",
+      "stars": 2254
+    },
+    {
+      "name": "pranshuparmar/witr",
+      "url": "https://github.com/pranshuparmar/witr",
+      "desc": "「Why is this running?」— Go 寫的 process inspector，16691 stars，輸出哪些 process 在跑、為什麼在跑。",
       "source": "GitHub Trending #8",
-      "stars": 20849,
-      "repo_age": "本月新增"
+      "repo_age": "2026 年建立",
+      "stars": 16691
     },
     {
-      "name": "browser-use/browser-harness — LLM self-healing 瀏覽器 harness",
-      "url": "https://github.com/browser-use/browser-harness",
-      "desc": "LLM 描述 task goal，selector 失效時自動重寫，不需手動維護 Playwright 腳本。12,791 星，30 天內新建。",
-      "source": "topic:llm · 12791★ · 28d",
-      "stars": 12791,
-      "repo_age": "本月新增"
+      "name": "nilbuild/claupe",
+      "url": "https://github.com/nilbuild/claupe",
+      "desc": "Headless wrapper around the claude TUI for programmatic use。TypeScript，3 stars，23h ago。解決 claude -p 在某些環境 hang 的問題。",
+      "source": "github-developers（nilbuild，40K followers，23h ago）",
+      "repo_age": "今日建立",
+      "stars": 3
     },
     {
-      "name": "opensquilla/opensquilla — token 效率優先 agent",
-      "url": "https://github.com/opensquilla/opensquilla",
-      "desc": "「相同預算、更高 intelligence density」，token 效率優先設計的 AI agent，804 星，同時標記 mcp 和 agent topic。",
-      "source": "topic:mcp · 804★ · 22d",
-      "stars": 804,
-      "repo_age": "本月新增"
-    },
-    {
-      "name": "Anthropic × Gates Foundation $200M 合作",
-      "url": "https://www.anthropic.com/news/gates-foundation-partnership",
-      "desc": "Anthropic 宣布與 Gates Foundation 合作，承諾 $200M grant funding，聚焦全球衛生與農業 AI 應用。",
-      "source": "Anthropic News",
-      "repo_age": "本週公告"
-    },
-    {
-      "name": "Anthropic × SpaceX 算力合作 + Claude 用量上限提升",
-      "url": "https://www.anthropic.com/news/higher-limits-spacex",
-      "desc": "Anthropic 與 SpaceX 簽署算力合作協議（compute barter，第二個非金錢算力交換案例），同時宣布 Claude 用戶用量上限提升。",
-      "source": "Anthropic News",
-      "repo_age": "本週公告"
-    },
-    {
-      "name": "steipete/ReleaseDeck — OSS 維護者 release 新鮮度儀表板",
-      "url": "https://github.com/steipete/ReleaseDeck",
-      "desc": "26h ago，steipete（49,883 followers），TypeScript，給 OSS 維護者追蹤各 dependency 發版新鮮度的儀表板。",
-      "source": "GitHub Developers · steipete",
-      "stars": 12,
-      "repo_age": "本日新增"
-    },
-    {
-      "name": "facebookresearch/vggt-omega — CVPR 2026 Oral 3D reconstruction",
+      "name": "facebookresearch/vggt-omega",
       "url": "https://github.com/facebookresearch/vggt-omega",
-      "desc": "Meta CVPR 2026 Oral，VGGT Omega，39h ago，Python，視覺幾何生成 transformer 的最新版本。",
-      "source": "GitHub Developers · facebookresearch",
-      "stars": 30,
-      "repo_age": "本日新增"
+      "desc": "CVPR 2026 Oral，Vision Geometry Grounding Transformer Omega，Meta 視覺幾何理解最新研究，298 stars。",
+      "source": "github-developers（facebookresearch，36K followers，59h ago）",
+      "repo_age": "59h 前建立",
+      "stars": 298
     },
     {
-      "name": "Causal Forcing++：Real-Time 互動視頻生成蒸餾",
-      "url": "https://arxiv.org/abs/2605.15141",
-      "desc": "Scalable few-step autoregressive diffusion distillation，幾步就能生成 real-time 互動視頻，HuggingFace Daily Papers #1。",
-      "source": "HuggingFace Daily Papers #1",
-      "repo_age": "本週論文"
+      "name": "hadley/ghost-pepper",
+      "url": "https://github.com/hadley/ghost-pepper",
+      "desc": "100% private on-device voice models for speech-to-text and meeting transcription on macOS。ggplot2 作者 Hadley Wickham（26K followers）今天建立，0 stars，2h ago。",
+      "source": "github-developers（hadley，26K followers，2h ago）",
+      "repo_age": "今日建立",
+      "stars": 0
     },
     {
-      "name": "Self-Distilled Agentic Reinforcement Learning",
-      "url": "https://arxiv.org/abs/2605.15155",
-      "desc": "用 RL 做 agent post-training，自蒸餾框架，HuggingFace Daily Papers #2。RL 作為 agent 訓練主範式的最新進展。",
-      "source": "HuggingFace Daily Papers #2",
-      "repo_age": "本週論文"
+      "name": "Anthropic × PwC 擴大合作",
+      "url": "https://www.anthropic.com/news/pwc-expanded-partnership",
+      "desc": "PwC 部署 Claude 用於客戶技術建設、交易執行和企業功能重新設計，是迄今規模最大的四大會計師事務所 AI 原生部署。",
+      "source": "Anthropic News #1",
+      "repo_age": "2026-05-16 公告"
     },
     {
-      "name": "wesbos/amaran-BLE-control — BLE 直控 Amaran 燈光",
-      "url": "https://github.com/wesbos/amaran-BLE-control",
-      "desc": "wesbos（35,489 followers），TypeScript，50h ago，直接 BLE 控制 Amaran 燈具，不需桌面 app。",
-      "source": "GitHub Developers · wesbos",
-      "stars": 8,
-      "repo_age": "本日新增"
+      "name": "vLLM v0.21.0",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+      "desc": "367 commits 的大版本，包含 ROCm CI Stage B gating，AMD GPU 推理支援正式進入 CI gate。",
+      "source": "vLLM Releases",
+      "repo_age": "持續維護"
+    },
+    {
+      "name": "browser-use/browser-harness",
+      "url": "https://github.com/browser-use/browser-harness",
+      "desc": "Self-healing harness that enables LLMs to complete any task。Python，12895 stars。",
+      "source": "topic:llm · 12895★ · 30 天內建立",
+      "repo_age": "30 天內建立",
+      "stars": 12895
+    },
+    {
+      "name": "future-agi/future-agi",
+      "url": "https://github.com/future-agi/future-agi",
+      "desc": "Open-source end-to-end platform for evaluating, observing, and improving LLM and AI agent applications。Tracing、Evals，Python，974 stars。",
+      "source": "topic:llm · 974★ · 30 天內建立",
+      "repo_age": "30 天內建立",
+      "stars": 974
+    },
+    {
+      "name": "opensquilla/opensquilla",
+      "url": "https://github.com/opensquilla/opensquilla",
+      "desc": "Token-Efficient AI Agent with same budget, higher intelligence density。Python，881 stars。",
+      "source": "topic:llm · 881★ · 30 天內建立",
+      "repo_age": "30 天內建立",
+      "stars": 881
     }
   ],
   "pulse": {
     "curated": [
       {
-        "title": "Bun's Rust rewrite has been merged",
-        "url": "https://www.reddit.com/r/rust/comments/1tcrmjs/rewrite_bun_in_rust_has_been_merged/",
-        "score": 94,
-        "comments": 121,
-        "takeaway": "oven-sh/bun 的 Zig→Rust 移植正式合進主線，這是迄今最大規模 AI 輔助跨語言 codebase 遷移的公開完成案例。Lobsters 今日最高互動量，說明 systems 圈在認真討論 post-port 效能問題。",
-        "action": "如果你在評估 AI 輔助 codebase 遷移：git log --grep='claude' --oneline 在 oven-sh/bun 可以看到 AI-assisted port 的 commit 模式",
-        "source": "Lobsters"
+        "title": "I believe there are entire companies right now under AI psychosis",
+        "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+        "takeaway": "Mitchell Hashimoto（HashiCorp 共同創辦人）今日 HN 最高分 1605，但只有 106 則留言——upvote 率遠高於留言率說明強烈共鳴但無人願意公開爭論。「psychosis」比「hype」精確：不是誇大，而是判斷力脫節。",
+        "action": "在你的 repo 加一個 AI decision log section，強迫每個 AI call 說清楚「為什麼這裡需要 LLM 而不是 deterministic rule」。"
       },
       {
-        "title": "linux 0-day, access root-owned files as an unprivileged user",
-        "url": "https://github.com/0xdeadbeefnetwork/ssh-keysign-pwn/",
-        "score": 89,
-        "comments": 40,
-        "takeaway": "CVE-2026-46333，ssh-keysign SUID race condition，Lobsters + Phoronix + LWN 三源確認。Linux 7.0.8 + 六個 LTS 修補今天已發布。如果你的 agent pipeline 在 Linux host 上跑，今天升級 kernel。",
-        "action": "uname -r 確認當前版本，apt-get upgrade linux-image（Debian/Ubuntu）或等效指令，今天排進 deploy 流程",
-        "source": "Lobsters"
+        "title": "LLM generated submissions should be disallowed",
+        "url": "https://lobste.rs",
+        "takeaway": "Lobsters 357 分（今日最高），147 則留言。最高票 comment 說這是 proof of work 問題：人類寫作的稀缺性是一種 PoW，LLM 取消了這個稀缺性，attention market 崩潰。這個框架比「LLM 壞」更精確。",
+        "action": "如果你在維護開發者社群，考慮加 attribution 欄位而非直接封鎖——見今日 idea #1 的 Ed25519 方案。"
       },
       {
-        "title": "Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model",
-        "url": "https://github.com/cactus-compute/needle",
-        "score": 744,
-        "comments": 47,
-        "takeaway": "tool routing 從「主 LLM 包辦」進入「可獨立蒸餾部署的 26M 小模型」，HN #1 今日最高分。如果你的 agent 每次 tool call 都打 full model，這個方向值得追。",
-        "source": "HN"
+        "title": "Frontier AI has broken the open CTF format",
+        "url": "https://kabir.au/blog/the-ctf-scene-is-dead",
+        "takeaway": "250 分，47 留言。Frontier AI 現在可以一次解完設計給人類用 24 小時的 CTF 題組，open CTF 的「只有夠強的人才能解」假設已失效。安全訓練的挑戰設計需要從 knowledge-based 轉向 judgment-based 或 physical-world-interaction-based。"
       },
       {
-        "title": "Show HN: Find the best local LLM for your hardware, ranked by benchmarks",
-        "url": "https://github.com/Andyyyy64/whichllm",
-        "score": 275,
-        "comments": 32,
-        "takeaway": "依照你的硬體規格（VRAM、RAM、CPU）推薦最適合的本地 LLM，並附 benchmark 排名。如果你在部署本地推理，這是一個快速篩選起點。",
-        "source": "HN"
-      },
-      {
-        "title": "Redis and the Cost of Ambition（Lobsters 135分）",
-        "url": "https://lobste.rs/",
-        "score": 135,
-        "comments": null,
-        "takeaway": "Redis 授權翻轉後遺症的系統性回顧：社群分裂出 Valkey fork 且正在追上。這是「先 OSS 再 BUSL」策略的真實 cost accounting，給還在考慮授權政策的 OSS 專案一份前車之鑑。",
-        "source": "Lobsters"
+        "title": "Seven new stable kernels with patches for CVE-2026-46333",
+        "url": "https://lwn.net/Articles/1073060/",
+        "takeaway": "14 天內第三個跨媒體 Linux LPE，ssh-keysign SUID race condition，七個 stable kernel 今日同步 patch。在跑 agent sandbox 的你：確認你的 kernel 在 patch list 裡（7.0.8、6.12.x、6.6.x、6.1.x 等系列）。",
+        "action": "uname -r 確認 kernel 版本，對照 LWN patch list，今天就排 kernel update 進下一個維護窗口。"
       }
     ],
     "hn": [
       {
+        "title": "I believe there are entire companies right now under AI psychosis",
+        "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+        "score": 1605,
+        "comments": 106
+      },
+      {
+        "title": "Project Gutenberg – keeps getting better",
+        "url": "https://www.gutenberg.org/",
+        "score": 1056,
+        "comments": 43
+      },
+      {
         "title": "Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model",
         "url": "https://github.com/cactus-compute/needle",
-        "score": 744,
+        "score": 752,
         "comments": 47
       },
       {
-        "title": "Show HN: Find the best local LLM for your hardware, ranked by benchmarks",
-        "url": "https://github.com/Andyyyy64/whichllm",
-        "score": 275,
-        "comments": 32
+        "title": "A 0-click exploit chain for the Pixel 10",
+        "url": "https://projectzero.google/2026/05/pixel-10-exploit.html",
+        "score": 408,
+        "comments": 16
       },
       {
-        "title": "Show HN: Running the second public ODoH relay",
-        "url": "https://numa.rs/blog/posts/odoh-anonymous-dns-without-an-account.html",
-        "score": 120,
-        "comments": 9
+        "title": "The sigmoids won't save you",
+        "url": "https://www.astralcodexten.com/p/the-sigmoids-wont-save-you",
+        "score": 251,
+        "comments": 50
       },
       {
-        "title": "Show HN: Nibble",
-        "url": "https://github.com/glouw/nibble",
-        "score": 96,
-        "comments": 11
+        "title": "Frontier AI has broken the open CTF format",
+        "url": "https://kabir.au/blog/the-ctf-scene-is-dead",
+        "score": 250,
+        "comments": 47
       },
       {
         "title": "Show HN: Watch a neural net learn to play Snake",
         "url": "https://ppo.gradexp.xyz/",
-        "score": 73,
-        "comments": 10
-      },
-      {
-        "title": "Show HN: Gigacatalyst – Extend your SaaS with an embedded AI builder",
-        "url": "https://news.ycombinator.com/item?id=48110593",
-        "score": 60,
-        "comments": 10
-      },
-      {
-        "title": "Show HN: Sx – an open-source package manager for AI skills, MCPs, and commands",
-        "url": "https://github.com/sleuth-io/sx",
-        "score": 18,
-        "comments": 4
+        "score": 174,
+        "comments": 21
       }
     ],
     "lobsters": [
       {
-        "title": "Bun's Rust rewrite has been merged",
-        "url": "https://www.reddit.com/r/rust/comments/1tcrmjs/rewrite_bun_in_rust_has_been_merged/",
-        "score": 94,
-        "comments": 121,
+        "title": "LLM generated submissions should be disallowed",
+        "url": "https://lobste.rs",
+        "score": 357,
+        "comments": 147,
         "tags": [
-          "javascript",
-          "rust"
+          "meta"
         ]
       },
       {
-        "title": "linux 0-day, access root-owned files as an unprivileged user",
-        "url": "https://github.com/0xdeadbeefnetwork/ssh-keysign-pwn/",
-        "score": 89,
-        "comments": 40,
+        "title": "Moving away from Tailwind, and learning to structure my CSS",
+        "url": "https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/",
+        "score": 72,
+        "comments": 37,
         "tags": [
-          "linux",
-          "security"
+          "css"
         ]
       },
       {
-        "title": "In what way if any are you a tech minimalist while maintaining your job/love for tech?",
-        "score": 55,
-        "comments": 76,
+        "title": "Git Is Not Fine",
+        "url": "https://www.billjings.com/posts/title/git-is-not-fine/",
+        "score": 49,
+        "comments": 39,
         "tags": [
-          "ask",
-          "programming"
+          "vcs"
         ]
       },
       {
-        "title": "Prolog Basics Explained with Pokémon",
-        "url": "https://unplannedobsolescence.com/blog/prolog-basics-pokemon/",
+        "title": "Ascetic Computing",
+        "url": "https://ratfactor.com/ascetic-computing",
         "score": 38,
-        "comments": 9,
-        "tags": [
-          "logiclangs"
-        ]
-      },
-      {
-        "title": "Amazonbot is finally respecting robots.txt",
-        "url": "https://xeiaso.net/notes/2026/amazonbot-respecting-robots-txt/",
-        "score": 35,
-        "comments": 5,
-        "tags": [
-          "web"
-        ]
-      },
-      {
-        "title": "Mullvad exit IPs as a fingerprinting vector",
-        "url": "https://tmctmt.com/posts/mullvad-exit-ips-as-a-fingerprinting-vector/",
-        "score": 34,
         "comments": 2,
         "tags": [
-          "privacy",
-          "security"
-        ]
-      },
-      {
-        "title": "The old world of tech is dying and the new cannot be born",
-        "url": "https://www.baldurbjarnason.com/2026/the-old-world-of-tech-is-dying/",
-        "score": 19,
-        "comments": 1,
-        "tags": [
-          "culture",
           "practices"
         ]
       },
       {
-        "title": "SQL: Incorrect by Construction",
-        "url": "https://chreke.com/posts/sql-incorrect-by-construction",
-        "score": 16,
-        "comments": 15,
+        "title": "Announcing the Zulip Foundation",
+        "url": "https://blog.zulip.com/2026/05/15/announcing-zulip-foundation/",
+        "score": 33,
+        "comments": 11,
         "tags": [
-          "databases"
+          "programming"
         ]
       }
     ]
   },
+  "signals": [
+    {
+      "title": "社群平台對 LLM 內容的容忍度正式到達臨界點",
+      "body": "Mitchell Hashimoto（1605 分）、Lobsters 禁令討論（357 分，147 留言）、CTF 崩潰宣言（250 分）三件事同天發生，有共同的 upstream cause：frontier model capability 增長速度已超過這些平台設計時預估的人類行為上限。Lobsters 的投稿評分假設稀缺性是天然 PoW；CTF 假設解題受人類認知速度限制。同一個 capability 閾值，在不同系統裡撞出不同的制度性危機。「Systems 圈對 LLM 敘事做出編輯回應：要求可審計、可 fork、可嵌入」這條多月觀察，今天進入了「社群平台開始立規矩」的新階段。",
+      "evidence": "Lobsters 357 分是今日最高（次高 Git Is Not Fine 49 分，相差 7.3 倍）；Mitchell HN 留言率 6.6%（106/1605）是今日 HN 最低，說明強共鳴但無人爭論；CTF 文章 250 分 47 留言說明安全圈有明確立場。三者均獨立觸發。",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 18,
+      "source_links": [
+        {
+          "platform": "hackernews",
+          "title": "I believe there are entire companies right now under AI psychosis",
+          "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+          "score": 1605
+        },
+        {
+          "platform": "lobsters",
+          "title": "LLM generated submissions should be disallowed",
+          "score": 357
+        },
+        {
+          "platform": "hackernews",
+          "title": "Frontier AI has broken the open CTF format",
+          "url": "https://kabir.au/blog/the-ctf-scene-is-dead",
+          "score": 250
+        }
+      ],
+      "product_opportunity": "LLM 內容 attribution 中介層：給社群平台一個標準化的 skill-version + model-id 簽章 envelope，讓平台自行決定過濾策略而不是硬禁。比禁令更有彈性，比完全開放更有 signal。"
+    },
+    {
+      "title": "Skill 生態系的 package manager 層競爭正式開始",
+      "body": "microsoft/sourcepack（4h ago，「managing shared source code utilities including but not limited to agent skills as versioned packages」）+ huggingface/pi-llama（21h ago，llama.cpp provider for Pi coding agent）+ nilbuild/claupe（23h ago，headless claude TUI wrapper）三個 org 在 24 小時內同時在 skill 基礎設施的不同層推進：Microsoft 在 versioned package 分發層，HuggingFace 在 runtime provider 層，nilbuild 在 CLI automation 層。「Claude Code 生態系從 skill 擴張到 runtime 重寫」這條觀察今天進入了第三十一波。",
+      "evidence": "microsoft/sourcepack 描述明確 mention「agent skills as versioned packages」，說明 Microsoft（119K followers）把 skill distribution 視為值得投入的平台層；三個獨立 org 在同一個 24 小時窗口出現。",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 31,
+      "source_links": [
+        {
+          "platform": "github-developers",
+          "title": "microsoft/sourcepack",
+          "url": "https://github.com/microsoft/sourcepack"
+        },
+        {
+          "platform": "github-developers",
+          "title": "huggingface/pi-llama",
+          "url": "https://github.com/huggingface/pi-llama"
+        },
+        {
+          "platform": "github-developers",
+          "title": "nilbuild/claupe",
+          "url": "https://github.com/nilbuild/claupe"
+        }
+      ],
+      "product_opportunity": "Skill package 健康掃描工具：類 npm audit，但掃的是 agent skill dependencies 的版本相容性、token budget drift、output format breaking change。在 microsoft/sourcepack GA 之前先卡位這個 audit 層。"
+    },
+    {
+      "title": "Linux LPE 成為 agent sandbox 的已建立漏洞類別",
+      "body": "CVE-2026-46333（ssh-keysign-pwn）是 14 天內第三個跨媒體 Linux LPE：5/9 DirtyFrag（page cache fragmentation）、5/15 Fragnesia（同類別）、5/16 CVE-2026-46333（SUID race condition）。平均每 4-5 天一個跨媒體案例。這個頻率說明 Linux LPE 已不是偶發事件，而是 agent sandbox 設計需要系統性回應的持續威脅類別。今日七個 stable kernel 已 patch，但 patch 傳播到生產容器的時間差（通常 2-4 週）說明現在到 patch 完成的窗口是真實的攻擊面。",
+      "evidence": "CVE-2026-46333 同時出現在 LWN（7 kernels patch）+ Phoronix + 0xdeadbeefnetwork/ssh-keysign-pwn（Lobsters）。過去 14 天三個 cross-source LPE 案例，頻率與 2021 年 Dirty Pipe 發現後的緊密跟進期相當。",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 8,
+      "source_links": [
+        {
+          "platform": "lwn",
+          "title": "Seven new stable kernels with patches for CVE-2026-46333",
+          "url": "https://lwn.net/Articles/1073060/"
+        },
+        {
+          "platform": "phoronix",
+          "title": "Linux 7.1-rc4 Seeing The Latest Laptop Quirks",
+          "url": "https://www.phoronix.com/news/Linux-7.1-rc4-x86-Drivers"
+        }
+      ],
+      "product_opportunity": "eBPF-based agent sandbox 監控：偵測 SUID race condition 的 syscall 時序特徵（rapid file mode changes + execve 序列）並在 exploit 完成前 alert。Cilium 已在 network 層做了類似的事；kernel attack surface 還沒有等價的開源工具。"
+    },
+    {
+      "title": "Google I/O 靜默第 7 天：空 repo 佔位序列確認",
+      "body": "google/esmeralda（5h ago，0 stars，完全空，無 description）加入 google/windtunnel（5/12）形成兩個數據點的序列。Google AI Blog 連續第 7 天全是 consumer marketing，這週其他 AI lab 都有技術 blog post，只有 Google AI Blog 全部是 product marketing。I/O 距今 4 天（5/20-21）。兩個空 repo 的命名都不是 trivial 的（windtunnel = 性能測試工具；esmeralda = 可能是 project codename），說明這是刻意的 pre-launch repo 佔位序列，不是誤建。",
+      "evidence": "google/windtunnel（5/12 建立）+ google/esmeralda（5/16 建立）均為 0 stars、0 commits、無 description；Google AI Blog 5/9 到 5/16 連續 7 天只有 consumer marketing；Karpathy「Coming soon」持續第 5 天。",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 7,
+      "source_links": [
+        {
+          "platform": "google-ai-blog",
+          "title": "The new AI-powered Google Finance is expanding to Europe",
+          "url": "https://blog.google/products-and-platforms/products/search/ai-powered-google-finance-in-europe/"
+        },
+        {
+          "platform": "github-developers",
+          "title": "google/esmeralda",
+          "url": "https://github.com/google/esmeralda"
+        }
+      ],
+      "product_opportunity": "I/O 後 48 小時是 benchmark 更新的黃金窗口：如果 Google 發布新 Gemini 版本或 windtunnel/esmeralda 相關工具，把你的 RAG pipeline 或 VLM 評估腳本排在 I/O 後第一天跑，搶先產出 third-party benchmark 數字。"
+    }
+  ],
   "dev_watch": {
     "taiwan": [
       {
@@ -373,252 +394,171 @@
         "repo": "doggy8088/opencc-py",
         "url": "https://github.com/doggy8088/opencc-py",
         "language": "Python",
-        "hours_ago": 11,
-        "description": "純 Python 的 OpenCC 函式庫，繁簡轉換，無需安裝二進位依賴",
-        "local_context": "🇹🇼 doggy8088 持續在 Python 工具鏈上投入，opencc-py 提供了一個純 Python 的繁簡轉換解法，對台灣開發者在 LLM pipeline 裡處理中文輸出格式有直接用途"
+        "hours_ago": 31,
+        "description": "純 Python 的 OpenCC 函式庫（繁簡轉換），不依賴 C 綁定",
+        "local_context": "🇹🇼 doggy8088 在 macparakeet（Apple Silicon 本地 AI 語音）之後轉向中文 NLP 基礎工具層，純 Python OpenCC 說明他在建立不需要編譯 C extension 的中文文字工具鏈，這對 agent pipeline 中的中文前處理步驟有直接用處。"
       },
       {
-        "developer": "pan93412",
-        "followers": 664,
-        "repo": "pan93412/zhtw-mcp",
-        "url": "https://github.com/pan93412/zhtw-mcp",
-        "language": null,
-        "hours_ago": 62,
-        "description": "A linguistic linter for Traditional Chinese (zh-TW)，MCP server 形式",
-        "local_context": "🇹🇼 pan93412 的繁中語言 linter MCP server，在 LLM 生成繁體中文內容的 pipeline 裡可以作為輸出品質 gate"
+        "developer": "Inndy",
+        "followers": 507,
+        "repo": "Inndy/codex-bridge",
+        "url": "https://github.com/Inndy/codex-bridge",
+        "language": "Go",
+        "hours_ago": 2,
+        "description": "OpenAI-compatible local proxy that reuses an existing Codex OAuth session for /v1/models and /v1/chat/completions",
+        "local_context": "🇹🇼 Inndy 繼 pvelab 之後建了 codex-bridge，把現有 Codex OAuth session 重路由成 local OpenAI-compatible API，讓任何支援 OpenAI API 格式的工具都能用 Codex 的現有授權——台灣 hacker 圈對 AI API auth layer 做直接 plumbing 的速度持續令人印象深刻。"
       },
       {
         "developer": "strategist922",
         "followers": 825,
-        "repo": "strategist922/mini-browser",
-        "url": "https://github.com/strategist922/mini-browser",
+        "repo": "strategist922/shadowbroker",
+        "url": "https://github.com/strategist922/shadowbroker",
         "language": null,
-        "hours_ago": 4,
-        "description": "An agent first browser cli",
-        "local_context": "🇹🇼 strategist922 連續在 agent 工具鏈上出手，mini-browser 是一個 agent-first 的瀏覽器 CLI，時間點在 browser-harness 今日上線後幾小時"
+        "hours_ago": 1,
+        "description": "Open-source intelligence for the global theater：追蹤富人私人飛機、企業動態等公開資訊",
+        "local_context": "🇹🇼 strategist922 繼 afu-brain 和 contextplus 之後建了 OSINT 追蹤工具，把 agent 能力延伸到公共情報收集——台灣 AI agent 開發者正在把 agent 架構用在非 coding 的 research automation 場景。"
       }
     ],
     "global": [
       {
-        "developer": "steipete",
-        "followers": 49883,
-        "repo": "steipete/ReleaseDeck",
-        "url": "https://github.com/steipete/ReleaseDeck",
-        "language": "TypeScript",
-        "hours_ago": 26,
-        "description": "Release freshness dashboard for open source maintainers，追蹤 dependency 發版新鮮度"
-      },
-      {
         "developer": "nilbuild",
-        "followers": 40024,
+        "followers": 40027,
         "repo": "nilbuild/claupe",
         "url": "https://github.com/nilbuild/claupe",
         "language": "TypeScript",
-        "hours_ago": 3,
-        "description": "Headless wrapper around the claude TUI for programmatic use，解決 claude -p 在某些環境掛住的問題"
+        "hours_ago": 23,
+        "description": "Headless wrapper around the claude TUI for programmatic use，3 stars，解決 claude -p 在 FD table 環境 hang 的問題"
       },
       {
-        "developer": "huggingface",
-        "followers": 63434,
-        "repo": "huggingface/pi-llama",
-        "url": "https://github.com/huggingface/pi-llama",
+        "developer": "microsoft",
+        "followers": 119801,
+        "repo": "microsoft/sourcepack",
+        "url": "https://github.com/microsoft/sourcepack",
+        "language": "JavaScript",
+        "hours_ago": 4,
+        "description": "A utility for managing shared source code utilities including but not limited to agent skills as versioned packages，0 stars，今日建立"
+      },
+      {
+        "developer": "steipete",
+        "followers": 49938,
+        "repo": "steipete/ReleaseDeck",
+        "url": "https://github.com/steipete/ReleaseDeck",
         "language": "TypeScript",
+        "hours_ago": 45,
+        "description": "Release freshness dashboard for open source maintainers：一眼看出你維護的 OSS dependencies 哪些落後多少版本，12 stars"
+      },
+      {
+        "developer": "hadley",
+        "followers": 26625,
+        "repo": "hadley/ghost-pepper",
+        "url": "https://github.com/hadley/ghost-pepper",
+        "language": null,
         "hours_ago": 2,
-        "description": "Pi coding agent extension: llama.cpp provider with dynamic model and context window discovery"
+        "description": "100% private on-device voice models for speech-to-text and meeting transcription on macOS，0 stars，今日建立"
       },
       {
         "developer": "facebookresearch",
-        "followers": 35873,
+        "followers": 35885,
         "repo": "facebookresearch/vggt-omega",
         "url": "https://github.com/facebookresearch/vggt-omega",
         "language": "Python",
-        "hours_ago": 39,
-        "description": "CVPR 2026 Oral — VGGT Omega，視覺幾何生成 transformer 最新版本"
-      },
-      {
-        "developer": "wesbos",
-        "followers": 35489,
-        "repo": "wesbos/amaran-BLE-control",
-        "url": "https://github.com/wesbos/amaran-BLE-control",
-        "language": "TypeScript",
-        "hours_ago": 50,
-        "description": "Direct control of Amaran lights over Bluetooth, no desktop app required"
+        "hours_ago": 59,
+        "description": "CVPR 2026 Oral：VGGT Omega，Meta 最新視覺幾何理解研究，298 stars，59h ago"
       }
     ]
   },
-  "signals": [
-    {
-      "title": "Google I/O 靜默第 7 天 + google/esmeralda 空 repo：I/O 公告預熱進入 repo 佔位階段",
-      "body": "Google AI Blog 今天繼續全是 consumer marketing（AI Finance for Europe、The Small Brief 廣告活動）。<code>google/esmeralda</code> 在今天凌晨 5 小時前出現：0 stars、null 語言、無 description、無 README、無 commit——完全空倉，和 5/12 建立的 <code>google/windtunnel</code>（至今仍空）並列，是 Google I/O（5/20-21）前的第二個佔位訊號。7 天 consumer-only AI Blog + 2 個空 repo，這個組合說明 Google 的工程公告 embargo 仍在，但 repo 層面的 pre-announce telegraph 已經開始。「Esmeralda」在 Google 命名歷史裡是寶石 codename 模式（參考 Pixel codenames），不是隨機字串。",
-      "evidence": "Google AI Blog 連續 7 天無技術公告；google/esmeralda（5h ago，0 stars，無描述）；google/windtunnel（建立 4 天，仍空）；Karpathy Substack「Coming soon」持續超過 5 天",
-      "type": "持續趨勢",
-      "strength": "強訊號",
-      "cross_source": 2,
-      "percentile": "top 10%",
-      "arc_ref": "ai-infra-land-grab",
-      "day_count": 7,
-      "product_opportunity": "Google I/O 之後 4 天之內：如果 windtunnel 是本地 AI benchmarking 工具，第一個接上 whisper/ollama 等本地 stack 的 benchmark wrapper 會有先行者優勢",
-      "source_links": [
-        {
-          "platform": "Google AI Blog",
-          "title": "The new AI-powered Google Finance is expanding to Europe",
-          "url": "https://blog.google/products-and-platforms/products/search/ai-powered-google-finance-in-europe/"
-        },
-        {
-          "platform": "GitHub",
-          "title": "google/esmeralda",
-          "url": "https://github.com/google/esmeralda"
-        },
-        {
-          "platform": "GitHub",
-          "title": "google/windtunnel",
-          "url": "https://github.com/google/windtunnel"
-        }
-      ]
-    },
-    {
-      "title": "Linux LPE 漏洞類別確立：ssh-keysign-pwn 是 DirtyFrag 後兩週內第二個同類案例",
-      "body": "CVE-2026-46333（ssh-keysign-pwn）今天在 Lobsters 89 分、Phoronix 和 LWN 三源同時出現。這是繼 5/9 的 DirtyFrag（Lobsters 112 + HN 767）和 5/14-15 的 Fragnesia 之後，兩週內第三個 Linux kernel 本地提權漏洞獲得跨平台媒體同時報導。機制不同（ssh-keysign SUID race condition vs. page cache fragmentation + UAF），但對 agent sandbox 的意義相同：在 Linux host 上跑 non-root container 的 agent pipeline，host kernel 的 LPE attack surface 是 container escape 的前提條件。此前的 Docker 隔離假設在這類漏洞面前是無效的。",
-      "evidence": "CVE-2026-46333（今天）+ DirtyFrag CVE（5/9）+ Fragnesia（5/14-15）：14 天內 3 個跨媒體 Linux LPE；Linux 7.0.8 + 6.18.31 + 6.12.89 + 6.6.139 + 6.1.173 今天發布修補",
-      "type": "持續趨勢",
-      "strength": "強訊號",
-      "cross_source": 3,
-      "percentile": "top 5%",
-      "arc_ref": "systems-circle-llm-response",
-      "day_count": 8,
-      "product_opportunity": "給 agent sandbox 平台（如 Modal、Fly.io、Modal）用的自動 kernel patch status 監控 MCP server：每天 check 當前 Linux kernel 是否有未修補的 LPE CVE，回報給 agent orchestrator",
-      "source_links": [
-        {
-          "platform": "Lobsters",
-          "title": "linux 0-day, access root-owned files as an unprivileged user",
-          "url": "https://github.com/0xdeadbeefnetwork/ssh-keysign-pwn/",
-          "score": 89
-        },
-        {
-          "platform": "Phoronix",
-          "title": "Linux 7.0.8 Released & LTS Kernels Updated For ssh-keysign-pwn",
-          "url": "https://www.phoronix.com/news/Linux-7.0.8-Released"
-        },
-        {
-          "platform": "LWN",
-          "title": "Seven new stable kernels with patches for CVE-2026-46333",
-          "url": "https://lwn.net/Articles/1073060/"
-        }
-      ]
-    },
-    {
-      "title": "Tool calling 蒸餾進 26M 模型：agent 工具路由層開始分離出獨立的小模型生態",
-      "body": "cactus-compute/needle（HN #1，744 分）把 Gemini 的 tool calling 能力蒸餾進一個 26M 參數模型。這個方向的意義是：tool selection 一直是主模型完成的任務，但主模型做 tool selection 的 latency 和成本都比做 reasoning 高得多（tool call 本質上是分類問題，不是生成問題）。26M 模型可以在本地 CPU 跑，latency 從秒級降到毫秒級。類比是 ColBERT/bi-encoder vs. re-ranker 的分離：retrieval 和 ranking 的計算需求不同，用不同大小的模型分別處理。tool routing 的同樣邏輯正在發生。needle 是第一個公開的具體實作，744 分說明社群認為這個方向是真實的。",
-      "evidence": "cactus-compute/needle，HN #1，744 分，47 則留言；memory 顯示 needle 上週首次出現時已是 607 分，一週內從首次出現到 #1；26M 參數可在 CPU 跑（GGUF 格式）",
-      "type": "持續趨勢",
-      "strength": "強訊號",
-      "cross_source": 1,
-      "percentile": "top 5%",
-      "product_opportunity": "基於 needle 的 multi-tool agent router：對一組 30+ tools，用 needle 做 first-pass tool selection，把候選集從 30 縮到 3，再交給主模型做 final dispatch。可以作為 LangChain tool selection 的 drop-in replacement",
-      "source_links": [
-        {
-          "platform": "HN",
-          "title": "Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model",
-          "url": "https://github.com/cactus-compute/needle",
-          "score": 744
-        }
-      ]
-    },
-    {
-      "title": "OSS 授權翻轉的後果期：Redis 案例進入成本覆盤，Valkey 追趕速度超出原廠預期",
-      "body": "Redis and the Cost of Ambition（Lobsters 135 分）是今天 Lobsters 的高分文章之一。文章系統性分析了 Redis 從 BSD 轉向 BUSL 之後的後遺症：Valkey（Linux Foundation fork）在 2026 年初已追上 Redis 的核心 API 相容性，Cloud 廠商（AWS/GCP/Azure）全面切到 Valkey 的速度比預期快 6-12 個月。這是「先 OSS 後限制授權」策略的第一份詳細成本核算。對現在還在用 Redis 的 builder：確認你的 Redis client 是否已有 Valkey drop-in replacement（ioredis/redis-py 都已支援，需要確認 connection string 格式差異）。",
-      "evidence": "Lobsters 135 分；Valkey 1.2.x 發布於 2026-04，API 相容性達到 Redis 7.2 水準；AWS ElastiCache 和 Upstash 均已提供 Valkey 選項",
-      "type": "新信號",
-      "strength": "弱訊號",
-      "cross_source": 1,
-      "percentile": "top 5%",
-      "arc_ref": "oss-licensing-ai-pressure",
-      "product_opportunity": "Redis→Valkey 遷移工具：自動掃描 codebase 中的 Redis client 設定，生成 Valkey 遷移 checklist（connection string、AUTH 格式、modules 相容性矩陣）",
-      "source_links": [
-        {
-          "platform": "Lobsters",
-          "title": "Redis and the Cost of Ambition",
-          "url": "https://lobste.rs/"
-        }
-      ]
-    }
-  ],
   "sleeper": {
-    "name": "nilbuild/claupe",
-    "url": "https://github.com/nilbuild/claupe",
-    "stars": 2,
-    "description": "3 小時前出現，nilbuild（40,024 followers），TypeScript，把 claude 的 TUI 包成 headless programmatic API。解決了 claude -p 在 Node.js 父程序下掛住的問題（這個 repo 的 CLAUDE.md 在本 pipeline 就有文件記錄這個 bug，見 `scripts/analyze.sh`）。",
-    "why_asymmetric": "0→2 stars、3 小時前建立，但 nilbuild 有 40K followers，說明這不是隨機 hobbyist。headless Claude TUI 是一個有真實需求的問題：任何想在 CI 或 server 環境跑 Claude Code skill 的 builder 都面臨 claude -p hang 問題。如果這個 wrapper 穩定，它會變成 skill automation 的基礎設施依賴。先行 clone 研究，等 README 有更多說明再決定要不要依賴它。",
-    "commercial_path": "當 anthrop.ic/skills 生態系成長到需要 package manager 的規模，claupe 是那個 package manager 的執行引擎——變成 `sx install` 或類似工具的 runtime backend，向企業用戶收取 seat license 或 API call 計費"
+    "name": "hadley/ghost-pepper",
+    "url": "https://github.com/hadley/ghost-pepper",
+    "description": "100% private on-device voice models for speech-to-text and meeting transcription on macOS",
+    "body": "Hadley Wickham（ggplot2、dplyr、tidyverse 作者，26K followers）在 2h 前建了這個 repo。沒有 README 細節，語言欄位是 null（還沒有可識別的程式碼）。但這個 repo 的存在本身就是信號：ggplot2 有 3500 萬次月下載，Hadley 是 R 生態系最有影響力的工具建造者之一。當他判斷「市場上沒有夠好的私有 macOS STT 解法」而決定自己建，這個判斷比任何 YC pitch 都更有說服力——他不缺錢，不缺技術，自建代表真的找不到夠好的東西。",
+    "why_asymmetric": "「創辦人自建工具」是市場空缺最強的 leading indicator。這個 repo 0 stars、2h ago，90% 的人現在不知道它存在。六個月後它可能是 macOS 私有 STT 的標準參考實作。同一天 supertone-inc/supertonic（6560 stars）在 GitHub Trending #5 驗證了 on-device TTS 需求的高度，ghost-pepper 是需求的另一面（STT）。",
+    "commercial_path": "整合 Zoom/Teams native SDK，在會議中本地轉錄（不走 cloud），對 healthcare / legal / enterprise 的隱私合規市場定價 $50-100/user/month。比 Otter.ai（$17-40/month，audio 走雲端）在 compliance-heavy 場景有明確的定價空間。",
+    "stars": 0
   },
   "contrarian": {
-    "claim": "cactus-compute/needle 的 26M tool-calling 蒸餾不會在 6 個月內成為主流 agent 框架的預設 tool router",
-    "body": "needle 的 744 分 HN 反應說明社群興趣，但 tool calling 蒸餾有一個結構性問題：tool list 是動態的。needle 被蒸餾時學的是 Gemini 在固定 tool set 上的 routing 決策，但生產環境的 agent 經常在 runtime 加減 tool。一個蒸餾到固定 tool vocabulary 的 26M 模型，遇到沒見過的 tool description 時的 generalization 能力是未知數。這和 ColBERT 的情況不一樣——ColBERT 的 token matching 對 new document 的泛化是 zero-shot 的；needle 的 classification 對 new tool 不一定。",
-    "prediction": "到 2026-11-30，LangChain、LlamaIndex、CrewAI 三個框架均未在 official release notes 將 needle 或等效的蒸餾式 tool router 列為 default tool selection mechanism（以 changelog 明確 mention 為準）。",
-    "resolution_date": "2026-11-30"
+    "claim": "oven-sh/bun 的 AI-assisted Zig→Rust 移植完成是里程碑，但效能退化將在 2026 底前浮現",
+    "body": "bun 的 Zig→Rust 移植今天完成（Lobsters 94 分，121 留言），社群在慶祝。Lobsters 的留言裡已有人開始問 performance 問題，而這才是開始。Zig 的底層效能設計大量使用 comptime generics（零成本的編譯時型別展開）和手寫的 SIMD intrinsics，這些在翻譯成 idiomatic Rust 時，語意上可以等價，但生成的 machine code 不一定等價。AI porting 工具擅長做 syntactic 翻譯，但「為什麼這段 Zig 用了 aligned allocator 而不是 general-purpose allocator」、「為什麼這裡選擇了 @Vector 而不是讓 LLVM autovectorize」——這些是 implicit optimization intent，不在 comments 裡，AI 翻譯時沒有 signal 可以依賴。",
+    "rationale": "CPython 的 Cython → C 移植、Mozilla SpiderMonkey 的 Rust 逐步移植，都在移植完成後 6-12 個月在 production 壓力下發現移植引入的效能退化。bun 跑在 production JavaScript runtime 場景，壓力遠比一般 CLI 工具大。90K stars 的社群使用規模確保 regression 不會被埋沒。",
+    "prediction": "到 2026-12-31，oven-sh/bun 的 issue tracker 上有至少 3 個 closed issue 被標記為 performance regression，且 issue discussion 中明確 trace 到 Zig→Rust AI-assisted 移植的 commit（以 public GitHub issue URL + blame 參考為判準）。",
+    "resolution_date": "2026-12-31"
   },
   "predictions": [
     {
       "id": "pred-anthropic-asic",
       "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
       "status": "pending",
+      "created": "2026-04-14",
       "resolution_date": "2026-12-31"
     },
     {
       "id": "pred-mcp-registry-by-july",
       "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
       "status": "pending",
+      "created": "2026-04-28",
       "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-apple-ml-lvsum-wwdc",
+      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "status": "pending",
+      "created": "2026-05-08",
+      "resolution_date": "2026-06-30"
     },
     {
       "id": "pred-google-io-local-ai-benchmark",
       "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel 發布帶有 README 的初始版本，或 Google 在 I/O 上公布一個本地 AI performance benchmark 工具（以 repo README 非空或 Google I/O 官方 session 紀錄為準）。",
       "status": "pending",
+      "created": "2026-05-14",
       "resolution_date": "2026-05-21"
     },
     {
       "id": "pred-speckit-native-integration",
       "text": "到 2026-12-31，GitHub Copilot、Claude Code、Cursor 三者均未在官方 changelog 或 settings UI 加入 github/spec-kit 的 native integration（以官方 release note 出現「spec-kit」關鍵字或等效 spec enforcement 內建指令為準）。",
       "status": "pending",
+      "created": "2026-05-15",
       "resolution_date": "2026-12-31"
     },
     {
       "id": "pred-needle-tool-router-adoption",
       "text": "到 2026-11-30，LangChain、LlamaIndex、CrewAI 三個框架均未在 official release notes 將 needle 或等效的蒸餾式 tool router 列為 default tool selection mechanism（以 changelog 明確 mention 為準）。",
       "status": "pending",
+      "created": "2026-05-16",
       "resolution_date": "2026-11-30"
     },
     {
       "id": "pred-google-esmeralda-io-announce",
       "text": "到 2026-05-21（Google I/O 結束當天），google/esmeralda 發布帶有 README 的初始版本，或 Google 在 I/O 上公開一個代號或功能名稱為 Esmeralda 的產品（以 repo README 非空或 I/O 官方 session 紀錄為準）。",
       "status": "pending",
+      "created": "2026-05-16",
       "resolution_date": "2026-05-21"
     },
     {
-      "id": "pred-apple-ml-lvsum-wwdc",
-      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "id": "pred-bun-rust-perf-regression",
+      "text": "到 2026-12-31，oven-sh/bun 的 issue tracker 上有至少 3 個 closed issue 被標記為 performance regression，且 issue discussion 中明確 trace 到 Zig→Rust AI-assisted 移植的 commit（以 public GitHub issue URL + blame 參考為判準）。",
       "status": "pending",
-      "resolution_date": "2026-06-30"
+      "created": "2026-05-16",
+      "resolution_date": "2026-12-31"
     }
   ],
   "meta": {
-    "run_id": "d703b4fd-bf71-48f2-ab9e-06153840b20f",
-    "pipeline_version": "bafd362",
+    "run_id": "88e1a068-9ada-4977-8d0e-43f92f63cb19",
+    "pipeline_version": "9275f28",
     "model": "claude-sonnet-4-6",
-    "generated_at": "2026-05-15T20:14:10.646Z",
-    "analyze_duration_ms": 781360,
+    "generated_at": "2026-05-16T16:26:15.321Z",
+    "analyze_duration_ms": 1642659,
     "source_health": {
       "feeds": {
         "ok": true,
-        "count": 126
+        "count": 230
       },
       "trending": {
         "ok": true,
-        "count": 12
+        "count": 9
       },
       "search": {
         "ok": true,
-        "count": 46
+        "count": 50
       },
       "developers": {
         "ok": true,

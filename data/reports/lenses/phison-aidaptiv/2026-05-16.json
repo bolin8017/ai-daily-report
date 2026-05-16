@@ -1,0 +1,161 @@
+{
+  "date": "2026-05-16",
+  "lens_id": "phison-aidaptiv",
+  "focus_idea": {
+    "title": "本機 70B 商業分析 Agent：機密財務資料不上雲的唯一可行路",
+    "path": "isv-vertical",
+    "description": "Zafer-Liu/Data-Analysis-Agent（1152 stars，agent topic，Python）是一個面向商業分析師的智能資料分析 agent，本週從 github-search agent topic 浮出。核心設計是讓分析師用自然語言操作數據集，目標用戶是金融、法律、HR 等需要處理機密數據的 B2B 場景。關鍵問題：14B 模型在分析師品質的輸出上與雲端 70B 差距明顯，但企業客戶的財務資料（稽核報告、客戶資產配置、內部 KPI）根本不可能送到 OpenAI API。aiDAPTIV+ 讓這個 gap 消失——Pascari SSD 在單台工作站上把可用 context 從 32K 推到 200K+，讓 70B 模型本機跑出雲端品質的分析結果。ISV 若要把這個 agent 賣給法律事務所或金融客戶，Pascari 是唯一讓產品承諾成立的硬體選擇。",
+    "ingredient": {
+      "source": "github-search:agent",
+      "url": "https://github.com/Zafer-Liu/Data-Analysis-Agent",
+      "name": "Data-Analysis-Agent",
+      "stars": 1152
+    },
+    "seasoning_use": "aiDAPTIV+ 的 cross-session KV 持久化讓 70B 模型在分析大型文件時不需要把整份資料塞進一次 prompt——第一輪掃描的 KV 狀態保留到第二、三輪追問，實現雲端 GPT-4 Turbo 等級的長文件分析能力，而資料全程留在本機。拿掉 Pascari，14B 模型的分析品質在企業客戶的 due diligence 中達不到驗收標準。",
+    "customer_scenario": "一家服務台灣科技業的財務顧問公司，手上有 50 份客戶季報 PDF 加 3 年 Excel 財務歷史，分析師要做異常偵測跟同業比較。客戶明確禁止上雲（保密協議）。現在用 GPT-4 的 SharePoint plugin 無法合規。安裝 Data-Analysis-Agent 加 aiDAPTIV+ 後，70B 模型在 Pascari SSD 工作站本機跑完整個分析流程，分析師用自然語言問「Q3 的毛利率跌幅跟哪家競爭對手最像」，30 秒出答案，資料沒有離開辦公室。",
+    "demo_path": "60 秒演示流程：(1) 打開 Data-Analysis-Agent 介面，拖入一份 30 頁 Q3 法說會逐字稿 PDF；(2) 打字問「找出本次法說會中 management 迴避的問題，並對比上季答覆」；(3) 70B 模型在本機生成段落式分析（15-20 秒），高亮三處迴避；(4) 追問「同樣問題在半導體產業其他三家的法說會中怎麼回答」——KV 持久化讓追問不需要重新 load 文件；(5) 旁白：「整個過程，這份文件沒有離開這台機器。」",
+    "feasibility_evidence": {
+      "source_url": "https://github.com/Zafer-Liu/Data-Analysis-Agent",
+      "claimed_capability": "面向商業分析師的智能資料分析 agent，Python 實作，自然語言查詢數據集，設計目標是 B2B 分析場景（從 repo description 及標籤 agent topic 推論）"
+    },
+    "effort_estimate": "2 週 MVP",
+    "must_have_test": {
+      "seasoning_indispensable_check": "拿掉 aiDAPTIV+：Ollama 在標準 16GB 筆電上只能跑 14B 模型，context window 實際可用約 32K，30 頁法說會逐字稿必須截斷。模型品質差距：14B 在複雜 peer comparison 跟隱性語義分析上的準確率，與企業財務顧問的驗收標準有明顯落差。結論：aiDAPTIV+ 加 Pascari 是讓這個 demo 通過客戶驗收的必要條件，不是加分項。",
+      "demo_able_check": "60 秒端到端：法說會 PDF 拖入 → 自然語言追問 → 70B 本機出答案 → 追問不重載文件 → 旁白強調資料不出機器。演示過程中可以開任務管理員顯示 SSD I/O 活躍，這是 aiDAPTIV+ offload 的視覺化佐證。",
+      "buyer_commits_check": "目標 ISV：建構合規財務分析工具的軟體公司（對標 AlphaSense 的本機版）。這類 ISV 的產品 PM 看到 demo 後面對的問題是「我的產品 hardware requirement 頁面要不要列 Phison Pascari SSD」——因為 70B 本機分析的產品承諾沒有 Pascari 兌現不了，客戶採購 ISV 軟體時會同時問硬體規格。"
+    }
+  },
+  "oss_pulse": [
+    {
+      "name": "Data-Analysis-Agent",
+      "url": "https://github.com/Zafer-Liu/Data-Analysis-Agent",
+      "source": "github-search:agent",
+      "stars": 1152,
+      "description": "面向商業分析師的自然語言數據分析 agent，Python 實作，B2B 場景設計",
+      "fits": ["isv-vertical"],
+      "fit_reason": "機密財務資料不上雲是強制約束，本機 70B 分析需要 aiDAPTIV+ 才能達到企業驗收品質"
+    },
+    {
+      "name": "vela",
+      "url": "https://github.com/heider-x/vela",
+      "source": "github-search:local-llm",
+      "stars": 230,
+      "description": "小說創作者 IDE，本機 LLM 加 RAG，privacy-first，TypeScript，專為網路小說作者設計",
+      "fits": ["isv-consumer"],
+      "fit_reason": "創作者私有素材不上雲，70B 模型的敘事品質遠超 14B——差距在長篇世界觀一致性上尤其明顯，aiDAPTIV+ 讓這個差距可量化展示"
+    },
+    {
+      "name": "browser-harness",
+      "url": "https://github.com/browser-use/browser-harness",
+      "source": "github-search:llm",
+      "stars": 12895,
+      "description": "Self-healing 瀏覽器操控框架，讓 LLM 完成任意網頁任務，browser-use 官方新作",
+      "fits": ["isv-vertical", "isv-dev-oss"],
+      "fit_reason": "法律或金融 intranet 爬取分析場景（不能用公有雲 API）：70B agent 本機跑才能過合規審查，小模型在複雜多步驟任務的成功率不夠高"
+    },
+    {
+      "name": "TokenSpeed",
+      "url": "https://github.com/lightseekorg/tokenspeed",
+      "source": "github-search:llm",
+      "stars": 1030,
+      "description": "宣稱「speed-of-light」的 LLM inference engine，Python，定位是比 llama.cpp 更快的本機推論引擎",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "若針對 consumer GPU 加速推論，70B 模型仍需要 aiDAPTIV+ 的 KV offload 才能在 VRAM 不足時正常執行；若僅針對 datacenter GPU，則 aiDAPTIV+ 切入點有限"
+    },
+    {
+      "name": "Needle (cactus-compute)",
+      "url": "https://github.com/cactus-compute/needle",
+      "source": "hn",
+      "stars": null,
+      "description": "從 Gemini 蒸餾出 26M 參數的 tool-calling 模型，HN 752 分 47 評論，可作為 agentic 系統的低成本路由層",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "26M router 加 70B backbone 的 agentic 架構：routing 用小模型省算力，backbone 仍需 aiDAPTIV+；ISV 採用這個 pattern 後，Pascari 鎖定在 backbone 這層"
+    },
+    {
+      "name": "pi-llama (Hugging Face)",
+      "url": "https://github.com/huggingface/pi-llama",
+      "source": "github-developers",
+      "stars": 0,
+      "description": "HuggingFace 今天新建的 repo（21 小時前），Pi coding agent 的 llama.cpp 後端，支援動態 model 加 context window 自動偵測",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "HuggingFace 官方往 llama.cpp coding agent 投資；coding agent 用 70B Code 模型本機跑需要 aiDAPTIV+，現在是早期合作視窗（repo 才 0 stars）"
+    },
+    {
+      "name": "supertonic (Supertone)",
+      "url": "https://github.com/supertone-inc/supertonic",
+      "source": "github-trending",
+      "stars": 6560,
+      "description": "on-device 多語言 TTS，ONNX 執行，Lightning-Fast，Swift 實作（Supertone 官方開源）",
+      "fits": ["none"],
+      "fit_reason": "TTS 模型 <500M，CPU 即可執行，不需要 aiDAPTIV+ 的 SSD offload；純資訊"
+    }
+  ],
+  "adjacent_ideas": [
+    {
+      "title": "vela 小說 IDE 的 aiDAPTIV+ 認證計畫：「70B 版」差異化包裝",
+      "path": "isv-consumer",
+      "description": "vela（230 stars，local-llm topic）是一個 privacy-first 小說創作 IDE，已有本機 LLM 加 RAG 基礎。目前用 14B 模型的輸出品質讓進階用戶不滿意。Phison 的切入點：與 vela maintainer 合作做「vela × Pascari 70B 版」，讓 vela 網站出現「Phison Pascari SSD 推薦配備」標章，換取共同行銷素材。vela 成長到 2000+ stars 後，Pascari 已在 hardware spec 中。視窗：目前 230 stars 的規模，maintainer 有動機接受合作但還沒到利益複雜的階段。",
+      "ingredient": {
+        "source": "github-search:local-llm",
+        "url": "https://github.com/heider-x/vela",
+        "name": "vela",
+        "stars": 230
+      },
+      "effort_estimate": "一季（需要建立與 maintainer 的合作關係）",
+      "must_have_test": {
+        "buyer_commits_check": "ISV-consumer 路線：maintainer 願意在 README 及產品頁加入 Pascari 推薦配備說明，這是 binary commit。不確定性：230 stars 的規模，maintainer 是否有商業意願尚未驗證。"
+      }
+    },
+    {
+      "title": "HuggingFace pi-llama：llama.cpp coding agent 的早期合作視窗",
+      "path": "isv-dev-oss",
+      "description": "HuggingFace 今天（21 小時前）新建 huggingface/pi-llama，是 Pi coding agent 的 llama.cpp 後端，支援動態 model 發現。HuggingFace 官方在往「coding agent on local llama.cpp」走——如果 Pi agent 的 benchmark 用 70B Code 模型做測試環境，Phison 現在進場提供 aiDAPTIV+ benchmark 數字，幾乎零競爭就能讓 Pascari 出現在 HuggingFace 官方文件中。",
+      "ingredient": {
+        "source": "github-developers",
+        "url": "https://github.com/huggingface/pi-llama",
+        "name": "pi-llama",
+        "stars": 0
+      },
+      "effort_estimate": "2 週 MVP（建立 aiDAPTIV+ benchmark，提 PR 或 issue 給 HuggingFace 團隊）",
+      "must_have_test": {
+        "buyer_commits_check": "HuggingFace 官方在文件中列出 Phison Pascari 為推薦硬體。不確定性：HuggingFace 對特定廠商硬體的背書政策未知，需要直接聯繫確認。"
+      }
+    }
+  ],
+  "radar": [
+    {
+      "title": "vLLM v0.21.0 釋出（367 commits）：server-side inference 持續壯大",
+      "summary": "vLLM v0.21.0 今天釋出，367 commits 的大版本，同步有 LMCache CUDA 12.9 加 13.0 nightly 更新。這條 server-side KV offload 路線是 aiDAPTIV+ 在 datacenter 端的技術對照方案——差異仍在：vLLM 需要有 GPU 的 server；aiDAPTIV+ 解決的是 consumer 端無 datacenter GPU 的場景。如果 vLLM 未來推出針對 consumer-grade GPU 的 offload 路線，aiDAPTIV+ 的差異化空間需要重新評估。",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+      "relevance_axis": "competition",
+      "impact_window": "watch"
+    },
+    {
+      "title": "NVIDIA Vera Rubin：「agentic AI 需要更大 memory bandwidth」主流化",
+      "summary": "NVIDIA 今天 developer blog 解釋 Vera Rubin 如何解決 agentic AI 的 scale-up 問題，重點是多 GPU 互連與 memory bandwidth。這個 frame 把「agentic AI = memory bandwidth 問題」的論述推向主流，間接為 aiDAPTIV+ 的 SSD offload 技術路線做背書：consumer 端沒有 Vera Rubin，aiDAPTIV+ 用 SSD 走類似路線。NVIDIA 的 framing 語言可以參考用在 Phison 的對比行銷材料中。",
+      "url": "https://developer.nvidia.com/blog/how-the-nvidia-vera-rubin-platform-is-solving-agentic-ais-scale-up-problem/",
+      "relevance_axis": "tech-stack",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "HN 頂帖：「有些公司正在 AI 錯誤決策狀態」（1605 分，106 評論）",
+      "summary": "mitchellh（Hashicorp 創辦人）批評部分公司盲目 AI-first 決策，HN 排名 16、1605 分。這個訊號代表企業 AI 採購出現反彈——OEM PM 和 ISV PM 的主管開始質疑 AI feature 的 ROI。對 aiDAPTIV+ demo 策略的含義：訴求要從「AI 很先進」轉向「這個功能你的競爭對手明年一定會有、你現在要不要先佈局」的防守性語言，降低對方主管的 ROI 疑慮。",
+      "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+      "relevance_axis": "customer-segment",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "SK Hynix：「AI 的未來由 memory 決定」定位宣言",
+      "summary": "SK Hynix 今天發布技術評論「It's the Memory」，把 HBM 跟 AI 未來綁在一起。競爭觀察：SK Hynix 在搶佔「AI = memory」的敘事空間，與 Phison 用 SSD 切入 AI 的角度形成敘事競爭。Phison 的反論：「AI 需要 memory bandwidth，不限 DRAM——SSD sequential read 是 70B model 唯一能在消費級硬體上跑起來的 bandwidth 來源，當 DRAM 容量是瓶頸的時候。」",
+      "url": "https://news.skhynix.com/tech-note-series-ep1/",
+      "relevance_axis": "competition",
+      "impact_window": "next year"
+    },
+    {
+      "title": "Lobsters：開發者社群要求禁止 AI 生成文章投稿（357 分，147 評論）",
+      "summary": "Lobsters 本日最熱討論要求平台明令禁止 AI 生成的技術內容，357 分、147 評論。對 ISV-dev-oss 路線的含義：Phison 做的 OSS 社群合作材料若有 AI 生成痕跡，在 dev 社群會被排斥。建議：demo 影片加真實 benchmark 數字比 AI 生成 blog post 更能建立開發者信任，特別是在 llama.cpp 和 HuggingFace 社群中。",
+      "relevance_axis": "customer-segment",
+      "impact_window": "this quarter"
+    }
+  ]
+}
