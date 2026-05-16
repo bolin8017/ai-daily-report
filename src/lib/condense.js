@@ -101,9 +101,7 @@ function condenseFlat(data, cap, descMax) {
   const sorted = (data.items || []).slice().sort(sortByImportance);
 
   const lensQuota = Math.floor(cap * LENS_QUOTA_FRACTION);
-  const lensTagged = sorted
-    .filter((i) => (i._scope || []).length > 1)
-    .slice(0, lensQuota);
+  const lensTagged = sorted.filter((i) => (i._scope || []).length > 1).slice(0, lensQuota);
   const reserved = new Set(lensTagged);
   const globalSlots = cap - lensTagged.length;
   const globalItems = sorted.filter((i) => !reserved.has(i)).slice(0, globalSlots);

@@ -137,8 +137,8 @@ describe('condenseFlat scope-quota reservation', () => {
       developers: { ok: true, items: [] },
     };
     const out = condenseAll(raw);
-    const lensTaggedKept = out.search.items.filter(
-      (i) => (i._scope || []).includes('phison-aidaptiv'),
+    const lensTaggedKept = out.search.items.filter((i) =>
+      (i._scope || []).includes('phison-aidaptiv'),
     );
     // First-attempt search cap = 25, quota fraction = 0.25 → ⌊25 × 0.25⌋ = 6.
     // We supplied 4 lens-tagged items, so all 4 should survive.
