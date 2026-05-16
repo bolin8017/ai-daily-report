@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 
-const FeedSourceSchema = z.discriminatedUnion('type', [
+export const FeedSourceSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('rsshub'),
     name: z.string(),
