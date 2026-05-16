@@ -1,5 +1,7 @@
-{# Phison aiDAPTIV+ lens — render focus_idea + oss_pulse + adjacent_ideas + radar.
-   Reads lensReports['phison-aidaptiv'] populated by eleventy.config.js. #}
+{# Phison aiDAPTIV+ lens — analyst workbench layout.
+   Reads lensReports['phison-aidaptiv'] populated by eleventy.config.js.
+   No visible header here — the lens tab + global site header above the
+   pane already identify this view; a third title would be redundant. #}
 {% set lens = lensReports['phison-aidaptiv'] %}
 
 {% if not lens %}
@@ -8,119 +10,113 @@
   </section>
 {% else %}
 
-<header class="lens-header">
-  <h2>Phison aiDAPTIV+ 工作區</h2>
-  <time datetime="{{ lens.date }}">{{ lens.date }} · {{ lens.date | dayOfWeek }}</time>
-</header>
-
-{# ===== Focus idea — 今日主菜 ===== #}
+{# ===== Focus idea — the day's single binary-commit candidate ===== #}
 {% if lens.focus_idea %}
-<section class="focus-idea" id="focus-idea">
-  {% if lens.focus_idea.path %}
-  <h3 class="path-tag path-{{ lens.focus_idea.path }}">{{ lens.focus_idea.path }}</h3>
-  {% endif %}
-  <h2>{{ lens.focus_idea.title }}</h2>
-  {% if lens.focus_idea.description %}
-  <p class="description">{{ lens.focus_idea.description }}</p>
-  {% endif %}
-
-  {% if lens.focus_idea.ingredient %}
-  <p class="ingredient">
-    今日食材：
-    {% if lens.focus_idea.ingredient.url %}
-    <a href="{{ lens.focus_idea.ingredient.url }}" target="_blank" rel="noopener">
-      {{ lens.focus_idea.ingredient.name or lens.focus_idea.ingredient.source }}
-    </a>
-    {% else %}
-    {{ lens.focus_idea.ingredient.name or lens.focus_idea.ingredient.source }}
+<section class="lens-section" aria-labelledby="phison-focus-label">
+  <p id="phison-focus-label" class="section-label">Focus Idea</p>
+  <article class="focus-card">
+    {% if lens.focus_idea.path %}
+    <span class="path-tag path-{{ lens.focus_idea.path }}">{{ lens.focus_idea.path }}</span>
     {% endif %}
-    {% if lens.focus_idea.ingredient.stars %}
-    <span class="stars">{{ lens.focus_idea.ingredient.stars | formatNum }}★</span>
+    <h2>{{ lens.focus_idea.title }}</h2>
+
+    {% if lens.focus_idea.description %}
+    <p class="description">{{ lens.focus_idea.description }}</p>
     {% endif %}
-  </p>
-  {% endif %}
 
-  {% if lens.focus_idea.seasoning_use %}
-  <details>
-    <summary>調味料：aiDAPTIV+ 的角色</summary>
-    <p>{{ lens.focus_idea.seasoning_use }}</p>
-  </details>
-  {% endif %}
+    {% if lens.focus_idea.seasoning_use %}
+    <details>
+      <summary>aiDAPTIV+ 切入點</summary>
+      <p>{{ lens.focus_idea.seasoning_use }}</p>
+    </details>
+    {% endif %}
 
-  {% if lens.focus_idea.customer_scenario %}
-  <details>
-    <summary>客人情境</summary>
-    <p>{{ lens.focus_idea.customer_scenario }}</p>
-  </details>
-  {% endif %}
+    {% if lens.focus_idea.customer_scenario %}
+    <details>
+      <summary>目標客戶情境</summary>
+      <p>{{ lens.focus_idea.customer_scenario }}</p>
+    </details>
+    {% endif %}
 
-  {% if lens.focus_idea.demo_path %}
-  <details>
-    <summary>Demo path（60-90 秒）</summary>
-    <p>{{ lens.focus_idea.demo_path }}</p>
-  </details>
-  {% endif %}
+    {% if lens.focus_idea.demo_path %}
+    <details>
+      <summary>Demo path (60-90s)</summary>
+      <p>{{ lens.focus_idea.demo_path }}</p>
+    </details>
+    {% endif %}
 
-  {% if lens.focus_idea.feasibility_evidence %}
-  <details>
-    <summary>可行性 evidence（staging-derived）</summary>
-    {% if lens.focus_idea.feasibility_evidence.source_url %}
-    <p>Source:
-      <a href="{{ lens.focus_idea.feasibility_evidence.source_url }}" target="_blank" rel="noopener">
-        {{ lens.focus_idea.feasibility_evidence.source_url | hostname }}
+    {% if lens.focus_idea.feasibility_evidence %}
+    <details>
+      <summary>可行性 evidence</summary>
+      {% if lens.focus_idea.feasibility_evidence.source_url %}
+      <p>Source:
+        <a href="{{ lens.focus_idea.feasibility_evidence.source_url }}" target="_blank" rel="noopener">
+          {{ lens.focus_idea.feasibility_evidence.source_url | hostname }}
+        </a>
+      </p>
+      {% endif %}
+      {% if lens.focus_idea.feasibility_evidence.readme_excerpt %}
+      <p>{{ lens.focus_idea.feasibility_evidence.readme_excerpt }}</p>
+      {% endif %}
+      {% if lens.focus_idea.feasibility_evidence.release_or_version_note %}
+      <p>Version: {{ lens.focus_idea.feasibility_evidence.release_or_version_note }}</p>
+      {% endif %}
+      {% if lens.focus_idea.feasibility_evidence.claimed_capability %}
+      <p>Claimed capability: {{ lens.focus_idea.feasibility_evidence.claimed_capability }}</p>
+      {% endif %}
+    </details>
+    {% endif %}
+
+    {% if lens.focus_idea.must_have_test %}
+    <details>
+      <summary>三條件驗證</summary>
+      {% if lens.focus_idea.must_have_test.seasoning_indispensable_check %}
+      <p><strong>aiDAPTIV+ 缺它即垮：</strong>{{ lens.focus_idea.must_have_test.seasoning_indispensable_check }}</p>
+      {% endif %}
+      {% if lens.focus_idea.must_have_test.demo_able_check %}
+      <p><strong>可示範：</strong>{{ lens.focus_idea.must_have_test.demo_able_check }}</p>
+      {% endif %}
+      {% if lens.focus_idea.must_have_test.buyer_commits_check %}
+      <p><strong>客戶有採購觸發：</strong>{{ lens.focus_idea.must_have_test.buyer_commits_check }}</p>
+      {% endif %}
+    </details>
+    {% endif %}
+
+    {% if lens.focus_idea.ingredient %}
+    <p class="meta">
+      來源：
+      {% if lens.focus_idea.ingredient.url %}
+      <a href="{{ lens.focus_idea.ingredient.url }}" target="_blank" rel="noopener">
+        {{ lens.focus_idea.ingredient.name or lens.focus_idea.ingredient.source }}
       </a>
+      {% else %}
+      {{ lens.focus_idea.ingredient.name or lens.focus_idea.ingredient.source }}
+      {% endif %}
+      {% if lens.focus_idea.ingredient.stars %}<span class="stars">{{ lens.focus_idea.ingredient.stars | formatNum }}★</span>{% endif %}
+      {% if lens.focus_idea.effort_estimate %}<span class="effort">· Effort: <strong>{{ lens.focus_idea.effort_estimate }}</strong></span>{% endif %}
     </p>
     {% endif %}
-    {% if lens.focus_idea.feasibility_evidence.readme_excerpt %}
-    <p class="excerpt">{{ lens.focus_idea.feasibility_evidence.readme_excerpt }}</p>
-    {% endif %}
-    {% if lens.focus_idea.feasibility_evidence.release_or_version_note %}
-    <p>Version: {{ lens.focus_idea.feasibility_evidence.release_or_version_note }}</p>
-    {% endif %}
-    {% if lens.focus_idea.feasibility_evidence.claimed_capability %}
-    <p>Claimed capability: {{ lens.focus_idea.feasibility_evidence.claimed_capability }}</p>
-    {% endif %}
-  </details>
-  {% endif %}
-
-  {% if lens.focus_idea.must_have_test %}
-  <details>
-    <summary>Must-have test 三條件</summary>
-    {% if lens.focus_idea.must_have_test.seasoning_indispensable_check %}
-    <p><strong>調味料不可少：</strong>{{ lens.focus_idea.must_have_test.seasoning_indispensable_check }}</p>
-    {% endif %}
-    {% if lens.focus_idea.must_have_test.demo_able_check %}
-    <p><strong>菜端得出去：</strong>{{ lens.focus_idea.must_have_test.demo_able_check }}</p>
-    {% endif %}
-    {% if lens.focus_idea.must_have_test.buyer_commits_check %}
-    <p><strong>客人會點：</strong>{{ lens.focus_idea.must_have_test.buyer_commits_check }}</p>
-    {% endif %}
-  </details>
-  {% endif %}
-
-  {% if lens.focus_idea.effort_estimate %}
-  <p class="effort">Effort: <strong>{{ lens.focus_idea.effort_estimate }}</strong></p>
-  {% endif %}
+  </article>
 </section>
 {% endif %}
 
-{# ===== OSS Pulse — 今日食材市場 ===== #}
+{# ===== OSS Pulse — today's open-source signal pool ===== #}
 {% if lens.oss_pulse and lens.oss_pulse.length > 0 %}
-<section class="oss-pulse" id="oss-pulse">
-  <h3>今日 OSS 食材市場</h3>
-  <ul class="oss-pulse-list">
+<section class="lens-section" aria-labelledby="phison-oss-label">
+  <p id="phison-oss-label" class="section-label">今日 OSS 訊號</p>
+  <ul class="oss-list">
     {% for item in lens.oss_pulse %}
     <li>
-      <p class="oss-pulse-head">
+      <p class="oss-head">
         <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.name }}</a>
         {% if item.stars %}<span class="stars">{{ item.stars | formatNum }}★</span>{% endif %}
-        {% if item.source %}<span class="source">{{ item.source }}</span>{% endif %}
+        {% if item.source %}<span class="source-badge">{{ item.source }}</span>{% endif %}
       </p>
-      {% if item.description %}<p class="oss-pulse-desc">{{ item.description }}</p>{% endif %}
+      {% if item.description %}<p class="oss-desc">{{ item.description }}</p>{% endif %}
       {% if item.fits and item.fits.length > 0 %}
       <p class="fits">
         Fits:
-        {% for fit in item.fits %}<span class="fit-tag fit-{{ fit }}">{{ fit }}</span>{% endfor %}
+        {% for fit in item.fits %}<span class="fit-tag">{{ fit }}</span>{% endfor %}
         {% if item.fit_reason %}— {{ item.fit_reason }}{% endif %}
       </p>
       {% endif %}
@@ -130,35 +126,33 @@
 </section>
 {% endif %}
 
-{# ===== Adjacent ideas — 副菜 ===== #}
+{# ===== Adjacent ideas — complementary directions ===== #}
 {% if lens.adjacent_ideas and lens.adjacent_ideas.length > 0 %}
-<section class="adjacent-ideas" id="adjacent-ideas">
-  <h3>副菜</h3>
+<section class="lens-section" aria-labelledby="phison-adjacent-label">
+  <p id="phison-adjacent-label" class="section-label">相鄰想法</p>
   {% for idea in lens.adjacent_ideas %}
-  <article class="adjacent-idea">
+  <article class="adjacent-card">
     {% if idea.path %}<span class="path-tag path-{{ idea.path }}">{{ idea.path }}</span>{% endif %}
     {% if idea.title %}<h4>{{ idea.title }}</h4>{% endif %}
     {% if idea.description %}<p>{{ idea.description }}</p>{% endif %}
     {% if idea.ingredient and idea.ingredient.url %}
-    <p class="ingredient">食材：
-      <a href="{{ idea.ingredient.url }}" target="_blank" rel="noopener">
-        {{ idea.ingredient.name or idea.ingredient.source }}
-      </a>
+    <p class="meta">來源：
+      <a href="{{ idea.ingredient.url }}" target="_blank" rel="noopener">{{ idea.ingredient.name or idea.ingredient.source }}</a>
+      {% if idea.effort_estimate %}<span class="effort">· {{ idea.effort_estimate }}</span>{% endif %}
     </p>
     {% endif %}
-    {% if idea.effort_estimate %}<p class="effort">Effort: {{ idea.effort_estimate }}</p>{% endif %}
   </article>
   {% endfor %}
 </section>
 {% endif %}
 
-{# ===== Radar — 跨 path 訊號 ===== #}
+{# ===== Radar — cross-path competition / research / customer signals ===== #}
 {% if lens.radar and lens.radar.length > 0 %}
-<section class="radar" id="radar">
-  <h3>雷達</h3>
+<section class="lens-section" aria-labelledby="phison-radar-label">
+  <p id="phison-radar-label" class="section-label">雷達</p>
   <ul class="radar-list">
     {% for item in lens.radar %}
-    <li class="radar-{{ item.relevance_axis or 'general' }}">
+    <li class="axis-{{ item.relevance_axis or 'general' }}">
       {% if item.relevance_axis %}<span class="axis-tag">{{ item.relevance_axis }}</span>{% endif %}
       {% if item.url %}
       <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.title }}</a>
