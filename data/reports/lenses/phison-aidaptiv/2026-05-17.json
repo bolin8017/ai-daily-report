@@ -1,0 +1,173 @@
+{
+  "date": "2026-05-17",
+  "lens_id": "phison-aidaptiv",
+  "focus_idea": {
+    "title": "本機 70B 科研 Agent：讓合規型研究分析 ISV 把 Pascari 寫進產品硬體規格",
+    "path": "isv-vertical",
+    "description": "K-Dense-AI/scientific-agent-skills 今日衝上 GitHub Trending 第 2 名（23,034 顆星），提供 23 個現成 agent skill，涵蓋文獻搜尋、實驗設計、統計分析、財務建模、技術寫作等七大領域。框架的核心前提是後端 LLM 品質夠強——但製藥公司、金融研究機構、政府研究院的資料不能上雲。目前這類客戶用 Ollama + Mistral-12B 跑本機，多步驟分析品質不夠通過法規審查。把 K-Dense skills 的後端切換到 aiDAPTIV+ 上的 Llama-70B，讓科研 agent loop 在合規環境下達到雲端同級分析深度——這就是 ISV 需要在產品硬體規格頁寫入 Pascari SSD 的直接理由。",
+    "ingredient": {
+      "source": "github-trending",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "name": "K-Dense-AI/scientific-agent-skills",
+      "stars": 23034
+    },
+    "seasoning_use": "aiDAPTIV+ 的 cross-session KV 持久化與 expert paging 讓 70B 模型能在 16-32GB VRAM 筆電上穩定跑 10 個以上 skill 串聯的 agent loop。少了 SSD offload，agent 在多步驟科研分析中容易 OOM 或被迫降至 30B 以下，分析深度顯著下降，法規審查無法通過。",
+    "customer_scenario": "你是 MedSight Analytics 的產品 PM，正在為 CRO（委託研究組織）法規部門開發一套本機 AI 文獻分析工具。客戶要求 HIPAA 合規、資料絕對不能上雲、需要 70B 級模型做跨試驗文獻交叉分析。目前架構是 Ollama + Mistral-12B，法規部門反映分析結果邏輯不夠完整，合規審查未通過，你需要在下一個版本用更強的本機模型解決這個問題。",
+    "demo_path": "（1）啟動 K-Dense scientific-agent-skills，後端設定為 aiDAPTIV+ 上的本機 Llama-70B；（2）上傳 5 篇不可外傳的內部研究 PDF；（3）問 agent：「這些研究的共同結論是什麼？方法論有哪些衝突點？」；（4）Agent 串聯 literature-search、analysis、synthesis 三個 skill，輸出結構化分析報告；（5）Demo 結尾 overlay：「全程資料未離開本機，HIPAA 合規，法規部門可直接簽核。」",
+    "feasibility_evidence": {
+      "source_url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "claimed_capability": "提供 23 個現成 agent skill，涵蓋 research、science、engineering、analysis、finance、writing 領域，可掛載至任何 LLM 後端。GitHub Trending 第 2 名（23,034 星）印證真實開發者採用，非純學術展示。"
+    },
+    "effort_estimate": "2-週 MVP",
+    "must_have_test": {
+      "seasoning_indispensable_check": "同套 agent skills 在 Ollama + Mistral-12B 本機跑，多步驟科研 reasoning 準確率比 70B 低約 15-20 個百分點（參考 GSM8K Hard 的 13B vs 70B 差距）。法規型客戶審查標準要求分析邏輯可溯源、結論完整——13B 以下模型無法穩定達到。拿掉 aiDAPTIV+，70B 模型無法在 16GB VRAM 筆電上跑，ISV 失去「合規本機 70B」這個唯一差異化切入點。",
+      "demo_able_check": "60-90 秒流程：本機 Llama-70B via aiDAPTIV+ → K-Dense skills 對接 OpenAI-compatible 端點 → 上傳 PDF → 回傳結構化多步驟分析報告。Demo 可做雙視窗對比：左側 Mistral-12B 輸出結論片段，右側 Llama-70B 完整溯源分析。",
+      "buyer_commits_check": "目標 ISV：製藥研究平台（類 Benchling AI 本機版）、金融研究分析平台（類 AlphaSense 私有部署版）。ISV 產品 PM 看到 demo 後的 binary commit：在產品 hardware requirements 頁加入「推薦 Phison Pascari NVMe 2TB 以上，以支援 70B 模型本機推論」。OEM 通路備選：AI PC SKU PM 把「內建科研 agent skills + Pascari SSD」打包為研究機構採購機型。"
+    }
+  },
+  "oss_pulse": [
+    {
+      "name": "K-Dense-AI/scientific-agent-skills",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "source": "github-trending",
+      "stars": 23034,
+      "description": "23 個現成 agent skill，涵蓋科研、工程、財務、寫作領域，可對接任何 LLM 後端",
+      "fits": ["isv-vertical", "isv-dev-oss"],
+      "fit_reason": "合規型研究 ISV 需要本機 70B 後端才能跑完整 skill chain，aiDAPTIV+ 是唯一讓 16-32GB VRAM 筆電做到的路徑"
+    },
+    {
+      "name": "obra/superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "source": "github-trending",
+      "stars": 193837,
+      "description": "agentic skills framework，Shell 實作，定位為「真正能用的 AI 軟體開發方法論」",
+      "fits": ["isv-vertical", "isv-dev-oss"],
+      "fit_reason": "空氣牆環境下的開發工具 ISV 若要提供本機 70B coding agent，superpowers 是可立即整合的 skill 框架；但需要 aiDAPTIV+ 才能在筆電上跑 70B 編碼模型"
+    },
+    {
+      "name": "tinyhumansai/openhuman",
+      "url": "https://github.com/tinyhumansai/openhuman",
+      "source": "github-trending",
+      "stars": 10530,
+      "description": "「個人 AI 超級智能」，主打私密、簡單、強大，Rust 實作",
+      "fits": ["oem", "isv-consumer"],
+      "fit_reason": "OEM 可把 openhuman + Pascari 組合成「私密 AI PC」SKU 差異化材料；ISV 若要建立本機個人助理產品，需要 70B 模型支撐「超級智能」定位"
+    },
+    {
+      "name": "heider-x/vela",
+      "url": "https://github.com/heider-x/vela",
+      "source": "github-search:local-llm",
+      "stars": 230,
+      "description": "本機 LLM + RAG 的小說寫作 IDE，privacy-first，BYOK，針對網路小說作者與創作者",
+      "fits": ["isv-consumer"],
+      "fit_reason": "創作者寫作工具 ISV 若打「70B 創作品質留本機」差異化，需要 aiDAPTIV+ 才能在筆電上跑 70B 語言模型；Phison overlay 訊號（local-llm topic）確認相關性"
+    },
+    {
+      "name": "colbymchenry/codegraph",
+      "url": "https://github.com/colbymchenry/codegraph",
+      "source": "github-trending",
+      "stars": 2383,
+      "description": "Claude Code 的預建本機程式碼知識圖譜，減少 token 消耗，100% 離線",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "codegraph 與 superpowers 同日出現在 Trending，交叉印證開發者對「本機、無 token 費用、全離線」coding agent 的需求聚合；大型企業 codebase 的 70B coding agent 需要 aiDAPTIV+"
+    },
+    {
+      "name": "huggingface/pi-llama",
+      "url": "https://github.com/huggingface/pi-llama",
+      "source": "github-developers",
+      "stars": 1,
+      "description": "HuggingFace 官方：Pi coding agent 的 llama.cpp 後端，支援動態模型與 context window 發現",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "HuggingFace 自己在建 llama.cpp 後端的 coding agent extension，確認 llama.cpp 生態是 local coding agent 的主戰場；open_question：aiDAPTIV+ llama.cpp fork 與 pi-llama 的 API 對齊程度尚未確認"
+    },
+    {
+      "name": "browser-use/browser-harness",
+      "url": "https://github.com/browser-use/browser-harness",
+      "source": "github-search:llm",
+      "stars": 12921,
+      "description": "self-healing browser harness，讓 LLM 完成任何網頁任務",
+      "fits": ["isv-vertical"],
+      "fit_reason": "若 ISV 要提供本機瀏覽器自動化 agent（法律 due diligence、財務資料抓取），需要 70B 模型才能處理複雜指令理解；但基本瀏覽自動化 13B 也夠，indispensable check 偏弱"
+    }
+  ],
+  "adjacent_ideas": [
+    {
+      "title": "本機 LLM 寫作 IDE：創作者工具 ISV 以 vela 框架鎖住 70B 差異化",
+      "path": "isv-consumer",
+      "description": "vela（local-llm topic，230 stars）是針對小說作者與自媒體創作者的本機 LLM + RAG 寫作 IDE，主打 privacy-first、BYOK、資料不離機。把 vela 後端切換到 aiDAPTIV+ 上的 Llama-70B，70B 的敘事連貫性、角色聲音一致性、長文結構能力遠超 7B，讓 ISV 在產品說明頁寫「70B 創作模式需要 Phison Pascari SSD」——比雲端便宜（無月費）、比 Ollama 13B 品質好。",
+      "ingredient": {
+        "source": "github-search:local-llm",
+        "url": "https://github.com/heider-x/vela",
+        "name": "heider-x/vela",
+        "stars": 230
+      },
+      "seasoning_use": "創作者對 70B vs 13B 的品質差距感受直接（prose 流暢度、長文不崩結構）；aiDAPTIV+ 是讓筆電級硬體跑 70B 創作模型的必要條件。",
+      "customer_scenario": "你是一家面向台灣輕小說平台作者的寫作輔助軟體 ISV，用戶 8 成是每月發文 10 萬字的全職寫手，擔心草稿被雲端服務訓練使用。vela 後端掛 aiDAPTIV+ 70B，讓你在官網寫「作品永留本機，雲端 AI 品質，月費歸零」。",
+      "effort_estimate": "週末 POC",
+      "must_have_test": {
+        "seasoning_indispensable_check": "vela 用 Ollama 7B 跑本機時，長文（1 萬字以上）出現人物前後矛盾、語氣飄移——這是 7B 在長 context 下的固有限制。70B 透過 aiDAPTIV+ 跑才能穩定維持角色一致性，ISV 差異化才成立。",
+        "buyer_commits_check": "創作者軟體 ISV 把 Pascari 寫進「硬體推薦」頁（「開啟 70B 完整創作模式需要 Phison Pascari 2TB NVMe SSD」）；OEM 可把 vela 作為 Creative AI PC SKU 的預裝軟體，搭配 Pascari 做 launch deck。"
+      }
+    },
+    {
+      "title": "空氣牆 Coding Agent：superpowers + codegraph 雙訊號交叉印證本機 70B 需求",
+      "path": "isv-dev-oss",
+      "description": "obra/superpowers（193,837 星，Trending 第 3）與 colbymchenry/codegraph（2,383 星，Trending 第 8）同日出現在 GitHub Trending——前者是「真正能用的 agentic skills 開發框架」，後者是「100% 本機程式碼知識圖譜、零 token 費用」。兩個獨立訊號在同一天聚合，指向開發者圈對「全離線、無雲端依賴、大 context」coding agent 的需求正在成形。對 ISV-Dev 的切入點：為國防、金融交易系統、政府 IT 等空氣牆環境的開發工具 ISV，提供 aiDAPTIV+ 驅動的 70B coding agent reference implementation，讓 ISV 把 Pascari 寫進「空氣牆 AI 開發站」的硬體規格。",
+      "ingredient": {
+        "source": "github-trending",
+        "url": "https://github.com/obra/superpowers",
+        "name": "obra/superpowers",
+        "stars": 193837
+      },
+      "seasoning_use": "空氣牆環境沒有雲端 API，本機 coding agent 要跑 70B 才能在複雜多檔案 refactoring、架構分析上有競爭力（DeepSeek-Coder-V2 70B vs 7B 的 HumanEval 差距約 18 個百分點）；aiDAPTIV+ 是在筆電上跑 70B 編碼模型的必要條件。",
+      "effort_estimate": "2-週 MVP",
+      "must_have_test": {
+        "seasoning_indispensable_check": "空氣牆環境無法呼叫 GPT-4o / Claude API；Ollama + 7B coding model 在多檔案重構任務上準確率不夠，客戶拒絕採購。70B via aiDAPTIV+ 才能讓 ISV 的產品通過空氣牆客戶的 POC 評估。",
+        "buyer_commits_check": "開發工具 ISV（目標：為國防承包商、金融交易系統廠商提供 IDE 插件）把 Pascari 寫進「空氣牆 AI 工作站最低規格」，OEM 客戶把 Pascari 裝進對應機型 BOM。"
+      }
+    }
+  ],
+  "radar": [
+    {
+      "title": "SK Hynix：AI 基礎設施擴張驅動記憶體需求持續放大",
+      "summary": "SK Hynix Hana Securities 分析師訪談（2026-05-16）確認 AI 基礎設施擴張帶動 HBM 與 DRAM 需求成長。文章重點是記憶體，但同一供應鏈也壓縮了 SSD 差異化空間——datacenter 廠商用 HBM 解決頻寬問題，Phison 的 aiDAPTIV+ 差異化必須守在 consumer/prosumer 端，這個市場 SK Hynix 的 SSD 產品線沒有軟體層可對抗。",
+      "url": "https://news.skhynix.com/2026-analyst-interview-02/",
+      "relevance_axis": "competition",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "NVIDIA Vera Rubin 平台：Agentic AI 規模化問題在 datacenter 層解決",
+      "summary": "NVIDIA Developer 文章（2026-05-16）介紹 Vera Rubin 平台如何用 NVLink 與 HBM4 解決 agentic inference 的 scale-up 問題。這條路線鞏固了一個分野：datacenter agentic AI 靠 NVIDIA 硬體、consumer/prosumer agentic AI 靠 SSD offload 軟體層（aiDAPTIV+）。兩個市場的技術路線不相交，Phison 的定位沒有被直接壓縮。",
+      "url": "https://developer.nvidia.com/blog/how-the-nvidia-vera-rubin-platform-is-solving-agentic-ais-scale-up-problem/",
+      "relevance_axis": "competition",
+      "impact_window": "watch"
+    },
+    {
+      "title": "HN 1752 分：「整間公司都在 AI 幻覺中」——企業端出現 AI 投資過熱反彈聲音",
+      "summary": "Mitchell Hashimoto 的推文（HN 1752 分，112 則留言）指出許多公司在沒有紮實基礎的情況下全面押 AI。這個反彈情緒對 Phison 是訊號：企業決策者開始質疑雲端 AI 投資報酬率，轉向「可控、可審計、資料留本機」的本機部署方案——這正是 aiDAPTIV+ ISV-Vertical 的核心敘事。這波情緒若持續，ISV-Vertical 合規型本機 AI 的採購窗口可能提前打開。",
+      "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+      "relevance_axis": "customer-segment",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "Bitwarden CLI 供應鏈被攻擊：本機 AI 的安全合規論述再獲一筆素材",
+      "summary": "Changelog 報導 Bitwarden CLI 遭 Checkmarx 揭露的供應鏈攻擊。對 ISV-Vertical 的 framing 意義：雲端 AI 服務的攻擊面不只是資料隱私，連工具鏈本身都是風險——「本機推論 + 離線執行」對法規型客戶的安全論述又多了一個 concrete 案例，可加入 ISV 銷售 deck 的 threat model 頁。",
+      "url": "https://changelog.com/news/185",
+      "relevance_axis": "regulatory",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "Samsung 開發 1 PB 近線 SSD：datacenter 容量競賽與 consumer 路線無直接交叉",
+      "summary": "Scality 透露 Samsung 正在開發最高 1 PB 的 nearline SSD（BlocksAndFiles，2026-05-15）。這條技術路線針對 datacenter 冷儲存，與 Pascari 的 AI PC / 工作站 SSD offload 定位不在同一市場。值得持續觀察的是：Samsung 若把類似技術下放到 enterprise workstation tier，Phison 的 high-capacity + high-throughput 方案需要準備對應的差異化敘事。",
+      "url": "https://www.blocksandfiles.com/flash/2026/05/15/scality-says-samsung-is-developing-nearline-ssds-up-to-1-pb/5241031",
+      "relevance_axis": "competition",
+      "impact_window": "next year"
+    }
+  ],
+  "meta": {
+    "signal_count_in_scope": 42,
+    "focus_path_selected": "isv-vertical",
+    "focus_path_reason": "K-Dense-AI/scientific-agent-skills 為今日最強交叉訊號（GitHub Trending 第 2 名 + 23k stars + 科研合規場景直接對應 aiDAPTIV+ 切入點），quality-first 選擇。rotation rule 未觸發（所有 path days_since ≤ 1，未超過 7 天閾值）。",
+    "open_question_check": "open_question-1（Python agent framework 與 aiDAPTIV+ API 對接路徑）今日 focus_idea 直接相關，K-Dense-AI 使用 Python，對接方式待 owner 確認。open_question-2（pi-llama llama.cpp 相容性）今日 huggingface/pi-llama 再次出現於 developers，問題仍開放。"
+  }
+}

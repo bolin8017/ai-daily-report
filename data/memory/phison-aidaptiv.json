@@ -1,48 +1,54 @@
 {
   "schema_version": 2,
-  "last_updated": "2026-05-16",
+  "last_updated": "2026-05-17",
   "lens_id": "phison-aidaptiv",
   "topics": [],
   "lens_state": {
     "persona_coverage": {
       "oem": {
         "last_focus_idea": null,
-        "days_since": 1,
+        "days_since": 2,
         "times_featured": 0
       },
       "isv-vertical": {
-        "last_focus_idea": "2026-05-16",
+        "last_focus_idea": "2026-05-17",
         "days_since": 0,
-        "times_featured": 1
+        "times_featured": 2
       },
       "isv-consumer": {
         "last_focus_idea": null,
-        "days_since": 1,
+        "days_since": 2,
         "times_featured": 0
       },
       "isv-dev-oss": {
         "last_focus_idea": null,
-        "days_since": 1,
+        "days_since": 2,
         "times_featured": 0
       }
     },
     "open_questions": [
       {
-        "q": "Phison middleware 在 Windows + NVIDIA GPU 環境下，Python agent framework（如 LangChain 或 custom agent loop）能否直接呼叫 aiDAPTIV+ 的 API，還是必須透過 llama.cpp 或 Ollama 介面？這影響到 Data-Analysis-Agent 類 ISV 的整合路徑。",
+        "q": "Phison middleware 在 Windows + NVIDIA GPU 環境下，Python agent framework（如 LangChain 或 K-Dense-AI/scientific-agent-skills 類的 custom agent loop）能否直接呼叫 aiDAPTIV+ 的 OpenAI-compatible 端點，還是必須透過 llama.cpp 或 Ollama 介面？這影響到 Data-Analysis-Agent 類與科研 agent 類 ISV 的整合路徑與 demo 可行性。",
         "asked_at": "2026-05-16",
-        "related_to": "isv-vertical focus_idea: Data-Analysis-Agent"
+        "related_to": "isv-vertical focus_idea: K-Dense scientific-agent-skills, Data-Analysis-Agent"
       },
       {
-        "q": "HuggingFace pi-llama 的 llama.cpp 後端是否與 aiDAPTIV+ 的 llama.cpp fork 相容？如果 HuggingFace 官方 coding agent 要採用 aiDAPTIV+，需要對齊哪些技術接口？",
+        "q": "HuggingFace pi-llama（huggingface/pi-llama，TypeScript，llama.cpp provider，剛建立 26 小時）的 llama.cpp 後端是否與 aiDAPTIV+ 的 llama.cpp fork 相容？如果 HuggingFace 官方 coding agent 要採用 aiDAPTIV+，需要對齊哪些技術介面？今日（2026-05-17）pi-llama 再次出現於 developers 訊號，問題仍開放。",
         "asked_at": "2026-05-16",
-        "related_to": "adjacent_idea: huggingface/pi-llama"
+        "related_to": "adjacent_idea: huggingface/pi-llama，isv-dev-oss path"
+      },
+      {
+        "q": "K-Dense-AI/scientific-agent-skills 的 23 個 skill 呼叫 LLM 的方式是 OpenAI-compatible API 還是直接整合特定 SDK（如 LangChain / LlamaIndex）？如果是 OpenAI-compatible API，aiDAPTIV+ 的本機端點能否直接對接而不需要修改 skill 程式碼？這決定了 2-週 MVP 估算是否成立。",
+        "asked_at": "2026-05-17",
+        "related_to": "focus_idea: K-Dense-AI/scientific-agent-skills，isv-vertical path"
       }
     ],
     "rejected_axes": [
-      "same-session KV offload 競爭（vLLM v0.21.0 + LMCache nightly CUDA 12.9/13.0 今天均有更新，全部 hard reject：datacenter GPU 場景，不是 consumer/prosumer 端）",
+      "same-session KV offload 競爭（vLLM v0.21.0 + v0.21.1rc0、LMCache nightly CUDA 12.9/13.0：全部 hard reject，datacenter GPU 場景，不是 consumer/prosumer 端）",
       "Apple Silicon only 方案（ovoment/ovo-local-llm MLX-native → hard reject：macOS only，Phison middleware 不支援）",
       "TTS 類本機模型（supertone-inc/supertonic ONNX TTS → fail indispensable check：<500M 參數模型 CPU 即可執行，不需要 SSD offload）",
-      "Windows native inference speed-of-light claims（devnen/qwen3.6-windows-server：RTX 3090 24GB VRAM 可直接跑 Qwen3.6-27B int4，不需要 aiDAPTIV+，fail indispensable check）"
+      "Windows native inference speed-of-light claims（devnen/qwen3.6-windows-server：RTX 3090 24GB VRAM 可直接跑 Qwen3.6-27B int4，不需要 aiDAPTIV+，fail indispensable check）",
+      "NVIDIA datacenter 規模化方案（Vera Rubin Platform / NVLink / HBM4）：hyperscaler 場景，定位不交叉"
     ]
   }
 }

@@ -1,0 +1,617 @@
+{
+  "date": "2026-05-17",
+  "lead": {
+    "html": "<h3>Google I/O 倒數 72 小時：三個 repo 構成的望遠鏡</h3>\n\n<h4>發生了什麼</h4>\n<p>google org 23 小時前建了一個空 repo：<code>google/opencl-kernel-profiler</code>，description 只有一句話：「Perfetto-based profiler for OpenCL kernel」。0 stars，沒有 README，沒有 code。這是過去五天 Google 在 GitHub 建立的第三個此類 repo：5/12 的 <code>google/windtunnel</code>（本地 AI benchmark 工具）、5/16 的 <code>google/esmeralda</code>（完全空），現在加上 opencl-kernel-profiler。Google I/O 在 72 小時後的 5/20 開始。</p>\n\n<p>三個 repo，方向一致。windtunnel 名稱指向效能測試環境；opencl-kernel-profiler 把 Perfetto（Android 原生效能剖析的業界標準）帶進 OpenCL kernel 計時層，也就是 Android GPU 推論的最底層量測工具；esmeralda 還不知道是什麼，但出現在同一個組織、同一個時間視窗。同一週，NVIDIA Vera Rubin 發了〈Solving Agentic AI's Scale-Up Problem〉技術博文，vLLM v0.21.0 帶著 367 個 commit 落地，LMCache 同步推出 CUDA 12.9 和 13.0 的 nightly wheels。Inference 基礎設施的成熟週期，在 Google 準備做某種量測框架的前夕加速了一格。</p>\n\n<p>另一個不像是巧合的 timing：Karpathy Substack 的「Coming soon」持續第 7 天。他離開 OpenAI 以後沒有正式加入任何大廠，但 I/O 前一週出現的 placeholder 通常代表某種 imminent 發布。</p>\n\n<h4>為什麼重要</h4>\n<p>OpenCL 是 Android GPU 的 compute 指令集，Perfetto 是 Android 原生效能量測的基礎設施。把兩者接在一起，意思是：Google 想讓 GPU kernel 的 latency 追蹤進入 on-device AI 的 production 工作流程。如果你在做 Android 端的推論部署，或者在用 OpenCL 做 edge GPU compute，I/O 後 72 小時很可能會出現新的 profiling 工具標準。這不是說這三個 repo 一定會在 keynote 上被點名，而是說它們有一個共同的 upstream purpose，而這個 purpose 要在 I/O 才有發表機會。</p>\n\n<p>更廣的訊號在 inference stack 層。vLLM v0.21.0 是今年最大的單版本 commit 集（367 commits），重點包含 agentic inference 優化（多步驟 reasoning 的 KV cache 管理）。LMCache 的 CUDA 13.0 nightly 出現說明 Blackwell/Vera Rubin 架構的軟體層已進入 testing 階段，距離 production ready 可能只剩幾個月。如果你的推論 stack 現在還在 vLLM v0.19.x 或更早，今天是一個升版的判斷點。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 對 google/opencl-kernel-profiler 完全沒有討論，Lobsters 也沒有。今日 HN 最高分是 Mitchell Hashimoto 的「I believe there are entire companies right now under AI psychosis」（1752 分，昨天 1605 分，今天繼續攀升），112 則留言，留言率 6.4%——強共鳴，但幾乎沒人願意公開反駁。社群的注意力被這個 existential debate 吸走，沒有人注意到 Google 在倒數 72 小時前悄悄在 GitHub 建了三個空倉。</p>\n\n<p>Lobsters 同步熱的是「LLM generated submissions should be disallowed」（388 分，170 則留言）。討論裡最有意思的技術方向不是「禁止」而是「如何偵測」：top comment 說行為指紋（提交模式、改版節奏、評論互動時間）比文字統計學更可靠，而且這個方法對 platform maintainer 而言只需要 server-side log，不需要存取 content。這個觀點如果成立，對 OSS 社群的 contribution review 工具鏈有具體的 infra 影響。</p>\n\n<h4>行動建議</h4>\n<p>如果你有 Android edge 或 ARM GPU 的推論部署計畫，在 I/O 後的 72 小時內暫停 profiling tooling 選型決定，等 keynote 結束再決定你的量測棧。在等待期間，先在你的 inference pipeline 的每個 forward pass 前後加 wall-clock timer，<code>atrace</code> slot 格式設計要能對應到 Android systrace——這樣 I/O 後切換到 Google 的新工具只是一行 config，不是重寫量測層。</p>\n\n<p>如果你在 vLLM v0.19.x 或更早，今天 clone v0.21.0 的 CHANGELOG 讀一遍 breaking changes，重點看 KV cache management 和 multi-step scheduler 這兩段。367 commits 裡大約 40% 跟 agentic workload 的效能有關，如果你的 use case 是多步驟 agent，升版的投資報酬比平時高。</p>"
+  },
+  "ideas": [
+    {
+      "format": "solo",
+      "title": "用生產日誌訓練自己的 Tool Router：26M 參數取代 GPT-4o Orchestrator",
+      "description": "HuggingFace Daily Papers 今天上了 Self-Distilled Agentic RL（arxiv:2605.15155），核心機制是讓 agent 用自己的執行紀錄做強化學習，不需要外部 reward signal。把這個思路接到工具選擇蒸餾路線：用你的生產 agent 跑 1000 次 trace，log 每次的工具選擇決策，然後在這 1000 個 (state, tool_choice) pairs 上 fine-tune 一個 Phi-3.8B 或 Qwen2-1.5B——讓 lightweight router 接管工具選擇，主模型只負責執行。工具選擇從「每次都過 128K context 的 GPT-4o」變成「26M 本地 classifier 0.15s 回答」，API 成本估計降 55-70%，latency 從 2.3s 降到 0.15s。",
+      "use_case": "你維護一個 B2B SaaS 的後端 agent，月底 Claude API 帳單 $3000，其中 70% 是 orchestration 的工具路由 call（每次 invoke 都要傳全 context）。你的工具集穩定（12 個 function）、input pattern 可預測（80% 的 request 在 5 個 intent bucket 裡）。把過去 30 天的 agent session log 整理成 (input, chosen_tool) 格式，走 SFT → DPO 兩步，兩週內就能跑出一個 router，把主模型從工具路由的熱路徑上移除。",
+      "hardware": "GPU 8GB VRAM 用於 fine-tuning Phi-3.8B，inference 後可 CPU-only 部署",
+      "skill_level": "需熟悉 HuggingFace transformers + TRL，有基本 fine-tuning 經驗",
+      "dependencies": "HuggingFace account（免費），GPU 機器（Vast.ai H100 約 2 小時 $3，整個 fine-tuning $15-30 內完成）",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "pip install datasets transformers trl && python -c \"from datasets import load_dataset; print('ready')\"，然後從你的 session log 提取 (input, chosen_tool) 格式",
+      "market_evidence": "cactus-compute/needle（HN 755 分，47 則留言）的 top comment 問「能不能用在 routing layer 而不是 endpoint selector」，作者回答「yes, that's the intended use case」——說明這不是 research repo，是有人在等的工具"
+    },
+    {
+      "format": "remix",
+      "title": "私有語音瀏覽器代理：Hadley Wickham 在建的東西，接上 Browser Automation",
+      "projects": [
+        {
+          "name": "hadley/ghost-pepper",
+          "url": "https://github.com/hadley/ghost-pepper",
+          "note": "100% private on-device STT for macOS，6 小時前建立，0 stars"
+        },
+        {
+          "name": "browser-use/browser-harness",
+          "url": "https://github.com/browser-use/browser-harness",
+          "note": "12921★，self-healing LLM browser automation"
+        }
+      ],
+      "description": "Hadley Wickham（ggplot2 作者，GitHub 26.6K followers）6 小時前新建了 hadley/ghost-pepper：「100% private on-device voice models for speech-to-text and meeting transcription on macOS」。這個 repo 現在是 0 stars，沒有 README，但 Hadley 建的東西通常不是玩票——ggplot2 從第一個空 commit 到成為 R 語言事實視覺化標準花了 3 年。把 ghost-pepper 接上 browser-use/browser-harness（12,921★，self-healing browser automation），可以做到：說話 → 本地 STT → browser agent 動作 → 全程沒有語音資料離開機器。沒有 Whisper API，沒有 cloud voice service，沒有訂閱帳單。",
+      "use_case": "你是做量化研究的資料科學家，每天要查 10-20 個金融數據網站抓指標，手動填表單、複製貼上。你的雇主禁止使用任何 cloud voice service（合規要求）。ghost-pepper 提供本地 STT，browser-harness 提供自愈瀏覽器自動化。連起來：說「幫我查 AAPL 今天的 P/E 跟 EV/EBITDA，貼到 research_log.csv 的今天那列」，agent 自動完成，沒有一個 byte 的語音資料上雲。",
+      "hardware": "Apple Silicon M1+ 8GB unified memory（ghost-pepper 的 STT model 需要 on-device 推論），browser-harness 純 CPU 可跑",
+      "skill_level": "Python + 基本 async 理解，不需要 ML 背景",
+      "dependencies": "macOS only（ghost-pepper），browser-harness 跨平台。在 ghost-pepper 公開前可用 whisper.cpp Core ML 版本做 STT placeholder，替換只需換一行 import。",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP（ghost-pepper first commit 公開後）",
+      "first_step": "git clone https://github.com/browser-use/browser-harness && pip install browser-harness，等 ghost-pepper 的 first commit（估計一週內），在等待期間用 whisper.cpp Core ML 版本做 STT placeholder",
+      "market_evidence": "「100% private on-device voice for macOS」出自 ggplot2 作者，而非 AI startup——說明隱私需求在資料科學家、研究員、醫療這類 expert user 社群是真實痛點，不是被 AI hype 放大的需求"
+    },
+    {
+      "format": "remix",
+      "title": "AI-proof CTF 挑戰生成器：讓 LLM 生成挑戰、再用 LLM 篩掉 LLM 能解的",
+      "description": "HN 今天 290 分、51 則留言的〈Frontier AI has broken the open CTF format〉記錄了一個具體的機制失效：top teams 現在跑自動化 pipeline，challenge 進去，flag 出來，Quals round 的鑑別度正在坍塌。反轉這個問題：用 LLM 生成 100 道 CTF 挑戰，然後用同一個 LLM 跑 solver agent，刪掉 LLM 5 分鐘內能解的，剩下的才進你的出題池。「AI-proof」不是靜態屬性，是持續更新的動態篩選——每次 frontier model 升級，重跑篩選器，淘汰已被攻破的挑戰。出題速度從 2 週降到 2 小時，而且每道題有量化的「AI resistance score」：LLM 嘗試了幾次、用了多少 tokens、在哪個步驟卡住。",
+      "use_case": "你是大學資安教授，每年辦 3 場內部 CTF，但 GPT-5 / Claude 4 的學生用 agent 30 分鐘解完三天的題目，你無法判斷誰真的懂 rev/pwn。建一套「challenge generator + AI solver benchmark」pipeline：Claude 生成 100 道挑戰 → Claude 跑 solver agent → 刪掉 AI 解出的 → 剩下 30 道就是你本週的出題池，每道有 AI resistance score 可以給評審委員參考。",
+      "hardware": "雲端 API 即可，無需 GPU",
+      "skill_level": "需熟悉 CTF 類型（pwn/rev/crypto），不需要深度 ML 背景",
+      "dependencies": "Claude API（月費估計 $20-50 依題量），可選 Angr 或 pwntools 做 solver 驗證層，完全免費自架",
+      "difficulty": 2,
+      "dev_time": "週末 POC（基本生成 + 篩選 pipeline），1-2 週完整 platform",
+      "first_step": "claude -p \"Generate a 500-byte binary pwn challenge with a use-after-free vulnerability. Then attempt to solve it using only symbolic execution. Report if solved and how many attempts.\"——這一行就是最小 prototype 的驗收測試",
+      "market_evidence": "DEFCON CTF 2025 開始有隊伍公開承認使用 agent pipeline 輔助解題，HN 290 分 51 留言的討論主要在問「怎麼辦」而非「問題存在嗎」——問題已被 community 確認，現在缺的是工具"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Mitchell Hashimoto: 整個公司正在 AI psychosis 中",
+      "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+      "desc": "HashiCorp 共同創辦人的 tweet：公司在迭代速度超過反省能力時失去判斷力。HN 1752 分（昨天 1605 分），112 則留言，留言率 6.4%——強共鳴、極少反駁。",
+      "source": "HN 1752分",
+      "repo_age": "即時訊息"
+    },
+    {
+      "name": "NVIDIA SANA-WM：2.6B 參數世界模型，1 分鐘 720p",
+      "url": "https://nvlabs.github.io/Sana/WM/",
+      "desc": "開源世界模型，2.6B 參數，可生成 1 分鐘 720p 影片，NVIDIA Labs 出品。HN 248 分，22 則留言。Real-time interactive video generation 的開源基準線移動。",
+      "source": "HN 248分",
+      "repo_age": "論文公開"
+    },
+    {
+      "name": "Self-Distilled Agentic Reinforcement Learning",
+      "url": "https://arxiv.org/abs/2605.15155",
+      "desc": "Agent 用自己的執行軌跡做 RL，不需要外部 reward signal。核心貢獻：self-distillation 讓 agentic model 從 production traces 持續改善，免去人工標注。",
+      "source": "HuggingFace Daily Papers",
+      "repo_age": "論文"
+    },
+    {
+      "name": "Frontier AI has broken the open CTF format",
+      "url": "https://kabir.au/blog/the-ctf-scene-is-dead",
+      "desc": "Quals round 的鑑別度坍塌：top teams 現在跑自動化 pipeline，challenge 進去，flag 出來。HN 290 分，51 則留言，top comment：「移到 human-AI teaming 格式可能是唯一出路」。",
+      "source": "HN 290分",
+      "repo_age": "文章"
+    },
+    {
+      "name": "LLM generated submissions should be disallowed（Lobsters）",
+      "url": "https://lobste.rs/s/ai-submissions",
+      "desc": "Lobsters 社群討論是否立規禁止 LLM 生成提交。388 分，170 則留言。技術討論方向：行為指紋（提交模式、改版節奏）比文字統計學更可靠，且只需 server-side log。",
+      "source": "Lobsters 388分",
+      "repo_age": "討論串"
+    },
+    {
+      "name": "Anthropic × PwC 擴大合作",
+      "url": "https://www.anthropic.com/news/pwc-expanded-partnership",
+      "desc": "PwC（全球約 36 萬員工）部署 Claude 建立 AI 解決方案，是 Anthropic 迄今與四大之一最大規模的 AI native 部署合作。",
+      "source": "Anthropic News",
+      "repo_age": "公告"
+    },
+    {
+      "name": "vLLM v0.21.0",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+      "desc": "367 commits，重點包含 agentic inference 優化（多步驟 reasoning 的 KV cache 管理）、CUDA 12.9 支援。LMCache 同步推出 CUDA 13.0 nightly wheels，Blackwell/Vera Rubin 架構軟體層進入 testing 階段。",
+      "source": "vLLM Releases + LMCache",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "Debian 13.5 + 七個 stable kernel（CVE-2026-46333）",
+      "url": "https://www.phoronix.com/news/Debian-13.5-Released",
+      "desc": "Debian 13.5 今日發布，包含最新 Linux 安全修正。LWN 同日報導七個 stable kernel 修補 CVE-2026-46333（ssh-keysign-pwn，SUID race condition），14 天內第三個跨媒體 Linux LPE 案例。",
+      "source": "Phoronix + LWN",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "oven-sh/bun",
+      "url": "https://github.com/oven-sh/bun",
+      "desc": "91,090★，GitHub Trending #1（Rust）。Zig→Rust AI-assisted 移植合進主線里程碑後的第一個完整 Rust-native 版本，bundler + runtime + test runner + package manager 四合一。",
+      "source": "GitHub Trending #1",
+      "stars": 91090,
+      "repo_age": "持續維護"
+    },
+    {
+      "name": "K-Dense-AI/scientific-agent-skills",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "desc": "23,034★，GitHub Trending #2（Python）。研究、科學、工程、分析、金融、寫作六個方向的 ready-to-use agent skills 集合。",
+      "source": "GitHub Trending #2",
+      "stars": 23034,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "supertone-inc/supertonic",
+      "url": "https://github.com/supertone-inc/supertonic",
+      "desc": "6,716★，GitHub Trending #5（Swift）。Lightning-fast on-device 多語言 TTS，透過 ONNX 原生運行，無需 cloud API。Supertone 是韓國知名 voice AI 公司（有 AI voice cloning 商業產品）。",
+      "source": "GitHub Trending #5",
+      "stars": 6716,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "colbymchenry/codegraph",
+      "url": "https://github.com/colbymchenry/codegraph",
+      "desc": "2,383★，GitHub Trending #8（TypeScript）。為 Claude Code 預建 code knowledge graph，減少 token 消耗、減少 tool calls、100% 本地執行。核心機制：在 codebase 上預建 symbol graph，query 時直接索引而非 file-by-file grep。",
+      "source": "GitHub Trending #8",
+      "stars": 2383,
+      "repo_age": "近期建立"
+    },
+    {
+      "name": "browser-use/browser-harness",
+      "url": "https://github.com/browser-use/browser-harness",
+      "desc": "12,921★。Self-healing LLM browser automation harness，LLM 執行任何瀏覽器任務、自動偵測並修復 selector 失效。在語音瀏覽器代理場景（本期 ideas #2）中作為 browser 側的底層引擎。",
+      "source": "topic:llm · 12921★",
+      "stars": 12921,
+      "repo_age": "30 天內建立"
+    },
+    {
+      "name": "WenyuChiou/awesome-agentic-ai-zh",
+      "url": "https://github.com/WenyuChiou/awesome-agentic-ai-zh",
+      "desc": "1,462★。AI Agent 中文學習地圖，從零開始的結構化學習路徑，每階段有必做練習，三語對照（繁中／簡中／English）。目前最完整的繁體中文 agent 學習資源。",
+      "source": "topic:mcp · 1462★",
+      "stars": 1462,
+      "repo_age": "30 天內建立"
+    },
+    {
+      "name": "Open-Less/openless",
+      "url": "https://github.com/Open-Less/openless",
+      "desc": "1,369★（HTML）。Hold a key, speak, release——AI-polished text 出現在你的游標位置，支援 macOS 和 Windows，開源語音輸入。LLM 做後處理而非前處理，latency 比 cloud STT pipeline 低。",
+      "source": "topic:llm · 1369★",
+      "stars": 1369,
+      "repo_age": "30 天內建立"
+    },
+    {
+      "name": "oritera/Cairn",
+      "url": "https://github.com/oritera/Cairn",
+      "desc": "1,018★（Python）。AI general-purpose state-space search engine，首次驗證在自主滲透測試場景。機制：把 CTF/pentest 步驟轉成 state-space search，LLM 做 heuristic 評分選下一步。",
+      "source": "topic:llm · 1018★",
+      "stars": 1018,
+      "repo_age": "30 天內建立"
+    },
+    {
+      "name": "future-agi/future-agi",
+      "url": "https://github.com/future-agi/future-agi",
+      "desc": "974★（Python）。開源端到端 LLM 和 AI agent 評估、觀測、改善平台：tracing、evals、LLM as judge、CI/CD 整合。單一平台覆蓋 tracing 到 benchmark 的完整 observability 棧。",
+      "source": "topic:llm · 974★",
+      "stars": 974,
+      "repo_age": "30 天內建立"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Mitchell Hashimoto「AI psychosis」（HN 1752 分）",
+        "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+        "score": 1752,
+        "comments": 112,
+        "takeaway": "HashiCorp 共同創辦人的核心 claim：AI 工具的迭代速度超過組織的反省速度，讓公司失去判斷哪些決策是好的能力。機制是「速度本身」而非工具的對錯。",
+        "action": "在你的 sprint 規劃裡加一個固定的「AI-free review」slot：每兩週一次，用 30 分鐘人工讀上週 AI 生成的最重要決策，問「這個決策如果沒有 AI，我們還會做嗎？」"
+      },
+      {
+        "title": "SANA-WM：2.6B 開源世界模型，1 分鐘 720p 影片",
+        "url": "https://nvlabs.github.io/Sana/WM/",
+        "score": 248,
+        "comments": 22,
+        "takeaway": "2.6B 參數的世界模型已可生成 1 分鐘 720p 影片。開源，NVIDIA Labs 出品。實時互動影片生成的計算需求正在下降到消費級硬體可觸及的範圍。",
+        "action": "如果你在做 video agent 或 world model 研究，今週 benchmark 你的硬體（RTX 3090 / M3 Max）對 SANA-WM 的 throughput，記錄 frames/second 數字，作為未來 6 個月的基準線。"
+      },
+      {
+        "title": "Self-Distilled Agentic RL（arxiv 2605.15155）",
+        "url": "https://arxiv.org/abs/2605.15155",
+        "takeaway": "Agent 從自己的執行軌跡做 RL 而不需要外部 reward signal。對 production agent 工程師意義：你現有的 session logs 是訓練資料，不需要另外標注。",
+        "action": "如果你的 agent 有 session logging，今天把 log 格式確認包含 (state, action, outcome) 三元組，為之後的 self-distillation fine-tuning 做準備。"
+      },
+      {
+        "title": "Lobsters：LLM generated submissions should be disallowed（388 分）",
+        "url": "https://lobste.rs/s/ai-submissions",
+        "score": 388,
+        "comments": 170,
+        "takeaway": "技術討論方向從「禁止」轉向「偵測機制」：行為指紋（提交模式、時間分布、改版節奏）比文字統計學更可靠，且只需 server-side log 不需要 content access。",
+        "action": "如果你在維護 OSS 社群平台，今天加一個 submission metadata 收集層（時間戳、編輯次數、session duration），不要等到問題爆發才建 infra。"
+      },
+      {
+        "title": "Frontier AI has broken the open CTF format（HN 290 分）",
+        "url": "https://kabir.au/blog/the-ctf-scene-is-dead",
+        "score": 290,
+        "comments": 51,
+        "takeaway": "Quals round 鑑別度坍塌：自動化 pipeline 使得 CTF 區分能力的能力本身失效。top comment 提出「human-AI teaming 格式」——讓評分依據從「解出 flag」轉向「解題策略的品質」。",
+        "action": "如果你在設計安全課程或評量，把 AI-assisted 解題納入評分標準而非禁止它——評量從「能不能解」變成「解題路徑的系統性」。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "I believe there are entire companies right now under AI psychosis",
+        "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+        "score": 1752,
+        "comments": 112
+      },
+      {
+        "title": "Project Gutenberg – keeps getting better",
+        "url": "https://www.gutenberg.org/",
+        "score": 1106,
+        "comments": 45
+      },
+      {
+        "title": "Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model",
+        "url": "https://github.com/cactus-compute/needle",
+        "score": 755,
+        "comments": 47
+      },
+      {
+        "title": "Frontier AI has broken the open CTF format",
+        "url": "https://kabir.au/blog/the-ctf-scene-is-dead",
+        "score": 290,
+        "comments": 51
+      },
+      {
+        "title": "Moving away from Tailwind, and learning to structure my CSS",
+        "url": "https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/",
+        "score": 306,
+        "comments": 35
+      },
+      {
+        "title": "SANA-WM, a 2.6B open-source world model for 1-minute 720p video",
+        "url": "https://nvlabs.github.io/Sana/WM/",
+        "score": 248,
+        "comments": 22
+      },
+      {
+        "title": "Fecal transplants for autism deliver success in clinical trials",
+        "url": "https://refractor.io/adhd-autism/fecal-transplants-for-autism-delivers-success-in-clinical-trials/",
+        "score": 243,
+        "comments": 30
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "LLM generated submissions should be disallowed",
+        "url": "https://lobste.rs/s/ai-submissions",
+        "score": 388,
+        "comments": 170,
+        "tags": [
+          "meta"
+        ]
+      },
+      {
+        "title": "Moving away from Tailwind, and learning to structure my CSS",
+        "url": "https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/",
+        "score": 78,
+        "comments": 46,
+        "tags": [
+          "css"
+        ]
+      },
+      {
+        "title": "Ascetic Computing",
+        "url": "https://ratfactor.com/ascetic-computing",
+        "score": 61,
+        "comments": 6,
+        "tags": [
+          "practices"
+        ]
+      },
+      {
+        "title": "Git Is Not Fine",
+        "url": "https://www.billjings.com/posts/title/git-is-not-fine/",
+        "score": 53,
+        "comments": 41,
+        "tags": [
+          "vcs"
+        ]
+      },
+      {
+        "title": "Announcing the Zulip Foundation",
+        "url": "https://blog.zulip.com/2026/05/15/announcing-zulip-foundation/",
+        "score": 35,
+        "comments": 11,
+        "tags": [
+          "programming"
+        ]
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Google I/O 前夜的三 repo 序列：on-device AI 效能量測層佈局",
+      "body": "5/12 windtunnel、5/16 esmeralda、5/17 opencl-kernel-profiler——Google 在 I/O 前 5 天建了三個空 repo，全部指向 on-device AI 效能量測。opencl-kernel-profiler 把 Perfetto（Android 原生效能剖析的業界標準）帶進 OpenCL kernel 層，是三個 repo 裡技術指向最明確的一個。「AI 基礎設施爭奪：從模型到工具、算力、分發」這條序列的 Episode 38，Google 不只在公告層搶佔，也在 infra measurement 層預先埋下工具鏈零件。",
+      "evidence": "三個 Google GitHub repo 在 5 天內建立（0 stars，無 README）；Google AI Blog 連續第 8 天只發 consumer marketing 內容；vLLM v0.21.0 同日 367 commits 落地；LMCache CUDA 13.0 nightly 同日首次出現",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "異常類別，標準分佈外",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 38,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google/opencl-kernel-profiler",
+          "url": "https://github.com/google/opencl-kernel-profiler"
+        },
+        {
+          "platform": "GitHub",
+          "title": "google/windtunnel",
+          "url": "https://github.com/google/windtunnel"
+        },
+        {
+          "platform": "NVIDIA Developer",
+          "title": "How the NVIDIA Vera Rubin Platform is Solving Agentic AI's Scale-Up Problem",
+          "url": "https://developer.nvidia.com/blog/how-the-nvidia-vera-rubin-platform-is-solving-agentic-ais-scale-up-problem/"
+        }
+      ],
+      "product_opportunity": "如果你在做 Android edge 推論部署，在 I/O 後立即建立一套用 Perfetto 計時的 OpenCL kernel profiling harness，早於所有人接上 Google 的量測標準，做第三方 benchmark 服務（類似 MLPerf 但 on-device 向）"
+    },
+    {
+      "title": "Inference stack 成熟化加速：vLLM v0.21.0 + CUDA 13.0",
+      "body": "vLLM v0.21.0（367 commits）和 LMCache CUDA 13.0 nightly wheels 在同一天出現。367 commits 是 vLLM 有史以來最大的單版本 commit 集，重點集中在 agentic workload 的 KV cache 管理和多步驟 scheduler。CUDA 13.0 nightly 說明 Blackwell/Vera Rubin 架構的軟體層已進入穩定測試，距離 production ready 可能只剩幾個月。這兩件事的 upstream cause 相同：agentic inference 的工作量特性（長 context、多步驟、KV reuse）在過去 6 個月已從 edge case 變成 main workload，inference stack 在追趕這個需求曲線。",
+      "evidence": "vLLM v0.21.0：367 commits；LMCache：CUDA 12.9 和 13.0 nightly wheels 同日；NVIDIA Vera Rubin 技術博文同日發布",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "前 10%",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "vLLM v0.21.0",
+          "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0"
+        },
+        {
+          "platform": "GitHub",
+          "title": "LMCache Nightly CUDA 13.0",
+          "url": "https://github.com/LMCache/LMCache/releases/tag/nightly"
+        }
+      ],
+      "product_opportunity": "在 vLLM v0.21.0 的 multi-step scheduler 基礎上建立一個 agentic inference benchmark suite，量測 KV cache hit rate 在不同 agent workflow 模式下的分布，賣給需要 inference cost 優化的 enterprise 客戶"
+    },
+    {
+      "title": "AI 能力上限正在破壞現有平台的設計假設",
+      "body": "Mitchell Hashimoto「AI psychosis」（HN 1752 分，留言率 6.4%）、Lobsters「LLM submissions should be disallowed」（388 分，170 留言）、「Frontier AI has broken the open CTF format」（HN 290 分）——三件事有相同的 upstream：frontier model 的能力上限超過了這些平台在設計時對人類行為所設定的假設上限。CTF 的假設是人類需要數小時解題；技術社群的假設是提交者花時間思考；公司的假設是員工的判斷週期比 AI 輸出速度慢。三個 platform 今天同步達到設計假設被突破的臨界點，說明這不是單一平台的特殊問題，而是一個系統性的 transition。「Systems 圈對 LLM 敘事做出編輯回應：要求可審計、可 fork、可嵌入」這條序列進入 Episode 17：從「要求審計工具」到「要求平台立規矩」的新階段。",
+      "evidence": "HN 1752分（Mitchell Hashimoto）+ Lobsters 388分（LLM submissions）+ HN 290分（CTF format），三源獨立、同日匯聚",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "HN 前 5%，Lobsters 前 5%",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 17,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Mitchell Hashimoto: AI psychosis",
+          "url": "https://twitter.com/mitchellh/status/2055380239711457578",
+          "score": 1752
+        },
+        {
+          "platform": "Lobsters",
+          "title": "LLM generated submissions should be disallowed",
+          "url": "https://lobste.rs/s/ai-submissions",
+          "score": 388
+        },
+        {
+          "platform": "HN",
+          "title": "Frontier AI has broken the open CTF format",
+          "url": "https://kabir.au/blog/the-ctf-scene-is-dead",
+          "score": 290
+        }
+      ],
+      "product_opportunity": "行為指紋偵測服務：用 submission 時間戳、編輯模式、session duration 分布訓練 classifier，賣給 OSS 社群平台和學術機構做 contribution review automation，月費 $50-200 依流量"
+    },
+    {
+      "title": "Skill 基礎設施從 delivery 進入版本化管理層",
+      "body": "microsoft/sourcepack（8h ago，JavaScript）、huggingface/pi-llama（26h ago，TypeScript）、nilbuild/claupe（27h ago，TypeScript）——三個不同 org 在 24 小時內在 skill 基礎設施的不同層同時出現。sourcepack 做 skill 版本化 package management，pi-llama 做 llama.cpp provider discovery，claupe 做 headless Claude TUI。「Claude Code 生態系從 skill 擴張到 runtime 重寫」這條序列的 Episode 32：生態系從「寫 skill」進入「版本化管理 skill」的平台層，這是一個生態系通常在 3-4 年才會完成的成熟度躍升，這次用了不到 5 個月。",
+      "evidence": "microsoft（119,805 followers）、huggingface（63,467 followers）、nilbuild（40,031 followers）三個高 follower org 在 24 小時內建立互補功能的 repo",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "前 25%",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 32,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "microsoft/sourcepack",
+          "url": "https://github.com/microsoft/sourcepack"
+        },
+        {
+          "platform": "GitHub",
+          "title": "huggingface/pi-llama",
+          "url": "https://github.com/huggingface/pi-llama"
+        },
+        {
+          "platform": "GitHub",
+          "title": "nilbuild/claupe",
+          "url": "https://github.com/nilbuild/claupe"
+        }
+      ],
+      "product_opportunity": "一個獨立的 skill registry/marketplace，接入 microsoft/sourcepack 的版本化標準，讓開發者發布、搜尋、評分 agent skills，收費模式：publish 免費、private hosting $10/月、enterprise contract"
+    }
+  ],
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4414,
+        "repo": "doggy8088/opencc-py",
+        "url": "https://github.com/doggy8088/opencc-py",
+        "language": "Python",
+        "hours_ago": 35,
+        "description": "純 Python 的 OpenCC 函式庫，繁簡轉換，無需依賴 C++ 二進位。",
+        "local_context": "🇹🇼 doggy8088 是台灣最活躍的開源教育者之一，opencc-py 說明繁簡轉換工具在進入 LLM embedding pipeline 前的 preprocessing 層仍有需求——特別是台灣開發者在做多語言 RAG 時的 normalization 步驟。"
+      },
+      {
+        "developer": "Inndy",
+        "followers": 507,
+        "repo": "Inndy/codex-bridge",
+        "url": "https://github.com/Inndy/codex-bridge",
+        "language": "Go",
+        "hours_ago": 6,
+        "description": "OpenAI-compatible local proxy，重用現有 Codex OAuth session 做 /v1/models 和 /v1/chat/completions。",
+        "local_context": "🇹🇼 codex-bridge 是台灣安全社群對 Codex OAuth session 重用的 Go 實作，說明本地 agent tooling 的 auth proxy 需求正在從「概念驗證」進入「工具化」。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 825,
+        "repo": "strategist922/shadowbroker",
+        "url": "https://github.com/strategist922/shadowbroker",
+        "language": null,
+        "hours_ago": 5,
+        "description": "Open-source OSINT 工具：追蹤企業/私人噴射機、關鍵基礎設施的全球情報收集。",
+        "local_context": "🇹🇼 台灣開發者 strategist922 的第二個 OSINT 工具（前有 contextplus），說明地緣政治情資需求正在驅動台灣社群進入 OSINT tooling 的工程化階段。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "microsoft",
+        "followers": 119805,
+        "repo": "microsoft/sourcepack",
+        "url": "https://github.com/microsoft/sourcepack",
+        "language": "JavaScript",
+        "hours_ago": 8,
+        "description": "管理共享原始碼 utilities 的工具，含 agent skills 作為版本化 packages。Skill package manager 的 Microsoft 官方入場。"
+      },
+      {
+        "developer": "huggingface",
+        "followers": 63467,
+        "repo": "huggingface/pi-llama",
+        "url": "https://github.com/huggingface/pi-llama",
+        "language": "TypeScript",
+        "hours_ago": 26,
+        "description": "Pi coding agent extension：llama.cpp provider，支援 dynamic model 和 context window discovery。HuggingFace 在 coding agent runtime provider 層正式佔位。"
+      },
+      {
+        "developer": "google",
+        "followers": 72597,
+        "repo": "google/opencl-kernel-profiler",
+        "url": "https://github.com/google/opencl-kernel-profiler",
+        "language": "C++",
+        "hours_ago": 23,
+        "description": "Perfetto-based profiler for OpenCL kernel。I/O 前第三個空 repo，指向 on-device AI 效能量測層的 Google I/O 公告序列。"
+      },
+      {
+        "developer": "steipete",
+        "followers": 49951,
+        "repo": "steipete/ReleaseDeck",
+        "url": "https://github.com/steipete/ReleaseDeck",
+        "language": "TypeScript",
+        "hours_ago": 50,
+        "description": "Release freshness dashboard for open source maintainers：追蹤依賴套件的最新版本狀態，給 OSS 維護者可視化的版本健康儀表板。"
+      },
+      {
+        "developer": "nilbuild",
+        "followers": 40031,
+        "repo": "nilbuild/claupe",
+        "url": "https://github.com/nilbuild/claupe",
+        "language": "TypeScript",
+        "hours_ago": 27,
+        "description": "headless wrapper around the Claude TUI for programmatic use。把 Claude TUI 包成可程式化的 headless 介面，讓 agent pipeline 可以呼叫 Claude Code 的完整工具集而無需互動式 terminal。"
+      }
+    ]
+  },
+  "sleeper": {
+    "name": "hadley/ghost-pepper",
+    "url": "https://github.com/hadley/ghost-pepper",
+    "description": "100% private on-device voice models for speech-to-text and meeting transcription on macOS",
+    "stars": 0,
+    "body": "Hadley Wickham（ggplot2 作者，R 語言首席工具設計師，26.6K followers）6 小時前建立。0 stars，沒有 README，只有 description 一句話。Hadley 建的東西通常會成為業界標準——ggplot2 從第一個 commit 到成為 R 生態系事實可視化標準花了 3 年，dplyr 同理。他在這個時間點做隱私 on-device STT，說明資料科學家社群已到達一個「想用語音控制工作流程，但無法接受語音資料上雲」的臨界點，而且有能力自己實作解法。",
+    "why_asymmetric": "Hadley 不是 AI startup，他是 R 語言社群的核心工具作者。如果 ghost-pepper 變成他主要開發的工具，它很可能被整合進 tidyverse 或 posit 生態系，市場規模是全球 200 萬+ R 語言資料科學家，加上需要隱私合規的法律、醫療、金融轉錄市場。0 stars 現在，但這種 creator track record 下的 day-one repo 通常有不對稱的上漲空間。",
+    "commercial_path": "授權給需要隱私合規的企業（醫療轉錄、法律會議記錄、金融分析師），on-premise 部署費用 $1000-5000/年/機構，不需要雲端訂閱。如果接入 R 的 tidyverse pipeline，可以做 R package 版本收費 $50/年/使用者，類似 RStudio 的商業模式。"
+  },
+  "contrarian": {
+    "title": "CTF 的死亡是下一代安全教育的誕生",
+    "claim": "「Frontier AI has broken the open CTF format」的結論方向是反的——不是 AI 殺死了 CTF，而是 AI 正在強迫 CTF 進化成一個更好的安全教育格式。",
+    "body": "HN 290 分的文章說 Quals round 鑑別度坍塌是「CTF 場景的死亡」。這個診斷誤把工具問題當作格式問題。Quals 的問題不是 AI 能解題，而是 Quals 評量的是「能不能解」而不是「怎麼系統性地找漏洞」。一個能用 AI pipeline 在 30 分鐘解完三天 CTF 的參賽者，實際上做了一件事：建了一套有效的自動化漏洞搜尋工具鏈。這本身就是你想要的安全工程能力。問題是現有的 Quals 格式沒有辦法量測「工具鏈設計品質」，只能量測「flag 有沒有出來」。AI 沒有殺死 CTF，AI 讓 CTF 的格式缺陷變得太明顯而無法忽視。",
+    "rationale": "歷史上每次評量工具被新技術打破，它之後都升級而非消失：open-book exam 讓 closed-book exam 進化到更深層的應用題；計算機讓數學考試從計算轉向概念。AI 解題能力只是下一個版本的壓力測試。",
+    "prediction": "到 2027-06-30，DEFCON CTF Quals 賽制說明頁面或 DEF CON 官方 briefing 明確宣布採用 AI-assisted challenge generation 作為出題流程的正式環節，或評分標準修改為包含「解題策略品質評分」（以 DEFCON 官方發布文件或 CTF org blog post 為準，「禁止 AI」的規則更新不算）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-apple-ml-lvsum-wwdc",
+      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "status": "pending",
+      "created": "2026-05-08",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-google-io-local-ai-benchmark",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel 發布帶有 README 的初始版本，或 Google 在 I/O 上公布一個本地 AI performance benchmark 工具（以 repo README 非空或 Google I/O 官方 session 紀錄為準）。",
+      "status": "pending",
+      "created": "2026-05-14",
+      "resolution_date": "2026-05-21"
+    },
+    {
+      "id": "pred-google-esmeralda-io-announce",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/esmeralda 發布帶有 README 的初始版本，或 Google 在 I/O 上公開一個代號或功能名稱為 Esmeralda 的產品（以 repo README 非空或 I/O 官方 session 紀錄為準）。",
+      "status": "pending",
+      "created": "2026-05-16",
+      "resolution_date": "2026-05-21"
+    },
+    {
+      "id": "pred-needle-tool-router-adoption",
+      "text": "到 2026-11-30，LangChain、LlamaIndex、CrewAI 三個框架均未在 official release notes 將 needle 或等效的蒸餾式 tool router 列為 default tool selection mechanism（以 changelog 明確 mention 為準）。",
+      "status": "pending",
+      "created": "2026-05-16",
+      "resolution_date": "2026-11-30"
+    },
+    {
+      "id": "pred-bun-rust-perf-regression",
+      "text": "到 2026-12-31，oven-sh/bun 的 issue tracker 上有至少 3 個 closed issue 被標記為 performance regression，且 issue discussion 中明確 trace 到 Zig→Rust AI-assisted 移植的 commit（以 public GitHub issue URL + blame 參考為判準）。",
+      "status": "pending",
+      "created": "2026-05-16",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-opencl-profiler-io",
+      "text": "到 2026-05-21（Google I/O 結束），google/opencl-kernel-profiler 被 Google 在 I/O 官方 session 中以具名工具形式提及，或 Google Developers Blog 發布 Perfetto for GPU/OpenCL 相關技術文章（以官方 URL 為準）。",
+      "status": "pending",
+      "created": "2026-05-17",
+      "resolution_date": "2026-05-21"
+    }
+  ],
+  "meta": {
+    "run_id": "d849fe47-bbc7-4d57-b77b-df8257c04a7e",
+    "pipeline_version": "9275f28",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-16T21:04:38.433Z",
+    "analyze_duration_ms": 3714449,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 215
+      },
+      "trending": {
+        "ok": true,
+        "count": 8
+      },
+      "search": {
+        "ok": true,
+        "count": 50
+      },
+      "developers": {
+        "ok": true,
+        "count": 16
+      }
+    },
+    "degraded_sources": []
+  }
+}
