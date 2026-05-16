@@ -1,8 +1,8 @@
 // Schema tests for PhisonLensReportSchema — the phison-aidaptiv lens output shape.
 
 import { describe, expect, it } from 'vitest';
-import { LensMemorySchema } from '../src/schemas/memory.js';
 import { PhisonLensReportSchema } from '../src/schemas/lens-report.js';
+import { LensMemorySchema } from '../src/schemas/memory.js';
 
 describe('PhisonLensReportSchema', () => {
   const minimalValid = {
