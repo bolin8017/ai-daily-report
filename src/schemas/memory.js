@@ -20,3 +20,41 @@ export const MemorySchema = z.object({
   predictions: z.array(z.unknown()).optional(),
   engagement: z.unknown().optional(),
 });
+
+// LensMemorySchema — extends MemorySchema for non-default lens memory files.
+// Each lens has its own data/memory/<id>.json; this schema adds lens-specific
+// tracking (persona coverage for starvation-prevention rotation, open questions
+// the lens flagged to owner, rejected axes) on top of the base memory shape.
+//
+// Unlike the strict MemorySchema, LensMemorySchema uses .passthrough() at the
+// top level — newer lenses may evolve their own state fields, and lens prompts
+// drift more often than the core memory shape.
+
+const PersonaCoverageEntrySchema = z
+  .object({
+    last_focus_idea: z.string().optional(),
+    days_since: z.number().int().nonnegative().optional(),
+    times_featured: z.number().int().nonnegative().optional(),
+  })
+  .passthrough();
+
+const LensStateSchema = z
+  .object({
+    persona_coverage: z.record(z.string(), PersonaCoverageEntrySchema).optional(),
+    open_questions: z
+      .array(
+        z.object({
+          q: z.string(),
+          asked_at: z.string(),
+          related_to: z.string().optional(),
+        }),
+      )
+      .optional(),
+    rejected_axes: z.array(z.string()).optional(),
+  })
+  .passthrough();
+
+export const LensMemorySchema = MemorySchema.extend({
+  lens_id: z.string(),
+  lens_state: LensStateSchema.optional(),
+}).passthrough();

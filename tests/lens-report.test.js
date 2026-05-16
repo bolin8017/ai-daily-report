@@ -1,6 +1,7 @@
 // Schema tests for PhisonLensReportSchema — the phison-aidaptiv lens output shape.
 
 import { describe, expect, it } from 'vitest';
+import { LensMemorySchema } from '../src/schemas/memory.js';
 import { PhisonLensReportSchema } from '../src/schemas/lens-report.js';
 
 describe('PhisonLensReportSchema', () => {
@@ -87,5 +88,51 @@ describe('PhisonLensReportSchema', () => {
     ];
     const result = PhisonLensReportSchema.safeParse(withRadar);
     expect(result.success).toBe(true);
+  });
+});
+
+describe('LensMemorySchema', () => {
+  it('accepts a minimal lens memory', () => {
+    const result = LensMemorySchema.safeParse({
+      schema_version: 2,
+      last_updated: '2026-05-16',
+      short_term: null,
+      long_term: null,
+      topics: [],
+      lens_id: 'phison-aidaptiv',
+    });
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts lens_state with persona_coverage', () => {
+    const result = LensMemorySchema.safeParse({
+      schema_version: 2,
+      last_updated: '2026-05-16',
+      short_term: null,
+      long_term: null,
+      topics: [],
+      lens_id: 'phison-aidaptiv',
+      lens_state: {
+        persona_coverage: {
+          oem: { last_focus_idea: '2026-05-10', days_since: 6, times_featured: 3 },
+          'isv-vertical': { last_focus_idea: '2026-05-15', days_since: 1 },
+        },
+        open_questions: [{ q: 'VLM 走 vLLM 還 phisonai2?', asked_at: '2026-05-16' }],
+      },
+    });
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects missing lens_id', () => {
+    const result = LensMemorySchema.safeParse({
+      schema_version: 2,
+      last_updated: '2026-05-16',
+      short_term: null,
+      long_term: null,
+      topics: [],
+    });
+    expect(result.success).toBe(false);
   });
 });
