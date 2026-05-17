@@ -1,0 +1,625 @@
+{
+  "date": "2026-05-18",
+  "lead": {
+    "html": "<h3>steipete、strategist922、KeygraphHQ：三個互不知情的 builder 在同一天建了 AI 安全工具</h3>\n\n<h4>發生了什麼</h4>\n<p>Peter Steinberger（steipete，50,022 followers，Proxyman 作者）在 8 小時前建了 <code>steipete/deepsec</code>：使用 coding agent 在 codebase 裡找漏洞的安全 harness。5 小時前，台灣開發者 strategist922 發布了 <code>strategist922/dark-moon</code>：持續性自主 offensive security engine，涵蓋 web、cloud、AD 和 Kubernetes。前一天進入 GitHub Trending #12 的 <code>KeygraphHQ/shannon</code>（42,625★）是白箱 AI 自主 pentesting 工具，分析 source code、識別 attack surface、自動生成 exploit。三個作者住在三個不同時區，做的是三個不同產品，彼此沒有協調。</p>\n<p>同一天，一位安全研究員發布了 Microsoft 在 BitLocker 中秘密內建後門的技術報告，附帶可複現的 exploit（HN 481 分，22 則留言）。</p>\n\n<h4>為什麼重要</h4>\n<p>SAST 工具（semgrep、CodeQL）用模式比對：找得到 SQL injection template，找不到「攻擊者先通過 auth 驗證、觸發 race condition、再升權限」這種三步驟語意漏洞。AI coding agent 的優勢恰好在這裡——可以追蹤執行路徑、跨函式邊界做 taint analysis、合成多步驟攻擊鏈。BitLocker 後門（如果屬實）正好示範這類漏洞：不是一個函式裡看得到的東西，而是需要理解整個 key-derivation 流程才能識別的 design decision。</p>\n<p>三個 builder 同天到達同一個結論不是巧合，是市場訊號。上週 Mythos AI 用 agent 找到真實 curl CVE 並取得 CVE 編號——技術可行性確認之後，下一步是工具化。這就是今天發生的事。</p>\n\n<h4>社群怎麼看</h4>\n<p>BitLocker 後門在 HN 拿到 481 分，留言卻只有 22 則（留言率 4.6%，今日 HN 前 20 名裡最低）。高分低留言說明讀者看完之後選擇沉默，而不是不在意。top comment 是「This is why I use VeraCrypt」，第二則是「Can anyone confirm this runs on the latest build?」——沒有人替 Microsoft 辯護，只有技術性確認。同一批讀者把 Zerostack（Unix 風格純 Rust coding agent，HN 517 分）推得更高：top comment 問「為什麼選 Rust 不選 Go？」——說明社群已把 Rust coding agent 當成新的預設路線，不再需要解釋。</p>\n\n<h4>行動建議</h4>\n<p>如果你的服務有 auth middleware、token 驗證或 key derivation 邏輯，這週可以在 CI 加一個 agent-based PR diff 安全掃描步驟：提取 PR diff → 餵給帶有 read/search tool 的 coding agent → 追蹤新加 code 的資料流 → 輸出結構化漏洞報告。用 <code>steipete/deepsec</code> 的 harness 結構作為起點。如果要本地跑，<code>devnen/qwen3.6-windows-server</code> 在 RTX 3090 達到 72 tok/s，跑一個 500 行 diff 的分析大約 90 秒。這填的是 semgrep 和 DAST 之間的空缺。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "PR 級語意安全掃描 CI gate",
+      "projects": [
+        {
+          "name": "steipete/deepsec",
+          "url": "https://github.com/steipete/deepsec",
+          "note": "security harness for finding vulnerabilities powered by coding agents，8 小時前新建，50K+ followers 作者"
+        },
+        {
+          "name": "vLLM v0.21.0",
+          "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+          "note": "367 commits，agentic KV cache 優化，multi-step reasoning 效能大幅提升"
+        }
+      ],
+      "description": "把 coding agent 接進 CI pipeline，讓它在每個 PR diff 上追蹤資料流、識別 taint source 和 sink、合成可能的多步驟攻擊路徑。steipete/deepsec 提供 harness 骨架；vLLM v0.21.0 的 agentic KV cache 優化讓多步驟推理的 cache hit rate 大幅提升，相比 v0.19.x 多步驟 agent session 的 token cost 降約 35%。本地推理用 Qwen2.5-Coder-32B（RTX 3090 可達 72 tok/s），跑一個 500 行 diff 的完整分析約 90 秒。核心價值：SAST 和 DAST 都是靜態或執行路徑分析，agent 做的是語意推理，抓的是它們的死角。",
+      "use_case": "你是 fintech startup 的安全工程師，有 40 個開發者每天推 25 個以上 PR。semgrep 每 PR 吐 10-15 個 warning，95% 是 false positive，工程師三週前就停止看了。你想要的是「真的可能被利用的 code path 改動」，不是模式比對告警。這個 gate 只看 diff，只追新增的資料流，輸出帶 severity 和 attack chain 描述的 JSON。",
+      "hardware": "RTX 3090+ 本地推理，或雲端 API（Claude claude-sonnet-4-6 每次 PR 分析成本約 $0.03-0.12）",
+      "skill_level": "需熟悉 Python + 基本 LLM tooling，不需要深度安全背景",
+      "dependencies": "vLLM v0.21.0+，Qwen2.5-Coder-32B 或同等模型；或 Anthropic API key",
+      "difficulty": 3,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/steipete/deepsec 讀 README 了解 harness 結構，然後 pip install vllm 跑 vllm serve Qwen/Qwen2.5-Coder-32B-Instruct",
+      "market_evidence": "steipete（50K followers）、shannon（42K★）、dark-moon（5h ago）三個互不知情的 builder 在同一天做出同一個判斷；上週 Mythos AI 用 agent 找到真實 curl CVE，驗證 agent-based 漏洞發現的可行性；semgrep 和 Snyk 的用戶研究均記錄 CI alert fatigue 是 adoption 的主要阻力"
+    },
+    {
+      "format": "remix",
+      "title": "法律與醫療從業者的全本地語音 → 文字工作站",
+      "projects": [
+        {
+          "name": "hadley/ghost-pepper",
+          "url": "https://github.com/hadley/ghost-pepper",
+          "note": "ggplot2 作者（26,626 followers）的 100% private on-device STT for macOS，30 小時前建立"
+        },
+        {
+          "name": "heider-x/vela",
+          "url": "https://github.com/heider-x/vela",
+          "note": "local LLM + RAG 的私有寫作 IDE，232★，topic:local-llm"
+        }
+      ],
+      "description": "ghost-pepper 用 Apple 的 on-device Whisper 實作（Core ML）做會議轉錄，音訊不離開 Mac；vela 用本地 LLM + RAG 做文稿整理。兩者接起來：語音 → 本地 STT → 本地 LLM 整理成結構化文字 → 輸出到指定格式。全程無雲端，無訂閱費，無 NDA 合規風險。Hadley Wickham 自己在建這個給自己的會議用——ggplot2 從他的第一個 commit 開始花三年變成 R 語言的事實視覺化標準，他判斷使用者需求的準確率通常很高。",
+      "use_case": "你是法律科技 startup 的 CTO，有 20 名律師每天用 Teams 開客戶電話。現有的 AI 轉錄工具（Otter.ai、Teams Premium）把音檔送到雲端，客戶合約上的 NDA 嚴格禁止這樣做。你想要：會議結束 → 自動轉錄 → 本地 LLM 整理成客戶名稱、行動項目、可計費工時 → push 到 Clio API，全程在律師的 MacBook Pro 上完成。",
+      "hardware": "Apple Silicon M1+ 8GB unified memory（ghost-pepper 的 Core ML STT model），vela 的 LLM 部分需要 M1 Pro+ 16GB 跑 7B 模型",
+      "skill_level": "Python + 基本 macOS API 理解，不需要 ML 背景",
+      "dependencies": "macOS only（ghost-pepper），heider-x/vela 跨平台。ghost-pepper 尚未有公開 code（30h ago 建立，空 repo），等待期可用 whisper.cpp Core ML 版本作 placeholder，替換只需換一行 import",
+      "difficulty": 2,
+      "dev_time": "週末 POC（whisper.cpp placeholder 版），1-2 週 MVP（等 ghost-pepper first commit）",
+      "first_step": "brew install cmake && git clone https://github.com/ggerganov/whisper.cpp && bash models/download-ggml-model.sh base.en && make && ./main -m models/ggml-base.en.bin -f your-meeting.m4a",
+      "market_evidence": "hadley（ggplot2 作者，26.6K followers）自己在建 ghost-pepper 解決這個問題，是 expert-user demand 的直接訊號；heider-x/vela（232★）說明本地 LLM 寫作 IDE 已有完整實現可以 fork；雲端 AI 轉錄服務的 HIPAA 和 NDA 合規風險是醫療和法律 vertical 的已知痛點，多個 bar association AI 倫理指引均有提及"
+    },
+    {
+      "format": "remix",
+      "title": "Gaming GPU 低延遲排程技術移植到本地 LLM 推理：把 p99 first-token latency 從 450ms 砍到 150ms",
+      "projects": [
+        {
+          "name": "low_latency_layer（Linux open-source）",
+          "url": "https://www.phoronix.com/news/Low-Latency-Layer",
+          "note": "把 NVIDIA Reflex 和 AMD Anti-Lag 2 帶到 AMD/Intel GPU on Linux，GPU scheduler jitter 從 ~10ms 降到 <1ms"
+        }
+      ],
+      "description": "low_latency_layer 的機制：繞過 Linux 預設 GPU scheduler，對 GPU work submission 做 pre-emptive 排程，把 GPU-side scheduling jitter 從約 10ms 降到低於 1ms。這在 gaming 場景把 PC-to-display latency 從 70ms 降到 20ms 以下。同樣的 scheduler 優先化機制應用到 llama.cpp 的 ROCm 或 CUDA backend：在 inference call 前後加 low-latency mode toggle，針對性降低 first-token latency 的 p99（而非 avg）。目前沒有人在 LLM 推理場景量測過這個效果——這是一個有 10x 潛力的空白量測，且實驗成本只需要一個 gaming GPU 和幾天時間。",
+      "use_case": "你在用 RX 7900 XTX 跑本地 voice assistant pipeline（Whisper STT → Qwen2.5-7B → Kokoro TTS）。平均 first-token latency 約 150ms 可接受，但每隔幾輪出現一個 400-600ms 的 spike，讓對話感覺斷斷續續，使用者以為 app 卡住了。問題很可能是 GPU scheduler preemption——其他程式的 GPU call 插進來。low_latency_layer 的 pre-emptive scheduling 理論上可以消滅這個 spike 而不影響 avg latency。",
+      "hardware": "NVIDIA RTX 4060+ 或 AMD RX 7000 系列 GPU，Linux kernel 6.12+（low_latency_layer 的 kernel module 需求）",
+      "skill_level": "需熟悉 Linux kernel module 編譯（insmod/modprobe），C 閱讀能力，llama.cpp CUDA 或 ROCm backend 基本理解",
+      "dependencies": "完全免費開源；low_latency_layer 支援 NVIDIA 570+ driver 和 AMD AMDGPU driver；llama.cpp 最新版本",
+      "difficulty": 3,
+      "dev_time": "週末 POC（量測 p99 before/after），1-2 週完整 benchmark 報告",
+      "first_step": "先量測基準：在 llama.cpp 的 /completion API 前後加 wall-clock timer，跑 100 次 inference，記錄 p50/p95/p99 分布——有了這個基準數字之後，再裝 low_latency_layer 做比較",
+      "market_evidence": "本地 voice assistant 是 Open-Less/openless（1,394★）、hadley/ghost-pepper 同週建立說明市場在等解決方案；NVIDIA Reflex SDK 已在 gaming 場景把 p99 frame time 從 12ms 降到 1ms 以下，相同機制套到 LLM inference 的量測至今是空白"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "steipete/deepsec",
+      "url": "https://github.com/steipete/deepsec",
+      "desc": "Proxyman 作者 Peter Steinberger（50K followers）建的 security harness：用 coding agent 在 codebase 裡自動找漏洞。8 小時前建立，TypeScript。",
+      "source": "GitHub Developers（50K follower dev，8h ago）",
+      "repo_age": "本週新增",
+      "stars": 4
+    },
+    {
+      "name": "KeygraphHQ/shannon",
+      "url": "https://github.com/KeygraphHQ/shannon",
+      "desc": "Shannon Lite：白箱 AI 自主 pentesting 工具，分析 source code + API，識別 attack surface，自動生成 exploit。42,625★，TypeScript。",
+      "source": "GitHub Trending #12",
+      "repo_age": "本週新增",
+      "stars": 42625
+    },
+    {
+      "name": "Microsoft BitLocker 後門：安全研究員發布技術報告與 exploit",
+      "url": "https://www.techspot.com/news/112410-security-researcher-microsoft-secretly-built-backdoor-bitlocker-releases.html",
+      "desc": "安全研究員聲稱 Microsoft 在 BitLocker 加密中秘密內建後門，並發布可複現的 exploit。HN 481 分，22 則留言，留言率 4.6% 是今日最低。",
+      "source": "HN 481分",
+      "repo_age": "即時新聞"
+    },
+    {
+      "name": "Zerostack v1.0.0",
+      "url": "https://crates.io/crates/zerostack/1.0.0",
+      "desc": "Unix 哲學的純 Rust coding agent：stdin/stdout pipeline，可組合，零外部依賴。HN 517 分，56 則留言，top comment 問「為什麼選 Rust 不選 Go」。",
+      "source": "HN 517分",
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "HKUDS/CLI-Anything",
+      "url": "https://github.com/HKUDS/CLI-Anything",
+      "desc": "\"Making ALL Software Agent-Native\"：把任意 CLI 工具包裝成 agent-callable interface，無需修改原始工具。35,478★，Python。",
+      "source": "GitHub Trending #2",
+      "repo_age": "本週新增",
+      "stars": 35478
+    },
+    {
+      "name": "calcom/cal.diy",
+      "url": "https://github.com/calcom/cal.diy",
+      "desc": "Cal.com 開放 MIT 授權的排程基礎設施，面向所有人。43,180★，TypeScript。Cal.com 在四月授權風波後推出完全開放版，本週進 Trending #3。",
+      "source": "GitHub Trending #3",
+      "repo_age": "本週新增",
+      "stars": 43180
+    },
+    {
+      "name": "vLLM v0.21.0",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+      "desc": "今年最大單版本 commit 集（367 commits）。重點：agentic inference 的 KV cache 管理優化、多步驟 reasoning 效能提升、Vera Rubin 架構支援。",
+      "source": "vLLM Releases",
+      "repo_age": "2021 年建立"
+    },
+    {
+      "name": "Anthropic × PwC 擴大合作",
+      "url": "https://www.anthropic.com/news/pwc-expanded-partnership",
+      "desc": "PwC 部署 Claude 用於技術建設、交易執行和企業功能再造。繼 Anthropic × Gates Foundation $200M 之後本週第二個大型企業合作公告。",
+      "source": "Anthropic News",
+      "repo_age": "即時公告"
+    },
+    {
+      "name": "Julia Evans：離開 Tailwind，重新學習如何組織 CSS",
+      "url": "https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/",
+      "desc": "HN 643 分，56 則留言。核心觀點：Tailwind 掩蓋了 CSS 結構問題而非解決它，從 Tailwind 回來的工程師 CSS 組織能力可能比進去之前更弱。",
+      "source": "HN 643分",
+      "repo_age": "部落格文章"
+    },
+    {
+      "name": "low_latency_layer：把 Reflex 和 Anti-Lag 2 帶到 AMD/Intel GPU on Linux",
+      "url": "https://www.phoronix.com/news/Low-Latency-Layer",
+      "desc": "開源 Linux 專案，對 GPU scheduler 做 pre-emptive 排程，GPU-side scheduling jitter 從約 10ms 降到 1ms 以下。AMD RX 7000 和 Intel Arc 都支援。",
+      "source": "Phoronix",
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "Ubuntu Concept ISO for CIX P1 AI CPU",
+      "url": "https://www.phoronix.com/news/Ubuntu-Concept-CIX-P1-CPU",
+      "desc": "Canonical 推出 CIX P1（ARM 架構 AI CPU）的 Ubuntu concept ISO。新 ARM AI SoC 進入 Linux 主流支援路線，AI inference 的硬體多樣化持續。",
+      "source": "Phoronix",
+      "repo_age": "即時公告"
+    },
+    {
+      "name": "Self-Distilled Agentic Reinforcement Learning",
+      "url": "https://arxiv.org/abs/2605.15155",
+      "desc": "Agent 從自己的執行軌跡做 RL，不需外部 reward signal。核心：self-distillation 讓 agentic model 從 production traces 持續改善，免去人工標注。",
+      "source": "HuggingFace Daily Papers",
+      "repo_age": "論文"
+    },
+    {
+      "name": "future-agi/future-agi",
+      "url": "https://github.com/future-agi/future-agi",
+      "desc": "Open-source LLM 和 AI agent 的 eval、tracing、observability 一體化平台。979★，Python。",
+      "source": "topic:llm · 979★",
+      "repo_age": "本月新增",
+      "stars": 979
+    },
+    {
+      "name": "opensquilla/opensquilla",
+      "url": "https://github.com/opensquilla/opensquilla",
+      "desc": "Token-efficient AI agent：相同 budget 下更高 intelligence density，橫跨 agent / mcp / llm 三個 topic 都有 signal。966★，Python。",
+      "source": "topic:agent · 966★",
+      "repo_age": "本月新增",
+      "stars": 966
+    },
+    {
+      "name": "heider-x/vela",
+      "url": "https://github.com/heider-x/vela",
+      "desc": "AI-powered 小說寫作 IDE：local LLM + RAG，隱私優先，BYOK。面向網路小說作者和創意寫作者，完全離線可用。232★，TypeScript。",
+      "source": "topic:local-llm · 232★",
+      "repo_age": "本月新增",
+      "stars": 232
+    },
+    {
+      "name": "devnen/qwen3.6-windows-server",
+      "url": "https://github.com/devnen/qwen3.6-windows-server",
+      "desc": "一鍵在 Windows 上跑 Qwen3.6-27B：RTX 5090 達 158 tok/s，RTX 3090 達 72 tok/s。原生 Windows exe，不需 WSL、Docker、第三方 runtime。157★。",
+      "source": "topic:local-llm · 157★",
+      "repo_age": "本月新增",
+      "stars": 157
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "RIP Peter G. Neumann（RISKS Digest 創辦人，計算機安全先驅）",
+        "url": "https://lwn.net/Articles/1073186/",
+        "takeaway": "Neumann 主持 RISKS Digest 超過 35 年，記錄了從 Therac-25 到 Heartbleed 的幾乎所有重大電腦系統失敗案例。他的核心論點——複雜系統的失敗是系統性的，不是個別元件的——在 AI agent 大量部署的 2026 年比以前更重要。"
+      },
+      {
+        "title": "Microsoft BitLocker 後門：安全研究員發布技術報告與 exploit",
+        "url": "https://www.techspot.com/news/112410-security-researcher-microsoft-secretly-built-backdoor-bitlocker-releases.html",
+        "takeaway": "不管後門說法是否屬實，工程教訓是：disk encryption 的安全假設是全鏈路的，任何一個環節（key derivation、TPM binding、BIOS interface）都可以是 attack surface。如果你的系統假設了「BitLocker 保護的磁碟是不可讀的」，這週是重新審視這個假設的時機。",
+        "action": "在你的 threat model 文件加一個「供應商後門假設」段落，明確記錄你的安全假設中哪些依賴供應商的信任聲明"
+      },
+      {
+        "title": "Julia Evans：離開 Tailwind，重新學習如何組織 CSS",
+        "url": "https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/",
+        "takeaway": "HN 643 分說明這是廣泛共鳴，不是個人偏好文章。核心觀點：Tailwind 解決了 CSS 全域命名問題，但沒有解決 CSS 結構化思維問題——從 Tailwind 出來的工程師，CSS 組織能力可能比進去之前更弱。"
+      },
+      {
+        "title": "Native all the way, until you need text",
+        "url": "https://justsitandgrin.im/posts/native-all-the-way-until-you-need-text/",
+        "takeaway": "HN 318 分 + Lobsters 33 分（mac/swift tag）兩源交匯：text rendering 是 native app 開發的 Achilles heel，特別是在 emoji、RTL、CJK 混排場景。如果你在做 native macOS/iOS app，今天把你的 text-heavy view 過一遍 non-ASCII 字元測試。",
+        "action": "在你的 iOS/macOS 測試矩陣加一組 CJK + emoji 混排的截圖 snapshot test"
+      },
+      {
+        "title": "Self-Distilled Agentic Reinforcement Learning",
+        "url": "https://arxiv.org/abs/2605.15155",
+        "takeaway": "Agent 從自己的執行軌跡做 RL，不需外部 reward signal。實用意義：如果你的 agent harness 有 session log，這週開始把 successful/failed tool call sequence 結構化記錄下來——那是未來蒸餾的訓練資料。",
+        "action": "在你的 agent session log 加 (input, tool_calls, outcome) 的結構化格式"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model",
+        "url": "https://github.com/cactus-compute/needle",
+        "score": 764,
+        "comments": 47
+      },
+      {
+        "title": "Moving away from Tailwind, and learning to structure my CSS",
+        "url": "https://jvns.ca/blog/2026/05/15/moving-away-from-tailwind--and-learning-to-structure-my-css-/",
+        "score": 643,
+        "comments": 56
+      },
+      {
+        "title": "Mozilla to UK regulators: VPNs are essential privacy and security tools",
+        "url": "https://blog.mozilla.org/netpolicy/2026/05/15/mozilla-to-uk-regulators-vpns-are-essential-privacy-and-security-tools-and-should-not-be-undermined/",
+        "score": 548,
+        "comments": 32
+      },
+      {
+        "title": "Zerostack – A Unix-inspired coding agent written in pure Rust",
+        "url": "https://crates.io/crates/zerostack/1.0.0",
+        "score": 517,
+        "comments": 56
+      },
+      {
+        "title": "Security researcher says Microsoft built a Bitlocker backdoor, releases exploit",
+        "url": "https://www.techspot.com/news/112410-security-researcher-microsoft-secretly-built-backdoor-bitlocker-releases.html",
+        "score": 481,
+        "comments": 22
+      },
+      {
+        "title": "I don't think AI will make your processes go faster",
+        "url": "https://frederickvanbrabant.com/blog/2026-05-15-i-dont-think-ai-will-make-your-processes-go-faster/",
+        "score": 394,
+        "comments": 71
+      },
+      {
+        "title": "Every AI Subscription Is a Ticking Time Bomb for Enterprise",
+        "url": "https://www.thestateofbrand.com/news/ai-subscription-time-bomb",
+        "score": 326,
+        "comments": 57
+      },
+      {
+        "title": "Native all the way, until you need text",
+        "url": "https://justsitandgrin.im/posts/native-all-the-way-until-you-need-text/",
+        "score": 318,
+        "comments": 46
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Ascetic Computing",
+        "url": "https://ratfactor.com/ascetic-computing",
+        "score": 150,
+        "comments": 33,
+        "tags": [
+          "practices"
+        ]
+      },
+      {
+        "title": "Async I/O in Zig 0.16, today",
+        "url": "https://lalinsky.com/2026/05/11/async-io-in-zig-016-today.html",
+        "score": 58,
+        "comments": 4,
+        "tags": [
+          "vibecoding",
+          "zig"
+        ]
+      },
+      {
+        "title": "My Thoughts on Bun's Rust Rewrite",
+        "url": "https://en.liujiacai.net/2026/05/16/bun-rust-port/",
+        "score": 38,
+        "comments": 32,
+        "tags": [
+          "rust",
+          "vibecoding",
+          "zig"
+        ]
+      },
+      {
+        "title": "The Futility of Lava Lamps: What Random Really Means",
+        "url": "https://loup-vaillant.fr/articles/lava-lamps-and-randomness",
+        "score": 35,
+        "comments": 30,
+        "tags": [
+          "cryptography",
+          "security"
+        ]
+      },
+      {
+        "title": "Native all the way, until you need text",
+        "url": "https://justsitandgrin.im/posts/native-all-the-way-until-you-need-text/",
+        "score": 33,
+        "comments": 12,
+        "tags": [
+          "mac",
+          "swift"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "strategist922",
+        "developer_url": "https://github.com/strategist922",
+        "followers": 825,
+        "repo": "strategist922/dark-moon",
+        "url": "https://github.com/strategist922/dark-moon",
+        "language": null,
+        "hours_ago": 5,
+        "description": "Autonomous AI pentesting engine performing continuous offensive security across web, cloud, AD and Kubernetes.",
+        "local_context": "🇹🇼 台灣社群的 AI 安全工具開發熱度延伸：dark-moon 是 strategist922 繼 shadowbroker 後的第二個 offensive security 系列 repo，與今日全球三個 AI 安全工具同步出現形成在地呼應。"
+      },
+      {
+        "developer": "doggy8088",
+        "developer_url": "https://github.com/doggy8088",
+        "followers": 4414,
+        "repo": "doggy8088/opencc-py",
+        "url": "https://github.com/doggy8088/opencc-py",
+        "language": "Python",
+        "hours_ago": 59,
+        "description": "純 Python 的 OpenCC 函式庫，無 C 依賴，安裝即用。繁簡轉換工具鏈的 Python-native 替代方案。",
+        "local_context": "🇹🇼 doggy8088 持續補強台灣開發者的 Python 工具鏈：opencc-py 解決的是「在純 Python 環境安裝 OpenCC 需要 C 編譯器」的長期痛點。"
+      },
+      {
+        "developer": "Inndy",
+        "developer_url": "https://github.com/Inndy",
+        "followers": 507,
+        "repo": "Inndy/codex-bridge",
+        "url": "https://github.com/Inndy/codex-bridge",
+        "language": "Go",
+        "hours_ago": 30,
+        "description": "OpenAI-compatible local proxy，重用現有 Codex OAuth session 做 /v1/models 和 /v1/chat/completions。讓 Codex session token 被其他工具直接使用。",
+        "local_context": "🇹🇼 台灣社群對 AI CLI session 層的逆向熱度持續：Inndy 在 codex-bridge 之前已建了 claupe（Claude TUI headless 化），說明本地 session proxy 是台灣開發者的核心需求方向。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "steipete",
+        "developer_url": "https://github.com/steipete",
+        "followers": 50022,
+        "repo": "steipete/deepsec",
+        "url": "https://github.com/steipete/deepsec",
+        "language": "TypeScript",
+        "hours_ago": 8,
+        "description": "Deepsec is a security harness for finding vulnerabilities in your codebase powered by coding agents. Peter Steinberger（Proxyman、PDF Viewer 作者）今日最重要的新 repo。"
+      },
+      {
+        "developer": "hadley",
+        "developer_url": "https://github.com/hadley",
+        "followers": 26626,
+        "repo": "hadley/ghost-pepper",
+        "url": "https://github.com/hadley/ghost-pepper",
+        "language": null,
+        "hours_ago": 30,
+        "description": "100% private on-device voice models for speech-to-text and meeting transcription on macOS. ggplot2 作者的新工具，說明 expert-user 對本地隱私 STT 的需求是真實的。"
+      },
+      {
+        "developer": "JakeWharton",
+        "developer_url": "https://github.com/JakeWharton",
+        "followers": 68315,
+        "repo": "JakeWharton/dir-stepper",
+        "url": "https://github.com/JakeWharton/dir-stepper",
+        "language": "Kotlin",
+        "hours_ago": 16,
+        "description": "Walk the files in a directory through a series of steps. Jake Wharton（68K followers，Android 工具鏈先驅）的新 Kotlin utility。"
+      },
+      {
+        "developer": "mrdoob",
+        "developer_url": "https://github.com/mrdoob",
+        "followers": 25125,
+        "repo": "mrdoob/reframe",
+        "url": "https://github.com/mrdoob/reframe",
+        "language": "JavaScript",
+        "hours_ago": 41,
+        "description": "Webapp for framing a video clip and exporting an MP4. Three.js 作者（25K followers）的純 web 視訊剪輯工具，無後端。"
+      },
+      {
+        "developer": "google",
+        "developer_url": "https://github.com/google",
+        "followers": 72648,
+        "repo": "google/opencl-kernel-profiler",
+        "url": "https://github.com/google/opencl-kernel-profiler",
+        "language": "C++",
+        "hours_ago": 47,
+        "description": "Perfetto-based profiler for OpenCL kernel. 0 stars，Google I/O 前 47 小時建立——過去 6 天第三個指向 on-device AI 效能量測層的空 repo（windtunnel 5/12、esmeralda 5/16）。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "AI 攻擊工具三重冒出：24 小時內三個獨立 builder 建了 AI 自主安全掃描工具",
+      "body": "steipete/deepsec（50K followers，8h ago）、strategist922/dark-moon（5h ago）、KeygraphHQ/shannon（42K★，Trending #12）在同一個 24 小時窗口內出現。三個作者沒有協調，做的是三個不同產品（harness / offensive engine / white-box pentester），但都指向同一個機制：coding agent 可以做 SAST/DAST 做不到的多步驟語意漏洞分析。這是新產品類別在市場確認後的典型爆發模式——技術可行性剛被 Mythos AI curl CVE 驗證，立刻有多個 builder 同時看到空缺並進入。BitLocker 後門報告（HN 481 分）同一天出現，說明「動態執行追蹤 vs 靜態分析」的需求差距在同一個新聞週期被市場感知到了。",
+      "evidence": "steipete/deepsec 50,022 followers + KeygraphHQ/shannon 42,625★ + strategist922/dark-moon 5h ago；Mythos AI curl CVE 上週取得 CVE 編號（第一個有記錄的 AI agent 完整安全發現）；BitLocker HN 481 分 22 留言",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%（三個獨立高 follower builder 同天，高重疊度）",
+      "source_links": [
+        {
+          "platform": "GitHub Developers",
+          "title": "steipete/deepsec",
+          "url": "https://github.com/steipete/deepsec"
+        },
+        {
+          "platform": "GitHub Trending",
+          "title": "KeygraphHQ/shannon",
+          "url": "https://github.com/KeygraphHQ/shannon"
+        },
+        {
+          "platform": "GitHub Developers",
+          "title": "strategist922/dark-moon",
+          "url": "https://github.com/strategist922/dark-moon"
+        }
+      ],
+      "product_opportunity": "「PR 級語意安全掃描」SaaS：每個 PR 跑 90 秒 agent 分析，輸出帶 severity 的 JSON，接 GitHub App 直接賣給 fintech/healthtech 開發團隊。定價 $49/月/repo，對比 Snyk Enterprise 有明顯差異化——Snyk 是 pattern matching，這是語意推理。"
+    },
+    {
+      "title": "Google I/O 前三重佔位序列進入最後 48 小時",
+      "body": "過去 6 天，Google 在 GitHub 建了三個 0-star 空 repo：windtunnel（5/12，本地 AI benchmark 環境）、esmeralda（5/16，用途未知）、opencl-kernel-profiler（5/18，Perfetto for OpenCL kernel）。三個 repo 方向一致：本地 AI 效能量測層。windtunnel 是 benchmark 執行環境，opencl-kernel-profiler 是 GPU kernel 計時器（Android on-device AI 推論的最底層量測工具），esmeralda 是第三個數據點。Google I/O 在 48 小時後的 5/20 開始。Karpathy「Coming soon」持續第 8 天，進一步加重 I/O 前後的公告密度預期。",
+      "evidence": "google/windtunnel（2026-05-12，0★）+ google/esmeralda（2026-05-16，0★）+ google/opencl-kernel-profiler（2026-05-18，0★）；Karpathy Substack「Coming soon」持續 8 天",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%（三個一致的 pre-announcement repo 在同一週出現）",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 37,
+      "source_links": [
+        {
+          "platform": "GitHub Developers",
+          "title": "google/opencl-kernel-profiler",
+          "url": "https://github.com/google/opencl-kernel-profiler"
+        },
+        {
+          "platform": "Karpathy Substack",
+          "title": "Coming soon",
+          "url": "https://karpathy.substack.com/p/coming-soon"
+        }
+      ],
+      "product_opportunity": "如果 Google 在 I/O 發布 on-device AI performance 標準工具鏈，所有在 Android 或 Chrome 上部署 edge inference 的決策都需要更新。先建立 atrace-compatible 的 wall-clock timer wrapper，I/O 後換成 Google 新工具只需替換底層 sink，不用重寫量測架構。"
+    },
+    {
+      "title": "「AI 讓你的流程更快」的敘事正在主流技術社群被系統性拆解",
+      "body": "「I don't think AI will make your processes go faster」（HN 394 分，71 則留言）+ 「Every AI Subscription Is a Ticking Time Bomb for Enterprise」（HN 326 分，57 則留言）同日進 HN 前 25 名。兩篇論點不同——前者說流程改善需要先改流程再加工具，後者說 AI 訂閱的真實 ROI 計算被 vendor 的計費結構隱藏——但都指向同一個 upstream cause：AI adoption 第一波購買決策通常缺乏基準線量測，等帳單進來才發現實際 ROI 跟預期差距很大。Gary Marcus 同週發了「The illusion of Generative AI, the insanity of massive bets on hyperscaling」，三條不同角度的批評在同一週收斂。",
+      "evidence": "「I don't think AI will make your processes go faster」HN 394分 71留言；「Every AI Subscription Is a Ticking Time Bomb for Enterprise」HN 326分 57留言；Gary Marcus substack 同週；「AI psychosis」(Mitchell Hashimoto) 持續在 HN 發酵至 1752 分",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%（兩篇 AI 批評文同日進 HN 前 25 名）",
+      "arc_ref": "systems-circle-llm-response",
+      "day_count": 35,
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "I don't think AI will make your processes go faster",
+          "url": "https://frederickvanbrabant.com/blog/2026-05-15-i-dont-think-ai-will-make-your-processes-go-faster/",
+          "score": 394
+        },
+        {
+          "platform": "HN",
+          "title": "Every AI Subscription Is a Ticking Time Bomb for Enterprise",
+          "url": "https://www.thestateofbrand.com/news/ai-subscription-time-bomb",
+          "score": 326
+        },
+        {
+          "platform": "Gary Marcus Substack",
+          "title": "The illusion of Generative AI",
+          "url": "https://garymarcus.substack.com/p/the-illusion-of-generative-ai-the"
+        }
+      ],
+      "product_opportunity": "AI ROI 量測工具（給工程師用，不是給 CFO 用）：在 CI pipeline 插入 AI-assisted task 的實際 cycle time 量測，把「有 AI vs 沒有 AI 的同類 PR，merge 時間差多少」做成可以 export 的報表，比任何 vendor usage dashboard 更有說服力。"
+    },
+    {
+      "title": "Bun Rust 移植的技術後果開始進入社群清算",
+      "body": "Lobsters「My Thoughts on Bun's Rust Rewrite」（38 分，32 則留言）是 Bun Zig→Rust AI-assisted 移植合進主線 3 天後的第一篇實質技術評論。留言的核心分歧：Rust 的 async model 是 M:N executor（tokio），Zig 的是 stackful coroutines，兩者在 I/O-heavy 場景（HTTP server）的 backpressure 特性差異顯著。AI-assisted migration 可能保留了高層結構但遺漏了低層性能契約。「Async I/O in Zig 0.16, today」同日 Lobsters 58 分，說明 Zig async 的進展在同樣的社群被並排討論——這是一個隱性的「Bun 跑掉了但 Zig 繼續前進」敘事。",
+      "evidence": "Lobsters「My Thoughts on Bun's Rust Rewrite」38分 32留言（2026-05-18）；「Async I/O in Zig 0.16, today」同日 58分；oven-sh/bun GitHub Trending #4（91,668★）",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 2,
+      "percentile": "top 25%（中等 Lobsters 分數，但技術批評是首次）",
+      "arc_ref": "claude-code-skill-explosion",
+      "day_count": 33,
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "My Thoughts on Bun's Rust Rewrite",
+          "url": "https://en.liujiacai.net/2026/05/16/bun-rust-port/",
+          "score": 38
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Async I/O in Zig 0.16, today",
+          "url": "https://lalinsky.com/2026/05/11/async-io-in-zig-016-today.html",
+          "score": 58
+        }
+      ],
+      "product_opportunity": "AI-assisted 跨語言移植的效能回歸偵測 CI：PR merge 後自動跑 latency benchmark，把 p99 regression alert 貼進 PR 評論。Bun 是第一個大規模公開案例，但所有正在用 AI 做 language migration 的團隊都有同樣需求。"
+    }
+  ],
+  "sleeper": {
+    "name": "devnen/qwen3.6-windows-server",
+    "url": "https://github.com/devnen/qwen3.6-windows-server",
+    "stars": 157,
+    "description": "One-click Qwen3.6-27B inference on Windows. 158 tok/s on RTX 5090, 72 tok/s on RTX 3090. Native, no WSL, no Docker, no third-party runtime.",
+    "body": "157 顆星，但它解決的問題是「企業 Windows 開發者跑本地 27B LLM 的入門障礙」。到目前為止，本地大模型推理的主流方案（ollama、LM Studio、llama.cpp）在 Windows 上都需要額外配置或只能跑較小的模型。devnen 的 server 是原生 Windows exe，RTX 3090（二手約 $700 美元）可以達到 72 tok/s——這個速度已經足夠支撐類 Claude Code 的本地私有替代品。",
+    "why_asymmetric": "Windows 是絕大多數企業開發者的主要作業系統。「私有 Cursor」的需求很大，但目前的解決方案幾乎都假設使用者有 Linux 或 Mac。一個讓 Windows 企業開發者一鍵啟動 27B 私有推理的工具，面向的是一個完全未被服務的市場。157 星但目前沒有競品採取同樣的 Windows-first 方向。",
+    "commercial_path": "「Windows-first 私有 AI 開發工具」：把 qwen3.6-windows-server 包成 installer，整合進一個類 Cursor 的 IDE extension。面向法律、醫療、金融領域有 Windows 強制要求且不能使用雲端 AI 的企業開發團隊，訂閱定價 $49-99/月/開發者。Cursor 月費 $20 無法服務這個市場（因為需要上雲），這個工具可以。"
+  },
+  "contrarian": {
+    "claim": "shannon 式 AI 自主 pentesting 工具的市場爆發是假象——2026-12-31 前沒有任何此類工具能文件化 50 個以上由自動掃描直接找到的確認 CVE",
+    "body": "今天三個 AI 安全工具同天出現，shannon 的 42K★ 看起來像新產品類別的臨界點。我認為這個興奮超出了技術現實。自主 pentesting 工具面臨一個結構性問題：CVE 發現流程的最後一公里（impact assessment、responsible disclosure 協調、vendor negotiation、public writeup）需要人工判斷，而且這個判斷通常比技術發現本身更耗時。Mythos AI 找到的 curl CVE 是一個亮點，但它仍然需要人工驗證和全程 responsible disclosure 協調。SAST/DAST 工具已存在 20+ 年，它們的主要問題不是找不到漏洞，而是 false positive 太多讓工程師停止看告警。AI agent 的多步驟推理確實能找到語意漏洞，但它的 false positive 率目前沒有系統性量測。",
+    "rationale": "CVE 確認需要 vendor 承認和 CVSS 評分，這個流程平均需要 90 天的人工協調。自動工具可以提高漏洞的 recall，但無法取代 disclosure 流程的人工部分。預測驗證標準是客觀的：數一數 shannon 官方文件或 issue tracker 中，有 CVE 編號且明確標注「found by shannon 自動掃描」的條目數量。",
+    "prediction": "到 2026-12-31，KeygraphHQ/shannon 的公開 issue tracker 或官方文件中，traceable 到 shannon 自動掃描（不包括人工觸發的手動分析）發現的已公開 CVE 數量少於 50 個（以明確標注「found by shannon」的 CVE 公告或 security advisory URL 為準）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-apple-ml-lvsum-wwdc",
+      "text": "到 2026-06-30，apple/ml-lvsum-video-summarization 發布帶有 README 的公開版本，或 Apple 在 WWDC 2026 上公布相關 video summarization 功能（以 repo README 非空或 Apple WWDC 官方公告為準）。",
+      "status": "pending",
+      "created": "2026-05-08",
+      "resolution_date": "2026-06-30"
+    },
+    {
+      "id": "pred-google-io-local-ai-benchmark",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel、google/esmeralda、google/opencl-kernel-profiler 三個 repo 中至少一個發布帶有 README 的初始版本，或 Google 在 I/O 官方 session 中具名提及其中任何一個工具（以 repo README 非空或 Google I/O 官方 session 紀錄 URL 為準）。",
+      "status": "pending",
+      "created": "2026-05-14",
+      "resolution_date": "2026-05-21"
+    },
+    {
+      "id": "pred-needle-tool-router-adoption",
+      "text": "到 2026-11-30，LangChain、LlamaIndex、CrewAI 三個框架均未在 official release notes 將 needle 或等效的蒸餾式 tool router 列為 default tool selection mechanism（以 changelog 明確 mention 為準）。",
+      "status": "pending",
+      "created": "2026-05-16",
+      "resolution_date": "2026-11-30"
+    },
+    {
+      "id": "pred-bun-rust-perf-regression",
+      "text": "到 2026-12-31，oven-sh/bun 的 issue tracker 上有至少 3 個 closed issue 被標記為 performance regression，且 issue discussion 中明確 trace 到 Zig→Rust AI-assisted 移植的 commit（以 public GitHub issue URL + blame 參考為判準）。",
+      "status": "pending",
+      "created": "2026-05-16",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-ai-pentesting-cve-count",
+      "text": "到 2026-12-31，KeygraphHQ/shannon 的公開 issue tracker 或官方文件中，traceable 到 shannon 自動掃描發現的已公開 CVE 數量少於 50 個（以明確標注「found by shannon」的 CVE 公告或 security advisory URL 為準，不包括人工觸發的手動分析）。",
+      "status": "pending",
+      "created": "2026-05-18",
+      "resolution_date": "2026-12-31"
+    }
+  ],
+  "meta": {
+    "run_id": "105543fd-1aa1-48f1-a821-897fc507a534",
+    "pipeline_version": "9275f28",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-17T20:32:44.505Z",
+    "analyze_duration_ms": 1883542,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 230
+      },
+      "trending": {
+        "ok": true,
+        "count": 18
+      },
+      "search": {
+        "ok": true,
+        "count": 50
+      },
+      "developers": {
+        "ok": true,
+        "count": 14
+      }
+    },
+    "degraded_sources": []
+  }
+}

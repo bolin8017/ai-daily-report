@@ -1,0 +1,163 @@
+{
+  "date": "2026-05-18",
+  "lens_id": "phison-aidaptiv",
+  "focus_idea": {
+    "title": "Needle 26M 工具路由模型搭配 Llama-70B 推論後端：開發者工具 ISV 的全本機 agent 產品架構",
+    "path": "isv-dev-oss",
+    "description": "HN 今天 764 分的「Show HN: Needle: We Distilled Gemini Tool Calling into a 26M Model」（cactus-compute/needle）揭示了一個新的 agent 系統設計原則：用一個 26M 的小型專用模型負責工具路由決策，讓一個更大的推論模型專注處理複雜推理。Needle 本身只有 26M，任何硬體都可以載入；但它的推論後端如果只有 7-13B，在多步驟複雜任務（多檔案程式碼分析、長文件跨段推理）上品質明顯落差。aiDAPTIV+ SSD offload 讓 Llama-70B 可以在配備 Pascari SSD 的工作站上穩定運行，讓 Needle 有一個真正具競爭力的推論後端可以分派。同一天，GitHub Trending 第 2 名 HKUDS/CLI-Anything（35478 stars）「讓任何軟體變成 agent-native」，以及 HN 517 分的 Zerostack（pure-Rust coding agent），共同指向同一個設計方向：小型工具專用模型搭配大型推論後端、本機部署、無雲端依賴，是 2026 年開發者工具產品脫離 API 訂閱的可行架構。對建構程式碼審查工具、on-device CI 分析工具、或企業本機 coding assistant 的 ISV 來說，這是首次可以在產品規格裡寫入「不需 API 訂閱、Pascari SSD required」的時機窗口。",
+    "ingredient": {
+      "source": "hackernews",
+      "url": "https://github.com/cactus-compute/needle",
+      "name": "cactus-compute/needle",
+      "stars": null
+    },
+    "seasoning_use": "aiDAPTIV+ 的核心角色是讓 Llama-70B 能透過 Pascari SSD 做 weight offload，讓 Needle 的工具路由有一個 70B 等級的推論後端。拿掉 aiDAPTIV+，後端降級到 16GB baseline 可跑的 7-13B 模型：Needle 的路由能力不受影響，但分派後的推理品質不足以支撐 production 場景——多步驟程式碼重構出現遺漏、跨段長文件推理出現幻覺。ISV 無法以此向企業客戶主張「品質對標雲端 API」的品質承諾，「Enterprise On-Premise」定價層失去說服力。",
+    "customer_scenario": "一家建構「企業本機程式碼審查工具」的 ISV，目前需要 OpenAI GPT-4o API 才能跑複雜多檔案分析，API 費用每月 $2,800。他們的金融機構客戶以 IP 洩漏風險為由拒絕任何雲端 API 方案。ISV 產品 PM 看到 Needle + Llama-70B + aiDAPTIV+ 的 demo：5,000 行 TypeScript codebase 分析任務完全在本機跑，品質接近 GPT-4o。Binary commit：在產品 hardware requirement 文件裡加入「Pascari SSD 2TB minimum」，推出「Enterprise On-Premise」定價層，向金融機構客戶主打 IP 不出機器。",
+    "demo_path": "90 秒：啟動 Needle + llama.cpp（aiDAPTIV+ backend）on Pascari SSD。輸入 5,000 行 TypeScript codebase。Needle 路由到「code-analysis」工具 → Llama-70B 找出 3 個安全漏洞並建議 refactor → Needle 再次路由到「test-generation」工具 → Llama-70B 生成測試覆蓋。副螢幕顯示 SSD I/O 活躍（aiDAPTIV+ weight paging）。對比欄：同任務在 7B 後端的輸出——漏掉 2 個漏洞、測試生成覆蓋率 38% vs 70B 的 81%。",
+    "feasibility_evidence": {
+      "source_url": "https://github.com/cactus-compute/needle",
+      "claimed_capability": "Needle 是從 Gemini 蒸餾出的 26M 參數工具呼叫專用模型，推斷可對接 llama.cpp 的 function calling 介面；26M 大小使其可與 70B 主模型並存於同一推論環境，但是否支援 Phison aiDAPTIV+ 的多模型並載模式尚待確認（見 open_questions）。"
+    },
+    "effort_estimate": "2-週 MVP",
+    "must_have_test": {
+      "seasoning_indispensable_check": "拿掉 aiDAPTIV+，16GB baseline 只能跑 7-13B 後端。Needle 的工具路由能力不受影響，但後端品質落差顯著——多步驟程式碼分析出現遺漏、跨段長文件推理出現幻覺。ISV 產品在 7B 後端下無法以「品質對標 GPT-4o」為賣點，企業客戶不會為此切換掉雲端 API，Enterprise On-Premise 定價層失去存在理由。",
+      "demo_able_check": "90 秒內完成：Needle dispatch → Llama-70B via aiDAPTIV+ → 工具結果回傳 → 第二輪 dispatch → 最終輸出。SSD I/O dashboard 即時顯示 weight paging。副螢幕對比 7B 後端同任務輸出，漏洞偵測數量差距肉眼可見（3 vs 1）。",
+      "buyer_commits_check": "ISV 產品 PM（開發者工具 / 本機 AI 助理類）。Demo 顯示產品可以定義「Enterprise On-Premise」定價層：客戶自備 Pascari SSD，ISV 不承擔 API 費用，客戶 IP 不離機器，合規審計風險歸零。Binary commit：ISV 在產品 hardware requirement 文件裡加入 Pascari SSD 規格，向金融 / 法律機構客戶推銷。"
+    }
+  },
+  "oss_pulse": [
+    {
+      "name": "cactus-compute/needle",
+      "url": "https://github.com/cactus-compute/needle",
+      "source": "hn",
+      "stars": null,
+      "description": "從 Gemini 蒸餾出的 26M 工具呼叫專用模型，HN 764 分，設計為與大型推論後端組合使用的小型路由層",
+      "fits": ["isv-dev-oss", "isv-vertical"],
+      "fit_reason": "小型工具路由模型搭配 70B 後端（aiDAPTIV+），讓 ISV 有機會在本機跑完整 production-grade agent pipeline"
+    },
+    {
+      "name": "HKUDS/CLI-Anything",
+      "url": "https://github.com/HKUDS/CLI-Anything",
+      "source": "github-trending",
+      "stars": 35478,
+      "description": "讓任何 CLI 軟體變成 agent-native，GitHub Trending 第 2 名，35478 stars",
+      "fits": ["isv-vertical", "isv-dev-oss"],
+      "fit_reason": "企業現有 CLI 工具透過 CLI-Anything + Llama-70B（aiDAPTIV+）直接 agent 化，isv-vertical 的快速整合切入點"
+    },
+    {
+      "name": "K-Dense-AI/scientific-agent-skills",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "source": "github-trending",
+      "stars": 23739,
+      "description": "23 個研究、科學、金融、工程領域的即用型 agent skill 庫，GitHub Trending 第 10 名",
+      "fits": ["isv-vertical", "isv-dev-oss"],
+      "fit_reason": "金融分析、科研類 ISV 的即用 skill 庫；搭配 70B 後端品質才能達到企業採購門檻，13B 在專業域推理上明顯不足"
+    },
+    {
+      "name": "NirDiamant/agents-towards-production",
+      "url": "https://github.com/NirDiamant/agents-towards-production",
+      "source": "github-trending",
+      "stars": 19849,
+      "description": "GenAI agent 從 prototype 到 enterprise deployment 的端到端程式碼教學，GitHub Trending 第 8 名",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "production agent 部署教材，ISV-dev-oss 開發者採用 aiDAPTIV+ 本機 agent stack 的學習路徑對照參考"
+    },
+    {
+      "name": "heider-x/vela",
+      "url": "https://github.com/heider-x/vela",
+      "source": "github-search:local-llm",
+      "stars": 232,
+      "description": "本機 LLM + RAG 的小說寫作 IDE，privacy-first，BYOK，針對 web fiction authors 和創作者",
+      "fits": ["isv-consumer"],
+      "fit_reason": "創作者 ISV 的 privacy-first 本機工具；70B vs 13B 在長篇小說的角色與世界觀一致性上有可量化差異，但 ISV 規模尚小"
+    },
+    {
+      "name": "esengine/DeepSeek-Reasonix",
+      "url": "https://github.com/esengine/DeepSeek-Reasonix",
+      "source": "github-search:llm",
+      "stars": 3731,
+      "description": "DeepSeek-native AI coding agent，prefix-cache stability 設計，可在 terminal 長時間運行",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "terminal coding agent；prefix-cache 穩定性設計與 aiDAPTIV+ 的 cross-session persistence 在架構上互補，可作為 ISV 產品整合參考"
+    },
+    {
+      "name": "microsoft/sourcepack",
+      "url": "https://github.com/microsoft/sourcepack",
+      "source": "github-developers",
+      "stars": 0,
+      "description": "Microsoft 剛建立的 repo：將 agent skills 作為版本化 package 管理的工具，32 小時前建立",
+      "fits": ["isv-dev-oss", "oem"],
+      "fit_reason": "Microsoft 在定義 agent skill 生態的包管理標準；Phison 生態若對齊此格式，可以開發 aiDAPTIV+ 的 skill 包進入 ISV 工具鏈"
+    }
+  ],
+  "adjacent_ideas": [
+    {
+      "title": "CLI-Anything × 企業存量 CLI 工具 agent 化：isv-vertical 的快速切入路線",
+      "path": "isv-vertical",
+      "description": "HKUDS/CLI-Anything（35478 stars，GitHub Trending 第 2 名）讓任何 CLI 軟體可以被 AI agent 呼叫。法律 / 醫療 ISV 的現有產品通常有 CLI 介面（案件管理系統、EHR 系統的 CLI 介面）。透過 CLI-Anything + Llama-70B（aiDAPTIV+），ISV 不需要改後端就能為現有產品加入 AI layer。aiDAPTIV+ 必要性：70B 模型對法律條款解析和醫囑交叉檢查的準確率在企業可接受門檻上明顯優於 13B，這是 ISV 說服客戶的關鍵數字。Must-have test 2/3：indispensable（70B vs 13B 品質差距在專業域很明顯）、demo-able（CLI 工具 agent 化可在 90 秒示範）；buyer commits 不確定性稍高，需要鎖定具體 ISV 客戶才能推進。",
+      "ingredient": {
+        "source": "github-trending",
+        "url": "https://github.com/HKUDS/CLI-Anything",
+        "name": "HKUDS/CLI-Anything",
+        "stars": 35478
+      },
+      "effort_estimate": "2-週 MVP"
+    },
+    {
+      "title": "Vela 本機寫作 IDE × ISV-Consumer：70B 創作引擎的 hardware requirement 切入",
+      "path": "isv-consumer",
+      "description": "heider-x/vela（232 stars，github-search:local-llm）是本機 LLM + RAG 的 privacy-first 寫作 IDE，針對 web fiction authors。ISV-consumer 路徑：Vela 的產品 PM 將 Pascari SSD 列入「70B 創作引擎」選項的 hardware requirement，讓付費用戶可以跑 Llama-70B 維持長篇小說的角色與世界觀一致性——200K context 場景下 70B vs 13B 的追蹤品質差距可量化。Must-have test 2/3：indispensable（有差異）、demo-able（寫作品質對比可示範）；buyer commits 有不確定性，原因是 Vela 目前 232 stars 規模，ISV 是否有足夠的產品 PM 來做 hardware spec 決策尚不清楚。",
+      "ingredient": {
+        "source": "github-search:local-llm",
+        "url": "https://github.com/heider-x/vela",
+        "name": "heider-x/vela",
+        "stars": 232
+      },
+      "effort_estimate": "週末 POC"
+    }
+  ],
+  "radar": [
+    {
+      "title": "HN 326 分：「每個企業 AI 訂閱都是一顆計時炸彈」",
+      "summary": "thestateofbrand.com 文章在 HN 獲 326 分、57 則留言，核心論點是企業 AI 訂閱費在採購初期被低估，用量放大後成本失控。這是 aiDAPTIV+ GTM 的直接順風——「Pascari SSD 一次性採購取代每月 API 帳單」的 ROI 故事在 ISV 向企業客戶推銷時的說服力明顯提升。ISV 可以直接引用這個論述框架作為 Enterprise On-Premise 定價層的前置說明。",
+      "url": "https://www.thestateofbrand.com/news/ai-subscription-time-bomb",
+      "relevance_axis": "customer-segment",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "SK Hynix「It's the Memory」Tech Note：記憶體 vendor 在搶 AI 敘事話語權",
+      "summary": "SK Hynix Tech Note EP.1 主打「AI 的未來由記憶體決定」，強調 HBM 在 Physical AI 的角色。記憶體 vendor 在 framing 自己為 AI infra 的核心。Phison 的反論是「SSD 作為 AI weight offload 層」，需要更主動在同一個敘事空間建立存在感——「記憶體不夠大？SSD 補上去」是可以直接對位的話語。",
+      "url": "https://news.skhynix.com/tech-note-series-ep1/",
+      "relevance_axis": "competition",
+      "impact_window": "next year"
+    },
+    {
+      "title": "Samsung 開發最高 1PB nearline SSD（Scality 引述）",
+      "summary": "BlocksAndFiles 報導 Samsung 正在開發 nearline SSD，容量最高 1PB，定位 datacenter。與 Phison 消費端 / prosumer AI 路線不直接競爭，但訊號意涵是：SSD 容量上限快速提升，aiDAPTIV+ 的「70B 模型 weight offload 在 SSD 上」在儲存容量上不會成為瓶頸，2TB Pascari 足以支撐數個 70B 模型的完整 weight 儲存。",
+      "url": "https://www.blocksandfiles.com/flash/2026/05/15/scality-says-samsung-is-developing-nearline-ssds-up-to-1-pb/5241031",
+      "relevance_axis": "tech-stack",
+      "impact_window": "watch"
+    },
+    {
+      "title": "Anthropic × PwC 企業部署擴大協議",
+      "summary": "Anthropic 與 PwC 宣布擴大合作，PwC 將用 Claude 重塑企業流程。對 isv-vertical 路徑的 Phison 合作夥伴（法律、金融 ISV）來說，競品是雲端 Claude API 加上 PwC 整合服務。Phison 的差異點：在 PwC 客戶群中找那批無法上雲的部門（合規隔離、IP 保密需求），這些部門是 ISV 建構本機 aiDAPTIV+ 方案的確定性市場。",
+      "url": "https://www.anthropic.com/news/pwc-expanded-partnership",
+      "relevance_axis": "customer-segment",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "NVIDIA Vera Rubin：datacenter 規模 agentic AI 架構",
+      "summary": "NVIDIA 發布 Vera Rubin Platform 解決 agentic AI 規模化問題，定位 hyperscaler / datacenter，NVLink 與 HBM4 架構。與 aiDAPTIV+ 的 edge / prosumer 路線不直接競爭。訊號意義：NVIDIA 在定義 datacenter agentic 規模的技術敘事愈來愈清晰，反而讓 Phison 的「70B on-device」故事更容易做對比定位——cloud-scale agentic 和 on-device-private agentic 各有其市場。",
+      "url": "https://developer.nvidia.com/blog/how-the-nvidia-vera-rubin-platform-is-solving-agentic-ais-scale-up-problem/",
+      "relevance_axis": "competition",
+      "impact_window": "next year"
+    },
+    {
+      "title": "Phison CEO 獲陽明交大榮譽博士學位",
+      "summary": "Phison 執行長潘健成獲得陽明交大榮譽博士學位。對 OEM channel 的間接效益：台灣 OEM（ASUS、Acer、MSI）與學術界有連結的供應商合作時會增加信任度。不直接影響 aiDAPTIV+ 產品規格，但對台灣 OEM channel 談判有正向背書作用，特別是與陽明交大有採購或研究合作的 OEM 廠商。",
+      "url": "https://phisonblog.com/phison-nycu-awards-honorary-doctorate-to-phison-electronics-ceo-khien-seng-pua/",
+      "relevance_axis": "oem-channel",
+      "impact_window": "watch"
+    }
+  ]
+}
