@@ -1,0 +1,172 @@
+{
+  "date": "2026-05-19",
+  "lens_id": "phison-aidaptiv",
+  "focus_idea": {
+    "title": "openhuman × Pascari：「個人超智能」從 OEM 廣告詞變成技術事實",
+    "path": "oem",
+    "description": "tinyhumansai/openhuman 今日 GitHub Trending 排名第一（16,715 stars），自我定位為「Your Personal AI superintelligence — Private, Simple and extremely powerful」。這個定位語言對 AI PC OEM SKU PM 具有直接可用性——但廣告詞的可信度取決於模型規模。標準 16GB AI PC 裝 Ollama 最高跑到 Qwen2.5-7B 或 Llama-3.1-8B，在 openhuman 上輸出的是 AI 助理品質；Pascari SSD + aiDAPTIV+ 讓 Llama-3-70B 在同一台筆電上成立，openhuman 才真正能稱「superintelligence」。ASUS、HP、Acer 的 AI PC PM 正為 Computex 2026 高階 SKU 找差異化故事：同款 NPU、同 16GB RAM，誰能提供 70B 本機推論誰就贏得 launch deck 的主角位置。Phison 的切入點是提供「openhuman × Pascari」OEM 套件：demo 影片、benchmark sheet、行銷素材，讓 PM 直接帶進 SKU 審查會議。",
+    "ingredient": {
+      "source": "github-trending",
+      "url": "https://github.com/tinyhumansai/openhuman",
+      "name": "tinyhumansai/openhuman",
+      "stars": 16715
+    },
+    "seasoning_use": "aiDAPTIV+ 在「模型規模」這一步是決定性的。openhuman 沒有 Pascari，最大可用模型被卡在 13B（16GB RAM 天花板）；加上 aiDAPTIV+ 後，溢出的 70B 權重分層到 SSD，同一台 AI PC 達到 70B 推論能力。這個差距對應到「AI 助理 vs 個人超智能」的質量鴻溝，是 OEM SKU PM 能放進 launch deck 的技術事實，而非模糊感知。",
+    "customer_scenario": "ASUS ZenBook AI 系列的 SKU PM，Computex 2026 展前三個月開產品審查會。競品 HP Spectre x360 規格完全相同——同款 Intel Core Ultra NPU、同 16GB LPDDR5。她需要一個技術事實，不是行銷說辭，讓她在審查會上說「我們這台機器跑得起 70B 本機推論，對手不行」。openhuman 的 trending #1 給她 OSS 社群背書；Pascari 的 benchmark 數字給她放進 launch deck 的具體彈藥。",
+    "demo_path": "Pascari 配備 AI PC 啟動 openhuman（70B via aiDAPTIV+）→ 輸入複雜分析題（分析台積電 2025Q4 法說會，列出競品分析師不會問的三個財報邏輯問題）→ 70B streaming 輸出，推理層次可見 → 切換同款機器標準 Ollama 8B → 答案品質差距在 90 秒內顯而易見 → OEM PM 決定把這個場景放進 Computex 展台。",
+    "feasibility_evidence": {
+      "source_url": "https://github.com/tinyhumansai/openhuman",
+      "claimed_capability": "openhuman 以 Rust 撰寫、明確定位跨平台（非 macOS-only），強調本機隱私推論與高能力上限。具體推論後端從本次 staging enrichment 未確認——description 僅說明功能定位，README excerpt 未包含於 trending 資料。Rust 跨平台本機 LLM 的常見後端為 llama.cpp 或 candle，前者與 aiDAPTIV+ fork 的相容性待確認。",
+      "release_or_version_note": "2026-05-19 GitHub Trending 排名 #1，16,715 stars，Rust 語言"
+    },
+    "effort_estimate": "2 週 MVP（首要條件：確認 openhuman 後端為 llama.cpp 或 GGML；若是，aiDAPTIV+ 對接路徑直接可用）",
+    "must_have_test": {
+      "seasoning_indispensable_check": "16GB AI PC 裝 Ollama 跑 openhuman，最大模型 Llama-3.1-8B 或 Qwen2.5-7B——「personal superintelligence」廣告詞在 8B 上不成立。加上 aiDAPTIV+ + Pascari，Llama-3-70B 在同一台機器上成立，廣告詞才有技術事實支撐。拿掉 aiDAPTIV+，OEM 差異化故事垮掉。",
+      "demo_able_check": "60-90 秒：openhuman 開機 → 複雜推理 prompt → 70B streaming 輸出品質 → vs 8B baseline 對比 → 品質差距可見。完整端到端 demo 可錄成影片放進 OEM launch kit。",
+      "buyer_commits_check": "ASUS / HP / Acer AI PC SKU PM：demo 後，Pascari 提供的技術事實（70B 本機可用）是將 Pascari 寫進高階 SKU BOM 的具體理由。目標層：NT$50,000+ / $1,600+ AI PC 有空間吸收 Pascari 溢價。binary commit 行為：在 SKU 規格表中加入 Phison Pascari SSD 作為 AI 差異化硬體。"
+    }
+  },
+  "adjacent_ideas": [
+    {
+      "title": "heider-x/vela：小說創作 IDE 的 70B 品質跳升，isv-consumer 硬體推薦切入點",
+      "path": "isv-consumer",
+      "description": "vela 是以本機 LLM + RAG 打造的小說寫作 IDE，明確定位「privacy-first, BYOK, for web fiction authors and creative writers」（236 stars，github-search:local-llm）。目標用戶是網路小說作者與創作者，不願把未出版的劇本或角色設定送上雲端。ISV 切入點：7B/13B 推論對散文生成品質足夠入門，但複雜角色內心描寫、長篇結構維持、多視角敘事一致性在 70B 有可見提升。aiDAPTIV+ + Pascari 讓 vela 的 pro 創作者 tier 標配硬體推薦成立。",
+      "ingredient": {
+        "source": "github-search:local-llm",
+        "url": "https://github.com/heider-x/vela",
+        "name": "heider-x/vela",
+        "stars": 236
+      },
+      "seasoning_use": "vela 7B 可用，但 70B 的長文脈絡維持能力是 pro 創作者能感知的差距。aiDAPTIV+ 讓「本機隱私 + 70B 品質」在消費者 AI PC 上成立，vela 才能把 Pascari 寫進產品 spec 作為 pro tier 硬體推薦門檻。",
+      "effort_estimate": "2 週 MVP（整合 vela 本機推論設定 + aiDAPTIV+ 端點）",
+      "must_have_test": {
+        "seasoning_indispensable_check": "vela 13B 用戶能寫作，差距在複雜敘事結構。70B 提升可感知，但 binary commit 確定性低於 OEM 路徑——pro tier 的用戶規模與願付溢價尚未驗證。",
+        "demo_able_check": "vela 載入個人創作 corpus → 複雜場景寫作 prompt → 70B vs 13B 輸出對比 → pro 創作者看得出差距。",
+        "buyer_commits_check": "vela ISV PM 考慮增加 pro tier，以 Pascari 作為推薦硬體——binary commit 確定性中等，取決於 pro tier 用戶規模與付費意願，目前缺乏 cross-source 驗證。"
+      }
+    },
+    {
+      "title": "daily_stock_analysis：私人財務分析 70B 本機推論，法遵 ISV 的硬體門檻",
+      "path": "isv-vertical",
+      "description": "ZhuLinsen/daily_stock_analysis（36,998 stars，trending #14）是 LLM 驅動的 A/H/美股分析系統，多資料源 + 實時新聞 + LLM 決策儀表板。對機構法遵場景（私人銀行、家族辦公室、台灣投顧），客戶資產資料不能上雲端——FINRA、個資法、金控自律要求本機運算。7B 模型的財務推理品質勉強可用，70B 的推理鏈長度與準確率在法遵報告中有實質差距。ISV 若打「零資料上雲 + 70B 分析品質」的法遵財務分析產品，Pascari 寫進硬體 spec 是架構的必要選項。",
+      "ingredient": {
+        "source": "github-trending",
+        "url": "https://github.com/ZhuLinsen/daily_stock_analysis",
+        "name": "ZhuLinsen/daily_stock_analysis",
+        "stars": 36998
+      },
+      "effort_estimate": "1 個月（需對接 daily_stock_analysis 架構 + aiDAPTIV+ 端點 + 法遵場景客製）",
+      "must_have_test": {
+        "seasoning_indispensable_check": "法遵要求本機，70B vs 7B 財務推理品質差距在複雜財報分析中可測量。aiDAPTIV+ 是讓 70B 在 AI PC 上成立的必要元件。",
+        "buyer_commits_check": "私人銀行 / 家族辦公室的合規科技 ISV，產品架構要求零資料上雲，Pascari 是硬體 spec 的必填項。binary commit 確定性高於 isv-consumer 路徑；但此 repo 目前定位為個人工具，ISV 商業化路徑需要 Phison 主動推進。"
+      }
+    }
+  ],
+  "oss_pulse": [
+    {
+      "name": "tinyhumansai/openhuman",
+      "url": "https://github.com/tinyhumansai/openhuman",
+      "source": "github-trending",
+      "stars": 16715,
+      "description": "Rust 跨平台本機 AI，定位「Personal AI superintelligence — Private, Simple, extremely powerful」，今日 trending #1",
+      "fits": ["oem", "isv-consumer"],
+      "fit_reason": "OEM bundling 故事強——70B 本機推論讓廣告詞成立；isv-consumer 側適合隱私敏感的個人 AI 用戶"
+    },
+    {
+      "name": "ggml-org/llama.cpp",
+      "url": "https://github.com/ggml-org/llama.cpp",
+      "source": "github-trending",
+      "stars": 110941,
+      "description": "C/C++ 本機 LLM 推論引擎，trending #6；Phison aiDAPTIV+ 以此為 fork 基礎",
+      "fits": ["oem", "isv-vertical", "isv-consumer", "isv-dev-oss"],
+      "fit_reason": "aiDAPTIV+ 中間層的技術根基，任何路徑的可行性都依賴 llama.cpp fork 相容性"
+    },
+    {
+      "name": "ZhuLinsen/daily_stock_analysis",
+      "url": "https://github.com/ZhuLinsen/daily_stock_analysis",
+      "source": "github-trending",
+      "stars": 36998,
+      "description": "LLM 驅動 A/H/美股分析：多資料源 + 實時新聞 + LLM 決策儀表板，trending #14",
+      "fits": ["isv-vertical"],
+      "fit_reason": "機構財務分析法遵場景（FINRA / 個資法）需要本機 70B，aiDAPTIV+ 是讓 70B 在 AI PC 上成立的關鍵"
+    },
+    {
+      "name": "K-Dense-AI/scientific-agent-skills",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "source": "github-trending",
+      "stars": 24316,
+      "description": "23 個現成 agent skill，涵蓋研究、工程、財務、寫作，trending #4；連續出現於訊號池",
+      "fits": ["isv-vertical", "isv-dev-oss"],
+      "fit_reason": "研究機構與工程 ISV 需要 70B 本機推論支撐複雜 skill 鏈；LLM 呼叫介面問題仍開放（open_questions 第 1、3 項）"
+    },
+    {
+      "name": "HKUDS/CLI-Anything",
+      "url": "https://github.com/HKUDS/CLI-Anything",
+      "source": "github-trending",
+      "stars": 36518,
+      "description": "「讓所有軟體變成 agent-native」框架，trending #3",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "agent-native 軟體需要本機推論能力；70B 本機是 agent 複雜任務的品質門檻，aiDAPTIV+ 提供這個能力基礎"
+    },
+    {
+      "name": "humanlayer/12-factor-agents",
+      "url": "https://github.com/humanlayer/12-factor-agents",
+      "source": "github-trending",
+      "stars": 20455,
+      "description": "LLM 軟體設計原則，12-factor 格式，trending #11；開發者社群 agent 架構的參考框架",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "建構可靠 agent 產品的 ISV 開發者需要本機推論作為私有化部署選項，aiDAPTIV+ 是讓 70B 本機成立的中間層"
+    },
+    {
+      "name": "heider-x/vela",
+      "url": "https://github.com/heider-x/vela",
+      "source": "github-search:local-llm",
+      "stars": 236,
+      "description": "小說寫作 AI IDE，本機 LLM + RAG，privacy-first，BYOK；明確鎖定 web fiction 創作者市場",
+      "fits": ["isv-consumer"],
+      "fit_reason": "創作者資料隱私要求本機，70B 的長文一致性對 pro 創作者有感——isv-consumer 路徑的 aiDAPTIV+ 切入點"
+    }
+  ],
+  "radar": [
+    {
+      "title": "Phison Blog：「以更少 GPU 記憶體做更多 AI」——Pascari aiDAPTIV™ 的記憶體危機敘事",
+      "summary": "Phison 自有部落格推送《Doing More AI With Less GPU Memory: How Pascari aiDAPTIV™ Helps Navigate Today's Memory Crunch》。Phison 正在強化「GPU 記憶體危機 + SSD 作為解法」的市場論述，與今日 SK Hynix「記憶體決定 AI 未來」的競品敘事形成直接碰撞。兩者都聲稱「記憶體瓶頸決定 AI 能力上限」，但場景不同：Phison 打邊緣端本機推論，SK Hynix 打資料中心 HBM。",
+      "url": "https://phisonblog.com/doing-more-ai-with-less-gpu-memory-how-pascari-aidaptiv-helps-navigate-todays-memory-crunch/",
+      "relevance_axis": "tech-stack",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "LWN：Linux 核心新增 flash-friendly swap，SSD 作為記憶體擴展的底層利好",
+      "summary": "LWN 報導《Swap tables, flash-friendly swap, swap_ops, and more》，Linux 核心正在優化 swap 子系統使其對 flash 儲存更友善（降低寫入放大、提升 swap throughput）。這是 aiDAPTIV+ 依賴的「SSD 作為 GPU 記憶體延伸」架構的上游技術利好——作業系統層的 flash-friendly 優化方向與 aiDAPTIV+ 的應用層 SSD offloading 一致，長期可能降低 middleware 工程複雜度。",
+      "url": "https://lwn.net/Articles/1072657/",
+      "relevance_axis": "tech-stack",
+      "impact_window": "next year"
+    },
+    {
+      "title": "SK Hynix「記憶體決定 AI 未來」：競品搶佔 AI 記憶體敘事的話語權",
+      "summary": "SK Hynix Tech Note EP.1《'It's the Memory', The Future of AI Will Be Decided by Memory》宣示 HBM 作為 AI 核心資源的地位，配合資料中心 AI 基礎設施擴張的分析師訪談。Phison 的反制軸是邊緣端工作站 SSD。在 ISV 與 OEM 的溝通中，Phison 需要明確區隔：「你的問題不在資料中心 HBM，而在本機 AI PC 的 VRAM 天花板——Pascari 解的是這個問題。」",
+      "url": "https://news.skhynix.com/tech-note-series-ep1/",
+      "relevance_axis": "competition",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "Gary Marcus：生成式 AI 的幻覺與超大規模 scaling 的瘋狂押注——本機推論反敘事的外部佐證",
+      "summary": "Gary Marcus 匯整三篇訪談，從學術視角質疑雲端超大規模 scaling 的可持續性，並為 world models 與神經符號 AI 辯護。Marcus 的論述方向為 Phison 本機推論敘事提供了獨立的學術背書——「超大規模押注可能失敗」的論述越強，「本機 70B 作為可控替代方案」的商業邏輯說服力越強。不作直接行銷素材，但在 ISV 技術評估討論中可引用作為中立的風險論述。",
+      "url": "https://garymarcus.substack.com/p/the-illusion-of-generative-ai-the",
+      "relevance_axis": "research",
+      "impact_window": "watch"
+    },
+    {
+      "title": "今日訊號池缺口：HN、HuggingFace Daily Papers、Anthropic News、Dev.to 全數 503",
+      "summary": "今日 5 個主要訊號來源（Hacker News、Show HN、HuggingFace Daily Papers、Anthropic News、Dev.to Top）全部返回 HTTP 503，訊號池缺少：HN 社群對新 OSS 的第一反應、HuggingFace 最新量化模型發布（llama.cpp 相容的新 checkpoint）、Anthropic 產品公告、Dev.to 開發者實測文章。HuggingFace Daily Papers 缺席的影響最大——新模型的推論效率改進（如新版量化方法）直接影響 aiDAPTIV+ 可支援的模型範圍。明日若恢復，需優先補看 HuggingFace Papers 的本機推論相關發布。",
+      "relevance_axis": "tech-stack",
+      "impact_window": "watch"
+    }
+  ],
+  "meta": {
+    "signal_sources_degraded": ["Hacker News", "Show HN", "HuggingFace Daily Papers", "Anthropic News", "Dev.to Top"],
+    "phison_scope_items_filtered": 22,
+    "hard_rejected_today": ["devnen/qwen3.6-windows-server (RTX 3090 runs 27B int4 without aiDAPTIV+)", "ovoment/ovo-local-llm (macOS-only)", "vLLM v0.21.x (datacenter)", "LMCache Operator v0.1.1 (datacenter)", "NVIDIA Vera Rubin (hyperscaler)"],
+    "open_question_referenced": "Q4 multi-model loading (2026-05-18) — no new signals today"
+  }
+}

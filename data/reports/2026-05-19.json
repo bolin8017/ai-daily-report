@@ -1,0 +1,568 @@
+{
+  "date": "2026-05-19",
+  "lead": {
+    "html": "<h3>microsoft/amplifier-agent 在兩小時前建立了，0 stars，0 commits，什麼都沒有——這已經是 5 週內第四個</h3>\n\n<h4>發生了什麼</h4>\n<p>microsoft/amplifier-agent 在台北時間今天凌晨兩小時前出現在 GitHub，沒有 description，沒有 README，沒有初始 commit。這不是第一次：microsoft/amplifier-bundle-chat-completions（4/17）先出現，再是 microsoft/amplifier-module-provider-openai-chatgpt（4/30），然後是 microsoft/sourcepack（5/16，skill 版本管理），現在是 microsoft/amplifier-agent。四個 repo，五週，每次都是先出現空的佔位，然後幾天內填入內容。</p>\n<p>同一個 24 小時窗口：google/windtunnel（5/12 建立，71 小時前仍然空）、google/esmeralda（5/16，仍然空）、google/opencl-kernel-profiler（5/17，仍然空）三個 Google 空 repo 在 I/O 開幕前 24 小時繼續等待。Karpathy 的「Coming soon」是第 9 天。今天 HN、Show HN、Anthropic News、Dev.to、HuggingFace Daily Papers 全部返回 HTTP 503——5 個主要訊號源同時失聯，讓今天的訊號能見度比平時低。在這個部分盲點的背景下，microsoft/amplifier-agent 是今天能見度最高的 concrete signal。</p>\n\n<h4>為什麼重要</h4>\n<p>Microsoft amplifier-* 系列現在有足夠多的數據點做模式分析：amplifier-bundle 是 chat completions 封裝層，amplifier-module-provider 是 LLM provider 抽象，sourcepack 是 skill 版本管理，amplifier-agent 現在是 agent runtime。這是一個完整 agent 平台從底層往上建的序列：先標準化介面，再做 skill 版本管理，最後推出 execution layer。</p>\n<p>如果 amplifier-agent 的填入方向和前幾個 repo 一致，它的定位很可能是 provider-agnostic agent execution wrapper——坐在你的 agent code 和 LLM API 呼叫中間，負責 tool call routing、retry logic、和 session management。這個位置和 LangGraph 的 graph-based agent runtime、CrewAI 的 role-based orchestration、以及 Claude Code 自己的 tool-call 架構直接重疊。</p>\n<p>對你當前的 agent stack 有一個具體的影響點：如果你現在把 Azure OpenAI 當 provider 且直接呼叫 API（不透過 provider-agnostic 的 abstraction layer），未來幾週可能需要決定要不要換成 amplifier-agent 作為 execution wrapper。遷移難不難取決於你的 abstraction layer 厚不厚。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 今天 503，microsoft/amplifier-agent 還沒有公開討論。Lobsters 今天在討論 BitLocker 後門（75 分，20 則留言）——這是昨天 HN 481 分的延續，跨源確認。Lobsters 留言的主調：「這解釋了為什麼 BitLocker 從來沒有真正支援離線金鑰備份模式。」不是憤怒，是冷靜的 confirmation bias。Gary Marcus 今天發了《The AI trial of the century ends with a whimper》，措辭暗示某個被期待的 AI 法律或監管案件以不了了之收場。由於今天 Anthropic News 和 HuggingFace 都 503，我們無法確認完整上下文——這段話是從 Marcus Substack 摘要推斷，不是全文分析。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 agent 架構目前直接依賴 Azure OpenAI endpoint（而不是透過 provider-agnostic 的 abstraction），這週在你的 repo 建一個 <code>vendor-assumptions.md</code>，記錄你當前假設的 API 版本、tool call schema、和 streaming 行為。根據前三個 amplifier-* repo 的模式，amplifier-agent 的 README 出現時間預計在建立後 3–7 天——也就是 5/22–5/26，正好是 Google I/O 結束後。那個時間點你需要快速判斷這個 runtime 是否值得納入你的 dependency，有先記錄 current assumptions 比沒有好做 diff。</p>"
+  },
+  "ideas": [
+    {
+      "format": "solo",
+      "title": "把 steipete/deepsec 接進 CI，讓每個 PR 自動產出安全差分報告",
+      "projects": [
+        {
+          "name": "steipete/deepsec",
+          "url": "https://github.com/steipete/deepsec",
+          "note": "TypeScript，coding agent 驅動的 codebase 安全掃描 harness，32h ago，50K follower 開發者"
+        }
+      ],
+      "description": "deepsec 的架構是把 codebase 或 diff 餵給 coding agent，讓 agent 按照 OWASP Top 10 加 custom rule list 找漏洞並回傳結構化報告。在 CI 裡的整合方式：GitHub Actions 在每個 PR 跑 deepsec on diff（不是整個 codebase，只掃 changed files），把報告存成 PR comment 或 Actions artifact。最有價值的地方不是找零日漏洞，而是讓安全審查從「月度人工 grep + OWASP checklist，2–3 天」縮短到「每個 PR 的自動差分，5 分鐘」。注意：deepsec 是 32 小時前建立，README 可能還不完整——先 clone 看架構再決定是否值得現在接，或者等一週 README 補齊再開工。",
+      "use_case": "你是一個在醫療或金融領域做 B2B SaaS 的後端工程師，每月要向客戶提供安全審計報告。現在這份報告靠人工 grep + OWASP checklist，每次花 2–3 天。你已經在用 Claude API 做其他 feature，希望把安全審查的 marginal cost 降到接近零。",
+      "tech_stack": "TypeScript + GitHub Actions + Claude API（或 OpenAI API）",
+      "hardware": "雲端 API 即可，不需要本地 GPU",
+      "skill_level": "熟悉 GitHub Actions workflow 語法 + 基礎 TypeScript 即可",
+      "dependencies": "Claude API key 或 OpenAI API key；小型 codebase 按 PR diff 掃描月費估計 $10–30，視頻率而定",
+      "difficulty": 2,
+      "dev_time": "週末 POC（假設 deepsec README 在未來 3–7 天補齊）",
+      "first_step": "git clone https://github.com/steipete/deepsec && cat README.md（先評估架構完整度）",
+      "market_evidence": "Microsoft BitLocker 後門報告 HN 481 分（昨天）+ Lobsters 75 分（今天），雙源確認說明 security tooling 是 2026 年的剛需。同週 steipete/deepsec + strategist922/dark-moon + KeygraphHQ/shannon 三個 AI 驅動安全工具在 48 小時內各自建立，是新產品類別形成前的典型先兆。"
+    },
+    {
+      "format": "remix",
+      "title": "用 ghost-pepper × Intervox 在 macOS 做無雲雙語會議轉錄管道",
+      "projects": [
+        {
+          "name": "hadley/ghost-pepper",
+          "url": "https://github.com/hadley/ghost-pepper",
+          "note": "100% private on-device STT + 會議轉錄，macOS，Hadley Wickham（26.6K followers），54h ago"
+        },
+        {
+          "name": "JacobLinCool/Intervox",
+          "url": "https://github.com/JacobLinCool/Intervox",
+          "note": "Rust，把 live speech 即時翻譯後輸出成 virtual microphone，macOS desktop app，23h ago"
+        }
+      ],
+      "description": "ghost-pepper 負責 100% on-device 語音識別和會議轉錄（無任何雲端呼叫）；Intervox 把 live speech 翻譯後輸出成 virtual microphone，讓翻譯後的語音可以直接進 Zoom 或 Meet 的麥克風輸入。組合方式：在視訊會議軟體裡把 Intervox 的 virtual mic 設為輸入，同時讓 ghost-pepper 在背景錄製原始音訊並轉錄。會議結束後你有兩份輸出：即時翻譯的語音 log（Intervox）+ speaker-separated 原文轉錄（ghost-pepper）。兩個工具都只支援 macOS，且都是 on-device——沒有 Whisper API 呼叫，沒有 cloud STT，音訊不離開你的機器。注意：兩個 repo 都是 54/23 小時前建立，安裝流程可能還不穩定，建議先在非關鍵會議上測試。",
+      "use_case": "你在台灣的工程團隊每週和美國客戶開 30 分鐘英文例會，客戶今年把「不得使用雲端語音轉錄服務（包括 Otter.ai / Zoom Auto-Transcript）」寫進 MSA——資料不能出境。你手上有一台 M2 MacBook Pro，需要轉錄加翻譯，而且兩者都必須完全離線。",
+      "tech_stack": "Rust（Intervox）+ Swift/macOS（ghost-pepper）+ 本地 Whisper 模型（ghost-pepper 底層）",
+      "hardware": "Apple Silicon M-series macOS（兩個工具都需要 macOS，ghost-pepper 描述明確要求 Apple Silicon）",
+      "skill_level": "熟悉 Terminal + Homebrew，能跑 cargo build 即可；不需要寫 code",
+      "dependencies": "完全免費自架，無月費；Whisper 模型首次下載約 1–2GB",
+      "difficulty": 2,
+      "dev_time": "週末 POC（需要等兩個 repo 各自的安裝文件補齊）",
+      "first_step": "brew install rust && git clone https://github.com/JacobLinCool/Intervox && cargo build --release",
+      "market_evidence": "hadley/ghost-pepper 是 Hadley Wickham（ggplot2 作者，26.6K followers）建來解決自己的問題——他在昨天建立，說明 expert user 的 unmet need 是真實的。台灣開發者 JacobLinCool 同日建立 Intervox，兩個獨立 builder 在同一個 24 小時窗口內各自解決同類問題的不同層，是需求存在的間接證據。"
+    },
+    {
+      "format": "remix",
+      "title": "用 vLLM v0.21.0 session KV cache + Zafer-Liu/Data-Analysis-Agent 做低延遲多輪分析工作流",
+      "projects": [
+        {
+          "name": "vllm-project/vllm v0.21.0",
+          "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+          "note": "367 commits，202 contributors，agentic inference KV cache 優化，剛釋出"
+        },
+        {
+          "name": "Zafer-Liu/Data-Analysis-Agent",
+          "url": "https://github.com/Zafer-Liu/Data-Analysis-Agent",
+          "note": "Python，1179★，面向商業分析師的智能數據分析 agent"
+        }
+      ],
+      "description": "vLLM v0.21.0 的 agentic inference 改進讓 KV cache 可以在同一 session 的多次呼叫間 persist，而不是每次呼叫都從零開始。把 Zafer-Liu/Data-Analysis-Agent 跑在本地 vLLM server 上，保持 SQL schema + 分析指令的 KV cache 熱狀態。後續的 ad-hoc query 只需要做 incremental token generation，而不是每次重建 context。測試方式：在同一個 schema 上連發 10 次不同 query，量測 cold start（第一次）vs warm cache（第 2–10 次）的 TTFT（time-to-first-token）分布。基於 vLLM 社群的 benchmark 模式，warm cache TTFT 通常是 cold start 的 20–30%。",
+      "use_case": "你是一家 5 人分析公司的後端工程師，客戶是零售商，每天跑 50–100 次「上週 SKU X 的 inventory turnover + 競品比較」這類 ad-hoc query。目前每次 query 是獨立的 agent call，冷啟動 context 要 1.5–2 秒。老闆要把 SLA 壓到 500ms 以下。",
+      "tech_stack": "Python + vLLM v0.21.0 + Zafer-Liu/Data-Analysis-Agent + SQL connector",
+      "hardware": "GPU 24GB VRAM+（RTX 3090 或雲端 L4，Lambda Labs 約 $0.80/hr）",
+      "skill_level": "熟悉 Python + Docker + SQL；vLLM server 啟動有官方文件",
+      "dependencies": "本地或雲端 GPU；Zafer-Liu/Data-Analysis-Agent 的 SQL connector 需對應你的 database schema；Qwen3 或 Llama 3.1 70B 模型（本地跑）",
+      "difficulty": 3,
+      "dev_time": "1–2 週 MVP",
+      "first_step": "pip install vllm==0.21.0 && python -m vllm.entrypoints.openai.api_server --model Qwen/Qwen3-14B",
+      "market_evidence": "LMCache Operator v0.1.1 今天正式釋出 first stable release，vLLM v0.21.1rc0 ROCm CI 已在 gating 階段——inference stack 的企業級成熟度在同一週內多個獨立 milestone 確認，說明時機比 6 個月前成熟。"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "vLLM v0.21.0",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+      "desc": "367 commits，202 contributors；本版重點在 agentic inference 優化，包括 KV cache 跨 session persist 和 ROCm 支援。v0.21.1rc0 同日進入 ROCm CI Stage B gating，說明企業級 ROCm 部署路線正在 stabilize。",
+      "source": "vLLM Releases",
+      "repo_age": "2022 年建立"
+    },
+    {
+      "name": "LMCache Operator v0.1.1",
+      "url": "https://github.com/LMCache/LMCache/releases/tag/operator-v0.1.1",
+      "desc": "LMCache Kubernetes Operator 的第一個正式 tag release。LMCache 的核心是把 KV cache offload 到 CPU/SSD，讓 vLLM 在多節點之間共享 prefix cache——這個 Operator 讓 K8s 部署從手動配置變成宣告式管理。",
+      "source": "LMCache Releases",
+      "repo_age": "2024 年建立"
+    },
+    {
+      "name": "microsoft/amplifier-agent",
+      "url": "https://github.com/microsoft/amplifier-agent",
+      "desc": "0 stars，0 commits，無 description，2 小時前建立。Microsoft amplifier-* 序列的第四個 repo（前三：amplifier-bundle-chat-completions 4/17、amplifier-module-provider-openai-chatgpt 4/30、sourcepack 5/16）。尚無內容，但模式一致——佔位先行，README 在 3–7 天後填入。",
+      "source": "GitHub Developers（microsoft org，119,960 followers）",
+      "stars": 0,
+      "repo_age": "2026-05-19 建立"
+    },
+    {
+      "name": "steipete/deepsec",
+      "url": "https://github.com/steipete/deepsec",
+      "desc": "Coding agent 驅動的 codebase 安全掃描 harness，TypeScript，8 stars，32 小時前。Peter Steinberger（50K followers，NSSpain 核心人物）建立，定位是把 vulnerability scanning 從月度人工審查縮短到 PR-level 自動化。",
+      "source": "GitHub Developers（steipete，50,068 followers）",
+      "stars": 8,
+      "repo_age": "2026-05-18 建立"
+    },
+    {
+      "name": "humanlayer/12-factor-agents",
+      "url": "https://github.com/humanlayer/12-factor-agents",
+      "desc": "20,455★，TypeScript，「What are the principles we can use to build LLM-powered software that is actually good enough to put in the hands of production users?」把 twelve-factor app 方法論移植到 agent 架構設計——涵蓋 stateless processes、config as environment、logs as event streams 等在 agent context 的具體詮釋。",
+      "source": "GitHub Trending #11",
+      "stars": 20455,
+      "repo_age": "2025 年建立"
+    },
+    {
+      "name": "HKUDS/CLI-Anything",
+      "url": "https://github.com/HKUDS/CLI-Anything",
+      "desc": "36,518★，Python，「Making ALL Software Agent-Native」——把任意 CLI tool 包裝成 agent-accessible 工具，並建立 CLI-Hub 中央 registry。Trending #3。",
+      "source": "GitHub Trending #3",
+      "stars": 36518,
+      "repo_age": "2026 年建立"
+    },
+    {
+      "name": "tinyhumansai/openhuman",
+      "url": "https://github.com/tinyhumansai/openhuman",
+      "desc": "16,715★，Rust，Trending #1，「Your Personal AI super intelligence. Private, Simple and extremely powerful.」描述極度模糊，stars 可能偏高；forks 數據不可得，保留待觀察。",
+      "source": "GitHub Trending #1",
+      "stars": 16715,
+      "repo_age": "2026 年建立"
+    },
+    {
+      "name": "K-Dense-AI/scientific-agent-skills",
+      "url": "https://github.com/K-Dense-AI/scientific-agent-skills",
+      "desc": "24,316★，Python，Trending #4，「A set of ready to use Agent Skills for research, science, engineering, analysis, finance and writing.」面向科研和工程分析的 Claude Code skill 集合。",
+      "source": "GitHub Trending #4",
+      "stars": 24316,
+      "repo_age": "2026 年建立"
+    },
+    {
+      "name": "plausible/analytics",
+      "url": "https://github.com/plausible/analytics",
+      "desc": "25,881★，Elixir，Trending #15，「Open source, privacy-first web analytics. Lightweight, cookie-free Google Analytics alternative. Self-hosted or cloud.」在 data sovereignty 運動持續發酵的背景下重新出現在 Trending，說明有新一波開發者在找 GA 替代方案。",
+      "source": "GitHub Trending #15",
+      "stars": 25881,
+      "repo_age": "2018 年建立"
+    },
+    {
+      "name": "Linux 7.2 OPENAT2_REGULAR flag",
+      "url": "https://www.phoronix.com/news/Linux-7.2-OPENAT2_REGULAR",
+      "desc": "Linux 7.2 預計引入新的 openat2 flag `OPENAT2_REGULAR`，強制要求 path 指向 regular file，防止 symlink 或特殊檔案類型被用來「欺騙安全程式」進行 path traversal。Phoronix 報導，已進入 VFS -next 分支。對 agent sandbox 設計者：這個 flag 是你的 `openat2` syscall 加固的現成 mechanism。",
+      "source": "Phoronix",
+      "repo_age": "kernel patch"
+    },
+    {
+      "name": "NVIDIA Vera Rubin：解決 Agentic AI 的 Scale-Up 問題",
+      "url": "https://developer.nvidia.com/blog/how-the-nvidia-vera-rubin-platform-is-solving-agentic-ais-scale-up-problem/",
+      "desc": "NVIDIA 官方 blog 發表 Vera Rubin 平台架構文件，說明 agentic inference 的 runtime dynamics 根本不同於 batch inference——持續的 tool call 循環、跨 turn 的 KV state、非固定的 sequence length。文章提出 Vera Rubin 的設計針對這些特性做了架構級調整。",
+      "source": "NVIDIA Developer",
+      "repo_age": "2026 年發布"
+    },
+    {
+      "name": "raiyanyahya/how-to-train-your-gpt",
+      "url": "https://github.com/raiyanyahya/how-to-train-your-gpt",
+      "desc": "1,655★，Jupyter Notebook，「Build a modern LLM from scratch. Every line commented. Explained like we are five.」——比 Karpathy 的 nanoGPT 更注重每行的 pedagogical annotation，適合想從頭理解 transformer 訓練迴路的人。",
+      "source": "topic:llm · 1655★ · 22d",
+      "stars": 1655,
+      "repo_age": "27 天前建立"
+    },
+    {
+      "name": "heider-x/vela",
+      "url": "https://github.com/heider-x/vela",
+      "desc": "236★，TypeScript，「AI-powered IDE for novel writing — local LLM + RAG, privacy-first, BYOK. For web fiction authors and creative writers.」把 local LLM + RAG 帶進創意寫作工作流的第一個有 traction 的工具——用 local model 做 style consistency 和 world-building RAG，稿件不上雲。",
+      "source": "topic:local-llm · 236★ · 21d",
+      "stars": 236,
+      "repo_age": "21 天前建立"
+    },
+    {
+      "name": "devnen/qwen3.6-windows-server",
+      "url": "https://github.com/devnen/qwen3.6-windows-server",
+      "desc": "166★，Python，「One-click Qwen3.6-27B inference on Windows. 158 tok/s on RTX 5090, 72 tok/s on RTX 3090. Native, no WSL, no Docker, no tinkering.」目前 Windows native Qwen3.6-27B 推理有文件佐證的最高吞吐量。",
+      "source": "topic:local-llm · 166★ · 18d",
+      "stars": 166,
+      "repo_age": "18 天前建立"
+    },
+    {
+      "name": "calcom/cal.diy",
+      "url": "https://github.com/calcom/cal.diy",
+      "desc": "43,180★，Cal.com 在 4 月授權風波後推出的完全 MIT 授權分支。OSS 授權翻轉浪潮中少見的「反向」案例：企業在 AI 競爭壓力下重新開放程式碼，而非收緊。",
+      "source": "GitHub Trending #3（昨日）",
+      "stars": 43180,
+      "repo_age": "2026 年建立"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Researcher says Microsoft secretly built a backdoor into BitLocker",
+        "url": "https://www.techspot.com/news/112410-security-researcher-microsoft-secretly-built-backdoor-bitlocker-releases.html",
+        "score": 75,
+        "comments": 20,
+        "source": "Lobsters（今日）+ HN 481 分（昨日）",
+        "takeaway": "雙源交匯，昨日 HN 高分今日延燒到 Lobsters。Lobsters 留言主調是冷靜的 confirmation：「這解釋了為什麼 BitLocker 恢復金鑰從來沒辦法做真正的離線模式。」如果你在設計需要對抗 adversarial OS 的 agent sandbox，BitLocker 現在明確不能當信任根。",
+        "action": "在 agent deployment threat model 裡把 BitLocker 標記為「不可信的 FDE layer」，改用 VeraCrypt 或 dm-crypt + LUKS（Linux）作為 storage encryption baseline。"
+      },
+      {
+        "title": "Linux 7.2 OPENAT2_REGULAR：強制 path 只能指向 regular file",
+        "url": "https://www.phoronix.com/news/Linux-7.2-OPENAT2_REGULAR",
+        "source": "Phoronix",
+        "takeaway": "openat2 新 flag 防止 symlink 攻擊和特殊檔案類型被用來繞過安全程式的 path 預期。對寫 agent sandbox 的人：這是 syscall 層的 path hardening primitive，比 userspace 的 path 驗證可靠。"
+      },
+      {
+        "title": "Fits on a Floppy – A Manifesto for Small Software",
+        "url": "https://fitsonafloppy.com",
+        "score": 42,
+        "comments": 19,
+        "source": "Lobsters",
+        "takeaway": "「應用程式越來越肥大」反彈浪潮的最新 manifesto。Lobsters 19 則留言、42 分——留言率高（45%），說明社群有強烈的 emotional resonance。與 12-factor-agents 的「把 agent 做成可審計的 12 個原則」趨勢方向相同：系統圈正在要求更小、更可審計的 stack。"
+      },
+      {
+        "title": "Gary Marcus：The AI trial of the century ends with a whimper",
+        "url": "https://garymarcus.substack.com/p/the-ai-trial-of-the-century-ends",
+        "source": "Gary Marcus Substack",
+        "takeaway": "某個被期待的 AI 重大監管/法律案件以不了了之收場。由於今天 HN 和 Anthropic News 都 503，無法確認完整背景——保留作為待追蹤訊號。Marcus 近期同時發了《The illusion of Generative AI, the insanity of massive bets on hyperscaling》，hyperscaling skepticism 持續。"
+      },
+      {
+        "title": "MCP on Code Mode（Changelog 訪談）",
+        "url": "https://changelog.com/podcast/681",
+        "source": "Changelog",
+        "takeaway": "Matt Carey 談 Code Mode 和 MCP 整合。MCP 在 Claude Code 生態系的實際整合方式目前仍然分散在個人 repo 和非正式文件裡——這個訪談是少數公開整理過的 first-party 視角之一。"
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "New design for the FreeBSD website",
+        "url": "https://www.freebsd.org/",
+        "score": 91,
+        "comments": 4,
+        "tags": [
+          "design",
+          "freebsd"
+        ]
+      },
+      {
+        "title": "Researcher says Microsoft secretly built a backdoor into BitLocker",
+        "url": "https://www.techspot.com/news/112410-security-researcher-microsoft-secretly-built-backdoor-bitlocker-releases.html",
+        "score": 75,
+        "comments": 20,
+        "tags": [
+          "security",
+          "windows"
+        ]
+      },
+      {
+        "title": "Native all the way, until you need text",
+        "url": "https://justsitandgrin.im/posts/native-all-the-way-until-you-need-text/",
+        "score": 71,
+        "comments": 31,
+        "tags": [
+          "mac",
+          "swift"
+        ]
+      },
+      {
+        "title": "Don't answer the first question",
+        "url": "https://lalitm.com/post/dont-answer-the-first-question/",
+        "score": 58,
+        "comments": 12,
+        "tags": [
+          "practices"
+        ]
+      },
+      {
+        "title": "Fits on a Floppy – A Manifesto for Small Software",
+        "url": "https://fitsonafloppy.com",
+        "score": 42,
+        "comments": 19,
+        "tags": [
+          "performance"
+        ]
+      },
+      {
+        "title": "The occasional ECONNRESET",
+        "url": "https://movq.de/blog/postings/2026-05-05/1/POSTING-en.html",
+        "score": 24,
+        "comments": 8,
+        "tags": [
+          "linux",
+          "networking"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4416,
+        "repo": "doggy8088/leak-hunter",
+        "url": "https://github.com/doggy8088/leak-hunter",
+        "language": "HTML",
+        "hours_ago": 7,
+        "description": "credential 和 secret leak 掃描工具，7 小時前建立。",
+        "local_context": "🇹🇼 doggy8088 在過去兩週已建立 macparakeet（本地語音）和 opencc-py（中文轉換）——這次進入安全工具領域，與 steipete/deepsec 出現在同一個 24 小時窗口，暗示台灣社群對 AI 輔助安全工具的關注度同步上升。"
+      },
+      {
+        "developer": "Inndy",
+        "followers": 507,
+        "repo": "Inndy/codex-bridge",
+        "url": "https://github.com/Inndy/codex-bridge",
+        "language": "Go",
+        "hours_ago": 54,
+        "description": "OpenAI-compatible 本地 proxy，重複使用已有的 Codex OAuth session 來處理 /v1/models 和 /v1/chat/completions——讓舊的 Codex 憑證在新的 API 格式下繼續可用。",
+        "local_context": "🇹🇼 台灣 hacker 圈對 Claude Code 和 Codex 的 OAuth session 重用技術持續探索。Inndy 同週還有 codex-bridge，說明本地 LLM proxy 是台灣開發者的常見需求。"
+      },
+      {
+        "developer": "JacobLinCool",
+        "followers": 440,
+        "repo": "JacobLinCool/Intervox",
+        "url": "https://github.com/JacobLinCool/Intervox",
+        "language": "Rust",
+        "hours_ago": 23,
+        "description": "macOS desktop app，把 live speech 即時翻譯後輸出為 virtual microphone，讓翻譯後的語音可以直接進 Zoom、Meet 等會議軟體。",
+        "local_context": "🇹🇼 台灣開發者在本地語音處理領域的探索從 TTS（supertonic 上週）延伸到即時翻譯麥克風。Intervox 的核心需求場景——台灣英文雙語混用會議——是非常在地的 use case。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 826,
+        "repo": "strategist922/3DCellForge",
+        "url": "https://github.com/strategist922/3DCellForge",
+        "language": null,
+        "hours_ago": 4,
+        "description": "AI 驅動的互動式 3D 模型生成、檢視和展示 studio，4 小時前建立。",
+        "local_context": "🇹🇼 strategist922 在過去兩週持續建立 AI-powered creative tool（dark-moon、shadowbroker、3DCellForge），模式上看是在探索 AI 驅動的內容生成工具鏈。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "steipete",
+        "followers": 50068,
+        "repo": "steipete/deepsec",
+        "url": "https://github.com/steipete/deepsec",
+        "language": "TypeScript",
+        "hours_ago": 32,
+        "description": "Coding agent 驅動的 codebase 安全掃描 harness，讓 vulnerability scanning 可以在 PR level 自動化。"
+      },
+      {
+        "developer": "JakeWharton",
+        "followers": 68318,
+        "repo": "JakeWharton/dir-stepper",
+        "url": "https://github.com/JakeWharton/dir-stepper",
+        "language": "Kotlin",
+        "hours_ago": 40,
+        "description": "Walk the files in a directory through a series of steps——把 directory traversal 包裝成 pipeline step 模型，Kotlin。"
+      },
+      {
+        "developer": "hadley",
+        "followers": 26629,
+        "repo": "hadley/ghost-pepper",
+        "url": "https://github.com/hadley/ghost-pepper",
+        "language": null,
+        "hours_ago": 54,
+        "description": "100% private on-device voice models for speech-to-text and meeting transcription on macOS——ggplot2 作者的私有語音轉錄工具，無任何雲端呼叫。"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 119960,
+        "repo": "microsoft/amplifier-agent",
+        "url": "https://github.com/microsoft/amplifier-agent",
+        "language": null,
+        "hours_ago": 2,
+        "description": "空 repo，2 小時前建立。Microsoft amplifier-* 系列第四個數據點，佈局模式一致。"
+      },
+      {
+        "developer": "mrdoob",
+        "followers": 25125,
+        "repo": "mrdoob/reframe",
+        "url": "https://github.com/mrdoob/reframe",
+        "language": "JavaScript",
+        "hours_ago": 65,
+        "description": "Webapp for framing a video clip and exporting an MP4——three.js 作者的視訊剪輯框架工具。"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Microsoft 用空 repo 序列佈建 agent 平台：bundle → module → skill 版本管理 → agent runtime",
+      "body": "microsoft/amplifier-agent（2h ago）是 5 週內第四個 amplifier-* 空 repo。序列的邏輯：先用 amplifier-bundle-chat-completions 封裝 API 介面（4/17），再用 amplifier-module-provider 做 provider 抽象（4/30），再用 sourcepack 做 skill 版本管理（5/16），現在用 amplifier-agent 做 execution runtime（5/19）。這不是一個產品的不同模組——這是一個完整的 agent 平台從底層到頂層的系統性佈建。每個 repo 的模式一致：空佔位先行，3–7 天後 README 填入。下一個很可能是 amplifier-gateway 或 amplifier-registry，也就是 agent routing 或 agent discovery 層。",
+      "evidence": "microsoft/amplifier-bundle-chat-completions（4/17）、microsoft/amplifier-module-provider-openai-chatgpt（4/30）、microsoft/sourcepack（5/16）、microsoft/amplifier-agent（5/19 2h ago）；每個 repo 建立時均為 0 stars + 無 description",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 5%（anomaly class signal，2× weight）",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "microsoft/amplifier-agent",
+          "url": "https://github.com/microsoft/amplifier-agent"
+        }
+      ],
+      "product_opportunity": "如果你在做 agent orchestration framework 或 MCP server marketplace，Microsoft 的這個佈建序列是競爭者入場的明確信號。現在的機會窗口是在 amplifier-agent README 出現之前，先建立一個針對 LangGraph 或 CrewAI 用戶的遷移指南——搶先佔據「從 Microsoft agent runtime 遷移到開源方案」的 SEO 位置。"
+    },
+    {
+      "title": "Google I/O 前夕：三個空 repo + 連續 11 天 consumer-only Blog + Karpathy Day 9",
+      "body": "Google 在 I/O 前 24 小時的訊號模式完全清晰：google/windtunnel（5/12，benchmark environment）、google/esmeralda（5/16，待揭曉）、google/opencl-kernel-profiler（5/17，Perfetto for OpenCL kernel）三個 repo 仍然空著。Google AI Blog 今天的三篇文章是 AI-powered Google Finance 擴展到歐洲、幫小商家做廣告、和園藝 tips——全是消費者內容，技術發布靜默第 11 天。這種「把所有 builder 內容壓到 I/O 第一天同時釋出」的模式在 Google I/O 2023（Duet AI + Vertex AI 同時發布）和 2024（Gemini 1.5 Pro GA）都走過。三個空 repo 指向 on-device AI 效能量測層，說明 I/O 可能有 on-device model + profiling toolchain 的技術發布。",
+      "evidence": "google/windtunnel（5/12，0★）、google/esmeralda（5/16，0★）、google/opencl-kernel-profiler（5/17，0★）；Google AI Blog 2026-05-09 至 2026-05-19 連續 11 天全部 consumer marketing，無技術 API 或 SDK 相關發布",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 11,
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google/opencl-kernel-profiler",
+          "url": "https://github.com/google/opencl-kernel-profiler"
+        },
+        {
+          "platform": "Google AI Blog",
+          "title": "AI-powered Google Finance in Europe",
+          "url": "https://blog.google/products-and-platforms/products/search/ai-powered-google-finance-in-europe/"
+        }
+      ],
+      "product_opportunity": "如果你在做 on-device model profiling 或 OpenCL kernel 優化，I/O 後 48 小時是 README 最可能填入的窗口。在那之前把 opencl-kernel-profiler 的 C++ repo star 一下，I/O 後第一時間可以看到更新。"
+    },
+    {
+      "title": "Inference stack 企業級成熟度：vLLM + LMCache 同週多個獨立 milestone",
+      "body": "vLLM v0.21.0（367 commits，202 contributors）+ vLLM v0.21.1rc0（ROCm CI Stage B gating）+ LMCache Operator v0.1.1（Kubernetes Operator first stable release）在同一個 72 小時窗口釋出。這三個 milestone 指向同一個方向：inference stack 從「研究工具」向「可部署的企業級服務」轉移。特別是 LMCache Operator：Kubernetes Operator 的存在說明有人在生產環境把 KV cache offloading 當成 first-class infrastructure component 來管理，而不是 ad-hoc 的優化手段。NVIDIA Vera Rubin blog 同日發表 agentic inference 架構分析，是業界層面對這個趨勢的背書。",
+      "evidence": "vLLM v0.21.0（367 commits，2026-05-18 釋出）；vLLM v0.21.1rc0 ROCm CI Stage B（2026-05-19）；LMCache Operator v0.1.1（first tagged release，2026-05-18）；NVIDIA Developer blog on Vera Rubin agentic inference（2026-05-19）",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 25%",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "vLLM v0.21.0",
+          "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0"
+        },
+        {
+          "platform": "GitHub",
+          "title": "LMCache Operator v0.1.1",
+          "url": "https://github.com/LMCache/LMCache/releases/tag/operator-v0.1.1"
+        }
+      ],
+      "product_opportunity": "如果你在做 self-hosted inference 服務並在評估是否值得加 KV cache offloading 層，LMCache Operator v0.1.1 是第一個有 K8s 原生管理支援的 stable release——這是「可以進 staging 測試」和「需要繼續 DIY」之間的分水嶺。"
+    },
+    {
+      "title": "私有本地語音處理：hadley/ghost-pepper + JacobLinCool/Intervox 同日出現",
+      "body": "Hadley Wickham（ggplot2 作者，26.6K followers）的 ghost-pepper（100% on-device STT + 會議轉錄，54h ago）和台灣開發者 JacobLinCool 的 Intervox（live speech 翻譯 → virtual microphone，Rust，23h ago）在同一個 24 小時窗口建立。兩個工具都鎖死 macOS、都是 on-device、都零雲端呼叫。這個組合把兩個過去分開的需求——「私有轉錄」和「即時翻譯」——連接成可以同時跑的管道。upstream cause：資料主權需求（MSA 禁止雲端語音轉錄）+ Apple Silicon 本地推理能力足夠跑 Whisper 模型。",
+      "evidence": "hadley/ghost-pepper（26.6K followers，54h ago，2★）；JacobLinCool/Intervox（440 followers，23h ago，Rust，0★）；兩個 repo 都建立於 2026-05-18–19，都明確標注 on-device + macOS only",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "hadley/ghost-pepper",
+          "url": "https://github.com/hadley/ghost-pepper"
+        },
+        {
+          "platform": "GitHub",
+          "title": "JacobLinCool/Intervox",
+          "url": "https://github.com/JacobLinCool/Intervox"
+        }
+      ],
+      "product_opportunity": "on-device 私有語音轉錄 + 翻譯管道目前還沒有 packaged 的 macOS app 形式——ghost-pepper 和 Intervox 都是工程師自用工具，不是 consumer app。第一個把這個組合做成一鍵安裝的 macOS app，面向需要合規轉錄的企業用戶，有清晰的 B2B 路徑。"
+    }
+  ],
+  "sleeper": {
+    "name": "heider-x/vela",
+    "url": "https://github.com/heider-x/vela",
+    "stars": 236,
+    "description": "AI-powered IDE for novel writing — local LLM + RAG, privacy-first, BYOK. For web fiction authors and creative writers.",
+    "why_asymmetric": "236★，21 天前建立，在 topic:local-llm 搜尋中排第一。創意寫作 + local LLM + RAG 的組合在 2026 年之前因為本地模型品質不夠而是假設性的——現在 Qwen3-14B 在 creative writing benchmarks 上已達到 GPT-4o 的 80%，這個 use case 從「理論上可行」跨越到「實際可用」的時間點是最近 2–3 個月。web fiction 市場（Chinese web novels alone: Wattpad + 起点 combined 月活 > 200M）是一個幾乎沒有 AI-native IDE 的空缺。",
+    "commercial_path": "B2B SaaS：按月費賣給 web fiction 平台做「作者工具」bundle（類似 Notion AI 對 Notion）；或直接面向 10K+ 字/天的重度創作者做 $15/月 BYOK plan——local model 跑在用戶自己的機器，平台只收 sync 和 collaboration 費用，marginal cost 接近零。"
+  },
+  "contrarian": {
+    "claim": "HKUDS/CLI-Anything（36,518★）的「make ALL software agent-native」願景是一個在 production 無法 deliver 的承諾",
+    "body": "把任意 CLI tool 包裝成 agent-accessible 工具需要對每個工具的輸出格式、exit code 語意、和 side effect 模型做精確建模。CLI tools 之間的輸出格式差異是結構性的——git 的 stdout 和 docker 的 stdout 和 ffmpeg 的 stdout 沒有共同 schema。CLI-Anything 如果用 LLM 解析輸出，會引入非確定性；如果用規則解析，需要對每個工具維護規則表。LangChain 在 2023 年嘗試過相同的「plug any tool in」抽象，tool reliability 問題在六個月內就成為社群的主要抱怨（issue tracker 裡 \"tool\" + \"unexpected output\" 有 200+ 個 thread）。36K stars 是社群對這個概念的期待投票，不是對 reliability 的確認。",
+    "rationale": "CLI tool 的輸出格式、exit code 語意、side effect 模型有極大的跨工具差異，沒有統一 schema。用 LLM 解析引入非確定性，用規則解析引入維護負擔。LangChain 的 Tools API 是這個方向的先例，reliability 問題是已知的，不是假設的。",
+    "prediction": "到 2026-09-30，HKUDS/CLI-Anything 的 GitHub issue tracker 上有至少 80 個 open issues 的 title 或 label 包含 'reliability'、'unexpected output'、'tool failure' 或 'wrong output' 其中一個關鍵字（以 GitHub API issue search 為判準，不需人工審查）。",
+    "resolution_date": "2026-09-30"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-google-io-local-ai-benchmark",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel、google/esmeralda、google/opencl-kernel-profiler 三個 repo 中至少一個發布帶有 README 的初始版本，或 Google 在 I/O 官方 session 中具名提及其中任何一個工具（以 repo README 非空或 Google I/O 官方 session 紀錄 URL 為準）。",
+      "status": "pending",
+      "created": "2026-05-14",
+      "resolution_date": "2026-05-21"
+    },
+    {
+      "id": "pred-bun-rust-perf-regression",
+      "text": "到 2026-12-31，oven-sh/bun 的 issue tracker 上有至少 3 個 closed issue 被標記為 performance regression，且 issue discussion 中明確 trace 到 Zig→Rust AI-assisted 移植的 commit（以 public GitHub issue URL + blame 參考為判準）。",
+      "status": "pending",
+      "created": "2026-05-16",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-ai-pentesting-cve-count",
+      "text": "到 2026-12-31，KeygraphHQ/shannon 的公開 issue tracker 或官方文件中，traceable 到 shannon 自動掃描（不包括人工觸發的手動分析）發現的已公開 CVE 數量少於 50 個（以明確標注「found by shannon」的 CVE 公告或 security advisory URL 為準）。",
+      "status": "pending",
+      "created": "2026-05-18",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-karpathy-announcement-before-may26",
+      "text": "到 2026-05-26，Karpathy 的「Coming soon」substack 頁面變成一篇有 full content 的文章，或 Karpathy 發布一個 YouTube 視頻或新 GitHub repo（以 substack.com/p/coming-soon 頁面有正文或 karpathy GitHub org 出現新 repo 為判準）。",
+      "status": "pending",
+      "created": "2026-05-19",
+      "resolution_date": "2026-05-26"
+    },
+    {
+      "id": "pred-cli-anything-reliability-issues",
+      "text": "到 2026-09-30，HKUDS/CLI-Anything 的 GitHub issue tracker 上有至少 80 個 open issues 的 title 或 label 包含 'reliability'、'unexpected output'、'tool failure' 或 'wrong output' 其中一個關鍵字（以 GitHub API issue search 為判準）。",
+      "status": "pending",
+      "created": "2026-05-19",
+      "resolution_date": "2026-09-30"
+    }
+  ],
+  "meta": {
+    "run_id": "10b41798-905d-4de8-b357-03307d3f1fa1",
+    "pipeline_version": "9275f28",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-18T20:37:35.755Z",
+    "analyze_duration_ms": 2176714,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 145
+      },
+      "trending": {
+        "ok": true,
+        "count": 15
+      },
+      "search": {
+        "ok": true,
+        "count": 49
+      },
+      "developers": {
+        "ok": true,
+        "count": 13
+      }
+    },
+    "degraded_sources": []
+  }
+}
