@@ -1,0 +1,175 @@
+{
+  "date": "2026-05-20",
+  "lens_id": "phison-aidaptiv",
+  "focus_idea": {
+    "title": "70B 本機寫作 AI：IP 敏感創作者市場的 Pascari ISV 切入點",
+    "path": "isv-consumer",
+    "description": "heider-x/vela 是一個 privacy-first 的本機 LLM + RAG 小說寫作 IDE，明確鎖定不願上雲的創作者（web fiction 作者、劇本家、遊戲世界觀設計師）。核心訴求：IP 留本地、BYOK 彈性、RAG 整合長篇語境。當前 vela 用戶若只有 16GB 筆電 + Ollama，受限於 7B~13B 模型，輸出的創意散文在專業作者眼中明顯失格——情節連貫性短、文體無法跨章維持、長句節奏失真。換上 Pascari + aiDAPTIV+，vela 能呼叫 70B 模型，品質跨越到付費創作者實際願意訂閱的水準。ISV 切入點是以 vela 為技術參照的創作工具 ISV：若要讓「資料不出機器」差異化成立，就必須在硬體推薦規格裡寫進 Pascari SSD，因為沒有它只能承諾 7B 品質——7B 品質在訂閱制付費市場裡跟免費的 ChatGPT 沒有區別，付費轉換率接近零。",
+    "ingredient": {
+      "source": "github-search:local-llm",
+      "url": "https://github.com/heider-x/vela",
+      "name": "heider-x/vela",
+      "stars": 257
+    },
+    "seasoning_use": "aiDAPTIV+ 在 vela 的工作流程中承擔模型分頁層：將 70B 權重的 active expert pages 從 Pascari SSD 按需調進 VRAM，讓 16GB VRAM 的 GPU 能推論 70B 模型。拿掉 aiDAPTIV+，用戶退回 Ollama + 7B/13B，創意散文品質退至「可接受但不令人信服」，ISV 的付費差異化消失，訂閱留存率崩潰。",
+    "customer_scenario": "你是一家創作工具 ISV 的產品 PM，手上有 3,000 個付費訂閱用戶，主力是寫長篇網路小說的作者和獨立遊戲劇本家。用戶核心痛點：雲端 API 版權條款讓他們不敢上傳世界觀設定稿，但本機 7B 模型文體不穩、情節記憶在 8K context 之後開始消散。你需要在下一版硬體推薦頁給出讓用戶體驗翻倍的答案，而不只是「買一顆更快的 CPU」。",
+    "demo_path": "準備同一段小說語境（500 字開場 + 主角設定文件）→ 同一個 continue prompt → 用 Ollama + Llama 3 8B 在 16GB 筆電輸出（約 30 秒）→ 切換到 vela + aiDAPTIV+ + Llama-70B 輸出（約 45 秒）→ 並排顯示兩段輸出。文體一致性、情節細節密度、長句節奏的差異肉眼可見，不需要解說技術參數。總時長 75 秒。",
+    "feasibility_evidence": {
+      "source_url": "https://github.com/heider-x/vela",
+      "claimed_capability": "本機 LLM + RAG 整合用於長文小說寫作，privacy-first 架構（BYOK、不強制上雲），適用 web fiction 作者與創意寫作者；TypeScript 實作，local LLM + CUDA 環境符合 aiDAPTIV+ 對接假設（待確認後端是否為 llama.cpp）"
+    },
+    "effort_estimate": "2-週 MVP（在 vela 現有 BYOK + local LLM 架構基礎上接 aiDAPTIV+ OpenAI-compatible 端點；demo 影片 + 7B vs 70B prose quality benchmark sheet 需額外 1 週）",
+    "must_have_test": {
+      "seasoning_indispensable_check": "Baseline 16GB 筆電 + Ollama 可跑 Llama 3 8B，但創意散文品質對付費專業作者明顯不足：情節連貫性在 8K context 後衰減、文體無法維持百頁角色一致性、複雜對白節奏失真。這些缺陷在 7B~13B 模型無法透過 prompt 工程完全解決。沒有 Pascari + aiDAPTIV+，ISV 推薦的 demo 只能展示 7B 品質，無法讓付費用戶從 ChatGPT 遷移過來。",
+      "demo_able_check": "同一段 500 字小說語境送給 Llama 3 8B（Ollama）和 Llama-70B（aiDAPTIV+），並排輸出品質對比。非技術用戶看到兩段輸出即能分辨差距，不需要解說推論參數。75 秒內完成。",
+      "buyer_commits_check": "創作工具 ISV 的產品 PM 看到 demo 後，若在官網硬體推薦頁寫入「Phison Pascari SSD（70B 模型全功能需要）」，即為 binary commit。付費用戶因 Pascari 升級感受到品質跳升，ISV 的 retention 和 tier upgrade 率上升是直接商業邏輯。不確定項：vela 目前為早期專案（257 stars），Phison 可能需要以 vela 為藍圖自建 reference demo，而非等待 vela 商業化。"
+    }
+  },
+  "oss_pulse": [
+    {
+      "name": "tinyhumansai/openhuman",
+      "url": "https://github.com/tinyhumansai/openhuman",
+      "source": "github-trending",
+      "stars": 20748,
+      "description": "Rust 跨平台本機 AI super intelligence，Private + Simple + Powerful 定位，GitHub Trending 連續兩日排名第 1",
+      "fits": ["oem", "isv-consumer"],
+      "fit_reason": "OEM：若後端為 llama.cpp，Pascari 可直接承擔 70B 推論，OEM bundling 仍有效（open question 自 2026-05-19 尚未解答）；ISV-Consumer：隱私優先本機 AI，適合 IP-sensitive prosumer"
+    },
+    {
+      "name": "heider-x/vela",
+      "url": "https://github.com/heider-x/vela",
+      "source": "github-search:local-llm",
+      "stars": 257,
+      "description": "TypeScript 小說寫作 IDE，local LLM + RAG，privacy-first，BYOK，鎖定 web fiction 作者與創意寫作者",
+      "fits": ["isv-consumer"],
+      "fit_reason": "ISV-Consumer 核心訊號：privacy-first + 本機 LLM 明確服務不願上雲的 IP-sensitive 創作者，70B 模型品質是付費差異化的關鍵"
+    },
+    {
+      "name": "obra/superpowers",
+      "url": "https://github.com/obra/superpowers",
+      "source": "github-trending",
+      "stars": 198233,
+      "description": "Shell 實作的 agentic skills framework + 軟體開發方法論，198k stars，聲稱「實際有效的 agent 開發框架」",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "ISV-Dev-OSS：agentic 開發方法論框架，若搭配本機 70B 推論（aiDAPTIV+），可讓 agent loop 在本機而非 cloud API 上跑；當前 evidence 未確認本機推論依賴性"
+    },
+    {
+      "name": "rtk-ai/rtk",
+      "url": "https://github.com/rtk-ai/rtk",
+      "source": "github-trending",
+      "stars": 50735,
+      "description": "Rust CLI proxy，對常見 dev 指令壓縮 LLM token 使用量 60-90%，zero dependencies，單一 Rust binary",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "ISV-Dev-OSS：減少 cloud API token 成本，核心 value prop 是降低雲端依賴。對 aiDAPTIV+ 場景影響間接：本機推論環境若有 context 預算限制，可搭配使用"
+    },
+    {
+      "name": "HKUDS/CLI-Anything",
+      "url": "https://github.com/HKUDS/CLI-Anything",
+      "source": "github-trending",
+      "stars": 37602,
+      "description": "Python 框架，讓所有 CLI 軟體 agent-native；有對應的 CLI-Hub 服務",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "ISV-Dev-OSS：把舊有 CLI 工具 agent 化的基礎設施，本機 70B 推論（aiDAPTIV+）作為 agent 腦能提升指令理解品質"
+    },
+    {
+      "name": "humanlayer/12-factor-agents",
+      "url": "https://github.com/humanlayer/12-factor-agents",
+      "source": "github-trending",
+      "stars": 21114,
+      "description": "TypeScript，12 個 LLM-powered 軟體的 production 設計原則，類比 twelve-factor app",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "ISV-Dev-OSS：agent 生產化最佳實踐，對要把本機 70B 推論加進產品 agent pipeline 的 ISV 是設計參考文件"
+    },
+    {
+      "name": "JacobLinCool/open-realtime-translate",
+      "url": "https://github.com/JacobLinCool/open-realtime-translate",
+      "source": "github-developers:taiwan",
+      "stars": 1,
+      "description": "台灣開發者（441 followers），本機即時語音翻譯 server，支援 MLX / CUDA / CPU，與 OpenAI Realtime API wire-compatible",
+      "fits": ["isv-vertical", "isv-consumer"],
+      "fit_reason": "ISV-Vertical：法律/醫療/金融會議的機密即時翻譯場景，本機推論避免機密內容上雲；CUDA 支援讓 aiDAPTIV+ 對接有技術基礎"
+    }
+  ],
+  "adjacent_ideas": [
+    {
+      "title": "本機即時會議翻譯：法律/醫療 ISV 的 Pascari 機密語音處理切入點",
+      "path": "isv-vertical",
+      "description": "JacobLinCool（台灣，441 followers）剛釋出 open-realtime-translate，支援 CUDA + MLX + CPU，與 OpenAI Realtime API wire-compatible，1 star 剛上線。法律事務所和醫療機構進行跨語言諮詢時，最大障礙是機密內容不能送到雲端 STT/翻譯服務。Whisper large（語音轉文字）→ 70B 翻譯模型（術語正規化 + 摘要）的兩段式 pipeline，在法律和醫療術語精確度上明顯優於 7B 方案。ISV 若把這個 pipeline 打包進合規框架（HIPAA-compliant on-premise 裝機），Pascari SSD 是讓 70B 推論在合規工作站上跑起來的必要條件。",
+      "ingredient": {
+        "source": "github-developers:taiwan",
+        "url": "https://github.com/JacobLinCool/open-realtime-translate",
+        "name": "JacobLinCool/open-realtime-translate",
+        "stars": 1
+      },
+      "seasoning_use": "Whisper large STT → 70B 翻譯模型兩段式 pipeline，第二段需要 aiDAPTIV+ SSD offload 讓 70B 跑在 16GB VRAM GPU；拿掉 aiDAPTIV+ 退回 7B 翻譯模型，醫療/法律術語錯誤率在合規場景下不可接受。",
+      "must_have_test": {
+        "seasoning_indispensable_check": "7B 翻譯模型在法律術語（force majeure / injunctive relief）和醫學術語（contraindication / anaphylaxis）的精準度比 70B 低，合規場景不能接受翻譯失誤的法律責任風險。",
+        "demo_able_check": "30 秒英語法律諮詢音訊 → 本機即時轉錄 → 兩個翻譯輸出對比（7B vs 70B），法律術語準確率差異可量化展示。",
+        "buyer_commits_check": "醫療 AI ISV 或法律科技公司若在產品 on-premise 安裝規格內寫入 CUDA workstation + Pascari SSD 為必要配備，即為 binary commit。術語翻譯錯誤的法律責任是直接驅動力。不確定項：real-time 翻譯品質在 7B vs 70B 的差距需要具體 benchmark 驗證，目前為推論。"
+      }
+    },
+    {
+      "title": "openhuman × Pascari OEM bundling：Rust 本機 AI 的筆電 SKU 差異化包",
+      "path": "oem",
+      "description": "tinyhumansai/openhuman 連續兩日 GitHub Trending #1，20,748 stars，Rust 實作，定位「Personal AI super intelligence, Private, Simple, extremely powerful」。若後端使用 llama.cpp（open question 自 2026-05-19 尚未解答），OEM 可將 openhuman + aiDAPTIV+ + Pascari 打包成筆電發表 SKU 的主角 demo：同價位競品跑 7B 小模型，搭載 Pascari 的 SKU 跑 70B openhuman，demo 衝擊力強。技術可行性待確認：若 openhuman 非 llama.cpp 後端，aiDAPTIV+ 對接需要額外工程評估。",
+      "ingredient": {
+        "source": "github-trending",
+        "url": "https://github.com/tinyhumansai/openhuman",
+        "name": "tinyhumansai/openhuman",
+        "stars": 20748
+      },
+      "must_have_test": {
+        "buyer_commits_check": "HP / ASUS / Acer AI PC SKU PM 若在 launch deck 加入 openhuman + Pascari 為 differentiation 賣點，即為 OEM binary commit。前提：後端確認為 llama.cpp 可對接 aiDAPTIV+（open question）。"
+      }
+    }
+  ],
+  "radar": [
+    {
+      "title": "Karpathy 加入 Anthropic：研究路線的重量級背書",
+      "summary": "Andrej Karpathy 宣布加入 Anthropic（HN #6，902 分，70 則留言）。Karpathy 是 OpenAI 創始成員、Tesla AI 前負責人、「Software 2.0」概念提出者，放棄自行創業的 EurekaLabs 選擇 Anthropic。對 Phison 的間接影響：Anthropic Claude 生態開發者社群信心增強，未來 Claude-powered 本機 agent 工具（AnythingLLM、lobe-chat 等 Phison 已追蹤專案）的生態活躍度可能進一步上升，本機 agent demo 的 narrative 說服力變強。",
+      "url": "https://twitter.com/karpathy/status/2056753169888334312",
+      "relevance_axis": "research",
+      "impact_window": "next year"
+    },
+    {
+      "title": "KPMG × Claude：276,000 人規模企業 AI 整合的市場信號",
+      "summary": "Anthropic 宣布 KPMG 將 Claude 整合進 276,000 人核心業務，覆蓋財務審計、法律合規、稅務諮詢。這個規模的部署代表大型企業對 AI 輔助的接受度已過臨界點。對 Phison ISV-Vertical 的間接影響：KPMG 客戶中的法律/財務大型機構，若因資料主權要求轉向在地端部署同等能力 AI，ISV 機會窗口擴大。雲端 AI 採用規模越大，「企業在地端等效部署」的需求越迫切。",
+      "url": "https://www.anthropic.com/news/anthropic-kpmg",
+      "relevance_axis": "customer-segment",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "vLLM v0.21.0：367 commits 的 datacenter KV cache 更新",
+      "summary": "vLLM v0.21.0 釋出（367 commits），v0.21.1rc0 進入 ROCm CI gating。vLLM 的 same-session KV offload 能力持續強化，定位仍是 datacenter multi-GPU，與 Phison aiDAPTIV+ 的 cross-session persistent KV cache（SSD offload，consumer edge）場景不直接交叉。競爭軸不接觸，但 vLLM 技術進展代表 datacenter inference 效率持續提升——長期壓縮了「需要跑本機的理由」清單，需要持續監控。",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.0",
+      "relevance_axis": "competition",
+      "impact_window": "watch"
+    },
+    {
+      "title": "Anthropic 收購 Stainless：SDK 基礎設施垂直整合",
+      "summary": "Anthropic 宣布收購 Stainless（API SDK 自動生成工具），強化 Claude API 多語言整合體驗。對 Phison ISV 合作夥伴的間接影響：若 ISV 採用 Claude API + 本機 aiDAPTIV+ 混合架構（雲端推論不夠私密時 fallback 本機），SDK 整合摩擦降低，這條混合路徑的技術吸引力上升，可能加速 ISV 對「本機 70B 作為 privacy fallback」的部署意願。",
+      "url": "https://www.anthropic.com/news/anthropic-acquires-stainless",
+      "relevance_axis": "tech-stack",
+      "impact_window": "next year"
+    },
+    {
+      "title": "Google I/O 2026：Gemini 全線更新對本機 LLM 差異化的雙向壓力",
+      "summary": "Google I/O 2026 揭示 Gemini 模型和開發者工具全面更新。雲端 LLM 服務品質持續提升，對「本機 LLM 品質不輸雲端」的差異化敘事形成壓力。但 Gemini 的強化同時推高用戶對 AI 品質的期待基線——讓「小模型 on-device 明顯不夠用」的感知加大，反而對 70B 本機推論的差異化有利。OEM 和 ISV 的 demo 訴求從「有 AI」升級到「AI 品質跟 Gemini Pro 相當但資料不出機器」。",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/google-io-2026-collection/",
+      "relevance_axis": "competition",
+      "impact_window": "this quarter"
+    }
+  ],
+  "meta": {
+    "date_verified": "2026-05-20",
+    "staging_health": {
+      "feeds_ok": "20/21 (Phison Blog HTTP 404)",
+      "trending_count": 18,
+      "search_count": 49,
+      "developers_count": 15
+    },
+    "focus_idea_path": "isv-consumer",
+    "rotation_note": "isv-consumer days_since=5（從 memory 儲存值 4 +1），未達 7 天 soft-preference boost threshold；quality-first 選擇 vela（must-have test 3/3）",
+    "phison_blog_status": "HTTP 404，今日無 Phison Blog 訊號"
+  }
+}

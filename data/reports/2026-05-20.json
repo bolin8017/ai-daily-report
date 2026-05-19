@@ -1,0 +1,609 @@
+{
+  "date": "2026-05-20",
+  "lead": {
+    "html": "<h3>Karpathy 加入 Anthropic、Stainless 被收購：Google I/O 開幕日，Anthropic 在搶 builder 生態系的兩條根</h3>\n\n<h4>發生了什麼</h4>\n<p>Andrej Karpathy 今天透過 Twitter 宣布加入 Anthropic——HN 902 分、70 留言，今日第一。9 天前他放出「Coming soon」Substack 頁面，今天的答案不是新公司，是一份 Anthropic 職缺。同一天，Anthropic News 連發兩條：收購 Stainless（負責生成 Anthropic Python/TypeScript/Go/Java SDK 的 OpenAPI-to-SDK 公司），以及 KPMG 宣布將 Claude 整合進全球 276,000 人的工作流程。anthropics/claude-plugins-official（官方 Claude Code 插件目錄，20,073★）進入 GitHub Trending #5。2 小時前，anthropics/cargo-nix-plugin（Rust + Nix build infrastructure，0★，無 README）悄悄落地。以上全部發生在 Google I/O 2026 開幕日。</p>\n\n<h4>為什麼重要</h4>\n<p>Karpathy 的職涯路徑說明他在 Anthropic 的角色是什麼：OpenAI VP of Research 離職後，他沒有去繼續做基礎研究——他去做了教育（EurekaAI）。過去三年他沒有一篇一作的 peer-reviewed 論文。他的影響力在於 nanoGPT（35K★）、makemore、LLM101n——讓一整代工程師第一次真正讀懂 Transformer 內部在做什麼。在 Anthropic，這個能力的作用是：讓 builder 理解 Claude 在做什麼、Claude Code 的設計決策背後的 rationale——用工程師聽得懂的語言，不是 safety paper 語言。</p>\n<p>Stainless 這面更直接。你每次 <code>pip install anthropic</code> 裝進去的 SDK，正是 Stainless 從 Anthropic 的 OpenAPI spec 生成的。收購後，Anthropic 擁有從 model → API spec → SDK → docs 的完整端到端控制。歷史先例：OpenAI SDK 從外部生成轉向內部管理後，v0.x → v1.0 有大量 breaking changes，在 2023 年造成廣泛 migration pain。Anthropic 的下一次主版本升級，可能更激進。在 Google 今天站在台上向全世界 developer 展示產品的同一天，Anthropic 選擇了在後台做這兩件長期投資。</p>\n\n<h4>社群怎麼看</h4>\n<p>HN 今日分布：Karpathy 902 分（70 留言，留言率 7.8%）遠超第二名 Simon Willison 六個月 LLM 回顧（684 分，52 留言）。留言率 7.8% 比同週最高分 Mitchell Hashimoto「AI psychosis」（1752 分，106 留言，6.1% 留言率）更高——說明這件事引發的不只是讚同，而是具體討論。社群在問的問題可以從比率推導：「他到底要做什麼？」和「這對 Anthropic 的研究路線代表什麼？」兩個方向都有人在爭。Google AI Blog 今天推出了 I/O 2026 collection 頁，Dev.to #1 是 Google I/O 寫作挑戰活動——Google 在台上，但 HN 頭條給了 Anthropic。</p>\n\n<h4>行動建議</h4>\n<p>如果你的 stack 依賴 <code>anthropic</code> Python 或 TypeScript SDK，這週在 <code>requirements.txt</code> 或 <code>package.json</code> 裡把版本 pin 到當前確切版本，並開啟 anthropic-sdk-python 或 anthropic-sdk-typescript 的 GitHub Release 通知。Stainless 收購後的 SDK 重構按歷史先例通常在 3-6 個月內出現，且會帶來主版本 breaking changes——先 pin 再看 changelog，比事後追 migration 省 2-4 小時。</p>\n<p>如果你在建 Claude Code plugin：anthropics/claude-plugins-official 今天 20,073★、Trending #5，是 Anthropic 官方管理的插件目錄。MCP server 生態系早期收錄者吸引的流量是後來者的 3-10x——第一批進官方插件目錄的效應預計類似。plugin 如果能跑，這週提交比下個月提交早。</p>",
+    "thin": false
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "token-hud：Claude Code 的即時 token 消費追蹤插件",
+      "projects": [
+        {
+          "name": "rtk-ai/rtk",
+          "url": "https://github.com/rtk-ai/rtk",
+          "note": "CLI proxy 減少 60-90% token 消費，單 Rust binary"
+        },
+        {
+          "name": "anthropics/claude-plugins-official",
+          "url": "https://github.com/anthropics/claude-plugins-official",
+          "note": "Anthropic 官方 Claude Code 插件目錄"
+        }
+      ],
+      "description": "rtk 已經證明 CLI 命令的 token 消費可以被壓縮 60-90%，但它是透明 proxy——你看不到哪些命令最貴。anthropics/claude-plugins-official 今天開放，官方插件目錄的第一批收錄者將有巨大流量優勢。把兩者結合：建一個 Claude Code plugin，在每個 session 結束時顯示 per-command token 分布（Edit 花了多少 tokens、Read 花了多少、Search 花了多少），並在 token 消費可以用 rtk 壓縮的命令旁邊顯示估計節省量。不是新算法，是現有工具的儀表板層。",
+      "use_case": "你每月在 Claude Code 上花 $80-150，但不知道哪些操作最貴。插件顯示：你 70% 的 tokens 花在連續 Read 大型檔案上，而 rtk 可以把這類請求壓縮 65%。你調整工作流程，省 $50/月。",
+      "difficulty": "2",
+      "dev_time": "週末 POC",
+      "first_step": "閱讀 anthropics/claude-plugins-official 的插件提交指南，並在本地安裝 rtk：`cargo install rtk`",
+      "market_evidence": "rtk 在 GitHub Trending #8 以 50,735★ 出現，說明 token 效率工具有強需求。Claude Code Max 訂閱者的月費正在成為工程師的固定支出。第一個進官方目錄的 token 分析插件沒有競爭對手。",
+      "hardware": "純 CPU 可跑，rtk 是零依賴 single binary",
+      "skill_level": "需熟悉 TypeScript + Claude Code plugin API",
+      "dependencies": "rtk（開源免費）+ Claude Max 訂閱"
+    },
+    {
+      "format": "solo",
+      "title": "nanoAgent：200 行讀懂 production agent 系統的參考實作",
+      "projects": [
+        {
+          "name": "humanlayer/12-factor-agents",
+          "url": "https://github.com/humanlayer/12-factor-agents",
+          "note": "21K★，production agent 的 12 個設計原則"
+        },
+        {
+          "name": "Code as Agent Harness (arxiv:2605.18747)",
+          "url": "https://arxiv.org/abs/2605.18747",
+          "note": "HuggingFace Daily Papers #1，用 code 做 agent 編排的學術支撐"
+        }
+      ],
+      "description": "nanoGPT（35K★）用 300 行讓工程師第一次真正讀懂 Transformer。它成功的原因不是功能完整，而是每一行都有用意、可以跟著 run。Karpathy 加入 Anthropic 這件事讓這個空缺更清晰：沒有人為 production agent 做同樣的事。12-factor-agents 給了設計原則，Code as Agent Harness 論文給了架構支撐，但還沒有一個「200 行、你可以 clone 下來 run、每一行都有註解說明設計決策」的 nanoAgent。建這個：單一 Python 檔案，實作 12 factors 的核心（stateless design、explicit state passing、interrupt for human feedback），附帶一個真實的 demo task（讓它去讀一個 GitHub repo 然後回答問題）。目標不是功能完整，是可讀性最高。",
+      "use_case": "你是 ML 工程師，nanoGPT 你跑過，但你寫的 agent 在 production 裡每隔兩天就以莫名其妙的方式失敗。你讀 humanlayer/12-factor-agents 的 README，但它是原則列表，不是可執行的 code。nanoAgent 是你下週一讀懂 12 factors 為什麼重要的方式——通過親手跑每一步。",
+      "difficulty": "2",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "讀 `humanlayer/12-factor-agents` README 標記出 3 個你不理解的 factor，再讀 arxiv:2605.18747 的 section 3，然後用 200 行 Python 實作 factor 1（treat the LLM as a function）",
+      "market_evidence": "humanlayer/12-factor-agents 在 GitHub Trending #12 以 21,114★ 出現——說明工程師想要系統性的 agent 設計原則，但現有資源都是文件，不是可 run 的 code。nanoGPT 的教育模式（極簡 + 全註解）在 ML 社群已有 35K★ 驗證。",
+      "hardware": "純 CPU 可跑，雲端 API 即可",
+      "skill_level": "需熟悉 Python + 基礎 LLM API 呼叫",
+      "dependencies": "Anthropic API key 月費估計 $5-10 測試用"
+    },
+    {
+      "format": "remix",
+      "title": "local-caption：聾人工程師的本地即時字幕桌面 overlay",
+      "projects": [
+        {
+          "name": "JacobLinCool/open-realtime-translate",
+          "url": "https://github.com/JacobLinCool/open-realtime-translate",
+          "note": "台灣開發者，12h ago，本地即時語音翻譯，MLX/CUDA/CPU，OpenAI Realtime API 相容"
+        },
+        {
+          "name": "Apple Accessibility 2026",
+          "url": "https://www.apple.com/newsroom/2026/05/apple-unveils-new-accessibility-features-and-updates-with-apple-intelligence/",
+          "note": "HN 498分，Apple 宣布新無障礙功能與 Apple Intelligence 整合"
+        }
+      ],
+      "description": "open-realtime-translate 是一個完全本地、OpenAI Realtime API wire-compatible 的語音翻譯 server，支援 MLX（Apple Silicon）、CUDA、純 CPU。Apple 今天宣布把 Apple Intelligence 深入整合進無障礙功能。把兩者結合：桌面 overlay 應用程式，在任何視訊通話（Zoom/Meet/Teams）上方顯示即時語音字幕和翻譯，完全在本地跑，零雲端、零月費、零延遲抖動。核心架構：系統音頻 capture → open-realtime-translate server（MLX Whisper + translation）→ Electron/Tauri overlay 貼在視訊視窗上方。",
+      "use_case": "你是聽力障礙的台灣軟體工程師，每天早上 10 點有英文 standup。Otter.ai 要 $1/分鐘、Teams 字幕要上傳音頻到微軟、Zoom 的字幕延遲 3-5 秒且不支援即時中文翻譯。你有 M2 MacBook Pro。open-realtime-translate 在你的 MacBook 上跑，overlay 顯示即時英文轉繁體中文字幕，音頻不離開你的機器，延遲 <1 秒。",
+      "difficulty": "3",
+      "dev_time": "1-2 週 MVP",
+      "first_step": "`git clone https://github.com/JacobLinCool/open-realtime-translate && python server.py --device mps --source-lang en --target-lang zh-tw`，測試它能正確轉換你的語音後，開始寫 Electron overlay",
+      "market_evidence": "全球 7,000 萬聽力障礙人口；Apple 今天 HN 498 分的 accessibility 公告確認 on-device 無障礙市場有大廠認可；現有雲端字幕服務月費 $20-100；open-realtime-translate 是這週出現的最具潛力的本地即時語音基礎設施。",
+      "hardware": "M2 Mac（MLX 最快）/ CUDA GPU / 純 CPU（較慢但可跑）",
+      "skill_level": "需熟悉 Python + Electron 或 Tauri（Rust）其一",
+      "dependencies": "完全免費自架，open-realtime-translate 開源，Electron/Tauri 均免費"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "Karpathy 宣布加入 Anthropic",
+      "url": "https://twitter.com/karpathy/status/2056753169888334312",
+      "desc": "nanoGPT / LLM101n 作者，前 OpenAI VP of Research，宣布加入 Anthropic。9 天「Coming soon」今天揭曉。",
+      "source": "HN 902分",
+      "repo_age": "公告今日"
+    },
+    {
+      "name": "Anthropic acquires Stainless",
+      "url": "https://www.anthropic.com/news/anthropic-acquires-stainless",
+      "desc": "Anthropic 收購 Stainless——生成 Anthropic Python/TypeScript/Go/Java SDK 的 OpenAPI-to-SDK 公司。",
+      "source": "Anthropic News",
+      "repo_age": "公告今日"
+    },
+    {
+      "name": "anthropics/claude-plugins-official",
+      "url": "https://github.com/anthropics/claude-plugins-official",
+      "desc": "Anthropic 官方管理的高品質 Claude Code 插件目錄，Python。",
+      "source": "GitHub Trending #5",
+      "stars": 20073,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "rtk-ai/rtk",
+      "url": "https://github.com/rtk-ai/rtk",
+      "desc": "CLI proxy，在 cat/grep/git/diff 等常見開發命令上減少 LLM token 消費 60-90%，單 Rust binary，零依賴。",
+      "source": "GitHub Trending #8",
+      "stars": 50735,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "KPMG × Anthropic 全員整合",
+      "url": "https://www.anthropic.com/news/anthropic-kpmg",
+      "desc": "KPMG 宣布將 Claude 整合進 276,000 人的核心業務工作流程，迄今最大規模四大事務所 AI 部署。",
+      "source": "Anthropic News",
+      "repo_age": "公告今日"
+    },
+    {
+      "name": "humanlayer/12-factor-agents",
+      "url": "https://github.com/humanlayer/12-factor-agents",
+      "desc": "12 個原則讓 LLM agent 系統達到 production 品質：stateless、explicit state passing、human-in-loop interrupt 等。TypeScript。",
+      "source": "GitHub Trending #12",
+      "stars": 21114,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "Code as Agent Harness（arxiv:2605.18747）",
+      "url": "https://arxiv.org/abs/2605.18747",
+      "desc": "用 code 本身作為 agent 的編排層（而非 YAML/DSL），今日 HuggingFace Daily Papers #1。",
+      "source": "HuggingFace Daily Papers #1",
+      "repo_age": "今日論文"
+    },
+    {
+      "name": "SkillsVote：Agent Skills 的生命週期治理",
+      "url": "https://arxiv.org/abs/2605.18401",
+      "desc": "從 collection 到 recommendation 到 evolution，系統性研究 agent skill 的全生命週期治理框架。今日 HuggingFace Daily Papers #2。",
+      "source": "HuggingFace Daily Papers #2",
+      "repo_age": "今日論文"
+    },
+    {
+      "name": "Simon Willison：The last six months in LLMs in five minutes",
+      "url": "https://simonwillison.net/2026/May/19/5-minute-llms/",
+      "desc": "Simon Willison 的 6 個月 LLM 速覽，HN 684 分。如果你最近沒追 AI news，這篇是起點。",
+      "source": "HN 684分 · Simon Willison",
+      "repo_age": "今日文章"
+    },
+    {
+      "name": "Mini Shai-Hulud：314 個 npm 套件遭入侵",
+      "url": "https://safedep.io/mini-shai-hulud-strikes-again-314-npm-packages-compromised/",
+      "desc": "新一波 npm 供應鏈攻擊，314 個套件受影響，攻擊向廣撒網模式演化。",
+      "source": "HN 324分",
+      "repo_age": "今日報告"
+    },
+    {
+      "name": "OpenBSD 7.9 released",
+      "url": "https://www.openbsd.org/79.html",
+      "desc": "OpenBSD 7.9 正式發布。",
+      "source": "Lobsters 56分",
+      "repo_age": "今日發布"
+    },
+    {
+      "name": "Show HN: Files.md — Obsidian 開源替代品",
+      "url": "https://github.com/zakirullin/files.md",
+      "desc": "以純 Markdown 檔案為基礎的筆記工具，不依賴私有格式，HN 682 分。",
+      "source": "HN 682分",
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "jmerelnyc/Photo-agents",
+      "url": "https://github.com/jmerelnyc/Photo-agents",
+      "desc": "視覺接地的分層記憶 + 自我撰寫 skill 的 LLM agent，可操作你的電腦。每個 session 結束後 agent 自己寫新工具擴展能力。",
+      "source": "topic:llm · 994★ · ≤30d",
+      "stars": 994,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "Zafer-Liu/Data-Analysis-Agent",
+      "url": "https://github.com/Zafer-Liu/Data-Analysis-Agent",
+      "desc": "面向商業分析師的智能數據分析 agent，Python。針對非工程師用戶設計的 SQL + 視覺化 + 解讀流程。",
+      "source": "topic:agent · 1185★ · ≤30d",
+      "stars": 1185,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "ovoment/ovo-local-llm",
+      "url": "https://github.com/ovoment/ovo-local-llm",
+      "desc": "Apple Silicon 上的私有 Claude-Code-style coding agent，MLX-native，chat + code + 本地模型 workflow 全在機器上跑，零雲端。TypeScript。",
+      "source": "topic:local-llm · 102★ · ≤30d",
+      "stars": 102,
+      "repo_age": "本月新增"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "Karpathy 加入 Anthropic",
+        "url": "https://twitter.com/karpathy/status/2056753169888334312",
+        "takeaway": "最重要的不是他去了哪，而是 Anthropic 正在為「builder 認知戰」搶人——讓工程師真正理解 Anthropic 工具的人現在是 Anthropic 的人。",
+        "action": "訂閱 anthropic-sdk-python 的 GitHub Release 通知，Stainless 收購後 breaking SDK changes 預計在 3-6 個月內出現。"
+      },
+      {
+        "title": "Anthropic acquires Stainless",
+        "url": "https://www.anthropic.com/news/anthropic-acquires-stainless",
+        "takeaway": "你每次 `pip install anthropic` 裝進去的 SDK 現在由 Anthropic 自己控制從 API spec 到 SDK 到文件的全鏈——下一次主版本升級可能比以前更激進。",
+        "action": "在 `requirements.txt` 裡把 anthropic 版本 pin 到當前確切版本。"
+      },
+      {
+        "title": "Mini Shai-Hulud Strikes Again: 314 npm Packages Compromised",
+        "url": "https://safedep.io/mini-shai-hulud-strikes-again-314-npm-packages-compromised/",
+        "takeaway": "npm 供應鏈攻擊從精準打點（Bitwarden CLI、PyTorch Lightning）演化成廣撒網——314 個套件說明攻擊者已有自動化的投毒流程。",
+        "action": "在你的 CI pipeline 加入 `npm audit` 並設 fail-on-high threshold。"
+      },
+      {
+        "title": "The last six months in LLMs in five minutes",
+        "url": "https://simonwillison.net/2026/May/19/5-minute-llms/",
+        "takeaway": "HN 684 分，Simon Willison 的 6 個月速讀。如果你最近沒有系統追 LLM news，這篇是 2025 年底到 2026 年 5 月的地圖。"
+      },
+      {
+        "title": "Code as Agent Harness（arxiv:2605.18747）",
+        "url": "https://arxiv.org/abs/2605.18747",
+        "takeaway": "今日 HuggingFace Daily Papers #1。用 code 本身（Python/TypeScript）做 agent 編排，而非 YAML 或 DSL——這個架構選擇現在有學術背書，且 12-factor-agents 已有 21K★ 社群認可。",
+        "action": "如果你在建 agent pipeline，今天把 YAML config 換成 typed Python，每個 step 是一個 function，orchestration 是 code。"
+      }
+    ],
+    "hn": [
+      {
+        "title": "I've joined Anthropic",
+        "url": "https://twitter.com/karpathy/status/2056753169888334312",
+        "score": 902,
+        "comments": 70
+      },
+      {
+        "title": "The last six months in LLMs in five minutes",
+        "url": "https://simonwillison.net/2026/May/19/5-minute-llms/",
+        "score": 684,
+        "comments": 52
+      },
+      {
+        "title": "Show HN: Files.md – Open-source alternative to Obsidian",
+        "url": "https://github.com/zakirullin/files.md",
+        "score": 682,
+        "comments": 76
+      },
+      {
+        "title": "Apple unveils new accessibility features",
+        "url": "https://www.apple.com/newsroom/2026/05/apple-unveils-new-accessibility-features-and-updates-with-apple-intelligence/",
+        "score": 498,
+        "comments": 40
+      },
+      {
+        "title": "Gaussian Splat of a Strawberry",
+        "url": "https://superspl.at/scene/84df8849",
+        "score": 420,
+        "comments": 47
+      },
+      {
+        "title": "I've built a virtual museum with nearly every operating system you can think of",
+        "url": "https://virtualosmuseum.org/",
+        "score": 388,
+        "comments": 39
+      },
+      {
+        "title": "Mini Shai-Hulud Strikes Again: 314 npm Packages Compromised",
+        "url": "https://safedep.io/mini-shai-hulud-strikes-again-314-npm-packages-compromised/",
+        "score": 324,
+        "comments": 37
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Comprehensive Response to Bambu's AGPLv3 Violations",
+        "url": "https://sfconservancy.org/news/2026/may/18/bambu-studio-3d-printer-agpl-violation-response/",
+        "score": 121,
+        "comments": 9,
+        "tags": [
+          "law"
+        ]
+      },
+      {
+        "title": "The Quiet Renovation at Bitwarden",
+        "url": "https://blog.ppb1701.com/the-quiet-renovation-at-bitwarden",
+        "score": 116,
+        "comments": 52,
+        "tags": [
+          "privacy"
+        ]
+      },
+      {
+        "title": "Haiku OS runs on M1 Macs now",
+        "url": "https://www.osnews.com/story/144985/haiku-os-runs-on-m1-macs-now/",
+        "score": 70,
+        "comments": 10,
+        "tags": [
+          "mac",
+          "unix"
+        ]
+      },
+      {
+        "title": "OpenBSD 7.9 released",
+        "url": "https://www.openbsd.org/79.html",
+        "score": 56,
+        "comments": 9,
+        "tags": [
+          "openbsd",
+          "release"
+        ]
+      },
+      {
+        "title": "Type out the code",
+        "url": "https://haskellforall.com/2026/05/type-out-the-code",
+        "score": 45,
+        "comments": 4,
+        "tags": [
+          "programming"
+        ]
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "Anthropic 單日四連動：Karpathy 加入 + Stainless 收購 + 官方插件目錄 + Nix 基礎設施",
+      "body": "四件事在同一天發生的方式說明這不是巧合：Anthropic 在 Google I/O 開幕日，同時鎖定了 builder 生態系的教育層（Karpathy）、工具層（Stainless SDK 生成）、分發層（claude-plugins-official 官方目錄），以及基礎設施層（cargo-nix-plugin，2 小時前出現的 Rust + Nix build 工具）。每一層都是 builder 每天會碰到的東西。這個模式的 upstream cause 是 Google I/O——Anthropic 知道今天所有人的注意力在 Google，選擇在這天做靜水深流的布局。",
+      "evidence": "HN 902分（Karpathy），Trending #5（claude-plugins-official，20K★），Anthropic News #1-2（Stainless + KPMG），cargo-nix-plugin 2h ago 0★",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 5%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 38,
+      "product_opportunity": "如果你在建 Claude Code 插件，anthropics/claude-plugins-official 的第一批收錄名額是目前最有時間敏感性的提交機會。如果你做 AI developer tools，Stainless 收購說明 SDK 品質已經成為競爭維度——你的工具的 SDK 設計值得認真對待。",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "I've joined Anthropic",
+          "url": "https://twitter.com/karpathy/status/2056753169888334312",
+          "score": 902
+        },
+        {
+          "platform": "Anthropic News",
+          "title": "Anthropic acquires Stainless",
+          "url": "https://www.anthropic.com/news/anthropic-acquires-stainless"
+        },
+        {
+          "platform": "GitHub Trending",
+          "title": "anthropics/claude-plugins-official",
+          "url": "https://github.com/anthropics/claude-plugins-official"
+        }
+      ]
+    },
+    {
+      "title": "npm 供應鏈攻擊廣撒網化：從精準到 314 個套件",
+      "body": "本月的 npm 供應鏈攻擊軌跡清楚：Bitwarden CLI（精準打點，4 月）→ PyTorch Lightning（AI 訓練 stack，5 月初）→ 今天 314 個套件（廣撒網）。攻擊者的能力在升級——從手動投毒到自動化批量投毒的跡象。這個模式和 2020-2021 年的 PyPI 攻擊升級序列相似：先打高知名度目標確認攻擊路徑，再自動化。每週新增的 npm package 數量遠超人工 review 能力，自動化投毒的防禦方需要同樣自動化的回應。",
+      "evidence": "HN 324分（314 npm packages），Lobsters 121分（Bambu AGPL violations，不同類型但同是 OSS 信任問題），本月第三起供應鏈相關事件",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "oss-licensing-ai-pressure",
+      "product_opportunity": "建一個 npm package 的 realtime 行為監控服務——在 install 時比對 package hash 和上週的 hash，有差異就告警。比 Snyk 更輕量，比 `npm audit` 更即時。",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Mini Shai-Hulud Strikes Again: 314 npm Packages Compromised",
+          "url": "https://safedep.io/mini-shai-hulud-strikes-again-314-npm-packages-compromised/",
+          "score": 324
+        },
+        {
+          "platform": "Lobsters",
+          "title": "Comprehensive Response to Bambu's AGPLv3 Violations",
+          "url": "https://sfconservancy.org/news/2026/may/18/bambu-studio-3d-printer-agpl-violation-response/",
+          "score": 121
+        }
+      ]
+    },
+    {
+      "title": "Google I/O 日三大廠同時落下新空 repo：google/xtrace、apple/ml-velox、microsoft/graphmind-artifacts",
+      "body": "google/xtrace（1 小時前，Shell，0★）在 I/O 開幕當天出現——按照過去兩週 windtunnel/esmeralda/opencl-kernel-profiler 的模式，這是第四個 Google pre-announcement repo。apple/ml-velox（20 小時前，0★）更有趣：Meta 的 Velox 是向量化查詢執行引擎，Apple 命名它 `ml-velox` 暗示一個 ML inference 加速版本——Apple Silicon 上的 on-device AI 推理優化，在 Google I/O 同一天出現，不像巧合。microsoft/graphmind-artifacts（21 小時前，0★）帶有 ATR（Adaptive Traversal Reinforcement）描述，是 Microsoft amplifier-* 系列的第五彈，進入自我演化工作流圖方向。三個不同公司，三個不同技術方向，同一天在 Google I/O 前後幾小時內落地。",
+      "evidence": "google/xtrace 1h ago，apple/ml-velox 20h ago，microsoft/graphmind-artifacts 21h ago，三個均 0★ 無 README，全來自 github-developers 高 follower org",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 1,
+      "percentile": "top 10%（anomaly class）",
+      "product_opportunity": "apple/ml-velox 如果確認是 Metal-accelerated 向量化執行引擎，對所有在 Apple Silicon 上跑本地 LLM 推理的人（MLX 生態、ovo-local-llm 等）都是直接影響——開始追蹤這個 repo 的 first commit。",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "google/xtrace",
+          "url": "https://github.com/google/xtrace"
+        },
+        {
+          "platform": "GitHub",
+          "title": "apple/ml-velox",
+          "url": "https://github.com/apple/ml-velox"
+        },
+        {
+          "platform": "GitHub",
+          "title": "microsoft/graphmind-artifacts",
+          "url": "https://github.com/microsoft/graphmind-artifacts"
+        }
+      ]
+    },
+    {
+      "title": "Token 效率從優化 tip 走向基礎設施：rtk 50K★、opensquilla、SkillsVote 論文三線收斂",
+      "body": "rtk-ai/rtk（50K★，GitHub Trending #8）以 60-90% 的 token 減少數字登場，說明開發者已在優化每個 CLI 命令的 token 消費。opensquilla（1,139★，topic:llm）定位是「same budget, higher intelligence density」。HuggingFace Daily Papers #2 的 SkillsVote 論文研究 skill 的生命週期治理，其中一個核心問題正是 token budget 分配。三個獨立源頭在同一天的 token efficiency 信號，upstream cause 是 Claude Code / Cursor 等工具的月費已成為工程師可量測的固定支出——當 token 消費有帳單，效率才有市場。",
+      "evidence": "rtk-ai/rtk Trending #8 50K★，opensquilla 1139★ topic:llm，SkillsVote 論文 HuggingFace #2",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "product_opportunity": "Token efficiency 的商業模式有兩個：一是直接幫用戶省錢（rtk 模式，免費工具收聲譽），二是把省下來的 token 預算重新分配給更高品質的推理（opensquilla 模式，收訂閱費差價）。前者是獲客工具，後者是企業 AI ROI 工具。",
+      "source_links": [
+        {
+          "platform": "GitHub Trending",
+          "title": "rtk-ai/rtk",
+          "url": "https://github.com/rtk-ai/rtk"
+        },
+        {
+          "platform": "HuggingFace",
+          "title": "SkillsVote: Lifecycle Governance of Agent Skills",
+          "url": "https://arxiv.org/abs/2605.18401"
+        },
+        {
+          "platform": "GitHub",
+          "title": "opensquilla/opensquilla",
+          "url": "https://github.com/opensquilla/opensquilla"
+        }
+      ]
+    }
+  ],
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "JacobLinCool",
+        "followers": 441,
+        "repo": "JacobLinCool/open-realtime-translate",
+        "url": "https://github.com/JacobLinCool/open-realtime-translate",
+        "language": "Python",
+        "hours_ago": 12,
+        "description": "完全本地的即時語音翻譯 server，MLX/CUDA/CPU 三種後端，和 OpenAI Realtime API wire-compatible。支援 source → target 語言對轉換，在離線環境也能跑。",
+        "local_context": "🇹🇼 JacobLinCool 在 Apple 公布新無障礙功能同一天發布這個本地語音翻譯基礎設施——對台灣開發者社群裡正在研究 on-device AI 的人，這是這週最值得追的新 repo。"
+      },
+      {
+        "developer": "doggy8088",
+        "followers": 4422,
+        "repo": "doggy8088/leak-hunter",
+        "url": "https://github.com/doggy8088/leak-hunter",
+        "language": "HTML",
+        "hours_ago": 31,
+        "description": "開發者憑證和 secret 洩漏掃描工具，49★，HTML-based。",
+        "local_context": "🇹🇼 Will 保哥在 npm 供應鏈攻擊新聞同一天發布 secret 洩漏掃描工具，timing 說明台灣開發者社群對供應鏈安全的警覺度在上升。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 826,
+        "repo": "strategist922/everos",
+        "url": "https://github.com/strategist922/everos",
+        "language": null,
+        "hours_ago": 5,
+        "description": "Build, evaluate, and integrate long-term memory for self-evolving agents.",
+        "local_context": "🇹🇼 strategist922 本週第二個新 repo（昨天是 3DCellForge），今天是 agent 長期記憶基礎設施，和 agent memory 獨立產品類別的大趨勢方向一致。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "anthropics",
+        "followers": 61329,
+        "repo": "anthropics/cargo-nix-plugin",
+        "url": "https://github.com/anthropics/cargo-nix-plugin",
+        "language": "Rust",
+        "hours_ago": 2,
+        "description": "A Nix plugin that resolves Cargo workspaces natively and allows for crate-level builds. 0★，Karpathy 宣布加入的同一天出現。"
+      },
+      {
+        "developer": "google",
+        "followers": 72806,
+        "repo": "google/xtrace",
+        "url": "https://github.com/google/xtrace",
+        "language": "Shell",
+        "hours_ago": 1,
+        "description": "Shell-based tracing 工具，0★，無 README。I/O 開幕日落地，是過去兩週 Google 第四個 pre-announcement 空 repo，前三個（windtunnel/esmeralda/opencl-kernel-profiler）都指向 on-device AI 效能測量層。"
+      },
+      {
+        "developer": "microsoft",
+        "followers": 120067,
+        "repo": "microsoft/graphmind-artifacts",
+        "url": "https://github.com/microsoft/graphmind-artifacts",
+        "language": null,
+        "hours_ago": 21,
+        "description": "Prompts and artifacts for GraphMind: a system for self-evolving workflow graphs with Adaptive Traversal Reinforcement (ATR). 0★，Microsoft amplifier-* 系列的第五個 pre-announcement repo。"
+      },
+      {
+        "developer": "apple",
+        "followers": 36703,
+        "repo": "apple/ml-velox",
+        "url": "https://github.com/apple/ml-velox",
+        "language": null,
+        "hours_ago": 20,
+        "description": "0★，無描述。命名暗示 Meta Velox 向量化執行引擎的 Apple ML 版本——若確認是 Metal-accelerated 推理加速，將直接影響 Apple Silicon 上的本地 LLM 推理效能。"
+      },
+      {
+        "developer": "JakeWharton",
+        "followers": 68320,
+        "repo": "JakeWharton/dir-stepper",
+        "url": "https://github.com/JakeWharton/dir-stepper",
+        "language": "Kotlin",
+        "hours_ago": 64,
+        "description": "Walk the files in a directory through a series of steps. Jake Wharton（Square/Google 知名 Android OSS 開發者）的新 Kotlin 工具，7★，適合做 pipeline 處理大量檔案的場景。"
+      }
+    ]
+  },
+  "sleeper": {
+    "name": "ovoment/ovo-local-llm",
+    "url": "https://github.com/ovoment/ovo-local-llm",
+    "description": "Apple Silicon 上的私有 Claude-Code-style coding agent，MLX-native，102★，TypeScript。在機器上跑 chat、code 生成、本地模型 workflow，零雲端、零 API 費用。",
+    "stars": 102,
+    "why_asymmetric": "102★ 是今天 discovery pool 裡 stars 最低的，但三個趨勢正在交匯：Karpathy 加入 Anthropic 後 Anthropic 可能加強 Apple DX 方向（他們上週 fork 了 swift-markdown）；apple/ml-velox 今天出現暗示 Apple 在強化 on-device ML 推理；Google I/O 今天展示的 on-device AI 功能會讓開發者更想要本地化替代方案。ovoment/ovo-local-llm 是這個交匯點上目前最精準的開源實作，但幾乎沒人知道它。",
+    "commercial_path": "兩個方向：一是免費開源版本 + 企業授權版（對不能送程式碼上雲端的金融/法律公司）；二是成為 Anthropic 官方認可的 on-device offline fallback 模式，當 Claude API 不可用時使用本地模型——這個定位不和 Anthropic 競爭，反而有機會得到官方 blessing。"
+  },
+  "contrarian": {
+    "claim": "Karpathy 加入 Anthropic 不會在 2 年內改變任何 benchmark——他的價值是行銷，不是研究",
+    "body": "Karpathy 的職涯在 OpenAI 離職後走向了教育，不是研究。EurekaAI 是教育公司，他過去三年沒有一篇一作的 peer-reviewed 論文。Anthropic 真正的技術挑戰是 interpretability（Constitutional AI、可解釋 attention patterns）和長 context 推理——這些不是 Karpathy 的專長。他的加入更可能改變的是：未來的 Anthropic 文件、教育資源、和 builder community 的溝通方式。這些確實有價值，但它們不會讓 MMLU 分數或 OSWorld 的 agent success rate 在 2 年內有可量測的提升。市場對這件事的 HN 902 分回應，定價了一個錯誤的因果關係。",
+    "rationale": "Karpathy 在 Tesla 和 EurekaAI 的工作都是管理 / 教育 / 傳播，不是 ML 系統研究。Anthropic 的研究方向需要的是 interpretability 和 safety 的深度研究者，不是最好的 LLM 教育者。兩件事不互斥，但混淆了兩者的市場反應可能高估了他加入對模型能力的直接影響。",
+    "prediction": "到 2026-11-20（6 個月後），Karpathy 不會是 Anthropic 任何 peer-reviewed 論文的一作或二作（以 arXiv 或正式期刊的 author affiliation 列表為準）。",
+    "resolution_date": "2026-11-20"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-google-io-local-ai-benchmark",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel、google/esmeralda、google/opencl-kernel-profiler 三個 repo 中至少一個發布帶有 README 的初始版本，或 Google 在 I/O 官方 session 中具名提及其中任何一個工具（以 repo README 非空或 Google I/O 官方 session 紀錄 URL 為準）。",
+      "status": "pending",
+      "created": "2026-05-14",
+      "resolution_date": "2026-05-21",
+      "notes": "Google I/O 2026 今天開幕確認（Google AI Blog I/O 2026 collection 頁已上線）。google/xtrace 在今天新出現但不在預測的三個 repo 之內。尚待確認三個 repo 的 README 狀態。"
+    },
+    {
+      "id": "pred-bun-rust-perf-regression",
+      "text": "到 2026-12-31，oven-sh/bun 的 issue tracker 上有至少 3 個 closed issue 被標記為 performance regression，且 issue discussion 中明確 trace 到 Zig→Rust AI-assisted 移植的 commit（以 public GitHub issue URL + blame 參考為判準）。",
+      "status": "pending",
+      "created": "2026-05-16",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-ai-pentesting-cve-count",
+      "text": "到 2026-12-31，KeygraphHQ/shannon 的公開 issue tracker 或官方文件中，traceable 到 shannon 自動掃描（不包括人工觸發的手動分析）發現的已公開 CVE 數量少於 50 個（以明確標注「found by shannon」的 CVE 公告或 security advisory URL 為準）。",
+      "status": "pending",
+      "created": "2026-05-18",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-karpathy-announcement-before-may26",
+      "text": "到 2026-05-26，Karpathy 的「Coming soon」substack 頁面變成一篇有 full content 的文章，或 Karpathy 發布一個 YouTube 視頻或新 GitHub repo（以 substack.com/p/coming-soon 頁面有正文或 karpathy GitHub org 出現新 repo 為判準）。",
+      "status": "needs_revision",
+      "created": "2026-05-19",
+      "resolution_date": "2026-05-26",
+      "notes": "Karpathy 今天透過 Twitter 宣布加入 Anthropic，「Coming soon」之謎於 2026-05-20 揭曉。然而公告渠道是 Twitter，不是預測中的 Substack/YouTube/GitHub repo，prediction 的驗證標準不符合，標記為 needs_revision。預測精神正確，驗證條件需修訂。"
+    },
+    {
+      "id": "pred-karpathy-no-research-paper-6m",
+      "text": "到 2026-11-20（6 個月後），Karpathy 不會是 Anthropic 任何 peer-reviewed 論文的一作或二作（以 arXiv 或正式期刊的 author affiliation 列表為準）。",
+      "status": "pending",
+      "created": "2026-05-20",
+      "resolution_date": "2026-11-20"
+    }
+  ],
+  "meta": {
+    "run_id": "0332cfeb-55f9-43d1-8d23-e6d89a7a6f3d",
+    "pipeline_version": "9275f28",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-19T20:22:48.564Z",
+    "analyze_duration_ms": 1292278,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 220
+      },
+      "trending": {
+        "ok": true,
+        "count": 18
+      },
+      "search": {
+        "ok": true,
+        "count": 49
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      }
+    },
+    "degraded_sources": []
+  }
+}
