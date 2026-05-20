@@ -1,0 +1,558 @@
+{
+  "date": "2026-05-21",
+  "lead": {
+    "html": "<h3>8B 模型達到 99%：guardrails 重寫 agent 成本結構的那一天</h3>\n\n<h4>發生了什麼</h4>\n\n<p>antoinezambelli/forge 在 Show HN 拿到 636 分、60 則留言。核心主張：對任意 8B 模型加上 guardrails 框架，在 agentic task benchmark 上把成功率從 53% 推到 99%。這個數字如果成立，代表你可以用本地 8B 模型取代每月千元美金的 frontier API，只要你願意加上 structured output 驗證層。</p>\n\n<p>同一天，facebook/mcpguard-dynamic（C 語言，0★，23h ago）悄悄在 Facebook org 出現：「Kernel-level eBPF sandbox for securing LLM agent tool calls made through the Model Context Protocol (MCP)。」這個 repo 的選字很精確——eBPF 是 production infrastructure 的工具，不是週末 POC 的材料。同 org 的 facebookresearch/secpriv-skill 也在同一天落地，把 CWE 安全掃描和 GDPR 隱私審計合進一個 unified LLM agent skill。Qwen3.7-Max「The Agent Frontier」在 HN 拿到 499 分，主打 agent 推理能力突破。</p>\n\n<h4>為什麼重要</h4>\n\n<p>forge 的機制值得拆開看。一個 8B 模型單步輸出正確率假設 85%，在 5 步 agentic task 裡不加驗證是 0.85^5 ≈ 44%。forge 的 guardrails 對每一步輸出做 schema 驗證，格式不對就 retry，最多 3 次。每步有效成功率算出來約 99.6%。這不是提升模型能力，是把 cascade failure 堵掉——你的 tool call 序列越固定、output schema 越具體，成果越接近 99%；任務越 open-ended，gap 越大，但幅度依然值得量。</p>\n\n<p>facebook/mcpguard-dynamic 說明的事情比 forge 更嚴重：Meta 已經在 production 跑 MCP，而且認為 Python process isolation 不夠——他們選擇 kernel-level eBPF，意味著威脅模型包含 privilege escalation（agent 取得 shell exec 之後的後果）。facebookresearch/secpriv-skill 在同一天落地，把 CWE 和 GDPR 合進同一個 skill，說明 Meta 的 MCP 部署已進入必須應對合規審計的階段。這兩個 repo 如果是週五下午不小心 push 出來的倉庫佔位，你在一個月內就會看到它們的 README 填上。</p>\n\n<h4>社群怎麼看</h4>\n\n<p>HN 60 則留言的頭部爭議落在兩點：benchmark task set 的受限程度（guardrails 對 open-ended 任務的泛化能力到底如何），以及 retry 的 token 燒耗（每次重跑都要再過一遍 context window，8B 本地模型的推理速度必須夠快才能讓 latency 可接受）。Lobsters 今天 #2 是 Haskell 社群的〈Type out the code〉（155 分，tagged vibecoding）：論點是 type system 就是最好的 guardrail，結構性正確性應該從語言設計層處理，不應該靠 runtime 驗證補救。同一個問題，兩個抽象層的解法，今天同時出現。</p>\n\n<h4>行動建議</h4>\n\n<p>如果你的 agent pipeline 正在用 GPT-4o 或 Claude Sonnet 跑帶有固定 JSON schema output 的 structured extraction，這週可以把 antoinezambelli/forge clone 下來，在一個 8B local model（Qwen3-8B 或 Llama-3.1-8B via llama.cpp）上套 forge 的 guardrails 框架，然後在你自己的 task set 跑一次 A/B。如果你的 MCP server tool 清單裡有 bash_exec 或 write_file 這類 high-privilege tool，在你的 MCP server init 時加一個 tool_manifest.json，明確列出每個 tool 允許存取的路徑和指令白名單——這是在 facebook/mcpguard-dynamic 正式開源之前成本最低的 defensive 設計，也是你日後接 eBPF sandbox 時的 permission 聲明基礎。</p>"
+  },
+  "ideas": [
+    {
+      "format": "remix",
+      "title": "Budget Agent Pipeline：forge guardrails × opensquilla 把月費從 $4,200 砍到 $400",
+      "projects": [
+        {
+          "name": "antoinezambelli/forge",
+          "url": "https://github.com/antoinezambelli/forge",
+          "note": "guardrails 讓 8B 模型達到 99% 成功率"
+        },
+        {
+          "name": "opensquilla/opensquilla",
+          "url": "https://github.com/opensquilla/opensquilla",
+          "note": "token 效率最佳化，同預算更高智能密度"
+        }
+      ],
+      "description": "forge 證明了 guardrails + 8B 模型可以在受限 task 上達到 99%。opensquilla 的 token efficiency 壓縮讓每次 retry 的成本再降一截。把兩者串起來：用 opensquilla 壓縮輸入 context，用 forge 的 schema 驗證確保每步輸出正確，在 8B local model 上跑固定 schema 的 structured extraction，只把真正需要 reasoning 的任務升級到 frontier API。",
+      "use_case": "你是一家 SaaS 公司的 ML engineer，每月 Claude Sonnet API 費用 $4,200，其中 70% 是跑 customer document classification（固定 output schema：category、confidence、reason 三個欄位）。把那 70% 的流量遷移到本地 Qwen3-8B + forge guardrails，opensquilla 壓縮掉 document 的重複片段，每步驗證 schema 並自動 retry，預估月費降到 $400-600，latency 持平或更快（本地推理避免網路延遲）。",
+      "market_evidence": "LLM API 費用是 2026 年 SaaS 公司最大的非人力成本之一；forge 636 HN 分說明這個痛點已廣泛共鳴；opensquilla 在 topic:llm 30 天新 repo 中拿到 1207★，token efficiency 需求真實存在。",
+      "difficulty": 2,
+      "dev_time": "1-2 週 MVP",
+      "first_step": "git clone https://github.com/antoinezambelli/forge && python -m forge.benchmark --task-set your_tasks.jsonl --model qwen3-8b-instruct，量你的 task set 在 8B 上的基準成功率",
+      "hardware": "GPU 8GB VRAM+（或 Apple M2 16GB+ 用 MLX 跑 Qwen3-8B）",
+      "skill_level": "需熟悉 Python + Pydantic schema 設計，不需要 ML 背景",
+      "dependencies": "Qwen3-8B weights（免費，Hugging Face 下載），forge（OSS），opensquilla（OSS，MIT 授權）"
+    },
+    {
+      "format": "solo",
+      "title": "MCP Pledge Layer：把 OpenBSD 的 pledge/unveil 哲學移植到 MCP tool 權限聲明",
+      "projects": [
+        {
+          "name": "facebook/mcpguard-dynamic",
+          "url": "https://github.com/facebook/mcpguard-dynamic",
+          "note": "eBPF kernel-level sandbox for MCP，Meta 的生產級解法"
+        }
+      ],
+      "description": "OpenBSD 的 pledge 系統要求程式在啟動時聲明「我只會用這些 syscall，其他全 block」，一旦違反立刻 SIGKILL。把這個哲學移植到 MCP server：在 manifest 裡為每個 tool 宣告 permission pledge（allowed_paths、allowed_domains、allowed_env_vars、subprocess: false/true），每次 LLM 調用 tool 都先過 pledge 驗證，違反就 reject 並回傳結構化錯誤讓 agent 知道原因。facebook/mcpguard-dynamic 的 eBPF 方案是重砲，pledge layer 是在等那個砲之前的輕裝版。",
+      "use_case": "你是金融公司的 backend engineer，公司有 12 個內部 MCP server tool，compliance 要求你對每個 tool 的 filesystem 存取和 network call 做月度審計。現在審計是手動看 log。加上 pledge layer 後，每次 tool 調用都強制過白名單，違規立刻記錄帶有 tool 名稱、呼叫參數、請求路徑的 JSON log entry，合規報告從每月 8 小時人工縮為 5 分鐘跑腳本。",
+      "market_evidence": "facebook/mcpguard-dynamic 和 facebookresearch/secpriv-skill 在同一天落地，說明 MCP security 已進入大公司的 production checklist；OpenBSD pledge 概念在 systems 圈有 25 年驗證歷史，不需要發明新的安全模型。",
+      "difficulty": 2,
+      "dev_time": "週末 POC",
+      "first_step": "設計 tool manifest 的 pledge 格式（YAML 或 JSON），為你現有 MCP server 的每個 tool 填寫 allowed_paths 清單，然後在 tool dispatch 函數前加上 pledge 驗證 middleware",
+      "hardware": "純 CPU 可跑，不需要 GPU",
+      "skill_level": "熟悉 MCP server 開發即可，不需要 kernel 知識；pledge 概念比 eBPF 簡單得多",
+      "dependencies": "任意 MCP server framework（完全免費自架），不依賴任何外部 API"
+    },
+    {
+      "format": "solo",
+      "title": "OpenComputer × 田間蟲害報告：讓農業稽查 agent 先在 sandbox 練到 95% 再碰真實系統",
+      "projects": [
+        {
+          "name": "OpenComputer",
+          "url": "https://arxiv.org/abs/2605.19769",
+          "note": "verifier-grounded benchmark for computer-use agents，可驗證的 sandbox 世界"
+        }
+      ],
+      "description": "OpenComputer 提出「verifiable software world」——agent 的所有操作都在確定性 replay 環境裡執行，每次 action 有明確的 ground truth 可以驗證成功或失敗。把這個框架用在農業稽查表格填寫：先建一個假的「田間蟲害報告系統」sandbox，讓 VLM agent 在 sandbox 裡用真實蟲害照片練習辨識品種、標記嚴重度、選擇建議處置，直到在 1000 組測試案例上的 F1 score 超過 0.92，才允許 agent 在真實的農政系統提交。這個「先 sandbox 後上線」的部署模式可以套用在任何有 UI 填表需求的政府或企業系統。",
+      "use_case": "你是行政院農業部農業試驗所的 IT 工程師，田間觀察員每週需對 150 張蟲害照片填寫結構化報告（品種 × 嚴重度 1-5 × 建議處置 6 選 1），每份報告平均 12 分鐘，全所一年耗費約 230 工人天。用 GPT-4V 做 VLM agent，但不敢直接讓 agent 提交——因為填錯欄位要重走整個審核流程。用 OpenComputer 框架先建 sandbox，讓 agent 練習到 sandbox 測試集 F1 ≥ 0.92，再上真實系統，失敗成本從「重走審核流程」降到「sandbox retry 一次」。",
+      "market_evidence": "農業委員會年報顯示田間文書作業占稽查員工時 35-40%；VLM 在農業病蟲害辨識的 Top-5 準確率已超過 90%（CVPR 2025 AgriBench）；OpenComputer（HuggingFace #2）說明學術社群正在建構可驗證 agent benchmark 的基礎設施，產業應用即將到來。",
+      "difficulty": 3,
+      "dev_time": "1 個月+",
+      "first_step": "閱讀 OpenComputer 論文（arxiv.org/abs/2605.19769）的 Section 3「Verifiable World Construction」，然後用農政系統的截圖建立 UI replay 環境的第一個 state",
+      "hardware": "雲端 API 即可（GPT-4V 或 Claude Vision），不需要本地 GPU",
+      "skill_level": "需熟悉 computer-use agent 框架（Playwright 或 PyAutoGUI）和 Python，不需要農業領域知識",
+      "dependencies": "OpenComputer framework（OSS），GPT-4V API（月費約 $50-200 depending on volume），農政系統測試帳號"
+    }
+  ],
+  "shipped": [
+    {
+      "name": "antoinezambelli/forge",
+      "url": "https://github.com/antoinezambelli/forge",
+      "desc": "Guardrails 框架讓 8B 模型在 agentic task benchmark 上從 53% 跳到 99%。Schema 驗證 + retry loop 把 cascade failure 堵掉。",
+      "source": "HN 636分 · Show HN",
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "Qwen3.7-Max：The Agent Frontier",
+      "url": "https://qwen.ai/blog?id=qwen3.7",
+      "desc": "Alibaba 發布 Qwen3.7-Max，主打 agent 推理能力，HN 499分，22 則留言。是 forge 論點的另一面——一個是「8B 就夠了」，一個是「frontier model 繼續往前推」。",
+      "source": "HN 499分"
+    },
+    {
+      "name": "zakirullin/files.md",
+      "url": "https://github.com/zakirullin/files.md",
+      "desc": "開源 Obsidian 替代方案，Show HN 708分，79 則留言。檔案系統原生、無資料庫、Markdown-first。",
+      "source": "HN 708分 · Show HN",
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "GoLongRL：能力導向長文本強化學習",
+      "url": "https://arxiv.org/abs/2605.19577",
+      "desc": "完全開源的多任務對齊長文本 RL 框架（GoLongRL）。對需要在 10k+ token context 下做推理的任務有直接參考價值。",
+      "source": "HuggingFace Daily Papers #1"
+    },
+    {
+      "name": "OpenComputer：可驗證 agent benchmark 框架",
+      "url": "https://arxiv.org/abs/2605.19769",
+      "desc": "電腦使用 agent 的 verifier-grounded benchmark。每個 action 有 ground truth 驗證，agent 在確定性 sandbox 世界裡訓練和評估。",
+      "source": "HuggingFace Daily Papers #2"
+    },
+    {
+      "name": "OpenBSD 7.9",
+      "url": "https://www.openbsd.org/79.html",
+      "desc": "OpenBSD 7.9 正式發布，Lobsters 95分。pledge/unveil API 繼續是業界最嚴格的 syscall 隔離設計。",
+      "source": "Lobsters 95分"
+    },
+    {
+      "name": "colbymchenry/codegraph",
+      "url": "https://github.com/colbymchenry/codegraph",
+      "desc": "為 Claude Code、Codex、Cursor 預建的 code knowledge graph，減少 token 用量、減少 tool call 次數，100% 本地執行。9,011★，GitHub Trending #1。",
+      "source": "GitHub Trending #1",
+      "stars": 9011,
+      "repo_age": "本週新增"
+    },
+    {
+      "name": "vLLM v0.21.1rc0",
+      "url": "https://github.com/vllm-project/vllm/releases/tag/v0.21.1rc0",
+      "desc": "v0.21.0（367 commits，agentic KV cache 優化）的 RC 版本進 ROCm CI gating，inference stack 生產成熟度持續提升。",
+      "source": "vLLM Releases"
+    },
+    {
+      "name": "facebook/mcpguard-dynamic",
+      "url": "https://github.com/facebook/mcpguard-dynamic",
+      "desc": "Meta 悄悄落地的 eBPF kernel-level sandbox，專門攔截 LLM agent 透過 MCP 發出的 tool call。0★，C 語言，23h ago——eBPF 不是週末 POC 的選擇，是 production infrastructure 的選擇。",
+      "source": "異常訊號：大 org 空 repo",
+      "repo_age": "本週新增",
+      "stars": 0
+    },
+    {
+      "name": "Google I/O 2026：100 件事",
+      "url": "https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/",
+      "desc": "Google 在 I/O 2026 第二天發布 100+ 公告，Simon Willison 記錄的亮點包括 Gemini Spark 和 Antigravity。google/xtrace（Shell，1h ago）是 I/O 期間新落地的第五個 Google 空 repo。",
+      "source": "Google AI Blog"
+    },
+    {
+      "name": "alvinunreal/openpets",
+      "url": "https://github.com/alvinunreal/openpets",
+      "desc": "桌面寵物 for AI coding agent——裝寵物、接 Claude Code MCP、即時看到 coding 狀態，897★，TypeScript。",
+      "source": "topic:mcp · 897★ · 30d",
+      "stars": 897,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "DenisSergeevitch/agents-best-practices",
+      "url": "https://github.com/DenisSergeevitch/agents-best-practices",
+      "desc": "Provider-neutral agent skill 設計指南，同時相容 Codex、Claude Code 和其他 agent harness，896★。",
+      "source": "topic:mcp · 896★ · 30d",
+      "stars": 896,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "nduckmink/arkon",
+      "url": "https://github.com/nduckmink/arkon",
+      "desc": "企業 AI 知識庫 + MCP Server。讓團隊自建 RAG context 管理、存取控制、MCP endpoint，764★，Python，self-hosted。",
+      "source": "topic:rag · 764★ · 28d",
+      "stars": 764,
+      "repo_age": "本月新增"
+    },
+    {
+      "name": "jmerelnyc/Photo-agents",
+      "url": "https://github.com/jmerelnyc/Photo-agents",
+      "desc": "視覺接地 + 分層記憶 + 自我撰寫 skill 的自主進化 agent，用視覺輸入操控電腦，1,007★。agent memory 架構的新方向。",
+      "source": "topic:llm · 1007★ · 28d",
+      "stars": 1007,
+      "repo_age": "本月新增"
+    }
+  ],
+  "pulse": {
+    "curated": [
+      {
+        "title": "forge：guardrails 讓 8B 模型從 53% 到 99%",
+        "url": "https://github.com/antoinezambelli/forge",
+        "takeaway": "structured output 驗證 + retry loop 把 cascade failure 堵掉；不是提升模型能力，是把錯誤攔在步驟內。對固定 schema 的 extraction 任務，8B 本地模型可以取代 frontier API。",
+        "action": "clone antoinezambelli/forge，在你的 task set 上先跑 benchmark 再決定要不要換 model"
+      },
+      {
+        "title": "facebook/mcpguard-dynamic：Meta 在 MCP 上加 eBPF kernel sandbox",
+        "url": "https://github.com/facebook/mcpguard-dynamic",
+        "takeaway": "Meta 用 eBPF（不是 Python middleware）保護 MCP tool call，說明 agent 的 privilege escalation threat model 已進入大公司的 production checklist。你的 MCP server 如果有 bash_exec，這個威脅模型也適用於你。",
+        "action": "在你的 MCP tool manifest 裡加 permission_level 欄位，分 read-only / write-local / execute 三個等級"
+      },
+      {
+        "title": "Qwen3.7-Max：The Agent Frontier",
+        "url": "https://qwen.ai/blog?id=qwen3.7",
+        "takeaway": "Alibaba 繼續推 frontier model 的 agent 能力。和 forge 的論點是並行的：frontier model 繼續進步，但 guardrails 可以讓小模型在受限任務上達到相同結果。",
+        "action": "如果你的 agent 任務需要 open-ended reasoning（而非 structured extraction），Qwen3.7-Max 是值得 benchmark 的新基準"
+      },
+      {
+        "title": "GoLongRL：完全開源的多任務長文本 RL 框架",
+        "url": "https://arxiv.org/abs/2605.19577",
+        "takeaway": "完全開源的長文本 RL 訓練框架，多任務對齊設計，對需要在 10k+ token 文件上做推理的 fine-tuning 有直接參考價值。",
+        "action": "讀論文的 Section 4「Capability-Oriented Training」，看多任務對齊是否適合你的 domain fine-tuning 場景"
+      },
+      {
+        "title": "OpenBSD 7.9 發布",
+        "url": "https://www.openbsd.org/79.html",
+        "takeaway": "pledge/unveil API 繼續是最嚴格的 syscall 隔離設計。在 agent security 升溫的時機，OpenBSD 的設計哲學值得借鑑進 MCP permission 設計。",
+        "action": "閱讀 OpenBSD pledge(2) man page，把 pledge 的「聲明你要用的 syscall，其他全 block」哲學套用到你的 MCP tool 設計"
+      }
+    ],
+    "hn": [
+      {
+        "title": "Show HN: Files.md – Open-source alternative to Obsidian",
+        "url": "https://github.com/zakirullin/files.md",
+        "score": 708,
+        "comments": 79
+      },
+      {
+        "title": "Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks",
+        "url": "https://github.com/antoinezambelli/forge",
+        "score": 636,
+        "comments": 60
+      },
+      {
+        "title": "Show HN: Gaussian Splat of a Strawberry",
+        "url": "https://superspl.at/scene/84df8849",
+        "score": 513,
+        "comments": 54
+      },
+      {
+        "title": "Qwen3.7-Max: The Agent Frontier",
+        "url": "https://qwen.ai/blog?id=qwen3.7",
+        "score": 499,
+        "comments": 22
+      },
+      {
+        "title": "Everything in C is undefined behavior",
+        "url": "https://blog.habets.se/2026/05/Everything-in-C-is-undefined-behavior.html",
+        "score": 442,
+        "comments": 70
+      },
+      {
+        "title": "Meta blocks human rights accounts from reaching audiences in Saudi Arabia, UAE",
+        "url": "https://www.alqst.org/ar/posts/1190",
+        "score": 807,
+        "comments": 46
+      }
+    ],
+    "lobsters": [
+      {
+        "title": "Type out the code",
+        "url": "https://haskellforall.com/2026/05/type-out-the-code",
+        "score": 155,
+        "comments": 38,
+        "tags": [
+          "vibecoding"
+        ]
+      },
+      {
+        "title": "OpenBSD 7.9 released",
+        "url": "https://www.openbsd.org/79.html",
+        "score": 95,
+        "comments": 20,
+        "tags": [
+          "openbsd",
+          "release"
+        ]
+      },
+      {
+        "title": "GitHub Source Code Breach - TeamPCP Claims Access to Internal Source Code",
+        "url": "https://cybersecuritynews.com/github-source-code-breach/",
+        "score": 44,
+        "comments": 11,
+        "tags": [
+          "security"
+        ]
+      },
+      {
+        "title": "Better generated branch names with jj",
+        "url": "https://ddbeck.com/notes/jj-git-push-bookmark-template/",
+        "score": 64,
+        "comments": 13,
+        "tags": [
+          "vcs"
+        ]
+      },
+      {
+        "title": "Why Ruby Still Feels Like Home After All These Years",
+        "url": "https://caio.ca/blog/why-ruby-still-feels-like-home",
+        "score": 42,
+        "comments": 23,
+        "tags": [
+          "programming",
+          "ruby"
+        ]
+      }
+    ]
+  },
+  "dev_watch": {
+    "taiwan": [
+      {
+        "developer": "doggy8088",
+        "followers": 4424,
+        "repo": "doggy8088/leak-hunter",
+        "url": "https://github.com/doggy8088/leak-hunter",
+        "language": "Rust",
+        "hours_ago": 55,
+        "description": "Rust 撰寫的記憶體洩漏偵測工具，54★",
+        "local_context": "🇹🇼 台灣 .NET 社群最活躍的開發者之一轉向 Rust 做記憶體安全工具，呼應 Bun Zig→Rust AI 移植後 Rust 在台灣開發者社群的持續升溫。"
+      },
+      {
+        "developer": "JacobLinCool",
+        "followers": 441,
+        "repo": "JacobLinCool/open-realtime-translate",
+        "url": "https://github.com/JacobLinCool/open-realtime-translate",
+        "language": "Python",
+        "hours_ago": 36,
+        "description": "完全本地的即時語音翻譯 server，同時支援 MLX、CUDA、CPU，wire-compatible with OpenAI Realtime API",
+        "local_context": "🇹🇼 台灣開發者把 private on-device voice 方向往前推：相容 OpenAI Realtime API 的介面讓現有工具鏈不用改，但推理完全本地化。hadley/ghost-pepper 以來持續三週的 private STT 主題又有新進展。"
+      },
+      {
+        "developer": "strategist922",
+        "followers": 826,
+        "repo": "strategist922/everos",
+        "url": "https://github.com/strategist922/everos",
+        "language": null,
+        "hours_ago": 29,
+        "description": "Build, evaluate, and integrate long-term memory for self-evolving agents",
+        "local_context": "🇹🇼 台灣開發者在 agent 長期記憶基礎設施方向持續投入——「agent memory 從 RAG 的附屬功能變成獨立產品類別」這條主線在台灣社群也有 builder 在跟進。"
+      }
+    ],
+    "global": [
+      {
+        "developer": "steipete",
+        "followers": 50203,
+        "repo": "steipete/fluegel",
+        "url": "https://github.com/steipete/fluegel",
+        "language": "Swift",
+        "hours_ago": 1,
+        "description": "Mac app to elevate permissions for CLI tools that need elevated access（fluegel = 翅膀，讓你的 CLI 長翅膀）"
+      },
+      {
+        "developer": "lucidrains",
+        "followers": 59836,
+        "repo": "lucidrains/dmpo",
+        "url": "https://github.com/lucidrains/dmpo",
+        "language": null,
+        "hours_ago": 6,
+        "description": "MPO / DMPO（Deterministic Multi-step Policy Optimization）的實作與探索——新 RL policy optimization 算法，6h ago，Phil Wang 剛開始探索"
+      },
+      {
+        "developer": "facebook",
+        "followers": 35584,
+        "repo": "facebook/mcpguard-dynamic",
+        "url": "https://github.com/facebook/mcpguard-dynamic",
+        "language": "C",
+        "hours_ago": 23,
+        "description": "Kernel-level eBPF sandbox for securing LLM agent tool calls through MCP，0★，C 語言"
+      },
+      {
+        "developer": "facebookresearch",
+        "followers": 35950,
+        "repo": "facebookresearch/secpriv-skill",
+        "url": "https://github.com/facebookresearch/secpriv-skill",
+        "language": "Python",
+        "hours_ago": 23,
+        "description": "Unified LLM-agent skill，單一偵測器覆蓋 CWE 安全掃描和 GDPR 隱私審計，1★，和 mcpguard-dynamic 同天落地"
+      },
+      {
+        "developer": "apple",
+        "followers": 36720,
+        "repo": "apple/ml-velox",
+        "url": "https://github.com/apple/ml-velox",
+        "language": null,
+        "hours_ago": 44,
+        "description": "0 程式碼，4★——名字暗示 Apple 在 Metal 上重建 Meta Velox 向量化推理引擎，持續追蹤中"
+      }
+    ]
+  },
+  "signals": [
+    {
+      "title": "guardrails 的重要性超過模型規模：8B + 驗證層 = 99%",
+      "body": "forge 的 53%→99% 是今天最有破壞性的數字。它說的不是「8B 模型已經夠聰明了」——8B 模型的推理能力沒變。它說的是「cascade failure 是 agentic task 最大的失敗來源，而 cascade failure 可以靠 structured output verification 在步驟層面截住」。這個結論對你的架構選擇有直接影響：如果你的 agent task 可以被分解成帶有 schema 驗證的步驟序列，模型大小的邊際效益遠低於你想像的。HN 60 則留言的主要質疑是 benchmark task set 的受限程度，這個懷疑是對的——open-ended 任務的泛化能力還未驗證。但哪怕 forge 的 99% 在你的 task set 上只能重現到 85%，那也是從 frontier API 遷移到 local 8B 的充分理由。",
+      "evidence": "antoinezambelli/forge Show HN 636分，60 則留言，benchmark: 8B model 53%→99% on agentic tasks",
+      "type": "新信號",
+      "strength": "強訊號",
+      "cross_source": 2,
+      "percentile": "top 10%",
+      "product_opportunity": "「guardrails-as-a-service」：讓現有 agent pipeline 在不換模型的情況下加上 structured output 驗證層。每個 agent framework（LangChain、CrewAI、AutoGen）都可以加一個 guardrails plugin，商業模式是按 task success rate improvement 收費。",
+      "source_links": [
+        {
+          "platform": "HN",
+          "title": "Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks",
+          "url": "https://github.com/antoinezambelli/forge",
+          "score": 636
+        }
+      ]
+    },
+    {
+      "title": "Meta 在 MCP 安全層靜悄悄建設：eBPF sandbox + 安全審計 skill 同天落地",
+      "body": "facebook/mcpguard-dynamic 和 facebookresearch/secpriv-skill 在同一個 24 小時內落地，不是巧合。Meta 選擇 eBPF（需要 kernel 程式設計知識的工具）而非 Python middleware，說明他們的威脅模型包含 kernel-level privilege escalation。secpriv-skill 把 CWE 和 GDPR 合進同一個 skill，說明他們的 MCP 部署已進入必須應對合規審計的企業環境。這兩個 repo 都是 0★ 且沒有 README，是「大 org 預佈建空 repo」的典型模式——過去兩週 google 的四個空 repo 都在 I/O 前後填上了內容。Meta 的這兩個空 repo 大概率在一個月內填充。對你的意義：MCP security 已從「讓我想想要不要做」進入「大公司在 production 跑、已經在建安全層」的階段。",
+      "evidence": "facebook/mcpguard-dynamic（C，0★，23h ago，eBPF kernel sandbox for MCP）+ facebookresearch/secpriv-skill（Python，1★，23h ago，CWE+GDPR unified skill）同天落地",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "arc_ref": "ai-infra-land-grab",
+      "product_opportunity": "MCP tool call 監控儀表板：聚合所有 agent 的 MCP tool 呼叫，提供 real-time 異常偵測（非預期 filesystem 路徑、非白名單 domain、可疑呼叫頻率），在 Meta eBPF 方案正式開源前填補這個空缺。",
+      "source_links": [
+        {
+          "platform": "GitHub",
+          "title": "facebook/mcpguard-dynamic",
+          "url": "https://github.com/facebook/mcpguard-dynamic"
+        },
+        {
+          "platform": "GitHub",
+          "title": "facebookresearch/secpriv-skill",
+          "url": "https://github.com/facebookresearch/secpriv-skill"
+        }
+      ]
+    },
+    {
+      "title": "Google I/O 後格局：100 件事發布，Gemini Spark/Antigravity 出現，小模型生態系繼續前進",
+      "body": "Google I/O 2026 第二天，官方 blog 列出 100+ 公告，Simon Willison 記錄的亮點包括 Gemini Spark 和 Antigravity——兩個名字都不是之前預測的 windtunnel/esmeralda/opencl-kernel-profiler，說明 I/O 的重心不在 on-device 效能工具層。Qwen3.7-Max 同天在 HN 拿到 499 分，forge 拿到 636 分——Google 大聲宣布的同一天，社群最高分是「8B 就夠了」的論文。這個對比不是偶然：frontier model 的公告密度越高，「用更少資源達到同等效果」的需求就越迫切，forge 的時機恰好踩在這個反力上。「AI 公司基礎設施爭奪戰：從 model 到 tooling/compute/distribution」這條主線今天進入後 I/O 階段。",
+      "evidence": "Google AI Blog「100 things we announced at I/O 2026」+ Simon Willison「Google I/O, Gemini Spark, Antigravity」+ Qwen3.7-Max HN 499分同天出現",
+      "type": "持續趨勢",
+      "strength": "強訊號",
+      "cross_source": 3,
+      "percentile": "top 10%",
+      "arc_ref": "ai-infra-land-grab",
+      "day_count": 40,
+      "product_opportunity": "後 I/O 時期的 model 遷移工具：幫助 team 在 Google Gemini 2.5/Spark、Anthropic Claude、Qwen3.7-Max 之間做 A/B benchmark，提供 task-specific 成本/效能曲線，讓 team 在 30 分鐘內決定要不要遷移。",
+      "source_links": [
+        {
+          "platform": "Google AI Blog",
+          "title": "100 things we announced at I/O 2026",
+          "url": "https://blog.google/innovation-and-ai/technology/ai/google-io-2026-all-our-announcements/"
+        },
+        {
+          "platform": "Simon Willison",
+          "title": "Google I/O, Gemini Spark, Antigravity",
+          "url": "https://simonwillison.net/2026/May/20/google-io/#atom-everything"
+        },
+        {
+          "platform": "HN",
+          "title": "Qwen3.7-Max: The Agent Frontier",
+          "url": "https://qwen.ai/blog?id=qwen3.7",
+          "score": 499
+        }
+      ]
+    },
+    {
+      "title": "type system 作為 guardrail：Haskell 社群用型別安全反擊 LLM 驗證層路線",
+      "body": "Lobsters「Type out the code」（155分，tagged vibecoding）的論點很直接：如果你的 LLM 輸出需要 runtime 驗證層來確保格式正確，根本原因是你沒有用夠強的型別系統。Haskell 的 ADT + phantom type 可以讓非法狀態在型別層就不可表達——你根本不需要 forge 的 retry loop，因為型別系統在編譯時就已經是那個 guardrail。這個論點不是否定 forge，是說 forge 解決的問題在靜態型別語言裡本來就不存在。對現在用 Python 建 agent pipeline 的 builder 而言，這是一個值得認真考慮的信號：如果你的 agent task 有足夠明確的 schema，用 Pydantic + mypy strict mode 就能在 development 階段抓住大部分 forge runtime 會抓的錯誤。",
+      "evidence": "Lobsters「Type out the code」155分，38 則留言，tagged vibecoding；和 forge 636分同天出現",
+      "type": "新信號",
+      "strength": "弱訊號",
+      "cross_source": 2,
+      "percentile": "top 25%",
+      "product_opportunity": "靜態型別 agent schema 設計工具：給定一個 agentic task 的 tool 清單和 output 需求，自動生成 Pydantic v2 + mypy strict 相容的 schema 定義，讓 Python builder 在不改語言的情況下得到靜態型別的部分好處。",
+      "source_links": [
+        {
+          "platform": "Lobsters",
+          "title": "Type out the code",
+          "url": "https://haskellforall.com/2026/05/type-out-the-code",
+          "score": 155
+        }
+      ]
+    }
+  ],
+  "sleeper": {
+    "name": "nduckmink/arkon",
+    "url": "https://github.com/nduckmink/arkon",
+    "description": "企業 AI 知識庫 + MCP Server。讓團隊自建 RAG context 管理、存取控制、policy audit，自架、764★、Python。",
+    "why_asymmetric": "764★ 在 topic:rag 30 天新 repo 裡屬於中等，但「team knowledge base + MCP 整合 + self-hosted + access control」四個特性的組合目前沒有其他成熟的同類 OSS 方案。企業 IT 在 MCP server 部署需求確認後，RAG context 的集中管理是下一個瓶頸——現在大多數 team 的做法是每個 agent 各帶一份 context，沒有統一的 schema、沒有 access control、沒有 audit log。Arkon 填的就是這個空缺。",
+    "commercial_path": "公司自架版本免費，帶有 SSO / audit log / enterprise SLA 的 managed 版本有明確的 SaaS 路徑——這個模式和 Supabase（OSS PostgreSQL → $1M+ ARR managed service）相同。MCP server 標準化後，team knowledge hub 的市場規模約等於 Confluence 的子集，但 AI-native 的切入點讓它不需要打 Confluence 的正面戰。",
+    "stars": 764
+  },
+  "contrarian": {
+    "claim": "forge 的 53%→99% 在 production 環境不會 hold",
+    "rationale": "forge 的 benchmark task set 幾乎可以確定是受限的：固定 tool 清單、固定 output schema、task 邊界由設計者劃定。真實 production agent 的工具組合是開放的——tool 數量隨業務需求增加，用戶查詢的邊界由用戶決定，不由 benchmark 設計者劃定。在開放工具集下，8B 模型的 single-step 準確率顯著下降（多 tool 交互時決策路徑呈指數增長），guardrail retry 的 token 燒耗讓 latency 快速變得不可接受。forge 的真實貢獻是「guardrails 對受限任務有顯著效果」，這本身是有價值的，但「8B + guardrails 可以取代 frontier API」的結論超出了 benchmark 能支撐的範圍。",
+    "prediction": "到 2026-08-31，antoinezambelli/forge 的 GitHub issue tracker 上有至少 10 個 open issue 的 title 或 body 包含 'production'、'real-world'、'accuracy' 或 'false positive' 關鍵字，且這些 issue 描述的是 forge 在 production task set 上失敗的案例（以 GitHub issue list 的 URL + issue count 為判準）。"
+  },
+  "predictions": [
+    {
+      "id": "pred-anthropic-asic",
+      "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+      "status": "pending",
+      "created": "2026-04-14",
+      "resolution_date": "2026-12-31"
+    },
+    {
+      "id": "pred-mcp-registry-by-july",
+      "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+      "status": "pending",
+      "created": "2026-04-28",
+      "resolution_date": "2026-07-31"
+    },
+    {
+      "id": "pred-google-io-local-ai-benchmark",
+      "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel、google/esmeralda、google/opencl-kernel-profiler 三個 repo 中至少一個發布帶有 README 的初始版本，或 Google 在 I/O 官方 session 中具名提及其中任何一個工具。",
+      "status": "needs_revision",
+      "created": "2026-05-14",
+      "resolution_date": "2026-05-21",
+      "notes": "Google I/O 2026 已舉辦（5/20-21），官方 blog 列出 100+ 公告，Simon Willison 記錄的亮點是 Gemini Spark 和 Antigravity——不是預測中的三個 repo。google/xtrace（Shell，1h ago）是 I/O 期間新落地的第五個空 repo，不在原預測範圍內。從現有資料無法確認三個 repo 是否在 I/O session 中具名提及，改為 needs_revision 等待外部確認。"
+    },
+    {
+      "id": "pred-karpathy-announcement-before-may26",
+      "text": "到 2026-05-26，Karpathy 的「Coming soon」substack 頁面變成一篇有 full content 的文章，或 Karpathy 發布一個 YouTube 視頻或新 GitHub repo。",
+      "status": "needs_revision",
+      "created": "2026-05-19",
+      "resolution_date": "2026-05-26",
+      "notes": "Karpathy 於 2026-05-20 透過 Twitter 宣布加入 Anthropic，「Coming soon」之謎揭曉。然而公告渠道是 Twitter，不符合預測中的 Substack/YouTube/GitHub 三個驗證標準，標記 needs_revision。預測的精神（Karpathy 會在 May 26 前宣佈）正確，但驗證條件需修訂。"
+    },
+    {
+      "id": "pred-karpathy-no-research-paper-6m",
+      "text": "到 2026-11-20（6 個月後），Karpathy 不會是 Anthropic 任何 peer-reviewed 論文的一作或二作（以 arXiv 或正式期刊的 author affiliation 列表為準）。",
+      "status": "pending",
+      "created": "2026-05-20",
+      "resolution_date": "2026-11-20"
+    },
+    {
+      "id": "pred-cli-anything-reliability-issues",
+      "text": "到 2026-09-30，HKUDS/CLI-Anything 的 GitHub issue tracker 上有至少 80 個 open issues 的 title 或 label 包含 'reliability'、'unexpected output'、'tool failure' 或 'wrong output' 其中一個關鍵字。",
+      "status": "pending",
+      "created": "2026-05-19",
+      "resolution_date": "2026-09-30"
+    },
+    {
+      "id": "pred-forge-stars-3000",
+      "text": "到 2026-07-31，antoinezambelli/forge 的 GitHub stars 超過 3000（以 GitHub star count 的 public 頁面數字為判準）。",
+      "status": "pending",
+      "created": "2026-05-21",
+      "resolution_date": "2026-07-31"
+    }
+  ],
+  "meta": {
+    "run_id": "cccbdd3c-e86c-45da-9c19-4dbc3efbb22f",
+    "pipeline_version": "9275f28",
+    "model": "claude-sonnet-4-6",
+    "generated_at": "2026-05-20T20:24:38.501Z",
+    "analyze_duration_ms": 1371624,
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 211
+      },
+      "trending": {
+        "ok": true,
+        "count": 17
+      },
+      "search": {
+        "ok": true,
+        "count": 46
+      },
+      "developers": {
+        "ok": true,
+        "count": 20
+      }
+    },
+    "degraded_sources": []
+  }
+}

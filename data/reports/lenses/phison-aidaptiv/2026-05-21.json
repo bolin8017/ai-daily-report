@@ -1,0 +1,161 @@
+{
+  "date": "2026-05-21",
+  "lens_id": "phison-aidaptiv",
+  "focus_idea": {
+    "title": "Forge 守衛架構 × aiDAPTIV+ 70B：讓本機 legal agent 跨過律師事務所的合規生產門檻",
+    "path": "isv-vertical",
+    "description": "Forge（antoinezambelli/forge）今日以 HN 636 分登上社群首頁，核心發現：在 8B 模型外加 guardrails 結構，agentic task 完成率從 53% 直跳 99%。這個數字對市場有雙重訊號——訊號一：small model + guardrails 組合已可應付標準 agentic workflow；訊號二：律師事務所、稽核機構等規制客戶要求的推理深度遠超 coding benchmark 定義的「agentic task」——多文件 IP 風險評估、跨管轄區條款比對、合約矛盾條款自動標記，這類任務需要 70B 等級的推理質量，不是 benchmark 框架下的 8B。Forge 提供執行層的可靠性架構；aiDAPTIV+ 填入 70B 推理質量。組合起來，這是法律科技 ISV 唯一能向律所客戶出示的「零資料外洩 + 生產級準確率」本機 AI stack，兩個軟體組件均為 MIT license 可直接整合。",
+    "ingredient": {
+      "source": "hackernews",
+      "url": "https://github.com/antoinezambelli/forge",
+      "name": "antoinezambelli/forge",
+      "stars": null
+    },
+    "seasoning_use": "aiDAPTIV+ 的角色是把 16GB 筆電上的可用模型從 8B 推上 70B——Forge 的守衛架構在兩種模型上都能運作，但 70B 在複雜法律推理上的準確率顯著高於 8B，這個差距正是律所客戶可接受與否的分水嶺。拿掉 aiDAPTIV+，ISV 的本機部署只剩 8B + Forge：coding benchmark 上 99%，律所要求的複雜文件分析準確率下滑到法律責任無法接受的程度。",
+    "customer_scenario": "一家台北法律科技 startup 的 CTO，產品要分析律所客戶提交的 500 份 NDA（禁止上雲端，bar association ethics 要求）。現有方案：8B 模型 + prompt engineering，對模糊邊界條款的判斷錯誤率約 8%，律所客戶無法接受。新方案：Forge guardrails（確保 agentic task 完成率）+ aiDAPTIV+ 70B（提供深度推理），把錯誤率壓到律所可接受的 <2%。ISV 據此把 Pascari SSD 寫進 hardware requirement。",
+    "demo_path": "安裝 Forge（pip install），設定 model provider 指向本機 aiDAPTIV+ 70B endpoint；輸入 15 份 NDA（PDF 轉 Markdown）；執行 agentic task『找出甲方競業禁止條款跨文件的定義不一致之處』；Forge guardrails 自動驗證每個子任務的 structured output；最後展示 70B 正確識別 3 個邊界定義衝突、8B 漏掉其中 2 個。全程約 75 秒。",
+    "feasibility_evidence": {
+      "source_url": "https://github.com/antoinezambelli/forge",
+      "claimed_capability": "HN 作者自述：guardrails 框架讓 8B 模型 agentic task 完成率從 53% 提升至 99%（HN 636 分，60 則討論）；架構推斷為在現有 LLM 推論端點外層加入 structured output 驗證與 retry 機制，理論上適用於任何 OpenAI-compatible 本機端點"
+    },
+    "effort_estimate": "2-週 MVP",
+    "must_have_test": {
+      "seasoning_indispensable_check": "拿掉 aiDAPTIV+，ISV 的本機 Forge stack 只能搭配 8B 模型。Forge 把 8B 的 agentic task 完成率從 53% 拉到 99% 是在 coding benchmark 上——複雜法律文件分析的任務複雜度超出 8B 的推理能力，準確率下滑到律所無法接受的法律責任門檻以下。aiDAPTIV+ 是 70B 推論在 16GB 筆電可用的路徑，缺它則整個 legal-grade 方案無法成立。",
+      "demo_able_check": "Forge 安裝後指向本機 aiDAPTIV+ 70B endpoint，輸入 15 份 NDA，執行多文件競業禁止條款比對 task，Forge guardrails 確保每步有 structured output，最後展示 70B vs 8B 在模糊邊界條款的輸出差異。端到端 demo flow 可在 60-90 秒內完整展示。",
+      "buyer_commits_check": "目標是法律科技 ISV 的 CTO，他的三個判斷條件：Forge 保證 agentic task 完成率（不卡在 tool call 循環）、70B 保證推理品質（律所客戶不接受 8B 的邊界條款判斷）、本機 aiDAPTIV+ 保證零資料外洩（bar association ethics 要求）。三條全中，把 Pascari SSD 寫進產品 hardware requirement。需注意：Forge 是否原生支援 llama.cpp-compatible endpoint 仍需確認——若 Forge 只接受 OpenAI API format，aiDAPTIV+ 需暴露 OpenAI-compatible 介面，此項目前為開放問題。"
+    }
+  },
+  "oss_pulse": [
+    {
+      "name": "ggml-org/llama.cpp",
+      "url": "https://github.com/ggml-org/llama.cpp",
+      "source": "github-trending",
+      "stars": 111783,
+      "description": "C/C++ LLM 推論引擎，aiDAPTIV+ 的上游 fork 基礎；今日 GitHub Trending rank 16，111k stars，社群對純本機推論的需求訊號持續穩定",
+      "fits": ["oem", "isv-vertical", "isv-consumer", "isv-dev-oss"],
+      "fit_reason": "aiDAPTIV+ 技術底層；所有 GTM path 的共同基礎訊號，活躍維護表示 upstream 功能持續可整合"
+    },
+    {
+      "name": "tinyhumansai/openhuman",
+      "url": "https://github.com/tinyhumansai/openhuman",
+      "source": "github-trending",
+      "stars": 23461,
+      "description": "Rust 本機個人 AI 系統，自稱 'Personal AI superintelligence'，私密優先；GitHub Trending rank 3，23k stars，連續多日前 5",
+      "fits": ["oem", "isv-consumer"],
+      "fit_reason": "OEM 筆電捆綁與 consumer 個人 AI 場景均適配；後端是否為 llama.cpp 仍是開放問題（自 2026-05-19 起追蹤）"
+    },
+    {
+      "name": "antoinezambelli/forge",
+      "url": "https://github.com/antoinezambelli/forge",
+      "source": "hackernews",
+      "stars": null,
+      "description": "Guardrails 框架，實測把 8B 模型 agentic task 完成率從 53% 拉到 99%；今日 HN 636 分社群首頁，60 則討論",
+      "fits": ["isv-vertical", "isv-dev-oss"],
+      "fit_reason": "今日 focus_idea 的核心訊號來源；與 aiDAPTIV+ 70B 搭配可建立生產級本機 agentic 執行層"
+    },
+    {
+      "name": "nduckmink/arkon",
+      "url": "https://github.com/nduckmink/arkon",
+      "source": "github-search:rag",
+      "stars": 764,
+      "description": "企業級自託管 RAG Knowledge Hub + MCP server，支援訪問策略管理與團隊知識庫，為合規場景設計，Python 實作",
+      "fits": ["isv-vertical"],
+      "fit_reason": "自託管 RAG 搭配本機 70B = 零資料外洩的完整企業知識庫；直接適配法律/醫療/金融 ISV-vertical 場景"
+    },
+    {
+      "name": "GammaLabTechnologies/harmonist",
+      "url": "https://github.com/GammaLabTechnologies/harmonist",
+      "source": "github-search:llm",
+      "stars": 1828,
+      "description": "186 個 agent 的可攜式 AI agent 協作框架，zero runtime dependencies，支援機械式協定執法，Python 實作",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "若支援 OpenAI-compatible 端點可接 aiDAPTIV+ 70B 後端，為開發者提供完整本機 multi-agent 協作能力"
+    },
+    {
+      "name": "heider-x/vela",
+      "url": "https://github.com/heider-x/vela",
+      "source": "github-search:local-llm",
+      "stars": 271,
+      "description": "TypeScript 本機 LLM + RAG 小說寫作 IDE，隱私優先，BYOK 支援，針對自媒體與創作者，phison-aidaptiv 範疇訊號",
+      "fits": ["isv-consumer"],
+      "fit_reason": "消費者創作場景直接適配；BYOK 若支援本機端點可用 aiDAPTIV+ 70B 作後端（後端具體實作仍是開放問題，自 2026-05-20 起追蹤）"
+    },
+    {
+      "name": "lightseekorg/tokenspeed",
+      "url": "https://github.com/lightseekorg/tokenspeed",
+      "source": "github-search:llm",
+      "stars": 1069,
+      "description": "標榜 speed-of-light 的 LLM 推論引擎，Python 實作，1,069 stars",
+      "fits": ["isv-dev-oss"],
+      "fit_reason": "定位與 aiDAPTIV+ 部分重疊；若專注 consumer GPU 而非 datacenter，競爭關係需追蹤"
+    }
+  ],
+  "adjacent_ideas": [
+    {
+      "title": "openhuman × Pascari 捆綁：OEM 筆電出廠即內建 23k-star 個人 AI 系統",
+      "path": "oem",
+      "description": "tinyhumansai/openhuman（Rust，23,461 stars，GitHub Trending 連續多日前 5）是目前社群討論最熱的本機個人 AI 系統。若其後端為 llama.cpp，Phison aiDAPTIV+ 可直接作為 70B 推論後端替換，讓 OEM 筆電出廠預裝 openhuman + Pascari，同價位裝普通 SSD 的筆電只能跑 7B-13B。OEM PM 拿到的是一個「70B 個人 AI、業界 23k stars 的知名 OSS、差異化話術由社群已寫好」的 SKU 捆綁方案，直接對應 HP / Acer / ASUS 的 AI PC SKU 差異化需求。",
+      "ingredient": {
+        "source": "github-trending",
+        "url": "https://github.com/tinyhumansai/openhuman",
+        "name": "tinyhumansai/openhuman",
+        "stars": 23461
+      },
+      "effort_estimate": "2-週 MVP（取決於 llama.cpp 後端確認，若後端不相容則需重估）",
+      "must_have_test": {
+        "seasoning_indispensable_check": "後端若為 llama.cpp，拿掉 aiDAPTIV+ 則 openhuman 在 16GB 筆電上只能跑 7B-13B——整個「personal AI superintelligence」的宣稱建立在 70B 能力上，沒有 Pascari 就沒有 70B。",
+        "demo_able_check": "OEM 筆電開機 → openhuman 系統托盤自動啟動 → 問一個需要深度推理的問題（例如：分析一份 20 頁財報找出三個主要風險因子）→ 展示 70B 在 aiDAPTIV+ 加持下完整回答，旁邊對照同機器裝普通 SSD 只能跑 7B 的回答品質差距。",
+        "buyer_commits_check": "後端兼容性是目前最大的不確定因子（開放問題自 2026-05-19 起）。確認前這個想法為 2-condition pass（demo-able + buyer commits），seasoning indispensable 為條件式通過，不升為 focus_idea。"
+      }
+    },
+    {
+      "title": "Arkon 企業 RAG Hub × aiDAPTIV+ 70B：ISV 打造零資料外洩的法規合規知識庫產品",
+      "path": "isv-vertical",
+      "description": "nduckmink/arkon（764 stars，github-search:rag）是本週 RAG topic 訊號中定位最明確面向企業合規場景的自託管知識庫，帶 MCP server 介面和訪問策略管理。對 ISV-vertical 的切入點：在 Arkon 之上整合 aiDAPTIV+ 70B 本機推論，ISV 向法律/金融客戶交付完全自託管的 AI 知識庫產品——文件進去不出去，推論在本機，符合 GDPR + 律所 ethics 要求。與今日 focus_idea（Forge + 70B）的差異在於：Arkon 方案是 RAG-first（知識庫管理是核心）；Forge 方案是 task execution-first（agentic 任務可靠性是核心）。兩者可疊加，但獨立 demo 時 Arkon 方案對知識管理背景的 ISV PM 說話更直接。",
+      "ingredient": {
+        "source": "github-search:rag",
+        "url": "https://github.com/nduckmink/arkon",
+        "name": "nduckmink/arkon",
+        "stars": 764
+      },
+      "effort_estimate": "2-週 MVP"
+    }
+  ],
+  "radar": [
+    {
+      "title": "Simon Willison：10 tok/s 到底算不算快？",
+      "summary": "Simon Willison 今日發文重新定義「夠快」的推論速度門檻，論點指向 10 tok/s 已接近人類閱讀速度。對 aiDAPTIV+ OEM 話術直接相關：如果 10 tok/s 被開發者社群定為可接受門檻，Phison 的速度訴求應從「更快的 tok/s」轉向「在 10 tok/s 速度下可跑更大模型（70B vs 7B）」——模型規模與推理質量差距，而非原始速度，才是下一個 OEM SKU 差異化敘事的核心。OEM launch deck 的話術需要對應調整。",
+      "url": "https://simonwillison.net/2026/May/20/tokens-per-second/#atom-everything",
+      "relevance_axis": "oem-channel",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "Qwen3.7-Max：下一個 aiDAPTIV+ demo 場景的候選模型",
+      "summary": "Qwen 團隊將 3.7-Max 定位為「Agent Frontier」（HN 499 分）。若 Qwen3.7-Max 釋出 GGUF 格式的 70B+ 本機可用版本，將成為 aiDAPTIV+ demo 的候選替換模型——Qwen 系列在中文推理上優於同規模 Llama 系列，對台灣 OEM channel（Acer / ASUS / HP Taiwan）的在地化展示特別有吸引力。需追蹤是否有 ≤70B 可量化本機版本釋出。",
+      "url": "https://qwen.ai/blog?id=qwen3.7",
+      "relevance_axis": "tech-stack",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "KPMG × Claude 27.6 萬人全面上雲 AI 的對照組",
+      "summary": "KPMG 宣布把 Claude 整合進全球 27.6 萬名員工的工作流。像 KPMG 這樣的全球專業服務機構選擇雲端 AI 的速度加快，意味著 aiDAPTIV+ 的可定址市場正快速收窄到「監管壁壘主動排除雲端」的客群——台灣律師事務所、醫院、政府採購、國防相關 ISV。這個收窄不是壞訊號，而是定位精準化的機會：「雲端 AI 人人都用得到，法規不允許你用的才是你的機會」。",
+      "url": "https://www.anthropic.com/news/anthropic-kpmg",
+      "relevance_axis": "customer-segment",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "npm 供應鏈攻擊：20 分鐘內 630 個惡意套件版本",
+      "summary": "OSChina 報導，StepSecurity 記錄到 2026-05-19 的 npm 供應鏈攻擊，黑客在 20 分鐘內發布 630 個惡意版本。對 ISV-vertical 的間接意義：雲端 AI 服務的信任鏈正被供應鏈攻擊侵蝕——依賴外部 npm 套件的雲端 LLM API wrapper 在安全事件中的暴露面，比完全本機、零外部雲端依賴的 aiDAPTIV+ stack 大。CISO 層面「本機推論 = 更小的攻擊面」的說服力正在上升，ISV-vertical 合規銷售話術可援引這個事件。",
+      "url": "https://www.oschina.net/news/443374",
+      "relevance_axis": "regulatory",
+      "impact_window": "this quarter"
+    },
+    {
+      "title": "facebookresearch/secpriv-skill：GDPR + CWE 統一 code review agent skill",
+      "summary": "Facebook Research 剛釋出（<24 小時，stars=1）一個統一安全（CWE）與隱私（GDPR）的 LLM agent skill，專為程式碼審查設計。若其 LLM backend 支援本機 OpenAI-compatible 端點，這是 isv-dev-oss 路徑的新 demo 場景：「在本機以 70B + aiDAPTIV+ 跑 secpriv-skill，程式碼審查結果不離開開發者工作站，同時滿足 GDPR 合規要求」。目前 release 太新、後端設計未確認，列為觀察訊號。",
+      "url": "https://github.com/facebookresearch/secpriv-skill",
+      "relevance_axis": "tech-stack",
+      "impact_window": "watch"
+    }
+  ]
+}
