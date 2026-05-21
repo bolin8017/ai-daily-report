@@ -1,0 +1,60 @@
+{# 訊號 tab — lead block + signals.focus / sleeper / contrarian / predictions #}
+<section class="section-signals tab-panel active" id="signals" role="tabpanel" aria-labelledby="tab-signals">
+
+  {% if report.lead and report.lead.html %}
+  <div class="lead-block">
+    {{ report.lead.html | safe }}
+  </div>
+  {% endif %}
+
+  <h2>訊號 — 今日洞察</h2>
+
+  {% if report.signals.focus and (report.signals.focus | length) %}
+  <h3 class="sub-section-title">今日焦點</h3>
+  <ol class="signals-list">
+    {%- for s in report.signals.focus %}
+    <li id="{{ s.id }}" class="signal-card" data-audience="{{ s.audience | default('general') }}">
+      <strong>{{ s.title }}</strong>
+      {% if s.body %}<p>{{ s.body }}</p>{% endif %}
+      {% if s.mechanism %}<p class="mechanism"><em>機制：</em>{{ s.mechanism }}</p>{% endif %}
+      {% if s.product_opportunity %}<p class="opportunity"><em>機會：</em>{{ s.product_opportunity }}</p>{% endif %}
+      {% if s.source_links and (s.source_links | length) %}
+      <p class="source-links">
+        <em>來源：</em>
+        {%- for sid in s.source_links %}<a href="#{{ sid }}">{{ sid }}</a>{% if not loop.last %} · {% endif %}{%- endfor %}
+      </p>
+      {% endif %}
+    </li>
+    {%- endfor %}
+  </ol>
+  {% endif %}
+
+  {% if report.signals.sleeper %}
+  <h3 class="sub-section-title">潛力股</h3>
+  <div class="signal-card sleeper" id="{{ report.signals.sleeper.id }}" data-audience="{{ report.signals.sleeper.audience | default('general') }}">
+    <strong>{{ report.signals.sleeper.title }}</strong>
+    {% if report.signals.sleeper.body %}<p>{{ report.signals.sleeper.body }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if report.signals.contrarian %}
+  <h3 class="sub-section-title">唱反調</h3>
+  <div class="signal-card contrarian" id="{{ report.signals.contrarian.id }}">
+    <strong>{{ report.signals.contrarian.title }}</strong>
+    {% if report.signals.contrarian.body %}<p>{{ report.signals.contrarian.body }}</p>{% endif %}
+  </div>
+  {% endif %}
+
+  {% if report.signals.predictions and (report.signals.predictions | length) %}
+  <h3 class="sub-section-title">預測追蹤</h3>
+  <ol class="prediction-list">
+    {%- for p in report.signals.predictions %}
+    <li id="{{ p.id }}" class="prediction-card status-{{ p.status | default('pending') }}">
+      <strong>{{ p.text }}</strong>
+      <span class="resolution-date">截止：{{ p.resolution_date }}</span>
+      {% if p.rationale %}<p>{{ p.rationale }}</p>{% endif %}
+    </li>
+    {%- endfor %}
+  </ol>
+  {% endif %}
+</section>

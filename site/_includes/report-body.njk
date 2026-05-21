@@ -1,5 +1,9 @@
-{# Backward-compat alias for the ai-builder lens body.
-   Lens content lives in site/_includes/lens/ai-builder.njk; pre-Phase-3
-   templates that did {% include "report-body.njk" %} still work via this
-   thin wrapper. New templates should include from lens/ directly. #}
-{% include "lens/ai-builder.njk" %}
+{# Schema-version routing for archive pages and any legacy include site.
+   v2 unified reports → site/_includes/v2/unified.njk
+   v1.x lens reports  → legacy lens/ai-builder.njk (preserves archive rendering)
+#}
+{% if report and report.schema_version == 2 %}
+  {% include "v2/unified.njk" %}
+{% else %}
+  {% include "lens/ai-builder.njk" %}
+{% endif %}

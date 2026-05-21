@@ -189,3 +189,34 @@
     if (m) activateLens(m[1]);
   });
 })();
+
+// ── v2.0 audience filter chips ─────────────────────────────────────
+// Hides/shows items based on their data-audience attribute. Items tagged
+// `general` show on "general" filter and "all"; `work` shows on "work" and
+// "all"; `both` shows on all three filters. Items without the attribute
+// default to `general` (matches schema default).
+(() => {
+  const chips = document.querySelectorAll('.audience-chip');
+  if (chips.length === 0) return;
+
+  function applyFilter(selected) {
+    const items = document.querySelectorAll('[data-audience]');
+    items.forEach((el) => {
+      const a = el.dataset.audience || 'general';
+      const show = selected === 'all' || a === selected || a === 'both';
+      el.style.display = show ? '' : 'none';
+    });
+  }
+
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      chips.forEach((c) => {
+        c.classList.remove('active');
+        c.setAttribute('aria-pressed', 'false');
+      });
+      chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
+      applyFilter(chip.dataset.audience);
+    });
+  });
+})();

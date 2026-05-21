@@ -1,0 +1,12 @@
+{# Shared shipped item card. Expects loop var `item`. #}
+<li id="{{ item.id }}" class="shipped-card" data-audience="{{ item.audience | default('general') }}">
+  {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.name }}</strong></a>{% else %}<strong>{{ item.name }}</strong>{% endif %}
+  {% if item.stars %}<span class="score">★ {{ item.stars | formatNum }}</span>{% endif %}
+  {% if item.language %}<code class="lang-tag">{{ item.language }}</code>{% endif %}
+  {% if item.repo_age %}<span class="time-ago">{{ item.repo_age }}</span>{% endif %}
+  {% if item.desc %}<p class="desc">{{ item.desc }}</p>{% endif %}
+  {% if item.relevance %}<p class="relevance"><em>今日意義：</em>{{ item.relevance }}</p>{% endif %}
+  {% if item.topic_match and (item.topic_match | length) %}
+  <p class="topics">{% for t in item.topic_match %}<code class="topic-tag">{{ t }}</code>{% endfor %}</p>
+  {% endif %}
+</li>
