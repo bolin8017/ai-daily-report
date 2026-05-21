@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ShippedCuratedSchema } from '../src/schemas/curated.js';
 import { mergePrompts, stableId, validateCuratedOutput } from '../src/curators/_base.js';
+import { ShippedCuratedSchema } from '../src/schemas/curated.js';
 
 describe('stableId', () => {
   it('builds GitHub repo id', () => {

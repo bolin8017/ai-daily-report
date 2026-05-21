@@ -1,14 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   AudienceTag,
-  ItemBase,
-  ShippedItem,
-  PulseItem,
-  MarketItem,
-  TechItem,
   IdeaItem,
-  SignalItem,
+  ItemBase,
+  MarketItem,
   PredictionItem,
+  PulseItem,
+  ShippedItem,
+  SignalItem,
+  TechItem,
 } from '../src/schemas/items.js';
 
 describe('AudienceTag', () => {
