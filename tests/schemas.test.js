@@ -67,6 +67,29 @@ describe('schemas', () => {
     expect(result.success).toBe(true);
   });
 
+  it('MemorySchema accepts audience_state with general and work tracks', () => {
+    const result = MemorySchema.safeParse({
+      schema_version: 2,
+      last_updated: '2026-05-22T04:00:00Z',
+      audience_state: {
+        general: { topics: { rag: 5 }, narrative_arcs: [] },
+        work: { topics: { kv_cache: 7 }, narrative_arcs: [] },
+      },
+    });
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
+    expect(result.data.audience_state.general.topics.rag).toBe(5);
+  });
+
+  it('MemorySchema accepts memory without audience_state (backward compat)', () => {
+    const result = MemorySchema.safeParse({
+      schema_version: 2,
+      last_updated: null,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data.audience_state).toBeUndefined();
+  });
+
   it('ReportSchema v2 rejects missing schema_version', () => {
     const minimalV2 = {
       date: '2026-05-22',
