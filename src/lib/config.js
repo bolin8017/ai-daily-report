@@ -25,9 +25,21 @@ const CONFIG_PATH = path.join(REPO_ROOT, 'config.json');
  */
 export function mergeOverlaySources(rawConfig) {
   const allFeeds = [...rawConfig.sources.feeds];
-  const allTopics = [...rawConfig.sources.github_topics.topics];
   const seenFeedKeys = new Set(allFeeds.map((f) => `${f.type}:${f.name}`));
-  const seenTopics = new Set(allTopics);
+
+  // Topics support two shapes (legacy flat + new tier).
+  const baseTopics = rawConfig.sources.github_topics;
+  const hasTier = Array.isArray(baseTopics.tier?.core);
+  const allLegacyTopics = hasTier ? null : [...baseTopics.topics];
+  const tierCore = hasTier ? [...baseTopics.tier.core] : null;
+  const tierRotating = hasTier ? [...baseTopics.tier.rotating] : null;
+  // Single dedupe set across both legacy and tier — overlay topics shouldn't
+  // double-count if they're already part of core/rotating.
+  const seenTopics = new Set([
+    ...(allLegacyTopics ?? []),
+    ...(tierCore ?? []),
+    ...(tierRotating ?? []),
+  ]);
 
   for (const lens of rawConfig.lenses || []) {
     if (lens.enabled === false) continue;
@@ -43,18 +55,28 @@ export function mergeOverlaySources(rawConfig) {
 
     for (const topic of overlay.github_topics?.topics || []) {
       if (!seenTopics.has(topic)) {
-        allTopics.push(topic);
         seenTopics.add(topic);
+        if (hasTier) {
+          // Lens overlay topics go into the rotating pool — they're not
+          // promoted to core (core is reserved for the most-essential daily set).
+          tierRotating.push(topic);
+        } else {
+          allLegacyTopics.push(topic);
+        }
       }
     }
   }
+
+  const mergedGithubTopics = hasTier
+    ? { ...baseTopics, tier: { core: tierCore, rotating: tierRotating } }
+    : { ...baseTopics, topics: allLegacyTopics };
 
   return {
     ...rawConfig,
     sources: {
       ...rawConfig.sources,
       feeds: allFeeds,
-      github_topics: { ...rawConfig.sources.github_topics, topics: allTopics },
+      github_topics: mergedGithubTopics,
     },
   };
 }

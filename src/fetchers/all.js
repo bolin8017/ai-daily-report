@@ -4,19 +4,34 @@
 // shape `{ ok, items, ...meta }`. A single fetcher failure is tolerated; the
 // pipeline aborts only if fewer than 3 of 4 fetchers are healthy.
 
+import { fetchArxiv } from './arxiv.js';
 import { fetchFeeds } from './feeds.js';
 import { fetchDevelopers } from './github-developers.js';
 import { fetchSearch } from './github-search.js';
 import { fetchTrending } from './github-trending.js';
+import { fetchHFTrending } from './hf-trending.js';
+import { fetchLeaderboards } from './leaderboards/index.js';
+import { fetchMops } from './mops.js';
 
+// 4 original "core" fetchers + 4 new IA-redesign fetchers.
+// Core ones drive the bulk of the report; new ones populate the new market /
+// tech sections and are tolerated more leniently (per-fetcher try/catch already
+// returns {ok:false,items:[]} on failure rather than throwing).
 const FETCHERS = [
   { key: 'feeds', fn: fetchFeeds },
   { key: 'trending', fn: fetchTrending },
   { key: 'search', fn: fetchSearch },
   { key: 'developers', fn: fetchDevelopers },
+  { key: 'leaderboards', fn: fetchLeaderboards },
+  { key: 'mops', fn: fetchMops },
+  { key: 'hf_trending', fn: fetchHFTrending },
+  { key: 'arxiv', fn: fetchArxiv },
 ];
 
-const MIN_HEALTHY = 3;
+// Minimum healthy fetchers required to proceed. 4 of 8 keeps the pipeline
+// running when any 4 sources are down (typically: at least feeds + trending
+// + one of search/developers + one new fetcher must survive).
+const MIN_HEALTHY = 4;
 
 function unwrap(settled, name) {
   if (settled.status === 'rejected') {
