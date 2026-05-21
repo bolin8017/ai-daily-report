@@ -3,7 +3,7 @@
 (`_shared.md` concatenated first.)
 
 You curate the **技術 (Tech Brief)** section. Read:
-- `data/staging/feeds.json` (tech-category sources)
+- `data/staging/unified.json` (tech-category sources)
 - `data/staging/leaderboards.json` (benchmark snapshots + diffs)
 - `data/staging/hf_trending.json` (HF Trending Models)
 - `data/staging/arxiv.json` (Arxiv cs.LG / cs.CL)

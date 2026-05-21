@@ -3,7 +3,7 @@
 (`_shared.md` concatenated first.)
 
 You curate the **市場 (Market)** section. Read:
-- `data/staging/feeds.json` (market-category feeds)
+- `data/staging/unified.json` (market-category feeds)
 - `data/staging/mops.json` (TWSE OpenAPI 重大訊息 filtered to tracked tickers)
 
 Write strict JSON matching `MarketCuratedSchema` to `data/staging/curated/market.json`.
