@@ -4,7 +4,8 @@
 //   - ### [Title](url)              → section heading for new entries
 // We dedupe by URL and skip nav/footer links by requiring title length >= 15
 // and skipping URLs containing fragment / common navigation paths.
-const NAV_PATTERNS = /\/(login|signup|terms|privacy|search|tag|category|atom|rss|feed|about|contact|sitemap)(?:\/|$|\?)/i;
+const NAV_PATTERNS =
+  /\/(login|signup|terms|privacy|search|tag|category|atom|rss|feed|about|contact|sitemap)(?:\/|$|\?)/i;
 
 export function extractRSSPost(markdown, { sourceName, category, sourceUrl } = {}) {
   const items = [];
@@ -15,8 +16,9 @@ export function extractRSSPost(markdown, { sourceName, category, sourceUrl } = {
   ];
   let rank = 0;
   for (const re of patterns) {
-    let m;
-    while ((m = re.exec(markdown)) !== null) {
+    while (true) {
+      const m = re.exec(markdown);
+      if (m === null) break;
       const title = m[1].trim();
       const url = m[2];
       if (seen.has(url)) continue;

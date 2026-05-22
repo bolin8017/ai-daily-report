@@ -27,10 +27,7 @@ describe('provider registry', () => {
 
   it('wrapped provider validates items against itemType', async () => {
     defineProvider('fake-test-2', async () => ({ ok: true, items: [validHNStory] }));
-    const result = await getProvider('fake-test-2')(
-      {},
-      { itemType: 'hn-story', sourceId: 'x' },
-    );
+    const result = await getProvider('fake-test-2')({}, { itemType: 'hn-story', sourceId: 'x' });
     expect(result.ok).toBe(true);
     expect(result.items).toHaveLength(1);
   });
@@ -40,10 +37,7 @@ describe('provider registry', () => {
       ok: true,
       items: [validHNStory, { source: 'hackernews' }],
     }));
-    const result = await getProvider('fake-test-3')(
-      {},
-      { itemType: 'hn-story', sourceId: 'x' },
-    );
+    const result = await getProvider('fake-test-3')({}, { itemType: 'hn-story', sourceId: 'x' });
     expect(result.ok).toBe(true);
     expect(result.items).toHaveLength(1);
   });
@@ -53,10 +47,7 @@ describe('provider registry', () => {
       ok: true,
       items: [{ source: 'hackernews' }, { source: 'hackernews' }],
     }));
-    const result = await getProvider('fake-test-4')(
-      {},
-      { itemType: 'hn-story', sourceId: 'x' },
-    );
+    const result = await getProvider('fake-test-4')({}, { itemType: 'hn-story', sourceId: 'x' });
     expect(result.ok).toBe(false);
     expect(result.error).toMatch(/validation/);
   });
@@ -65,10 +56,7 @@ describe('provider registry', () => {
     defineProvider('fake-test-5', async () => {
       throw new Error('boom');
     });
-    const result = await getProvider('fake-test-5')(
-      {},
-      { itemType: 'hn-story', sourceId: 'x' },
-    );
+    const result = await getProvider('fake-test-5')({}, { itemType: 'hn-story', sourceId: 'x' });
     expect(result.ok).toBe(false);
     expect(result.error).toBe('boom');
   });

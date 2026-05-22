@@ -18,8 +18,7 @@ export async function enrichHNAlgolia(items) {
           }
           const data = await res.json();
           item.score = data.points ?? item.score ?? 0;
-          item.num_comments =
-            data.descendants ?? data.children?.length ?? item.num_comments ?? 0;
+          item.num_comments = data.descendants ?? data.children?.length ?? item.num_comments ?? 0;
           const kids = (data.children ?? [])
             .filter((c) => c.text && c.author)
             .sort((a, b) => (b.points ?? 0) - (a.points ?? 0))
@@ -37,9 +36,7 @@ export async function enrichHNAlgolia(items) {
     );
   }
   if (failed > hnItems.length * 0.5) {
-    console.error(
-      `[enricher/hn-algolia] WARN: ${failed}/${hnItems.length} enrichments failed`,
-    );
+    console.error(`[enricher/hn-algolia] WARN: ${failed}/${hnItems.length} enrichments failed`);
   }
   return items;
 }

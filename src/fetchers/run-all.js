@@ -1,7 +1,7 @@
-import { enrichHNAlgolia } from './enrichers/hn-algolia.js';
-import { runChain } from './run-chain.js';
 import { createFirecrawlQuota } from '../lib/quota.js';
 import { createTelemetry } from '../lib/telemetry.js';
+import { enrichHNAlgolia } from './enrichers/hn-algolia.js';
+import { runChain } from './run-chain.js';
 
 const ENRICHERS = {
   'hn-algolia': enrichHNAlgolia,
@@ -14,9 +14,7 @@ export async function runAll(sources, opts = {}) {
   await quota.canSpend(); // initialize snapshot
 
   const t0 = Date.now();
-  const settled = await Promise.allSettled(
-    sources.map((s) => runChain(s, { telemetry, quota })),
-  );
+  const settled = await Promise.allSettled(sources.map((s) => runChain(s, { telemetry, quota })));
 
   const results = {};
   const healthy = [];

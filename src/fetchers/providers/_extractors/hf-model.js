@@ -4,19 +4,45 @@
 // We anchor on the URL pattern at the end (https://huggingface.co/owner/model)
 // and use a list of reserved top-level paths to filter nav links.
 const HF_RESERVED = new Set([
-  'models', 'datasets', 'spaces', 'docs', 'enterprise', 'pricing', 'tasks',
-  'chat', 'collections', 'languages', 'organizations', 'blog', 'posts',
-  'papers', 'learn', 'join', 'support', 'inference', 'inference-endpoints',
-  'storage', 'pro', 'front', 'login', 'search', 'huggingface', 'privacy',
-  'terms-of-service', 'security', 'about', 'careers',
+  'models',
+  'datasets',
+  'spaces',
+  'docs',
+  'enterprise',
+  'pricing',
+  'tasks',
+  'chat',
+  'collections',
+  'languages',
+  'organizations',
+  'blog',
+  'posts',
+  'papers',
+  'learn',
+  'join',
+  'support',
+  'inference',
+  'inference-endpoints',
+  'storage',
+  'pro',
+  'front',
+  'login',
+  'search',
+  'huggingface',
+  'privacy',
+  'terms-of-service',
+  'security',
+  'about',
+  'careers',
 ]);
 
 export function extractHFModel(markdown) {
   const items = [];
   const seen = new Set();
   const re = /]\(https:\/\/huggingface\.co\/([A-Za-z0-9._-]+\/[A-Za-z0-9._/-]+)\)/g;
-  let m;
-  while ((m = re.exec(markdown)) !== null) {
+  while (true) {
+    const m = re.exec(markdown);
+    if (m === null) break;
     const id = m[1];
     if (!id.includes('/')) continue;
     const topLevel = id.split('/')[0];

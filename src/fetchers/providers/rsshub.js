@@ -6,7 +6,7 @@ const TIMEOUT = 30_000;
 function defaultUrls() {
   return process.env.RSSHUB_URL
     ? [process.env.RSSHUB_URL]
-    : config.sources.rsshub_urls ?? ['https://rsshub.pseudoyu.com'];
+    : (config.sources.rsshub_urls ?? ['https://rsshub.pseudoyu.com']);
 }
 
 function stripHTML(html) {

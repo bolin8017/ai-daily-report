@@ -5,18 +5,20 @@
 export function extractRepoCard(markdown) {
   const items = [];
   const seen = new Set();
-  const re =
-    /##\s+\[[^\]]+\]\((https:\/\/github\.com\/([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+))\)/g;
-  let m;
+  const re = /##\s+\[[^\]]+\]\((https:\/\/github\.com\/([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+))\)/g;
   let rank = 0;
-  while ((m = re.exec(markdown)) !== null) {
+  while (true) {
+    const m = re.exec(markdown);
+    if (m === null) break;
     const fullName = m[2];
     if (seen.has(fullName)) continue;
     seen.add(fullName);
     rank++;
     // Look ahead ~1KB for stars + description hints
     const window = markdown.slice(m.index, m.index + 1500);
-    const starsMatch = window.match(/\[(\d[\d,]*)\]\(https:\/\/github\.com\/[^/]+\/[^/]+\/stargazers\)/);
+    const starsMatch = window.match(
+      /\[(\d[\d,]*)\]\(https:\/\/github\.com\/[^/]+\/[^/]+\/stargazers\)/,
+    );
     const stars = starsMatch ? parseInt(starsMatch[1].replace(/,/g, ''), 10) : 0;
     const starsTodayMatch = window.match(/(\d[\d,]*)\s+stars\s+today/);
     const starsToday = starsTodayMatch ? parseInt(starsTodayMatch[1].replace(/,/g, ''), 10) : null;

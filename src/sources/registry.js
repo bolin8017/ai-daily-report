@@ -36,9 +36,18 @@ export default [
     category: 'community',
     itemType: 'rss-post',
     chain: [
-      { provider: 'rsshub', config: { route: '/dev.to/top/week', sourceName: 'dev-to-top', category: 'community' } },
-      { provider: 'jina-reader', config: { url: 'https://dev.to/top/week', sourceName: 'dev-to-top', category: 'community' } },
-      { provider: 'firecrawl', config: { url: 'https://dev.to/top/week', sourceName: 'dev-to-top', category: 'community' } },
+      {
+        provider: 'rsshub',
+        config: { route: '/dev.to/top/week', sourceName: 'dev-to-top', category: 'community' },
+      },
+      {
+        provider: 'jina-reader',
+        config: { url: 'https://dev.to/top/week', sourceName: 'dev-to-top', category: 'community' },
+      },
+      {
+        provider: 'firecrawl',
+        config: { url: 'https://dev.to/top/week', sourceName: 'dev-to-top', category: 'community' },
+      },
     ],
   },
   {
@@ -48,16 +57,28 @@ export default [
     itemType: 'rss-post',
     chain: [
       { provider: 'lobsters-json', config: { url: 'https://lobste.rs/hottest.json' } },
-      { provider: 'jina-reader', config: { url: 'https://lobste.rs/', sourceName: 'lobsters', category: 'community' } },
-      { provider: 'firecrawl', config: { url: 'https://lobste.rs/', sourceName: 'lobsters', category: 'community' } },
+      {
+        provider: 'jina-reader',
+        config: { url: 'https://lobste.rs/', sourceName: 'lobsters', category: 'community' },
+      },
+      {
+        provider: 'firecrawl',
+        config: { url: 'https://lobste.rs/', sourceName: 'lobsters', category: 'community' },
+      },
     ],
   },
   rss('changelog', 'Changelog', 'community', 'https://changelog.com/feed'),
 
   // === AI 部落格 (8) ===
-  rss('simon-willison', 'Simon Willison', 'AI 部落格', 'https://simonwillison.net/atom/everything/', {
-    homepageUrl: 'https://simonwillison.net/',
-  }),
+  rss(
+    'simon-willison',
+    'Simon Willison',
+    'AI 部落格',
+    'https://simonwillison.net/atom/everything/',
+    {
+      homepageUrl: 'https://simonwillison.net/',
+    },
+  ),
   rss('gary-marcus', 'Gary Marcus', 'AI 部落格', 'https://garymarcus.substack.com/feed', {
     homepageUrl: 'https://garymarcus.substack.com/',
   }),
@@ -73,9 +94,15 @@ export default [
   rss('lilian-weng', 'Lilian Weng', 'AI 部落格', 'https://lilianweng.github.io/index.xml', {
     homepageUrl: 'https://lilianweng.github.io/',
   }),
-  rss('sebastian-raschka', 'Sebastian Raschka', 'AI 部落格', 'https://magazine.sebastianraschka.com/feed', {
-    homepageUrl: 'https://magazine.sebastianraschka.com/',
-  }),
+  rss(
+    'sebastian-raschka',
+    'Sebastian Raschka',
+    'AI 部落格',
+    'https://magazine.sebastianraschka.com/feed',
+    {
+      homepageUrl: 'https://magazine.sebastianraschka.com/',
+    },
+  ),
   rss('latent-space', 'Latent Space', 'AI 部落格', 'https://www.latent.space/feed', {
     homepageUrl: 'https://www.latent.space/',
   }),
@@ -87,7 +114,10 @@ export default [
     category: 'AI 公司',
     itemType: 'rss-post',
     chain: [
-      { provider: 'rsshub', config: { route: '/anthropic/news', sourceName: 'anthropic-news', category: 'AI 公司' } },
+      {
+        provider: 'rsshub',
+        config: { route: '/anthropic/news', sourceName: 'anthropic-news', category: 'AI 公司' },
+      },
       ...rssWithCloudFallback({
         url: 'https://www.anthropic.com/news',
         sourceName: 'anthropic-news',
@@ -130,9 +160,15 @@ export default [
   }),
 
   // === Market / Policy (3) ===
-  rss('techcrunch-venture', 'TechCrunch Venture', 'market', 'https://techcrunch.com/category/venture/feed/', {
-    homepageUrl: 'https://techcrunch.com/category/venture/',
-  }),
+  rss(
+    'techcrunch-venture',
+    'TechCrunch Venture',
+    'market',
+    'https://techcrunch.com/category/venture/feed/',
+    {
+      homepageUrl: 'https://techcrunch.com/category/venture/',
+    },
+  ),
   rss('stratechery', 'Stratechery Articles', 'market', 'https://stratechery.com/feed', {
     homepageUrl: 'https://stratechery.com/',
   }),

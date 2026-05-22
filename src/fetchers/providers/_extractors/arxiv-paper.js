@@ -4,10 +4,10 @@
 export function extractArxivPaper(markdown) {
   const items = [];
   const seen = new Set();
-  const re =
-    /###\s+\[([^\]]{8,})\]\(https:\/\/huggingface\.co\/papers\/([0-9]{4}\.[0-9]+)\)/g;
-  let m;
-  while ((m = re.exec(markdown)) !== null) {
+  const re = /###\s+\[([^\]]{8,})\]\(https:\/\/huggingface\.co\/papers\/([0-9]{4}\.[0-9]+)\)/g;
+  while (true) {
+    const m = re.exec(markdown);
+    if (m === null) break;
     const id = m[2];
     if (seen.has(id)) continue;
     seen.add(id);

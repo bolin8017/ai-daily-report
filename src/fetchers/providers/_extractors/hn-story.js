@@ -5,10 +5,10 @@
 // then capture the title link that follows immediately after.
 export function extractHNStory(markdown) {
   const stories = [];
-  const re =
-    /(\d+)\.\[\]\([^)]*vote\?id=(\d+)[^)]*\)\[([^\]]{3,})\]\((https?:\/\/[^)]+)\)/g;
-  let m;
-  while ((m = re.exec(markdown)) !== null) {
+  const re = /(\d+)\.\[\]\([^)]*vote\?id=(\d+)[^)]*\)\[([^\]]{3,})\]\((https?:\/\/[^)]+)\)/g;
+  while (true) {
+    const m = re.exec(markdown);
+    if (m === null) break;
     const rank = Number(m[1]);
     const hn_id = m[2];
     const title = m[3].trim();

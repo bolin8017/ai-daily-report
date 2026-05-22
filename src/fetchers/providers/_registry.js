@@ -31,9 +31,7 @@ function wrap(name, fn) {
       };
     }
     if (rejectedCount > 0) {
-      console.error(
-        `[provider/${name}] ${rejectedCount} items rejected by ${ctx.itemType} schema`,
-      );
+      console.error(`[provider/${name}] ${rejectedCount} items rejected by ${ctx.itemType} schema`);
     }
     return { ...result, items: validated };
   };

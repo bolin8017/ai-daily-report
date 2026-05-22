@@ -23,16 +23,14 @@ export async function githubDevelopersHtmlProvider(cfg, _ctx) {
       const u = $(el).attr('href').replace(/^\//, '');
       if (u && !u.includes('/')) users.push(u);
     });
-    const items = [...new Set(users)]
-      .slice(0, cfg.limit ?? 20)
-      .map((u, i) => ({
-        full_name: `${u}/_user`,
-        url: `https://github.com/${u}`,
-        description: null,
-        language: null,
-        stars: 0,
-        rank: i + 1,
-      }));
+    const items = [...new Set(users)].slice(0, cfg.limit ?? 20).map((u, i) => ({
+      full_name: `${u}/_user`,
+      url: `https://github.com/${u}`,
+      description: null,
+      language: null,
+      stars: 0,
+      rank: i + 1,
+    }));
     return { ok: items.length > 0, items };
   } catch (err) {
     return { ok: false, items: [], error: err.message };

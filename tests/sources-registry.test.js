@@ -31,10 +31,7 @@ describe('source registry', () => {
 
   it('every itemType referenced exists in ItemSchemas', () => {
     for (const s of sources) {
-      expect(
-        ItemSchemas[s.itemType],
-        `unknown itemType ${s.itemType} in ${s.id}`,
-      ).toBeDefined();
+      expect(ItemSchemas[s.itemType], `unknown itemType ${s.itemType} in ${s.id}`).toBeDefined();
     }
   });
 
@@ -42,10 +39,9 @@ describe('source registry', () => {
     const known = new Set(listProviders());
     for (const s of sources) {
       for (const entry of s.chain) {
-        expect(
-          known.has(entry.provider),
-          `unknown provider ${entry.provider} in ${s.id}`,
-        ).toBe(true);
+        expect(known.has(entry.provider), `unknown provider ${entry.provider} in ${s.id}`).toBe(
+          true,
+        );
       }
     }
   });
