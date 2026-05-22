@@ -28,19 +28,26 @@ for sec in shipped pulse; do
 done
 
 PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
-# Append daily-report-quality.md slop rules to the synthesizer prompt (same
-# pattern as legacy analyze.sh that appended to ai-builder.md).
-if [ -f .claude/daily-report-quality.md ]; then
-  cat .claude/synthesizer.md .claude/daily-report-quality.md > "$PROMPT_FILE"
-else
-  cp .claude/synthesizer.md "$PROMPT_FILE"
-fi
+# Assemble synthesizer prompt + daily-report-quality slop rules + explicit
+# "Execute now" imperative. Without the imperative the model ack-chats; with
+# it, the synthesizer immediately reads inputs and writes the report.
+{
+  cat .claude/synthesizer.md
+  if [ -f .claude/daily-report-quality.md ]; then
+    printf '\n\n---\n\n'
+    cat .claude/daily-report-quality.md
+  fi
+  printf '\n\n---\n\n## Execute now\n\n'
+  printf 'Today is %s. Use the Read tool on the inputs listed above. Synthesize the editorial layer (lead, signals, ideation) and copy curated sub-groups verbatim. Use the Write tool to write the full v2.0 report to `data/reports/%s.json` and the updated memory to `data/memory.json`.\n\n' "$TODAY" "$TODAY"
+  printf 'Do not output prose, acknowledgement, or explanation. Begin with Read calls immediately. Final actions are two Write calls (report, then memory).\n'
+} > "$PROMPT_FILE"
 
 echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
 
 (
   claude -p \
     --model "$MODEL" \
+    --output-format text \
     --allowed-tools Read Write Glob Grep \
     < "$PROMPT_FILE" \
     > "$LOG_DIR/synthesizer.raw.txt" \

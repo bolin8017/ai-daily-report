@@ -67,6 +67,24 @@ export default function (eleventyConfig) {
     const s = (v) => (typeof v === 'string' ? sanitizeHtml(v, SANITIZE_OPTS) : v);
 
     if (report.lead?.html) report.lead.html = s(report.lead.html);
+
+    // v2.0 (schema_version === 2): signals is an object; predictions live inside it.
+    if (report.schema_version === 2) {
+      const sig = report.signals ?? {};
+      for (const focus of sig.focus ?? []) {
+        if (focus.body) focus.body = s(focus.body);
+        if (focus.evidence) focus.evidence = s(focus.evidence);
+      }
+      if (sig.sleeper?.body) sig.sleeper.body = s(sig.sleeper.body);
+      if (sig.contrarian?.body) sig.contrarian.body = s(sig.contrarian.body);
+      for (const pred of sig.predictions ?? []) {
+        if (pred.text) pred.text = s(pred.text);
+        if (pred.rationale) pred.rationale = s(pred.rationale);
+      }
+      return report;
+    }
+
+    // Legacy v1.x: signals is a flat array, predictions at top level.
     if (report.contrarian?.body) report.contrarian.body = s(report.contrarian.body);
     if (report.sleeper?.body) report.sleeper.body = s(report.sleeper.body);
     for (const sig of report.signals ?? []) {

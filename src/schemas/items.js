@@ -27,7 +27,7 @@ export const ShippedItem = ItemBase.extend({
 
 export const PulseItem = ItemBase.extend({
   title: z.string(),
-  score: z.number().optional(),
+  score: z.number().nullable().optional(),
   comments: z.number().int().nullable().optional(),
   takeaway: z.string().optional(),
 });
@@ -51,9 +51,15 @@ export const TechItem = ItemBase.extend({
     .optional(),
 });
 
+// Accept either a comma-separated string or an array; templates display either
+// — LLM occasionally returns an array even when prompt asks for a string.
+const StringOrArrayString = z
+  .union([z.string(), z.array(z.string()).transform((a) => a.join(', '))])
+  .optional();
+
 export const IdeaItem = z
   .object({
-    id: z.string(),
+    id: z.string().optional(),
     audience: AudienceTag,
     title: z.string(),
     description: z.string(),
@@ -68,7 +74,7 @@ export const IdeaItem = z
       )
       .optional(),
     use_case: z.string().optional(),
-    tech_stack: z.string().optional(),
+    tech_stack: StringOrArrayString,
     hardware: z.string().optional(),
     skill_level: z.string().optional(),
     dev_time: z.string().optional(),
@@ -80,8 +86,14 @@ export const IdeaItem = z
 
 export const SignalItem = z
   .object({
-    id: z.string(),
-    title: z.string(),
+    // id is recommended but not required — synthesized signals (focus/sleeper/
+    // contrarian) don't always need cross-tab anchors. Templates fall back to
+    // index-based anchors when id is missing.
+    id: z.string().optional(),
+    // title is the only structural field templates need to render the card.
+    // For contrarian/sleeper, body+evidence may carry the primary content
+    // (LLM occasionally puts the headline into body instead of title).
+    title: z.string().optional(),
     body: z.string().optional(),
     mechanism: z.string().optional(),
     evidence: z.string().optional(),

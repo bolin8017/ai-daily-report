@@ -34,17 +34,23 @@ run_curator() {
 
   echo "[curate.sh] starting $section (model=$MODEL)"
 
-  if ! node -e "
-    import('./src/curators/${section}.js').then(m => m.getPrompt()).then(p => process.stdout.write(p));
-  " > "$prompt_file" 2> "$err_file.prompt"; then
-    echo "[curate.sh] $section PROMPT ASSEMBLY FAILED"
-    cat "$err_file.prompt" >&2
-    return 3
-  fi
+  # Assemble the curator prompt and append an explicit "Execute now"
+  # imperative at the end. Without the imperative Haiku ack-chats; with it,
+  # the model treats the prompt as an immediate task. Mirrors the pattern
+  # used by legacy analyze.sh for the lens prompts.
+  {
+    node -e "
+      import('./src/curators/${section}.js').then(m => m.getPrompt()).then(p => process.stdout.write(p));
+    " 2> "$err_file.prompt"
+    printf '\n\n---\n\n## Execute now\n\n'
+    printf 'Use the Read tool on the staging files listed above, apply the include/exclude rules per sub-group, and use the Write tool to write strict JSON matching the schema to `data/staging/curated/%s.json`.\n\n' "$section"
+    printf 'Do not output prose, acknowledgement, or explanation. Do not ask questions. Begin with Read calls immediately. The final action is one Write call.\n'
+  } > "$prompt_file"
 
   (
     claude -p \
       --model "$MODEL" \
+      --output-format text \
       --allowed-tools Read Write Glob Grep \
       < "$prompt_file" \
       > "$raw_file" \

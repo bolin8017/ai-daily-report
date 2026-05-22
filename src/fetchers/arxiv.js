@@ -66,13 +66,34 @@ async function fetchOne(category, url) {
   }
 }
 
+// Arxiv feeds return ~300+ papers per category per day; full abstracts make
+// the staging file ~2.5 MB which is too large for Stage 2 curators to read in
+// one Haiku context window. Cap items per category and truncate the abstract
+// so the staging payload stays manageable.
+const PER_CATEGORY_CAP = 50;
+const ABSTRACT_MAX_CHARS = 400;
+
+function trimItem(item) {
+  return {
+    ...item,
+    abstract:
+      item.abstract && item.abstract.length > ABSTRACT_MAX_CHARS
+        ? `${item.abstract.slice(0, ABSTRACT_MAX_CHARS)}...`
+        : item.abstract,
+  };
+}
+
 export async function fetchArxiv() {
   const results = await Promise.all(
     ARXIV_FEEDS.map(({ category, url }) => fetchOne(category, url)),
   );
-  const allItems = results.flatMap((r) => r.items);
   const allOk = results.every((r) => r.ok);
-  return { ok: allOk, items: allItems, per_feed: results };
+  const capped = results.map((r) => ({
+    ...r,
+    items: r.items.slice(0, PER_CATEGORY_CAP).map(trimItem),
+  }));
+  const allItems = capped.flatMap((r) => r.items);
+  return { ok: allOk, items: allItems, per_feed: capped };
 }
 
 runAsStandalone(import.meta.url, fetchArxiv);

@@ -139,6 +139,15 @@ const ATTEMPTS = [
     flat: { trending: 8, search: 10, developers: 8 },
     descMax: 40,
   },
+  // Tightest profile — used after the 2026-05-22 IA redesign added ~24 new
+  // RSS sources (Taiwan media, market, vendor blogs). The expanded feed pool
+  // can't fit 8500 tokens at _default=2; this final attempt caps obscure
+  // sources at 1 item with short descriptions.
+  {
+    unified: { hackernews: 6, Lobsters: 4, 'Dev.to Top': 3, _default: 1 },
+    flat: { trending: 6, search: 8, developers: 6 },
+    descMax: 30,
+  },
 ];
 
 function condenseOne(data, type) {
