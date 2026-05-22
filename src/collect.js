@@ -10,13 +10,88 @@
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { runFetchers } from './fetchers/all.js';
+// Side-effect imports — populate the provider registry for runAll
+import './fetchers/providers/arxiv-rss.js';
+import './fetchers/providers/firecrawl.js';
+import './fetchers/providers/github-developers-api.js';
+import './fetchers/providers/github-developers-html.js';
+import './fetchers/providers/github-search-api.js';
+import './fetchers/providers/github-trending-html.js';
+import './fetchers/providers/hf-trending-json.js';
+import './fetchers/providers/hn-firebase.js';
+import './fetchers/providers/jina-reader.js';
+import './fetchers/providers/leaderboard-html.js';
+import './fetchers/providers/lobsters-json.js';
+import './fetchers/providers/mops-twse-openapi.js';
+import './fetchers/providers/native-json.js';
+import './fetchers/providers/native-rss.js';
+import './fetchers/providers/rsshub.js';
+
+import { runAll } from './fetchers/run-all.js';
 import { commitAndPush } from './lib/commit.js';
 import { condenseAll } from './lib/condense.js';
 import config from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
+import { getEffectiveSources } from './lib/sources.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
+
+const FEED_SOURCE_IDS = new Set([
+  'hackernews',
+  'hackernews-show',
+  'dev-to-top',
+  'lobsters',
+  'changelog',
+  'simon-willison',
+  'gary-marcus',
+  'karpathy',
+  'eugene-yan',
+  'hamel-husain',
+  'lilian-weng',
+  'sebastian-raschka',
+  'latent-space',
+  'anthropic-news',
+  'google-ai-blog',
+  'phoronix',
+  'lwn',
+  'segmentfault',
+  'oschina',
+  'ithome',
+  'inside',
+  'techorange',
+  'technews-tw',
+  'digitimes',
+  'techcrunch-venture',
+  'stratechery',
+  'lawfare',
+]);
+
+// Map per-source chain results into the legacy `{feeds, trending, search,
+// developers, leaderboards, mops, hf_trending, arxiv}` shape so downstream
+// condense / snapshot / scope logic keeps working without per-source rewrite.
+function mapResultsToLegacyShape(results) {
+  const out = {};
+  out.feeds = {
+    ok: true,
+    items: Object.entries(results)
+      .filter(([id]) => FEED_SOURCE_IDS.has(id))
+      .flatMap(([, r]) => r.items ?? []),
+  };
+  out.trending = results['github-trending'] ?? { ok: false, items: [] };
+  out.search = results['github-search-topics'] ?? { ok: false, items: [] };
+  out.developers = results['github-developers'] ?? { ok: false, items: [] };
+  out.hf_trending = results['hf-trending'] ?? { ok: false, items: [] };
+  out.mops = results['mops-disclosure'] ?? { ok: false, items: [] };
+  out.arxiv = results['arxiv-cs-ai'] ?? { ok: false, items: [] };
+  out.leaderboards = {
+    ok: true,
+    items: ['bfcl', 'mteb', 'swebench', 'ocrbench', 'pinchbench']
+      .map((name) => results[`leaderboard-${name}`])
+      .filter((r) => r?.ok)
+      .flatMap((r) => r.items ?? []),
+  };
+  return out;
+}
 
 const TZ = process.env.REPORT_TIMEZONE ?? 'Asia/Taipei';
 const SKIP_PUSH = process.env.SKIP_PUSH === '1' || process.argv.includes('--skip-push');
@@ -49,9 +124,17 @@ async function main() {
   const date = todayIn(TZ);
   banner(`start ${date} (${TZ}) run_id=${RUN_ID} version=${PIPELINE_VERSION}`);
 
-  // Phase 1 — fetch all 4 sources in parallel
+  // Phase 1 — fetch all sources through their provider chains in parallel.
+  // Each source has its own ordered chain (e.g. RSSHub → HN Firebase → Jina →
+  // Firecrawl for HN), so one tool failure doesn't lose the content.
   banner('fetching sources');
-  const raw = await runFetchers();
+  const sources = getEffectiveSources();
+  const { results, degraded } = await runAll(sources, {
+    date,
+    minHealthy: Math.ceil(sources.length / 3),
+  });
+  const raw = mapResultsToLegacyShape(results);
+  if (degraded.length) raw._degraded = degraded;
 
   // Phase 2 — build feeds snapshot (committed to data/feeds-snapshot.json for 11ty)
   banner('building snapshot');
