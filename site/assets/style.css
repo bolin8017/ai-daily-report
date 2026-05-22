@@ -99,8 +99,8 @@
   --bg-elevated: #1c1c20;
   --bg-hover: #222228;
   --text: #e8e6e3;
-  --text-secondary: #9e9a93;
-  --text-muted: #5c5955;
+  --text-secondary: #b3afa8;
+  --text-muted: #8a8680;
   --border: #2a2a2e;
   --border-subtle: #1e1e22;
   --accent: #e2a84b;
@@ -125,23 +125,27 @@
     --bg-elevated: #f0ede7;
     --bg-hover: #e8e5df;
     --text: #1a1815;
-    --text-secondary: #5c5850;
-    --text-muted: #9e9a93;
+    --text-secondary: #3f3c37;
+    --text-muted: #6a6660;
     --border: #d8d4cc;
     --border-subtle: #e8e5df;
     --accent: #c47a1a;
     --accent-dim: #a66310;
     --accent-glow: rgba(196, 122, 26, 0.06);
-    --green: #2d8a4e;
-    --green-dim: rgba(45, 138, 78, 0.08);
-    --red: #c4513a;
-    --blue: #2d6db5;
+    --green: #1f6b3a;
+    --green-dim: rgba(31, 107, 58, 0.1);
+    --red: #a8412e;
+    --blue: #1f5896;
   }
 }
 
 /* --- Base -------------------------------------------------- */
 html {
   scroll-behavior: smooth;
+  /* Anchor jumps and #fragment deep-links should land BELOW the sticky tab
+     bar (~3.2rem) and the per-tab .section-filter row (~3rem when sticky),
+     not be obscured by them. Generous buffer accommodates both. */
+  scroll-padding-top: 6.5rem;
 }
 
 body {
@@ -198,29 +202,48 @@ footer {
    the dark palette. */
 a:focus-visible,
 button:focus-visible,
-[role="tab"]:focus-visible {
+[role="tab"]:focus-visible,
+[role="radio"]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 2px;
 }
 
-/* Respect users who've asked for less motion. Targets the specific
-   elements with animations/transitions rather than using a universal
-   `* { ... !important }` override, so we stay lint-clean. */
+/* On active (amber-background) controls, an amber focus ring disappears
+   into the active state. Use the text color for a guaranteed-contrast ring. */
+.tab.active:focus-visible,
+.section-chip.active:focus-visible,
+[role="radio"][aria-checked="true"]:focus-visible {
+  outline-color: var(--text);
+  outline-offset: 3px;
+}
+
+/* Respect users who've asked for less motion. !important is intentional —
+   a later `.tab-panel.active { animation: panelIn ... }` otherwise wins the
+   cascade. Accessibility overrides legitimately use !important. */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  .tab-panel {
-    animation: none;
+  .tab-panel,
+  .tab-panel.active {
+    /* biome-ignore lint/complexity/noImportantStyles: a11y override */
+    animation: none !important;
   }
   a,
   .tab,
   .idea-card,
   .filter-btn,
   .pulse-btn,
-  .skip-link {
-    transition: none;
+  .skip-link,
+  .section-chip,
+  .signal-card,
+  .shipped-card,
+  .pulse-card,
+  .market-card,
+  .tech-card {
+    /* biome-ignore lint/complexity/noImportantStyles: a11y override */
+    transition: none !important;
   }
 }
 
@@ -241,15 +264,32 @@ header {
   justify-content: space-between;
 }
 
+.masthead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.masthead-kicker {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-dim);
+}
 header h1 {
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
   line-height: 1;
 }
-
+header h1 em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
 header h1 span.dot {
   color: var(--accent);
 }
@@ -258,7 +298,7 @@ header time {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   color: var(--text-muted);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 /* --- Tab Navigation ---------------------------------------- */
@@ -268,6 +308,14 @@ header time {
   z-index: 100;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+}
+@media (prefers-color-scheme: light) {
+  .tab-bar {
+    box-shadow:
+      0 1px 0 var(--border-subtle),
+      0 4px 12px rgba(0, 0, 0, 0.04);
+  }
 }
 
 .tab-bar-inner {
@@ -279,6 +327,7 @@ header time {
 
 .tab {
   flex: 1 1 0;
+  min-height: 44px;
   text-align: center;
   padding: 0.85rem 0;
   font-family: var(--font-mono);
@@ -295,6 +344,9 @@ header time {
   position: relative;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tab:hover {
@@ -451,35 +503,18 @@ code {
   counter-reset: shipped;
 }
 
+/* Legacy v1.x .shipped-list > li styling preserved for archive pages.
+   v2.0 items use .shipped-card with a numbered counter (defined later);
+   the higher-specificity .shipped-list > .shipped-card rules win. */
 .shipped-list > li {
   counter-increment: shipped;
   padding: 0.85rem 0 0.85rem 0;
   border-bottom: 1px solid var(--border-subtle);
   line-height: 1.6;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.15rem;
 }
 
 .shipped-list > li:last-child {
   border-bottom: none;
-}
-
-/* --- Source Color Dots ------------------------------------- */
-/* Default dot (applied via .shipped-list > li::before) is neutral. */
-/* .source-rss gets a green accent; other source slugs are not emitted
-   cleanly by the agent (it sends display strings like "GitHub Trending #1"
-   which HTML splits into multiple classes), so we don't style them. */
-.shipped-list > li::before {
-  content: "";
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-right: 0.5rem;
-  vertical-align: middle;
-  flex-shrink: 0;
-  background: var(--text-muted);
 }
 
 /* --- Severity Badges --------------------------------------- */
@@ -552,21 +587,8 @@ code {
   margin-top: 0.15rem;
 }
 
-/* --- Sub Section Title ------------------------------------- */
-.sub-section-title {
-  font-family: var(--font-body);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text);
-  margin: 2.25rem 0 0.75rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border);
-}
-
-.sub-section-title:first-child {
-  margin-top: 0;
-}
+/* (Sub-section-title styles consolidated in the v2 polish block below — the
+   duplicate definitions previously here were dead code overridden later.) */
 
 /* Generic section h3 (fallback styling) */
 section h3:not(.topic-header):not(.sub-section-title) {
@@ -687,56 +709,25 @@ li.source-rss::before {
   vertical-align: middle;
 }
 
-/* Curated source badges — placed before title, color-coded by source */
+/* Curated source badge — neutral monospace tag. Previously had 11 brand
+   hex overrides (#ff6600 HN, #ac130d Lobsters, #4285f4 Google, etc) which
+   directly contradicted the single-amber editorial palette. Now token-driven. */
 .curated-source {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.62rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
   padding: 0.15em 0.5em;
-  border-radius: 3px;
+  border-radius: 2px;
   margin-right: 0.4rem;
   vertical-align: middle;
   display: inline-block;
   min-width: 2rem;
   text-align: center;
-  color: var(--bg);
-  background: var(--text-muted);
-}
-.curated-source[data-source*="hn"],
-.curated-source[data-source*="hacker"] {
-  background: #ff6600;
-}
-.curated-source[data-source*="lobster"] {
-  background: #ac130d;
-}
-.curated-source[data-source*="google"] {
-  background: #4285f4;
-}
-.curated-source[data-source*="hugging"] {
-  background: #ffcc00;
-  color: #333;
-}
-.curated-source[data-source*="anthropic"] {
-  background: #d97706;
-}
-.curated-source[data-source*="simon"] {
-  background: #059669;
-}
-.curated-source[data-source*="karpathy"] {
-  background: #7c3aed;
-}
-.curated-source[data-source*="devto"],
-.curated-source[data-source*="dev-to"] {
-  background: #333;
-}
-.curated-source[data-source*="changelog"] {
-  background: #5cb85c;
-}
-.curated-source[data-source*="phoronix"] {
-  background: #2d72d2;
-}
-.curated-source[data-source*="lwn"] {
-  background: #006400;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  text-transform: uppercase;
 }
 
 /* --- Signal Sources ---------------------------------------- */
@@ -950,7 +941,30 @@ footer {
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
+  align-items: center;
   margin-bottom: 0.75rem;
+}
+.sources-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 0.5rem;
+  white-space: nowrap;
+}
+.sources-label .sources-tab-name {
+  color: var(--accent);
+}
+.sources-label .sources-count {
+  margin-left: 0.4rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.source-status[hidden] {
+  display: none;
 }
 
 .source-status {
@@ -1088,8 +1102,12 @@ footer .powered-by {
     --border: #ccc;
     --accent: #8b5e00;
   }
-  .tab-bar {
+  .tab-bar,
+  .section-filter {
     display: none;
+  }
+  .sub-section[hidden] {
+    display: block;
   }
   .tab-panel {
     display: block;
@@ -1498,108 +1516,873 @@ footer .powered-by {
 }
 
 /* ════════════════════════════════════════════════════════════════
-   v2.0 IA redesign — audience chips, signal cards, prediction cards
+   v2.0 IA — rebuilt on the design system.
+   Components: lead block · audience filter · signal cards (focus /
+   sleeper / contrarian) · prediction timeline · topic tags.
+   All colors via :root tokens so dark/light parity is automatic.
    ════════════════════════════════════════════════════════════════ */
 
-.audience-filter {
-  display: flex;
-  gap: 0.5rem;
-  margin: 0.75rem 0 1.5rem;
-  flex-wrap: wrap;
+/* ── Lead block — hero editorial hook, lives ABOVE the tab bar so it
+   persists across tab switches. Internal hierarchy: h3 (display serif,
+   largest), h4 (mid serif), p (body serif). Without these explicit
+   rules the LLM-emitted h3/h4 fall through to global `h3` (0.95rem DM
+   Sans bold) and unstyled h4 — making the day's title smaller than
+   its paragraphs, which is the inverted-hierarchy bug. */
+.lead-block {
+  position: relative;
+  margin: 0 0 2rem;
+  padding: 1.75rem 1.8rem 1.6rem;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-elevated) 100%);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 2px;
+  overflow: hidden;
 }
-.audience-chip {
-  padding: 0.35rem 0.85rem;
-  border: 1px solid var(--border-color, #d0d7de);
-  background: transparent;
-  color: var(--text-color, #1f2328);
-  border-radius: 999px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-family: inherit;
+.lead-kicker {
+  display: inline-block;
+  margin-bottom: 1.1rem;
+  padding: 0.18em 0.55em;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+  border-radius: 2px;
 }
-.audience-chip.active {
-  background: var(--accent-color, #0969da);
-  color: white;
-  border-color: var(--accent-color, #0969da);
+.lead-block h3 {
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin: 0 0 1rem;
+}
+.lead-block h4 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-style: normal;
+  line-height: 1.45;
+  color: var(--accent);
+  margin: 1.4rem 0 0.55rem;
+}
+.lead-block h4:first-of-type {
+  margin-top: 1rem;
+}
+.lead-block p {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--text);
+  margin-bottom: 0.85rem;
+}
+.lead-block p:last-child {
+  margin-bottom: 0;
+}
+.lead-block strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+.lead-block em {
+  font-style: italic;
+  color: var(--text);
+}
+.lead-block ul,
+.lead-block ol {
+  margin: 0.5rem 0 1rem 1.25rem;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+.lead-block li {
+  margin-bottom: 0.35rem;
 }
 
-/* Signal cards */
-.signal-card {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border-color, #d0d7de);
+/* ── Per-tab section filter — chips matching each tab's sub-sections.
+   De-framed: no outer border/bg (used to look like a search form), now
+   reads as an inline editorial widget. Sticky below the tab bar so the
+   filter context stays visible as the user scrolls into the content. */
+.section-filter {
+  position: sticky;
+  top: calc(3.2rem + 1px);
+  z-index: 90;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1.5rem;
+  padding: 0.6rem 0;
+  background: var(--bg);
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.section-filter::before {
+  content: "篩選";
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-right: 0.6rem;
+  white-space: nowrap;
+}
+.section-chip {
+  position: relative;
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text-secondary);
+  transition:
+    color 0.15s,
+    background 0.15s,
+    border-color 0.15s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+.section-chip:hover:not(.active) {
+  color: var(--text);
+  background: var(--bg-elevated);
+  border-color: var(--text-muted);
+}
+.section-chip.active {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.section-chip[data-filter="all"] {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Sub-section wrapper — filterable unit within each tab panel.
+   The [hidden] attribute is set by JS when filtering. */
+.sub-section[hidden] {
+  display: none;
+}
+.sub-section + .sub-section {
+  margin-top: 0.5rem;
+}
+
+/* Sub-section title now contains real DOM spans (.sub-title-text +
+   .sub-count). The terminal-style hairline rules around the title come
+   from .sub-section-title::before / ::after defined later in this file. */
+.sub-section-title .sub-title-text {
+  flex: 0 0 auto;
+}
+.sub-section-title .sub-count {
+  flex: 0 0 auto;
+  margin-left: 0.5rem;
+  padding: 0.1em 0.45em;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border-radius: 2px;
+  text-transform: none;
+}
+
+/* ── Signals list — numbered focus + sleeper + contrarian ──────── */
+.signals-list {
+  list-style: none;
+  counter-reset: signals;
+  padding: 0;
+  margin: 0;
+}
+.signals-list > li.signal-card {
+  counter-increment: signals;
+  position: relative;
+  padding: 1.15rem 1.25rem 1.15rem 3.25rem;
+  margin: 0 0 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.signals-list > li.signal-card:hover {
+  border-color: var(--accent-dim);
+  background: var(--bg-elevated);
+}
+.signals-list > li.signal-card::before {
+  content: counter(signals, decimal-leading-zero);
+  position: absolute;
+  left: 1.1rem;
+  top: 1.1rem;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+.signals-list > li.signal-card > strong {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.55rem;
+  line-height: 1.4;
+}
+.signal-card p {
+  font-size: 0.88rem;
+  line-height: 1.7;
+  margin-bottom: 0.55rem;
+}
+.signal-card p em {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  vertical-align: 1px;
 }
 .signal-card .mechanism {
-  color: #555;
-  font-size: 0.9rem;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  border-left: 2px solid var(--border);
 }
 .signal-card .opportunity {
-  color: var(--accent-color, #0969da);
-  font-size: 0.9rem;
+  color: var(--text);
+  padding: 0.5rem 0.75rem;
+  background: var(--accent-glow);
+  border-radius: 2px;
+  border-left: 2px solid var(--accent-dim);
 }
-.signal-card .source-links {
-  font-size: 0.85rem;
-  color: #666;
+.signal-card .opportunity em {
+  color: var(--accent);
 }
-.signal-card.sleeper {
-  border-left: 3px solid #ffaa00;
-  padding-left: 0.75rem;
+.signal-card .source-links,
+.idea-card .source-links {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--border-subtle);
+  line-height: 1.9;
+}
+.signal-card .source-links a.xref,
+.idea-card .source-links a.xref {
+  display: inline-block;
+  padding: 0.05em 0.4em;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  text-decoration: none;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+.signal-card .source-links a.xref:hover,
+.idea-card .source-links a.xref:hover {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-glow);
+}
+
+/* Sleeper + contrarian as standalone cards (not in signals-list).
+   Marker is a REAL DOM span (.signal-marker) — pseudo-element labels
+   are not reliably read by iOS VoiceOver. The colored left-border
+   reinforces the marker but never carries semantic meaning alone. */
+.signal-card.sleeper,
+.signal-card.contrarian {
+  position: relative;
+  padding: 1.15rem 1.25rem 1.15rem 1.5rem;
+  margin: 0 0 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--green);
+  border-radius: 3px;
 }
 .signal-card.contrarian {
-  border-left: 3px solid #d63384;
-  padding-left: 0.75rem;
+  border-left-color: var(--red);
+}
+.signal-marker {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  padding: 0.18em 0.55em;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+.signal-marker--sleeper {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+}
+.signal-marker--contrarian {
+  color: var(--red);
+  background: rgba(214, 104, 83, 0.12);
+  border: 1px solid var(--red);
+}
+.signal-card.sleeper > strong,
+.signal-card.contrarian > strong {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.55rem 0;
+  line-height: 1.4;
 }
 
-/* Prediction cards */
+/* ── Prediction timeline ───────────────────────────────────────── */
+.prediction-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+.prediction-list::before {
+  content: "";
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: 0.55rem;
+  width: 1px;
+  background: var(--border-subtle);
+}
+.prediction-card {
+  position: relative;
+  padding: 0.55rem 0 0.9rem 1.85rem;
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+.prediction-card::before {
+  content: "";
+  position: absolute;
+  left: 0.35rem;
+  top: 0.85rem;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  background: var(--bg);
+}
+.prediction-card.status-resolved-yes::before {
+  border-color: var(--green);
+  background: var(--green);
+}
+.prediction-card.status-resolved-no::before {
+  border-color: var(--red);
+  background: var(--red);
+}
+.prediction-card.status-pending::before {
+  border-color: var(--accent);
+}
+.prediction-card .pred-status-text {
+  display: inline-block;
+  margin: 0 0.5rem 0.45rem 0;
+  padding: 0.15em 0.55em;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+.pred-status-text--pending {
+  color: var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid var(--accent-dim);
+}
+.pred-status-text--resolved-yes {
+  color: var(--green);
+  background: var(--green-dim);
+  border: 1px solid var(--green);
+}
+.pred-status-text--resolved-no {
+  color: var(--red);
+  background: rgba(214, 104, 83, 0.12);
+  border: 1px solid var(--red);
+}
+.pred-status-text--unverifiable {
+  color: var(--blue);
+  background: rgba(91, 155, 213, 0.1);
+  border: 1px solid var(--blue);
+}
+.prediction-card > strong {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
 .prediction-card .resolution-date {
   display: inline-block;
-  margin-left: 0.5rem;
-  font-size: 0.85rem;
-  color: #666;
+  margin-left: 0;
+  margin-bottom: 0.35rem;
+  padding: 0.1em 0.45em;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-radius: 2px;
 }
-.prediction-card.status-resolved-yes {
-  border-left: 3px solid #1a7f37;
-  padding-left: 0.5rem;
-}
-.prediction-card.status-resolved-no {
-  border-left: 3px solid #cf222e;
-  padding-left: 0.5rem;
-}
-.prediction-card.status-pending {
-  border-left: 3px solid #9a6700;
-  padding-left: 0.5rem;
+.prediction-card p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.65;
 }
 
-/* v2 6-tab horizontal scroll on narrow viewports */
+/* ── Idea card — work variant (uses token, not hardcoded blue) ── */
+.idea-card.work-idea {
+  border-left: 3px solid var(--blue);
+}
+.idea-card.work-idea h4::before {
+  content: "WORK";
+  display: inline-block;
+  margin-right: 0.55rem;
+  padding: 0.1em 0.4em;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--blue);
+  background: rgba(91, 155, 213, 0.1);
+  border-radius: 2px;
+  vertical-align: 2px;
+}
+.idea-card h4 {
+  font-family: var(--font-display);
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.4;
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+.idea-card p {
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+.idea-card p em {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-dim);
+  vertical-align: 1px;
+}
+.idea-card .source-links {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  margin-top: 0.7rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border-subtle);
+  color: var(--text-muted);
+}
+
+/* ── Item lists (shipped / pulse / market / tech) ──────────────── */
+.shipped-list,
+.pulse-list,
+.market-list,
+.tech-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  counter-reset: items;
+}
+.shipped-list > .shipped-card,
+.pulse-list > .pulse-card,
+.market-list > .market-card,
+.tech-list > .tech-card {
+  counter-increment: items;
+  position: relative;
+  padding: 0.95rem 0 1rem 2.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  line-height: 1.65;
+  display: block;
+  grid-template-columns: none;
+  gap: 0;
+}
+/* Specificity bumped (.shipped-list > .shipped-card) so this counter
+   wins over the legacy `.shipped-list > li::before` neutral-dot rule. */
+.shipped-list > .shipped-card::before,
+.pulse-list > .pulse-card::before,
+.market-list > .market-card::before,
+.tech-list > .tech-card::before {
+  content: counter(items, decimal-leading-zero);
+  position: absolute;
+  left: 0;
+  top: 1.05rem;
+  width: auto;
+  height: auto;
+  margin-right: 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  vertical-align: baseline;
+  flex-shrink: initial;
+}
+.shipped-card:last-child,
+.pulse-card:last-child,
+.market-card:last-child,
+.tech-card:last-child {
+  border-bottom: none;
+}
+.shipped-card > a strong,
+.pulse-card > a strong,
+.market-card > a strong,
+.tech-card > a strong {
+  color: var(--text);
+  transition: color 0.15s;
+}
+.shipped-card > a:hover strong,
+.pulse-card > a:hover strong,
+.market-card > a:hover strong,
+.tech-card > a:hover strong {
+  color: var(--accent);
+}
+.shipped-card .desc,
+.pulse-card p,
+.market-card p,
+.tech-card p {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.shipped-card .relevance {
+  margin-top: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.82rem;
+  background: var(--accent-glow);
+  border-left: 2px solid var(--accent-dim);
+  border-radius: 0 2px 2px 0;
+  color: var(--text);
+}
+.shipped-card .relevance em {
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-right: 0.4rem;
+}
+.shipped-card .topics {
+  margin-top: 0.4rem;
+}
+.pulse-card .comments,
+.market-card .companies,
+.market-card .amount {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.market-card .amount {
+  color: var(--accent);
+  font-weight: 600;
+}
+.tech-card .bench-changes {
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.tech-card .bench-changes em {
+  font-style: normal;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  margin-right: 0.35rem;
+}
+
+/* ── Topic tags on shipped cards ───────────────────────────────── */
+.topic-tag {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  margin: 0 0.2rem 0.15rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+}
+
+/* ── Mobile refinements (≤ 600px) ──────────────────────────────── */
 @media (max-width: 600px) {
+  /* Tap-target compliance: every chip and tab ≥ 44px (iOS) / 48dp (Android). */
+  .tab-bar {
+    /* Right-edge fade gradient hints that more tabs lie off-screen. Without
+       this affordance users on narrow screens don't discover 市場/技術 because
+       flex:1 squeezes labels into ellipsis before horizontal scroll engages. */
+    position: relative;
+  }
+  .tab-bar::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 2.5rem;
+    pointer-events: none;
+    background: linear-gradient(to left, var(--bg-surface) 0%, transparent 100%);
+    z-index: 1;
+  }
   .tab-bar .tab {
+    flex: 0 0 auto;
     white-space: nowrap;
+    padding: 0.9rem 0.85rem;
+    min-height: 44px;
+    min-width: 4.5rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
   }
   .tab-bar-inner {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-right: 2rem;
+    scroll-snap-type: x proximity;
+  }
+  .tab-bar-inner .tab {
+    scroll-snap-align: start;
+  }
+  .tab-bar-inner::-webkit-scrollbar {
+    display: none;
+  }
+  .section-filter {
+    top: calc(2.9rem + 1px);
+    margin: 0 -1rem 1.25rem;
+    padding: 0.5rem 1rem;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .section-filter::-webkit-scrollbar {
+    display: none;
+  }
+  .section-chip {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.78rem;
+  }
+  .lead-block {
+    padding: 1.15rem 1.15rem 1rem 1.25rem;
+  }
+  .lead-block p {
+    font-size: 0.95rem;
+  }
+  .signals-list > li.signal-card {
+    padding: 1rem 1rem 1rem 2.7rem;
+  }
+  .signals-list > li.signal-card::before {
+    left: 0.85rem;
+  }
+  .shipped-list > .shipped-card,
+  .pulse-list > .pulse-card,
+  .market-list > .market-card,
+  .tech-list > .tech-card {
+    padding-left: 2.1rem;
   }
 }
 
-/* Idea card work variant */
-.idea-card.work-idea {
-  border-left: 3px solid var(--accent-color, #0969da);
-  padding-left: 0.75rem;
+/* ════════════════════════════════════════════════════════════════
+   Refined globals — animated tab indicator, atmospheric background,
+   small typographic polish. Layered on the existing aesthetic.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Background atmosphere — faint amber haze top-left. Dark mode uses the
+   token --accent-glow (already at 0.08 opacity); light mode bumps via a
+   dedicated, slightly warmer overlay so the cream-paper aesthetic still
+   reads as the same publication. Used to be flat ivory in light mode. */
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 8% -10%, var(--accent-glow) 0%, transparent 70%), var(--bg);
+  background-attachment: fixed;
+}
+@media (prefers-color-scheme: light) {
+  body {
+    background:
+      radial-gradient(ellipse 80% 60% at 8% -10%, rgba(196, 122, 26, 0.1) 0%, transparent 65%),
+      var(--bg);
+    background-attachment: fixed;
+  }
 }
 
-/* Topic match chips on shipped cards */
-.topic-tag {
-  display: inline-block;
-  padding: 0.1rem 0.5rem;
-  margin-right: 0.25rem;
-  font-size: 0.75rem;
-  background: var(--bg-muted, #f6f8fa);
-  border-radius: 4px;
+/* Tab bar — slightly larger, less cramped */
+.tab {
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.95rem 0.25rem;
+}
+@media (max-width: 600px) {
+  .tab {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+  }
 }
 
-/* Lead block */
-.lead-block {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: var(--bg-muted, #f6f8fa);
-  border-radius: 6px;
+/* Sub-section title — terminal label with hairline indicator */
+.sub-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 2rem 0 1rem;
+  padding: 0;
+  border-bottom: none;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
 }
+.sub-section-title::before {
+  content: "";
+  flex: 0 0 0.85rem;
+  height: 1px;
+  background: var(--accent-dim);
+}
+.sub-section-title::after {
+  content: "";
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--border-subtle);
+}
+.sub-section-title:first-child {
+  margin-top: 0;
+}
+
+/* Section h2 — keep elegant but slightly more present */
+section > h2 {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.75rem;
+  position: relative;
+}
+section > h2::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 2.5rem;
+  height: 2px;
+  background: var(--accent);
+}
+
+/* Subtle reveal-on-enter for active tab panel. Gated on body.js-loaded
+   so the initial active panel doesn't animate during first paint (only
+   subsequent tab switches do). */
+@keyframes panelIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tab-panel.active {
+  display: block;
+}
+body.js-loaded .tab-panel.active {
+  animation: panelIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Cross-tab anchor jump highlight — brief amber pulse marks where the user
+   landed after clicking a source_link / xref. Fades after ~1.6s. */
+@keyframes xrefPulse {
+  0% {
+    box-shadow:
+      0 0 0 4px var(--accent-glow),
+      0 0 0 1px var(--accent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 transparent,
+      0 0 0 0 transparent;
+  }
+}
+.xref-target {
+  animation: xrefPulse 1.6s ease-out;
+  scroll-margin-top: 6.5rem;
+}
+
+/* Tab — refined active indicator */
+.tab.active {
+  color: var(--accent);
+  border-bottom-color: transparent;
+  font-weight: 600;
+}
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: calc(100% - 1.5rem);
+  height: 2px;
+  background: var(--accent);
+  transform: translateX(-50%);
+  border-radius: 1px 1px 0 0;
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Header — refined */
+header {
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg-surface) 100%);
+  border-bottom: 1px solid var(--border);
+  padding-top: 2.25rem;
+}
+
+/* (Earlier border-currentColor override removed — it regressed contrast from
+   filled-bg AA-passing to a 3.2:1 outline-only fail. The original filled
+   .source-status.ok / .warn rules at L978 / L983 are the source of truth.) */

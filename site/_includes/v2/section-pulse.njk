@@ -1,25 +1,35 @@
 {# 脈動 tab — pulse.hn / lobsters / chinese_community / ai_bloggers #}
+{% set pulseGroups = [
+  {"key":"hn","label":"Hacker News","chip":"HN"},
+  {"key":"lobsters","label":"Lobsters","chip":"Lobsters"},
+  {"key":"chinese_community","label":"中文社群","chip":"中文社群"},
+  {"key":"ai_bloggers","label":"AI 部落格","chip":"AI 部落格"}
+] %}
 <section class="section-pulse tab-panel" id="pulse" role="tabpanel" aria-labelledby="tab-pulse">
   <h2>脈動 — 社群討論</h2>
 
-  {% for group in [
-    {"key":"hn","label":"Hacker News"},
-    {"key":"lobsters","label":"Lobsters"},
-    {"key":"chinese_community","label":"中文社群"},
-    {"key":"ai_bloggers","label":"AI 部落格"}
-  ] %}
+  <div class="section-filter" role="radiogroup" aria-label="脈動 篩選">
+    <button type="button" class="section-chip active" role="radio" aria-checked="true" data-filter="all">全部</button>
+    {%- for g in pulseGroups %}
+      {% if report.pulse[g.key] and (report.pulse[g.key] | length) %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="{{ g.key }}">{{ g.chip }}</button>{% endif %}
+    {%- endfor %}
+  </div>
+
+  {% for group in pulseGroups %}
     {% if report.pulse[group.key] and (report.pulse[group.key] | length) %}
-    <h3 class="sub-section-title">{{ group.label }}</h3>
-    <ol class="pulse-list">
-      {%- for item in report.pulse[group.key] %}
-      <li id="{{ item.id }}" class="pulse-card" data-audience="{{ item.audience | default('general') }}">
-        {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
-        {% if item.score %}<span class="score">{{ item.score | formatNum }}</span>{% endif %}
-        {% if item.comments %}<span class="comments">{{ item.comments }} 留言</span>{% endif %}
-        {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
-      </li>
-      {%- endfor %}
-    </ol>
+    <div class="sub-section" data-subsection="{{ group.key }}">
+      <h3 class="sub-section-title"><span class="sub-title-text">{{ group.label }}</span><span class="sub-count">{{ report.pulse[group.key] | length }} 項</span></h3>
+      <ol class="pulse-list">
+        {%- for item in report.pulse[group.key] %}
+        <li id="{{ item.id }}" class="pulse-card" data-audience="{{ item.audience | default('general') }}">
+          {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
+          {% if item.score %}<span class="score">{{ item.score | formatNum }}</span>{% endif %}
+          {% if item.comments %}<span class="comments">{{ item.comments }} 留言</span>{% endif %}
+          {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
+        </li>
+        {%- endfor %}
+      </ol>
+    </div>
     {% endif %}
   {% endfor %}
 </section>

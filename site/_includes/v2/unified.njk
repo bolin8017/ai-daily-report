@@ -1,4 +1,9 @@
-{# v2.0 layout: 6 function-based tabs + cross-cutting audience filter chips. #}
+{# v2.0 layout: 6 function-based top-level tabs + per-tab sub-section chips.
+   Lead block (當日重點) renders inside the 訊號 tab — see section-signals.njk.
+   This matches the Apple News / NYT / FT mobile pattern: editorial anchor
+   lives inside the synthesis tab, not as a persistent header above all
+   tabs (which forces scrolling past it on every tab visit, especially on
+   mobile). #}
 
 <nav class="tab-bar" role="tablist" aria-label="報告分區">
   <div class="tab-bar-inner">
@@ -10,12 +15,6 @@
     <a href="#tech" class="tab" role="tab" id="tab-tech" aria-controls="tech" aria-selected="false" tabindex="-1" data-tab="tech">技術</a>
   </div>
 </nav>
-
-<div class="audience-filter" role="group" aria-label="Audience filter">
-  <button type="button" class="audience-chip active" aria-pressed="true" data-audience="all">全部</button>
-  <button type="button" class="audience-chip" aria-pressed="false" data-audience="general">個人</button>
-  <button type="button" class="audience-chip" aria-pressed="false" data-audience="work">工作</button>
-</div>
 
 {% include "v2/section-signals.njk" %}
 {% include "v2/section-ideation.njk" %}

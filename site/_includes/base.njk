@@ -20,17 +20,22 @@
   <meta name="twitter:description" content="Daily creative tech brief with side project ideas from trending repos, Hacker News, and Lobsters.">
   <link rel="stylesheet" href="{{ '/assets/style.css' | url }}?v={{ cacheBust }}">
   <link rel="alternate" type="application/rss+xml" title="AI Daily Report" href="{{ '/feed.xml' | url }}">
-  <base target="_blank">
+  {# <base target="_blank"> removed — it broke internal anchor navigation
+     (every #fragment opened a new tab). External links now get target="_blank"
+     case-by-case in app.js (link upgrade pass on load). #}
 </head>
 <body>
   <a class="skip-link" href="#main-content">跳到內容</a>
   <header>
     <div class="header-inner">
-      <h1>AI Creative Daily<span class="dot">.</span></h1>
-      <time datetime="{{ displayDate }}">{{ displayDate }} {{ displayDate | dayOfWeek }}</time>
+      <div class="masthead">
+        <span class="masthead-kicker">DAILY BRIEF · ASIA/TAIPEI</span>
+        <h1>AI Creative <em>Daily</em><span class="dot">.</span></h1>
+      </div>
+      <time datetime="{{ displayDate }}">{{ displayDate }} · {{ displayDate | dayOfWeek }}</time>
     </div>
     {% if isArchive %}
-    <a href="{{ '/' | url }}" class="back-to-today" target="_self">← 回到今日報告</a>
+    <a href="{{ '/' | url }}" class="back-to-today">← 回到今日報告</a>
     {% endif %}
   </header>
   <main id="main-content">
@@ -38,9 +43,13 @@
   </main>
   <footer>
     {% if not isArchive %}
-    <div class="sources">
+    <div class="sources" aria-label="本次擷取的來源狀態">
+      <span class="sources-label">
+        <span class="sources-tab-name">綜合</span> 來源
+        <span class="sources-count" aria-hidden="true"></span>
+      </span>
       {%- for src in sourcesStatus %}
-      <span class="source-status {% if src.ok %}ok{% else %}warn{% endif %}">{{ src.name }} {% if src.ok %}✓{% else %}⚠{% endif %} {{ src.count }}</span>
+      <span class="source-status {% if src.ok %}ok{% else %}warn{% endif %}" data-tabs="{{ src.tabs | join(',') }}">{{ src.name }} {% if src.ok %}✓{% else %}⚠{% endif %} {{ src.count }}</span>
       {%- endfor %}
     </div>
     {% endif %}

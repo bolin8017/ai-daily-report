@@ -1,60 +1,91 @@
-{# 訊號 tab — lead block + signals.focus / sleeper / contrarian / predictions #}
+{# 訊號 tab — lead block + signals.focus / sleeper / contrarian / predictions.
+   Lead block lives here (top of synthesis tab) following the Apple News /
+   NYT / FT mobile pattern — editorial anchor belongs in the synthesis tab,
+   not as a persistent header above all tabs (which forces scrolling past
+   it on every tab visit). #}
 <section class="section-signals tab-panel active" id="signals" role="tabpanel" aria-labelledby="tab-signals">
 
   {% if report.lead and report.lead.html %}
-  <div class="lead-block">
+  <div class="lead-block" role="region" aria-label="當日重點">
+    <span class="lead-kicker">當日重點</span>
     {{ report.lead.html | safe }}
   </div>
   {% endif %}
 
   <h2>訊號 — 今日洞察</h2>
 
+  <div class="section-filter" role="radiogroup" aria-label="訊號 篩選">
+    <button type="button" class="section-chip active" role="radio" aria-checked="true" data-filter="all">全部</button>
+    {% if report.signals.focus and (report.signals.focus | length) %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="focus">今日焦點</button>{% endif %}
+    {% if report.signals.sleeper %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="sleeper">潛力股</button>{% endif %}
+    {% if report.signals.contrarian %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="contrarian">唱反調</button>{% endif %}
+    {% if report.signals.predictions and (report.signals.predictions | length) %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="predictions">預測追蹤</button>{% endif %}
+  </div>
+
   {% if report.signals.focus and (report.signals.focus | length) %}
-  <h3 class="sub-section-title">今日焦點</h3>
-  <ol class="signals-list">
-    {%- for s in report.signals.focus %}
-    <li id="{{ s.id }}" class="signal-card" data-audience="{{ s.audience | default('general') }}">
-      <strong>{{ s.title }}</strong>
-      {% if s.body %}<p>{{ s.body }}</p>{% endif %}
-      {% if s.mechanism %}<p class="mechanism"><em>機制：</em>{{ s.mechanism }}</p>{% endif %}
-      {% if s.product_opportunity %}<p class="opportunity"><em>機會：</em>{{ s.product_opportunity }}</p>{% endif %}
-      {% if s.source_links and (s.source_links | length) %}
-      <p class="source-links">
-        <em>來源：</em>
-        {%- for sid in s.source_links %}<a href="#{{ sid }}">{{ sid }}</a>{% if not loop.last %} · {% endif %}{%- endfor %}
-      </p>
-      {% endif %}
-    </li>
-    {%- endfor %}
-  </ol>
+  <div class="sub-section" data-subsection="focus">
+    <h3 class="sub-section-title"><span class="sub-title-text">今日焦點</span><span class="sub-count">{{ report.signals.focus | length }} 項</span></h3>
+    <ol class="signals-list">
+      {%- for s in report.signals.focus %}
+      <li id="{{ s.id }}" class="signal-card" data-audience="{{ s.audience | default('general') }}">
+        <strong>{{ s.title }}</strong>
+        {% if s.body %}<p>{{ s.body }}</p>{% endif %}
+        {% if s.mechanism %}<p class="mechanism"><em>機制：</em>{{ s.mechanism }}</p>{% endif %}
+        {% if s.product_opportunity %}<p class="opportunity"><em>機會：</em>{{ s.product_opportunity }}</p>{% endif %}
+        {% if s.source_links and (s.source_links | length) %}
+        <p class="source-links">
+          <em>來源：</em>
+          {%- for sid in s.source_links %}<a href="#{{ sid }}" target="_self" class="xref">{{ sid }}</a>{% if not loop.last %} · {% endif %}{%- endfor %}
+        </p>
+        {% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+  </div>
   {% endif %}
 
   {% if report.signals.sleeper %}
-  <h3 class="sub-section-title">潛力股</h3>
-  <div class="signal-card sleeper" id="{{ report.signals.sleeper.id }}" data-audience="{{ report.signals.sleeper.audience | default('general') }}">
-    <strong>{{ report.signals.sleeper.title }}</strong>
-    {% if report.signals.sleeper.body %}<p>{{ report.signals.sleeper.body }}</p>{% endif %}
+  <div class="sub-section" data-subsection="sleeper">
+    <h3 class="sub-section-title"><span class="sub-title-text">潛力股</span></h3>
+    <div class="signal-card sleeper" id="{{ report.signals.sleeper.id }}" data-audience="{{ report.signals.sleeper.audience | default('general') }}">
+      <span class="signal-marker signal-marker--sleeper">潛力訊號</span>
+      <strong>{{ report.signals.sleeper.title }}</strong>
+      {% if report.signals.sleeper.body %}<p>{{ report.signals.sleeper.body }}</p>{% endif %}
+    </div>
   </div>
   {% endif %}
 
   {% if report.signals.contrarian %}
-  <h3 class="sub-section-title">唱反調</h3>
-  <div class="signal-card contrarian" id="{{ report.signals.contrarian.id }}">
-    <strong>{{ report.signals.contrarian.title }}</strong>
-    {% if report.signals.contrarian.body %}<p>{{ report.signals.contrarian.body }}</p>{% endif %}
+  <div class="sub-section" data-subsection="contrarian">
+    <h3 class="sub-section-title"><span class="sub-title-text">唱反調</span></h3>
+    <div class="signal-card contrarian" id="{{ report.signals.contrarian.id }}">
+      <span class="signal-marker signal-marker--contrarian">逆向觀點</span>
+      <strong>{{ report.signals.contrarian.title }}</strong>
+      {% if report.signals.contrarian.body %}<p>{{ report.signals.contrarian.body }}</p>{% endif %}
+    </div>
   </div>
   {% endif %}
 
   {% if report.signals.predictions and (report.signals.predictions | length) %}
-  <h3 class="sub-section-title">預測追蹤</h3>
-  <ol class="prediction-list">
-    {%- for p in report.signals.predictions %}
-    <li id="{{ p.id }}" class="prediction-card status-{{ p.status | default('pending') }}">
-      <strong>{{ p.text }}</strong>
-      <span class="resolution-date">截止：{{ p.resolution_date }}</span>
-      {% if p.rationale %}<p>{{ p.rationale }}</p>{% endif %}
-    </li>
-    {%- endfor %}
-  </ol>
+  <div class="sub-section" data-subsection="predictions">
+    <h3 class="sub-section-title"><span class="sub-title-text">預測追蹤</span><span class="sub-count">{{ report.signals.predictions | length }} 項</span></h3>
+    <ol class="prediction-list">
+      {%- for p in report.signals.predictions %}
+      {%- set status = p.status | default('pending') %}
+      {%- set statusLabel = {
+        'pending': '待解',
+        'resolved-yes': '已驗證',
+        'resolved-no': '未實現',
+        'unverifiable': '無法驗證'
+      } %}
+      <li id="{{ p.id }}" class="prediction-card status-{{ status }}">
+        <span class="pred-status-text pred-status-text--{{ status }}">{{ statusLabel[status] or '待解' }}</span>
+        <strong>{{ p.text }}</strong>
+        <span class="resolution-date">截止 {{ p.resolution_date }}</span>
+        {% if p.rationale %}<p>{{ p.rationale }}</p>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+  </div>
   {% endif %}
 </section>
