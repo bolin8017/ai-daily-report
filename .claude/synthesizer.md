@@ -104,13 +104,22 @@ Falsifiable binary prediction against consensus. MUST include `resolution_date` 
 
 ## `signals.predictions` (5-7 entries)
 
-Binary predictions. Each **must** have `resolution_date` (ISO YYYY-MM-DD) — schema-enforced. Pipeline aborts if missing. Default status `pending`.
+Binary predictions. Each **must** have `resolution_date` (ISO YYYY-MM-DD) — schema-enforced. Pipeline aborts if missing.
+
+**`status` is a strict enum.** ONLY these 4 string values are allowed; any other value (including `needs_revision`, `revised`, `partial`, `cancelled`, `superseded`, etc.) will cause schema rejection and abort the entire run:
+
+- `"pending"` — not yet resolvable (default for new predictions)
+- `"resolved-yes"` — outcome happened by `resolution_date`
+- `"resolved-no"` — outcome did NOT happen by `resolution_date`
+- `"unverifiable"` — `resolution_date` passed but the outcome cannot be objectively determined (use this — NOT a made-up value — if the prediction's framing turned out ambiguous or the world changed in a way that makes the original question moot)
 
 ## `signals.prediction_updates`
 
 For each prediction in `memory.json`:
-- if resolution date passed → mark `resolved-yes` / `resolved-no` / `unverifiable`
-- if pending and date hasn't passed → carry forward `pending`
+- if `resolution_date` has passed → set `status` to one of `resolved-yes` / `resolved-no` / `unverifiable` (NEVER any other value)
+- if `resolution_date` has NOT passed → set `status` to `pending` (carry forward; do NOT invent revisions, do NOT use `needs_revision`)
+
+If the framing of an old prediction now seems flawed but its resolution date hasn't arrived, leave it `pending` and write a NEW prediction in `signals.predictions[]` capturing the revised view. **Do not invent new status values to express "this needs updating".**
 
 ## `ideation.general` (3-5 ideas, audience='general' or 'both')
 

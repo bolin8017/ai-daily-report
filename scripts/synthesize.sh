@@ -73,6 +73,31 @@ if [ ! -f "$REPORT_FILE" ]; then
   exit 2
 fi
 
+# Safety net: Sonnet occasionally drifts on `status` enum (e.g. invents
+# "needs_revision"). Coerce unknown values to "unverifiable" before schema
+# validation rather than throwing away 35 minutes of synthesis. The prompt
+# already tells the model the 4 valid values; this is the last-line defense.
+node -e "
+  import('node:fs/promises').then(async fs => {
+    const VALID = new Set(['pending', 'resolved-yes', 'resolved-no', 'unverifiable']);
+    const report = JSON.parse(await fs.readFile('$REPORT_FILE', 'utf8'));
+    let fixed = 0;
+    for (const key of ['predictions', 'prediction_updates']) {
+      for (const p of report.signals?.[key] ?? []) {
+        if (p && typeof p.status === 'string' && !VALID.has(p.status)) {
+          console.error('[synthesize.sh] coercing status=\"' + p.status + '\" -> unverifiable on ' + (p.id ?? '?'));
+          p.status = 'unverifiable';
+          fixed++;
+        }
+      }
+    }
+    if (fixed > 0) {
+      await fs.writeFile('$REPORT_FILE', JSON.stringify(report, null, 2));
+      console.error('[synthesize.sh] coerced ' + fixed + ' invalid status value(s)');
+    }
+  });
+"
+
 if ! node -e "
   import('./src/schemas/report.js').then(async m => {
     const fs = await import('node:fs/promises');
