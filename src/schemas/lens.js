@@ -3,7 +3,7 @@
 // Stage 2 fan-out reads lenses[] and runs claude -p once per enabled lens.
 
 import { z } from 'zod';
-import { FeedSourceSchema } from './feed-source.js';
+import { SourceSchema } from './source.js';
 
 export const LensConfigSchema = z
   .object({
@@ -17,7 +17,9 @@ export const LensConfigSchema = z
     prompt_file: z.string(),
     sources_overlay: z
       .object({
-        feeds: z.array(FeedSourceSchema).optional(),
+        // Lens-specific source descriptors merged on top of the base registry.
+        // Same shape as src/sources/registry.js entries.
+        sources: z.array(SourceSchema).optional(),
         github_topics: z
           .object({
             topics: z.array(z.string()).optional(),

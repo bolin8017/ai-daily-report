@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { parseBfclTable } from '../src/fetchers/leaderboards/bfcl.js';
-import { parseMtebResults } from '../src/fetchers/leaderboards/mteb.js';
-import { parseOcrBenchTable } from '../src/fetchers/leaderboards/ocrbench.js';
-import { parsePinchBenchResults } from '../src/fetchers/leaderboards/pinchbench.js';
-import { parseSwebenchResults } from '../src/fetchers/leaderboards/swebench.js';
+import { parseBfclTable } from '../src/fetchers/providers/leaderboards-parsers/bfcl.js';
+import { parseMtebResults } from '../src/fetchers/providers/leaderboards-parsers/mteb.js';
+import { parseOcrBenchTable } from '../src/fetchers/providers/leaderboards-parsers/ocrbench.js';
+import { parsePinchBenchResults } from '../src/fetchers/providers/leaderboards-parsers/pinchbench.js';
+import { parseSwebenchResults } from '../src/fetchers/providers/leaderboards-parsers/swebench.js';
 
 describe('parseMtebResults', () => {
   it('sorts by avg_score, assigns ranks', () => {

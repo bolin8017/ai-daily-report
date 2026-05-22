@@ -14,9 +14,9 @@ export function tagItemScope(item, lenses) {
     const overlay = lens.sources_overlay;
     if (!overlay) continue;
 
-    // Feed overlay: match by source name (e.g. item.source === 'Phison Blog')
-    const feedNames = (overlay.feeds || []).map((f) => f.name);
-    if (feedNames.includes(item.source)) {
+    // Lens source overlay: match by source id (e.g. item.source === 'phison-blog')
+    const sourceIds = (overlay.sources || []).map((s) => s.id);
+    if (sourceIds.includes(item.source)) {
       scope.add(lens.id);
     }
 

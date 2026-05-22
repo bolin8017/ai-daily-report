@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { diffSnapshots } from '../src/fetchers/leaderboards/_base.js';
+import { diffSnapshots } from '../src/fetchers/providers/leaderboards-parsers/_base.js';
 
 describe('diffSnapshots', () => {
   const prev = [

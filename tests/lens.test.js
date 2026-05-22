@@ -27,20 +27,25 @@ describe('LensConfigSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('accepts overlay with feeds reusing FeedSourceSchema', () => {
+  it('accepts overlay with source descriptors', () => {
     const result = LensConfigSchema.safeParse({
       id: 'phison-aidaptiv',
       name: 'Phison aiDAPTIV+',
       critical: false,
       prompt_file: '.claude/lenses/phison-aidaptiv.md',
       sources_overlay: {
-        feeds: [
+        sources: [
           {
-            type: 'rss',
-            name: 'Phison Blog',
-            url: 'https://phisonblog.com/feed/',
-            category: 'phison',
-            limit: 10,
+            id: 'phison-blog',
+            label: 'Phison Blog',
+            category: 'phison-vendor',
+            itemType: 'rss-post',
+            chain: [
+              {
+                provider: 'native-rss',
+                config: { url: 'https://phisonblog.com/feed/' },
+              },
+            ],
           },
         ],
         github_topics: { topics: ['kv-cache', 'local-llm'] },
@@ -55,13 +60,21 @@ describe('LensConfigSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('rejects overlay feeds with invalid type', () => {
+  it('rejects overlay sources with empty chain', () => {
     const result = LensConfigSchema.safeParse({
       id: 'phison-aidaptiv',
       name: 'Phison',
       prompt_file: '.claude/lenses/phison-aidaptiv.md',
       sources_overlay: {
-        feeds: [{ type: 'bogus', name: 'X', url: 'https://x.com', category: 'x', limit: 5 }],
+        sources: [
+          {
+            id: 'x',
+            label: 'X',
+            category: 'x',
+            itemType: 'rss-post',
+            chain: [],
+          },
+        ],
       },
     });
     expect(result.success).toBe(false);

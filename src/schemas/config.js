@@ -4,20 +4,14 @@
 // Also available standalone via `npm run validate:config`.
 
 import { z } from 'zod';
-import { FeedSourceSchema } from './feed-source.js';
 import { LensConfigSchema } from './lens.js';
-
-// Re-export for backwards compatibility with any consumer that did
-// `import { FeedSourceSchema } from '../schemas/config.js'`.
-export { FeedSourceSchema };
 
 export const ConfigSchema = z.object({
   sources: z.object({
-    // Ordered list — feeds.js tries URLs in order, falling through to the
-    // next on any error (timeout, 5xx, network). At least one entry required;
-    // extra entries are used only when earlier ones fail per request.
+    // Ordered list — rsshub provider tries URLs in order, falling through to
+    // the next on any error (timeout, 5xx, network). At least one entry
+    // required; extra entries are used only when earlier ones fail per request.
     rsshub_urls: z.array(z.url()).min(1),
-    feeds: z.array(FeedSourceSchema),
     // Two accepted shapes (backward compatible):
     //   1. Legacy flat: { enabled, topics: [], limit_per_topic }
     //   2. Tier:        { enabled, tier: { core, rotating }, rotation: { rotating_per_day, rotation_seed_field }, limit_per_topic }
@@ -59,6 +53,22 @@ export const ConfigSchema = z.object({
   // Lens definitions for multi-lens fan-out. At least one lens required
   // (the default lens, ai-builder, drives the existing daily report).
   lenses: z.array(LensConfigSchema).min(1),
+  // Cloud-fallback provider tuning. Optional with sensible defaults.
+  providers: z
+    .object({
+      firecrawl: z
+        .object({
+          monthly_cap: z.number().int().positive().default(500),
+          enabled_in_local_dev: z.boolean().default(false),
+        })
+        .optional(),
+      jina_reader: z
+        .object({
+          base_url: z.string().url().default('https://r.jina.ai'),
+        })
+        .optional(),
+    })
+    .optional(),
   report: z.object({
     language: z.string(),
     max_featured_items: z.number().int().positive(),
