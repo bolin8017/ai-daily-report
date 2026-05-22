@@ -1,7 +1,16 @@
 ---
 name: daily-report
-description: Daily creative tech brief generator
+description: Daily creative tech brief generator (DEPRECATED — see .claude/synthesizer.md)
 ---
+
+> **DEPRECATED (2026-05-22 IA redesign).** This prompt is preserved for
+> historical reference and rendering of archived v1.x reports (templates
+> route v1 reports to the legacy `lens/ai-builder.njk` partial). New reports
+> use the unified 3-stage pipeline:
+> - Stage 2: `.claude/curators/{shipped,pulse,market,tech}.md`
+> - Stage 3: `.claude/synthesizer.md`
+>
+> Spec: `docs/superpowers/specs/2026-05-22-ia-redesign-design.md`
 
 # AI Daily Report Agent
 

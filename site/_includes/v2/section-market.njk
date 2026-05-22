@@ -1,0 +1,25 @@
+{# 市場 tab — market.ma / funding / policy / taiwan #}
+<section class="section-market tab-panel" id="market" role="tabpanel" aria-labelledby="tab-market">
+  <h2>市場 — 商業情報</h2>
+
+  {% for group in [
+    {"key":"ma","label":"合作併購"},
+    {"key":"funding","label":"募資財報"},
+    {"key":"policy","label":"政策法規"},
+    {"key":"taiwan","label":"台灣動態"}
+  ] %}
+    {% if report.market[group.key] and (report.market[group.key] | length) %}
+    <h3 class="sub-section-title">{{ group.label }}</h3>
+    <ol class="market-list">
+      {%- for item in report.market[group.key] %}
+      <li id="{{ item.id }}" class="market-card" data-audience="{{ item.audience | default('general') }}">
+        {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
+        {% if item.amount %}<span class="amount">{{ item.amount }}</span>{% endif %}
+        {% if item.companies and (item.companies | length) %}<span class="companies">{{ item.companies | join(' · ') }}</span>{% endif %}
+        {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+    {% endif %}
+  {% endfor %}
+</section>

@@ -26,6 +26,26 @@ export function makeOctokit({ requireAuth = false } = {}) {
   return new Octokit({
     auth: token || undefined,
     userAgent: DEFAULT_USER_AGENT,
+    // Throttle plugin is bundled in the `octokit` meta package and defaults to
+    // retrying on secondary rate limits — that can stall the pipeline for
+    // many minutes when README enrichment hits the per-content secondary cap.
+    // Fail-fast instead: getReadmeExcerpt's catch returns '' on any error, so
+    // the repo item is still emitted (just without README) rather than the
+    // whole pipeline waiting on rate-limit reset.
+    throttle: {
+      onRateLimit: (retryAfter, options, octokit) => {
+        octokit.log.warn(
+          `[github] core rate-limit hit on ${options.method} ${options.url} (retry-after=${retryAfter}s) — failing fast`,
+        );
+        return false;
+      },
+      onSecondaryRateLimit: (_retryAfter, options, octokit) => {
+        octokit.log.warn(
+          `[github] secondary rate-limit hit on ${options.method} ${options.url} — failing fast`,
+        );
+        return false;
+      },
+    },
   });
 }
 

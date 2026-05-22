@@ -1,0 +1,25 @@
+{# 脈動 tab — pulse.hn / lobsters / chinese_community / ai_bloggers #}
+<section class="section-pulse tab-panel" id="pulse" role="tabpanel" aria-labelledby="tab-pulse">
+  <h2>脈動 — 社群討論</h2>
+
+  {% for group in [
+    {"key":"hn","label":"Hacker News"},
+    {"key":"lobsters","label":"Lobsters"},
+    {"key":"chinese_community","label":"中文社群"},
+    {"key":"ai_bloggers","label":"AI 部落格"}
+  ] %}
+    {% if report.pulse[group.key] and (report.pulse[group.key] | length) %}
+    <h3 class="sub-section-title">{{ group.label }}</h3>
+    <ol class="pulse-list">
+      {%- for item in report.pulse[group.key] %}
+      <li id="{{ item.id }}" class="pulse-card" data-audience="{{ item.audience | default('general') }}">
+        {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
+        {% if item.score %}<span class="score">{{ item.score | formatNum }}</span>{% endif %}
+        {% if item.comments %}<span class="comments">{{ item.comments }} 留言</span>{% endif %}
+        {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+    {% endif %}
+  {% endfor %}
+</section>

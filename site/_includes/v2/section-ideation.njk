@@ -1,0 +1,46 @@
+{# 動手做 tab — ideation.general + ideation.work #}
+<section class="section-ideation tab-panel" id="ideation" role="tabpanel" aria-labelledby="tab-ideation">
+  <h2>動手做 — 今日靈感</h2>
+
+  {% if report.ideation.general and (report.ideation.general | length) %}
+  <h3 class="sub-section-title">個人創意</h3>
+  <div class="idea-list">
+    {%- for idea in report.ideation.general %}
+    <div class="idea-card" id="{{ idea.id }}" data-audience="{{ idea.audience }}">
+      <h4>{{ idea.title }}</h4>
+      <p>{{ idea.description }}</p>
+      {% if idea.tech_stack %}<p><em>tech:</em> {{ idea.tech_stack }}</p>{% endif %}
+      {% if idea.hardware %}<p><em>硬體:</em> {{ idea.hardware }}</p>{% endif %}
+      {% if idea.dev_time %}<p><em>時間:</em> {{ idea.dev_time }}</p>{% endif %}
+      {% if idea.first_step %}<p><em>第一步:</em> {{ idea.first_step }}</p>{% endif %}
+      {% if idea.market_evidence %}<p><em>市場證據:</em> {{ idea.market_evidence }}</p>{% endif %}
+      {% if idea.source_links and (idea.source_links | length) %}
+      <p class="source-links"><em>來源：</em>
+        {%- for sid in idea.source_links %}<a href="#{{ sid }}">{{ sid }}</a>{% if not loop.last %} · {% endif %}{%- endfor %}
+      </p>
+      {% endif %}
+    </div>
+    {%- endfor %}
+  </div>
+  {% endif %}
+
+  {% if report.ideation.work and (report.ideation.work | length) %}
+  <h3 class="sub-section-title">工作落地</h3>
+  <div class="idea-list">
+    {%- for idea in report.ideation.work %}
+    <div class="idea-card work-idea" id="{{ idea.id }}" data-audience="{{ idea.audience }}">
+      <h4>{{ idea.title }}</h4>
+      <p>{{ idea.description }}</p>
+      {% if idea.tech_stack %}<p><em>tech:</em> {{ idea.tech_stack }}</p>{% endif %}
+      {% if idea.use_case %}<p><em>場景:</em> {{ idea.use_case }}</p>{% endif %}
+      {% if idea.first_step %}<p><em>第一步:</em> {{ idea.first_step }}</p>{% endif %}
+      {% if idea.source_links and (idea.source_links | length) %}
+      <p class="source-links"><em>來源：</em>
+        {%- for sid in idea.source_links %}<a href="#{{ sid }}">{{ sid }}</a>{% if not loop.last %} · {% endif %}{%- endfor %}
+      </p>
+      {% endif %}
+    </div>
+    {%- endfor %}
+  </div>
+  {% endif %}
+</section>

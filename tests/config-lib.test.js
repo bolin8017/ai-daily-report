@@ -27,8 +27,14 @@ describe('lib/config', () => {
     }
   });
 
-  it('github_topics.topics are non-empty strings', () => {
-    for (const topic of config.sources.github_topics.topics) {
+  it('github_topics resolves to non-empty strings (tier or legacy)', () => {
+    const gt = config.sources.github_topics;
+    // Either legacy flat shape (`topics: [...]`) or tier shape (`tier: { core, rotating }`).
+    const allTopics = Array.isArray(gt.topics)
+      ? gt.topics
+      : [...(gt.tier?.core ?? []), ...(gt.tier?.rotating ?? [])];
+    expect(allTopics.length).toBeGreaterThan(0);
+    for (const topic of allTopics) {
       expect(typeof topic).toBe('string');
       expect(topic.length).toBeGreaterThan(0);
     }

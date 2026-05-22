@@ -28,10 +28,80 @@ describe('schemas', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skipIf(!latestReport())('latest report passes ReportSchema', () => {
-    const result = ReportSchema.safeParse(json(latestReport()));
+  it.skipIf(!latestReport())('latest report passes ReportSchema (v2 only)', () => {
+    const r = json(latestReport());
+    // v1.x reports (no schema_version) predate the v2 schema and use legacy templates;
+    // they are not expected to validate against the strict v2 ReportSchema.
+    if (r.schema_version !== 2) return;
+    const result = ReportSchema.safeParse(r);
     if (!result.success) console.error(result.error.issues);
     expect(result.success).toBe(true);
+  });
+
+  it('ReportSchema v2 parses a minimal report', () => {
+    const minimalV2 = {
+      schema_version: 2,
+      date: '2026-05-22',
+      lead: { html: '<h3>Today</h3>' },
+      signals: {
+        focus: [{ id: 'signals.focus.0', title: 'X happened' }],
+        predictions: [
+          {
+            id: 'p1',
+            text: 'Y will happen',
+            resolution_date: '2026-12-31',
+          },
+        ],
+      },
+      ideation: {
+        general: [{ id: 'g1', audience: 'general', title: 'Idea G', description: 'd' }],
+        work: [{ id: 'w1', audience: 'work', title: 'Idea W', description: 'd' }],
+      },
+      shipped: {},
+      pulse: {},
+      market: {},
+      tech: {},
+    };
+    const result = ReportSchema.safeParse(minimalV2);
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
+  });
+
+  it('MemorySchema accepts audience_state with general and work tracks', () => {
+    const result = MemorySchema.safeParse({
+      schema_version: 2,
+      last_updated: '2026-05-22T04:00:00Z',
+      audience_state: {
+        general: { topics: { rag: 5 }, narrative_arcs: [] },
+        work: { topics: { kv_cache: 7 }, narrative_arcs: [] },
+      },
+    });
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
+    expect(result.data.audience_state.general.topics.rag).toBe(5);
+  });
+
+  it('MemorySchema accepts memory without audience_state (backward compat)', () => {
+    const result = MemorySchema.safeParse({
+      schema_version: 2,
+      last_updated: null,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data.audience_state).toBeUndefined();
+  });
+
+  it('ReportSchema v2 rejects missing schema_version', () => {
+    const minimalV2 = {
+      date: '2026-05-22',
+      lead: { html: '<h3>X</h3>' },
+      signals: { focus: [], predictions: [] },
+      ideation: { general: [], work: [] },
+      shipped: {},
+      pulse: {},
+      market: {},
+      tech: {},
+    };
+    expect(ReportSchema.safeParse(minimalV2).success).toBe(false);
   });
 
   it.skipIf(!existsSync('data/memory.json'))('data/memory.json passes MemorySchema', () => {

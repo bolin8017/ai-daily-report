@@ -1,0 +1,85 @@
+// Shared helpers for Stage 2 curators.
+// Stable id generation, prompt assembly (_shared.md + per-section), output
+// validation against curated sub-schemas.
+
+import { createHash } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const CURATORS_DIR = join(__dirname, '..', '..', '.claude', 'curators');
+
+/**
+ * Build a deterministic stable id for an item.
+ *
+ * @param {object} opts
+ * @param {string} opts.section
+ * @param {string} opts.sub
+ * @param {number} opts.index
+ * @param {string} opts.type 'github' | 'hn' | 'lobsters' | 'mops' | 'rss' | 'leaderboard' | 'arxiv'
+ * @returns {string}
+ */
+export function stableId(opts) {
+  const { section, sub, index, type } = opts;
+  const prefix = `${section}.${sub}.${index}`;
+  let slug;
+  switch (type) {
+    case 'github':
+      slug = `${opts.owner}/${opts.repo}`;
+      break;
+    case 'hn':
+      slug = `hn-${opts.hn_id}`;
+      break;
+    case 'lobsters':
+      slug = `lobsters-${opts.short_id}`;
+      break;
+    case 'mops':
+      slug = `mops-${opts.ticker}-${opts.date}`;
+      break;
+    case 'rss': {
+      const hash = createHash('sha256').update(opts.url).digest('hex').slice(0, 8);
+      slug = `${opts.source}-${hash}`;
+      break;
+    }
+    case 'leaderboard':
+      slug = `${opts.bench}-${opts.model_id}`;
+      break;
+    case 'arxiv':
+      slug = `arxiv-${opts.paper_id}`;
+      break;
+    default:
+      throw new Error(`stableId: unknown type '${type}'`);
+  }
+  return `${prefix}:${slug}`;
+}
+
+/**
+ * Read and concatenate the shared voice rules + a per-section curator prompt.
+ *
+ * @param {string} section 'shipped' | 'pulse' | 'market' | 'tech'
+ * @returns {Promise<string>}
+ */
+export async function mergePrompts(section) {
+  const shared = await readFile(join(CURATORS_DIR, '_shared.md'), 'utf8');
+  const sectionPrompt = await readFile(join(CURATORS_DIR, `${section}.md`), 'utf8');
+  return `${shared}\n\n---\n\n${sectionPrompt}`;
+}
+
+/**
+ * Validate curator output against a section schema. Throws with descriptive
+ * prefix on failure so logs identify which section drifted.
+ *
+ * @param {import('zod').ZodTypeAny} schema
+ * @param {unknown} data
+ */
+export function validateCuratedOutput(schema, data) {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `  - ${i.path.join('.')}: ${i.message}`)
+      .join('\n');
+    throw new Error(`Curated output validation failed:\n${issues}`);
+  }
+  return result.data;
+}

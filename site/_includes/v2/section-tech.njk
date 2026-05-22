@@ -1,0 +1,29 @@
+{# 技術 tab — tech.vendor / models / benchmarks / aidaptiv #}
+<section class="section-tech tab-panel" id="tech" role="tabpanel" aria-labelledby="tab-tech">
+  <h2>技術 — 技術情報</h2>
+
+  {% for group in [
+    {"key":"vendor","label":"大廠技術"},
+    {"key":"models","label":"新模型"},
+    {"key":"benchmarks","label":"評測"},
+    {"key":"aidaptiv","label":"aiDAPTIV 相關"}
+  ] %}
+    {% if report.tech[group.key] and (report.tech[group.key] | length) %}
+    <h3 class="sub-section-title">{{ group.label }}</h3>
+    <ol class="tech-list">
+      {%- for item in report.tech[group.key] %}
+      <li id="{{ item.id }}" class="tech-card" data-audience="{{ item.audience | default('general') }}">
+        {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
+        {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
+        {% if item.benchmark_changes and item.benchmark_changes.new_top_5 %}
+        <p class="bench-changes"><em>新 top-5:</em> {{ item.benchmark_changes.new_top_5 | join(', ') }}</p>
+        {% endif %}
+        {% if item.benchmark_changes and item.benchmark_changes.rank_changes %}
+        <p class="bench-changes"><em>排名變動:</em> {{ item.benchmark_changes.rank_changes | join(' · ') }}</p>
+        {% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+    {% endif %}
+  {% endfor %}
+</section>

@@ -9,6 +9,16 @@
 
 import { z } from 'zod';
 
+// Per-audience track within audience_state. Each track carries its own
+// topic frequency map and narrative arcs so general-builder narrative drift
+// doesn't pollute Phison work-context arcs (and vice versa).
+const AudienceTrackSchema = z
+  .object({
+    topics: z.record(z.string(), z.unknown()).optional(),
+    narrative_arcs: z.array(z.unknown()).optional(),
+  })
+  .passthrough();
+
 export const MemorySchema = z.object({
   schema_version: z.literal(2),
   last_updated: z.string().nullable(),
@@ -19,6 +29,13 @@ export const MemorySchema = z.object({
   open_threads: z.array(z.unknown()).optional(),
   predictions: z.array(z.unknown()).optional(),
   engagement: z.unknown().optional(),
+  // NEW in v2 IA redesign — per-audience tracks. Optional so backfilled v1 memory still validates.
+  audience_state: z
+    .object({
+      general: AudienceTrackSchema.optional(),
+      work: AudienceTrackSchema.optional(),
+    })
+    .optional(),
 });
 
 // LensMemorySchema — extends MemorySchema for non-default lens memory files.

@@ -26,6 +26,51 @@ DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%Y-%m-%d)
 MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
 SKIP_PUSH="${SKIP_PUSH:-0}"
 
+# ── Pipeline routing ──────────────────────────────────────────────
+# FEATURE_NEW_PIPELINE=1 (default after IA redesign): run new
+# Stage 2 curate + Stage 3 synthesize, output v2.0 unified report.
+# FEATURE_NEW_PIPELINE=0: fall through to legacy lens-based pipeline
+# below — preserved as rollback path until new pipeline is proven in
+# production. Toggle via ~/.ai-daily-report.env on the VM.
+FEATURE_NEW_PIPELINE="${FEATURE_NEW_PIPELINE:-1}"
+
+if [ "$FEATURE_NEW_PIPELINE" = "1" ]; then
+  echo "[analyze] $(date -Iseconds) — new pipeline: curate → synthesize (date=${DATE})"
+
+  if ! bash scripts/curate.sh; then
+    echo "[analyze] FATAL: curate failed — aborting" >&2
+    exit 1
+  fi
+
+  if ! bash scripts/synthesize.sh; then
+    echo "[analyze] FATAL: synthesize failed — aborting" >&2
+    exit 1
+  fi
+
+  REPORT_FILE="data/reports/${DATE}.json"
+
+  if [ "$SKIP_PUSH" = "1" ]; then
+    echo "[analyze] SKIP_PUSH — skipping commit and push"
+  else
+    COMMIT_PATHS=()
+    [ -f "$REPORT_FILE" ] && COMMIT_PATHS+=("$REPORT_FILE")
+    [ -f "data/memory.json" ] && COMMIT_PATHS+=("data/memory.json")
+    if [ "${#COMMIT_PATHS[@]}" -eq 0 ]; then
+      echo "[analyze] no outputs to commit — exiting nonzero" >&2
+      exit 1
+    fi
+    echo "[analyze] committing ${#COMMIT_PATHS[@]} files to data branch..."
+    node src/lib/commit.js "$DATE" "report: ${DATE} daily creative brief" "${COMMIT_PATHS[@]}"
+  fi
+
+  echo "[analyze] $(date -Iseconds) — done (new pipeline)"
+  exit 0
+fi
+
+# ─────────────────────────────────────────────────────────────────
+# Legacy pipeline (FEATURE_NEW_PIPELINE=0). Preserved for rollback.
+# ─────────────────────────────────────────────────────────────────
+
 # ── Preflight checks ──────────────────────────────────────────────
 
 for f in data/staging/metadata.json .claude/daily-report-quality.md; do

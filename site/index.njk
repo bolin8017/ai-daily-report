@@ -3,36 +3,40 @@ layout: base.njk
 permalink: /index.html
 ---
 
-{# Build the list of lenses that have output for today. ai-builder is
-   always present (default lens, critical=true); other lenses appear only
-   when their report file exists at data/reports/lenses/<id>/<date>.json
-   and is surfaced via the lensReports global data in eleventy.config.js. #}
-{% set availableLenses = [{ "id": "ai-builder", "name": "今日 AI" }] %}
-{% if lensReports and lensReports["phison-aidaptiv"] %}
-  {% set availableLenses = availableLenses.concat([{ "id": "phison-aidaptiv", "name": "Phison aiDAPTIV+" }]) %}
-{% endif %}
+{# Schema-version routing: v2 unified IA → site/_includes/v2/unified.njk;
+   pre-v2 reports (no schema_version) → legacy lens UI. After Phase E cutover,
+   today's report should always be v2; archive pages may still be v1 and use
+   the legacy path. #}
 
-{# Only show the lens tab nav when there's more than one lens with output;
-   otherwise the page renders identically to pre-Phase-3 (ai-builder only). #}
-{% if availableLenses.length > 1 %}
-<nav class="lens-tabs" aria-label="Lens selection">
-  {%- for lens in availableLenses %}
-  <button class="lens-tab" type="button" data-lens-tab="{{ lens.id }}"
-          aria-controls="lens-{{ lens.id }}"
-          aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
-    {{ lens.name }}
-  </button>
-  {%- endfor %}
-</nav>
-{% endif %}
-
-<div class="lens-content">
-  <section class="lens-pane" id="lens-ai-builder">
-    {% include "lens/ai-builder.njk" %}
-  </section>
+{% if report and report.schema_version == 2 %}
+  {% include "v2/unified.njk" %}
+{% else %}
+  {# Legacy multi-lens UI (preserved for v1 archived reports / rollback). #}
+  {% set availableLenses = [{ "id": "ai-builder", "name": "今日 AI" }] %}
   {% if lensReports and lensReports["phison-aidaptiv"] %}
-  <section class="lens-pane" id="lens-phison-aidaptiv" hidden>
-    {% include "lens/phison-aidaptiv.njk" %}
-  </section>
+    {% set availableLenses = availableLenses.concat([{ "id": "phison-aidaptiv", "name": "Phison aiDAPTIV+" }]) %}
   {% endif %}
-</div>
+
+  {% if availableLenses.length > 1 %}
+  <nav class="lens-tabs" aria-label="Lens selection">
+    {%- for lens in availableLenses %}
+    <button class="lens-tab" type="button" data-lens-tab="{{ lens.id }}"
+            aria-controls="lens-{{ lens.id }}"
+            aria-selected="{% if loop.first %}true{% else %}false{% endif %}">
+      {{ lens.name }}
+    </button>
+    {%- endfor %}
+  </nav>
+  {% endif %}
+
+  <div class="lens-content">
+    <section class="lens-pane" id="lens-ai-builder">
+      {% include "lens/ai-builder.njk" %}
+    </section>
+    {% if lensReports and lensReports["phison-aidaptiv"] %}
+    <section class="lens-pane" id="lens-phison-aidaptiv" hidden>
+      {% include "lens/phison-aidaptiv.njk" %}
+    </section>
+    {% endif %}
+  </div>
+{% endif %}

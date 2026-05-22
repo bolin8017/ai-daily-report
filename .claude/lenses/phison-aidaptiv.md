@@ -1,7 +1,17 @@
 ---
 name: phison-aidaptiv
-description: Phison aiDAPTIV+ creative-angle lens for the daily report. Generates ideation signals that drive Pascari SSD sales via OEM and ISV commercial channels.
+description: Phison aiDAPTIV+ creative-angle lens (DEPRECATED — folded into unified synthesizer)
 ---
+
+> **DEPRECATED (2026-05-22 IA redesign).** The multi-lens architecture has
+> been replaced by a unified report with item-level `audience` tags. Phison
+> aiDAPTIV+ relevance is now expressed via:
+> - `audience: 'work' | 'both'` on items in any section
+> - `ideation.work` sub-group for work-oriented project ideas
+> - `tech.aidaptiv` sub-group for KV-cache / SSD-as-memory / on-device LLM signals
+> - `market.taiwan` sub-group with Phison upstream/downstream MOPS disclosures
+>
+> Spec: `docs/superpowers/specs/2026-05-22-ia-redesign-design.md`
 
 # Phison aiDAPTIV+ Lens Agent
 

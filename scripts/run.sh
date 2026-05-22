@@ -38,9 +38,15 @@ for arg in "$@"; do
       MODE="analyze-only"
       # Keep SKIP_PUSH=1 default; use --full for push
       ;;
+    --curate-only)
+      MODE="curate-only"
+      ;;
+    --synthesize-only)
+      MODE="synthesize-only"
+      ;;
     *)
       echo "unknown flag: $arg" >&2
-      echo "usage: run.sh [--full | --skip-push | --analyze]" >&2
+      echo "usage: run.sh [--full | --skip-push | --analyze | --curate-only | --synthesize-only]" >&2
       exit 1
       ;;
   esac
@@ -52,12 +58,20 @@ case "$MODE" in
     node src/collect.js --skip-push
     ;;
   full)
-    echo "[run] Stage 1 + Stage 2"
+    echo "[run] Stage 1 + Stage 2 + Stage 3"
     node src/collect.js
     bash scripts/analyze.sh
     ;;
   analyze-only)
-    echo "[run] Stage 2 only (analyze)"
+    echo "[run] Stage 2 + Stage 3 (analyze orchestrator)"
     bash scripts/analyze.sh
+    ;;
+  curate-only)
+    echo "[run] Stage 2 only (curate)"
+    bash scripts/curate.sh
+    ;;
+  synthesize-only)
+    echo "[run] Stage 3 only (synthesize)"
+    bash scripts/synthesize.sh
     ;;
 esac

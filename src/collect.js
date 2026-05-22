@@ -63,6 +63,8 @@ async function main() {
   // post-condense) lets condense reserve quota for lens-tagged items so
   // low-star lens-overlay signals (e.g. niche github topics like kv-cache)
   // aren't crowded out by popular global items.
+  // Only tag the 4 "core" fetchers — new IA-redesign fetchers (leaderboards,
+  // mops, hf_trending, arxiv) bypass condense entirely (written raw to staging).
   for (const fetcherKey of ['feeds', 'trending', 'search', 'developers']) {
     if (raw[fetcherKey] && Array.isArray(raw[fetcherKey].items)) {
       raw[fetcherKey].items = raw[fetcherKey].items.map((item) =>
@@ -79,11 +81,18 @@ async function main() {
   banner('writing staging data');
   mkdirSync('data/staging', { recursive: true });
 
+  // New IA-redesign fetchers are written raw (no condense step) since their
+  // payloads are small + structured (leaderboards: 5 snapshots; mops: tracked
+  // tickers only; hf_trending: 20 models; arxiv: ~50 papers).
   const files = {
     'data/staging/unified.json': condensed.unified,
     'data/staging/trending.json': condensed.trending,
     'data/staging/search.json': condensed.search,
     'data/staging/developers.json': condensed.developers,
+    'data/staging/leaderboards.json': raw.leaderboards ?? { ok: false, items: [] },
+    'data/staging/mops.json': raw.mops ?? { ok: false, items: [] },
+    'data/staging/hf_trending.json': raw.hf_trending ?? { ok: false, items: [] },
+    'data/staging/arxiv.json': raw.arxiv ?? { ok: false, items: [] },
     'data/staging/metadata.json': {
       date,
       run_id: RUN_ID,
@@ -95,6 +104,16 @@ async function main() {
         trending: { ok: raw.trending.ok, count: raw.trending.items?.length ?? 0 },
         search: { ok: raw.search.ok, count: raw.search.items?.length ?? 0 },
         developers: { ok: raw.developers.ok, count: raw.developers.items?.length ?? 0 },
+        leaderboards: {
+          ok: raw.leaderboards?.ok ?? false,
+          count: raw.leaderboards?.items?.length ?? 0,
+        },
+        mops: { ok: raw.mops?.ok ?? false, count: raw.mops?.items?.length ?? 0 },
+        hf_trending: {
+          ok: raw.hf_trending?.ok ?? false,
+          count: raw.hf_trending?.items?.length ?? 0,
+        },
+        arxiv: { ok: raw.arxiv?.ok ?? false, count: raw.arxiv?.items?.length ?? 0 },
       },
       degraded: raw._degraded ?? [],
     },

@@ -18,11 +18,29 @@ export const ConfigSchema = z.object({
     // extra entries are used only when earlier ones fail per request.
     rsshub_urls: z.array(z.url()).min(1),
     feeds: z.array(FeedSourceSchema),
-    github_topics: z.object({
-      enabled: z.boolean(),
-      topics: z.array(z.string()),
-      limit_per_topic: z.number().int().positive(),
-    }),
+    // Two accepted shapes (backward compatible):
+    //   1. Legacy flat: { enabled, topics: [], limit_per_topic }
+    //   2. Tier:        { enabled, tier: { core, rotating }, rotation: { rotating_per_day, rotation_seed_field }, limit_per_topic }
+    // Stage 1 fetcher resolves to a per-day topic set via selectTopicsForDate().
+    github_topics: z.union([
+      z.object({
+        enabled: z.boolean(),
+        topics: z.array(z.string()),
+        limit_per_topic: z.number().int().positive(),
+      }),
+      z.object({
+        enabled: z.boolean(),
+        tier: z.object({
+          core: z.array(z.string()),
+          rotating: z.array(z.string()),
+        }),
+        rotation: z.object({
+          rotating_per_day: z.number().int().positive(),
+          rotation_seed_field: z.literal('date'),
+        }),
+        limit_per_topic: z.number().int().positive(),
+      }),
+    ]),
     github_developers: z.object({
       enabled: z.boolean(),
       global_limit: z.number().int().positive(),
