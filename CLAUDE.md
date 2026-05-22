@@ -136,6 +136,8 @@ Two long-lived branches with distinct roles:
 
 ## Data Sources
 
+> Authoritative per-source list (URLs, categories, lens overlays) lives in [docs/data-sources.md](./docs/data-sources.md). Run `npm run check:sources` after changing `config.json` to confirm the doc still matches.
+
 ### `src/fetchers/feeds.js` (RSSHub + native APIs)
 Via RSSHub (public instances tried in order: `https://rsshub.pseudoyu.com` → `https://rsshub.rssforever.com` on any per-request failure):
 - **Hacker News** — front page + Show HN, enriched with Algolia API for scores/comments
