@@ -60,6 +60,8 @@ npm run serve          # 11ty dev server with live reload
 | Dev.to, Anthropic News, HuggingFace Papers | RSSHub |
 | Simon Willison, Karpathy, Google AI Blog, Phoronix, LWN, etc. | Native RSS |
 
+Full per-source breakdown (with URLs, categories, and lens overlays): [docs/data-sources.md](./docs/data-sources.md). Run `npm run check:sources` to verify the doc stays in sync with `config.json`.
+
 ## Tech stack
 
 | Layer | Tool |
@@ -75,6 +77,8 @@ npm run serve          # 11ty dev server with live reload
 ## Documentation
 
 - [docs/architecture.md](./docs/architecture.md) — design decisions, trade-offs, failure modes
+- [docs/data-sources.md](./docs/data-sources.md) — full catalogue of fetched sources, URLs, and lens overlays
+- [docs/firewall-allowlist.md](./docs/firewall-allowlist.md) — hostnames to whitelist when running behind a corporate firewall
 - [CLAUDE.md](./CLAUDE.md) — project structure, commands, schemas, environment setup
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution guidelines
 
