@@ -167,21 +167,108 @@ export default function (eleventyConfig) {
       .map((f) => sanitizeReport(JSON.parse(fs.readFileSync(path.join(reportsDir, f), 'utf8'))));
   });
 
-  // Sources status from feeds-snapshot.json
+  // Sources status from feeds-snapshot.json, enriched with per-tab routing.
+  //
+  // Each source pill carries `tabs: [...]` listing which top-level tabs the
+  // source actually feeds. The footer template renders these as data-tabs
+  // attributes so JS can hide pills irrelevant to the current tab. This
+  // gives users discriminating info per tab instead of the same dense list
+  // everywhere.
+  //
+  // Category → tab mapping derived from config.json. GitHub-derived sources
+  // (Trending, Topic Discovery, Dev Watch …) aren't in by_source — they're
+  // synthesized from report.shipped.<key> at render time and tagged ['shipped'].
+  // Sources missing from config (e.g. legacy "NVIDIA Developer" without
+  // "Blog" suffix) fall through to OVERRIDE_TABS; unmatched ones default
+  // to [] which means "show only on the synthesis tabs" (訊號 / 動手做).
+  const CATEGORY_TO_TABS = {
+    community: ['pulse'],
+    中文社群: ['pulse'],
+    'AI 部落格': ['pulse'],
+    '系統/底層': ['pulse'],
+    'AI 公司': ['tech'],
+    論文: ['tech'],
+    大廠技術: ['tech'],
+    aidaptiv: ['tech'],
+    market: ['market'],
+    policy: ['market'],
+    台灣媒體: ['market'],
+  };
+  // For snapshot source names that don't match any config.json entry verbatim.
+  const OVERRIDE_TABS = {
+    'NVIDIA Developer': ['tech'],
+    'Phison Blog': ['tech', 'market'],
+    'SK Hynix News': ['tech'],
+  };
+
+  function loadConfigCategoryMap() {
+    try {
+      const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+      const map = {};
+      for (const f of cfg?.sources?.feeds ?? []) {
+        if (f?.name && f?.category) map[f.name] = f.category;
+      }
+      return map;
+    } catch {
+      return {};
+    }
+  }
+
+  function shippedSyntheticSources(latestReport) {
+    if (latestReport?.schema_version !== 2 || !latestReport?.shipped) return [];
+    const groups = [
+      ['trending', 'GitHub Trending'],
+      ['topic_discovery', 'Topic Discovery'],
+      ['dev_watch_taiwan', 'Dev Watch 台灣'],
+      ['dev_watch_global', 'Dev Watch 全球'],
+    ];
+    return groups
+      .filter(
+        ([key]) => Array.isArray(latestReport.shipped[key]) && latestReport.shipped[key].length > 0,
+      )
+      .map(([key, name]) => ({
+        name,
+        ok: true,
+        count: latestReport.shipped[key].length,
+        tabs: ['shipped'],
+      }));
+  }
+
   eleventyConfig.addGlobalData('sourcesStatus', () => {
     const snapshotPath = path.join(__dirname, 'data', 'feeds-snapshot.json');
     if (!fs.existsSync(snapshotPath)) return [];
+    let snapshot;
     try {
-      const data = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
-      if (!data.by_source) return [];
-      return Object.entries(data.by_source).map(([name, items]) => ({
-        name,
-        ok: Array.isArray(items) && items.length > 0,
-        count: Array.isArray(items) ? items.length : 0,
-      }));
+      snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
     } catch (err) {
       throw new Error(`[eleventy] sourcesStatus: failed to read ${snapshotPath}: ${err.message}`);
     }
+    if (!snapshot.by_source) return [];
+
+    const categoryMap = loadConfigCategoryMap();
+    const feedSources = Object.entries(snapshot.by_source).map(([name, items]) => {
+      const category = categoryMap[name];
+      const tabs = category ? (CATEGORY_TO_TABS[category] ?? []) : (OVERRIDE_TABS[name] ?? []);
+      return {
+        name,
+        ok: Array.isArray(items) && items.length > 0,
+        count: Array.isArray(items) ? items.length : 0,
+        tabs,
+      };
+    });
+
+    // Synthesize shipped-tab entries from the latest report so the 上線 tab
+    // footer actually shows GitHub Trending / Topic Discovery / Dev Watch.
+    const reportFiles = getReportFiles();
+    let latestReport = null;
+    if (reportFiles.length > 0) {
+      try {
+        latestReport = JSON.parse(fs.readFileSync(path.join(reportsDir, reportFiles[0]), 'utf8'));
+      } catch {
+        // Best-effort: if the report won't parse, just skip shipped synth.
+      }
+    }
+    return [...feedSources, ...shippedSyntheticSources(latestReport)];
   });
 
   // Community feeds from feeds-snapshot.json (excludes HN and Lobsters)

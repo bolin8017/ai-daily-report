@@ -1,29 +1,39 @@
 {# 技術 tab — tech.vendor / models / benchmarks / aidaptiv #}
+{% set techGroups = [
+  {"key":"vendor","label":"大廠技術"},
+  {"key":"models","label":"新模型"},
+  {"key":"benchmarks","label":"評測"},
+  {"key":"aidaptiv","label":"aiDAPTIV 相關"}
+] %}
 <section class="section-tech tab-panel" id="tech" role="tabpanel" aria-labelledby="tab-tech">
   <h2>技術 — 技術情報</h2>
 
-  {% for group in [
-    {"key":"vendor","label":"大廠技術"},
-    {"key":"models","label":"新模型"},
-    {"key":"benchmarks","label":"評測"},
-    {"key":"aidaptiv","label":"aiDAPTIV 相關"}
-  ] %}
+  <div class="section-filter" role="radiogroup" aria-label="技術 篩選">
+    <button type="button" class="section-chip active" role="radio" aria-checked="true" data-filter="all">全部</button>
+    {%- for g in techGroups %}
+      {% if report.tech[g.key] and (report.tech[g.key] | length) %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="{{ g.key }}">{{ g.label }}</button>{% endif %}
+    {%- endfor %}
+  </div>
+
+  {% for group in techGroups %}
     {% if report.tech[group.key] and (report.tech[group.key] | length) %}
-    <h3 class="sub-section-title">{{ group.label }}</h3>
-    <ol class="tech-list">
-      {%- for item in report.tech[group.key] %}
-      <li id="{{ item.id }}" class="tech-card" data-audience="{{ item.audience | default('general') }}">
-        {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
-        {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
-        {% if item.benchmark_changes and item.benchmark_changes.new_top_5 %}
-        <p class="bench-changes"><em>新 top-5:</em> {{ item.benchmark_changes.new_top_5 | join(', ') }}</p>
-        {% endif %}
-        {% if item.benchmark_changes and item.benchmark_changes.rank_changes %}
-        <p class="bench-changes"><em>排名變動:</em> {{ item.benchmark_changes.rank_changes | join(' · ') }}</p>
-        {% endif %}
-      </li>
-      {%- endfor %}
-    </ol>
+    <div class="sub-section" data-subsection="{{ group.key }}">
+      <h3 class="sub-section-title"><span class="sub-title-text">{{ group.label }}</span><span class="sub-count">{{ report.tech[group.key] | length }} 項</span></h3>
+      <ol class="tech-list">
+        {%- for item in report.tech[group.key] %}
+        <li id="{{ item.id }}" class="tech-card" data-audience="{{ item.audience | default('general') }}">
+          {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
+          {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
+          {% if item.benchmark_changes and item.benchmark_changes.new_top_5 %}
+          <p class="bench-changes"><em>新 top-5:</em> {{ item.benchmark_changes.new_top_5 | join(', ') }}</p>
+          {% endif %}
+          {% if item.benchmark_changes and item.benchmark_changes.rank_changes %}
+          <p class="bench-changes"><em>排名變動:</em> {{ item.benchmark_changes.rank_changes | join(' · ') }}</p>
+          {% endif %}
+        </li>
+        {%- endfor %}
+      </ol>
+    </div>
     {% endif %}
   {% endfor %}
 </section>
