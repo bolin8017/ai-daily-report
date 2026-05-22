@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectTopicsForDate } from '../src/fetchers/github-search.js';
+import { selectTopicsForDate } from '../src/fetchers/providers/github-search-api.js';
 
 describe('selectTopicsForDate', () => {
   const config = {
