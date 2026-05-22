@@ -1,0 +1,99 @@
+import config from '../../lib/config.js';
+import { defineProvider } from './_registry.js';
+
+const TIMEOUT = 30_000;
+
+function defaultUrls() {
+  return process.env.RSSHUB_URL
+    ? [process.env.RSSHUB_URL]
+    : config.sources.rsshub_urls ?? ['https://rsshub.pseudoyu.com'];
+}
+
+function stripHTML(html) {
+  if (!html) return '';
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&[^;]+;/g, ' ')
+    .trim();
+}
+
+function extractHref(html, linkText) {
+  const escaped = linkText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const m = html?.match(new RegExp(`<a[^>]+?href="([^"]+)"[^>]*?>[^<]*?${escaped}`, 'i'));
+  return m?.[1] || null;
+}
+
+function normalizeHN(item, rank) {
+  const sourceUrl =
+    extractHref(item.content_html, 'Source') || extractHref(item.content_html, 'Original');
+  const hnUrl = item.url || `https://news.ycombinator.com/item?id=${item.id}`;
+  return {
+    source: 'hackernews',
+    title: item.title || '',
+    url: sourceUrl || hnUrl,
+    hn_url: hnUrl,
+    hn_id: String(item.id || '').replace(/\D/g, ''),
+    author: item.authors?.[0]?.name || '',
+    published: item.date_published || null,
+    rank,
+  };
+}
+
+function normalizeGeneric(item, sourceName, category, rank) {
+  return {
+    source: sourceName,
+    category,
+    title: item.title || '',
+    url: item.url || item.id || '',
+    description: (item.content_text || stripHTML(item.content_html) || '').slice(0, 500),
+    author: item.authors?.[0]?.name || '',
+    published: item.date_published || null,
+    tags: item.tags || [],
+    rank,
+  };
+}
+
+export async function rsshubProvider(cfg, ctx) {
+  const urls = (cfg.urls ?? defaultUrls()).map((u) => u.replace(/\/$/, ''));
+  const suffix = `${cfg.route}?format=json&limit=${cfg.limit ?? 30}`;
+
+  let lastError;
+  for (let i = 0; i < urls.length; i++) {
+    const fullUrl = `${urls[i]}${suffix}`;
+    try {
+      const res = await fetch(fullUrl, {
+        signal: AbortSignal.timeout(TIMEOUT),
+        headers: { 'User-Agent': 'ai-daily-report/1.0' },
+      });
+      if (!res.ok) {
+        if (res.status >= 400 && res.status < 500) {
+          return { ok: false, items: [], error: `HTTP ${res.status} (route error)` };
+        }
+        lastError = `HTTP ${res.status}`;
+        continue;
+      }
+      const feed = await res.json();
+      const raw = feed.items ?? [];
+      let items;
+      if (cfg.normalize === 'hackernews') {
+        items = raw.map((r, idx) => normalizeHN(r, idx + 1));
+      } else {
+        items = raw.map((r, idx) =>
+          normalizeGeneric(r, cfg.sourceName ?? ctx.sourceId, cfg.category, idx + 1),
+        );
+      }
+      return { ok: true, items, meta: { url: urls[i] } };
+    } catch (err) {
+      lastError = err.message;
+    }
+  }
+  return { ok: false, items: [], error: `all rsshub urls failed: ${lastError}` };
+}
+
+defineProvider('rsshub', rsshubProvider);
