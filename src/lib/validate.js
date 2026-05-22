@@ -40,6 +40,18 @@ try {
   process.exit(1);
 }
 
+// v1.x reports (pre-2026-05-22 IA redesign) lack `schema_version` and have
+// a different top-level shape (signals as array, no ideation/market/tech
+// sections). They predate the strict v2 schema; templates render them via
+// the legacy partial routed by schema_version. Skip them in CI so older
+// archived reports don't break the validation gate when a v2 schema lands.
+if (kind === 'report' && data.schema_version !== 2) {
+  console.error(
+    `↷ ${path} is a v1.x legacy report (no schema_version=2) — skipping v2 schema validation`,
+  );
+  process.exit(0);
+}
+
 const result = schema.safeParse(data);
 if (!result.success) {
   console.error(`✗ ${path} failed ${kind} schema validation:`);
