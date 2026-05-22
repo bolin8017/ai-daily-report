@@ -129,6 +129,36 @@ export default [
   rss('google-ai-blog', 'Google AI Blog', 'AI 公司', 'https://blog.google/technology/ai/rss', {
     homepageUrl: 'https://blog.google/technology/ai/',
   }),
+  rss('openai', 'OpenAI', '大廠技術', 'https://openai.com/news/rss.xml', {
+    homepageUrl: 'https://openai.com/news/',
+  }),
+  rss('microsoft-research-ai', 'Microsoft Research AI', '大廠技術', 'https://www.microsoft.com/en-us/research/feed/', {
+    homepageUrl: 'https://www.microsoft.com/en-us/research/',
+  }),
+  rss('aws-ml-blog', 'AWS ML Blog', '大廠技術', 'https://aws.amazon.com/blogs/machine-learning/feed/', {
+    homepageUrl: 'https://aws.amazon.com/blogs/machine-learning/',
+  }),
+  rss('nvidia-developer-blog', 'NVIDIA Developer Blog', '大廠技術', 'https://developer.nvidia.com/blog/feed', {
+    homepageUrl: 'https://developer.nvidia.com/blog/',
+  }),
+  rss('meta-research', 'Meta Research', '大廠技術', 'https://research.facebook.com/feed', {
+    homepageUrl: 'https://research.facebook.com/',
+  }),
+  rss('samsung-semiconductor', 'Samsung Semiconductor', 'aidaptiv', 'https://news.samsung.com/global/feed', {
+    homepageUrl: 'https://news.samsung.com/global/',
+  }),
+  rss('blocksandfiles', 'BlocksAndFiles', 'aidaptiv', 'https://blocksandfiles.com/feed', {
+    homepageUrl: 'https://blocksandfiles.com/',
+  }),
+  rss('vllm-releases', 'vLLM Releases', 'aidaptiv', 'https://github.com/vllm-project/vllm/releases.atom', {
+    homepageUrl: 'https://github.com/vllm-project/vllm/releases',
+  }),
+  rss('lmcache-releases', 'LMCache Releases', 'aidaptiv', 'https://github.com/LMCache/LMCache/releases.atom', {
+    homepageUrl: 'https://github.com/LMCache/LMCache/releases',
+  }),
+  rss('aidaptiv-phison-releases', 'aiDAPTIV-Phison Releases', 'aidaptiv', 'https://github.com/aiDAPTIV-Phison/aiDAPTIV/releases.atom', {
+    homepageUrl: 'https://github.com/aiDAPTIV-Phison/aiDAPTIV/releases',
+  }),
   rss('phoronix', 'Phoronix', '系統/底層', 'https://www.phoronix.com/rss.php', {
     homepageUrl: 'https://www.phoronix.com/',
   }),
