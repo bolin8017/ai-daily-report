@@ -80,7 +80,13 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: main
+          # Use PR head SHA on pull_request so CI validates the PR's actual
+          # changes; fall back to main for push / schedule / workflow_dispatch.
+          # Without this fallback, PR-context CI tests main's code (not the
+          # PR's), which makes PR validation meaningless and lets regressions
+          # land — exactly what bit us when the strict v2 ReportSchema rejected
+          # yesterday's v1.x report after #30 merged.
+          ref: ${{ github.event.pull_request.head.sha || 'main' }}
 
       - name: Hydrate data/ from data branch
         run: |
