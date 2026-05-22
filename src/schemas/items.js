@@ -15,11 +15,17 @@ export const ItemBase = z
   })
   .passthrough();
 
+// Several auxiliary fields (amount, repo_age, etc.) are documented as strings
+// in the curator prompts but Haiku occasionally returns a raw number ("365"
+// → 365) or null. Templates only stringify them for display, so accepting all
+// three is harmless and avoids a hard pipeline abort on cosmetic LLM drift.
+const StringNumberOrNull = z.union([z.string(), z.number(), z.null()]).optional();
+
 export const ShippedItem = ItemBase.extend({
   name: z.string(),
   desc: z.string().optional(),
   stars: z.number().nullable().optional(),
-  repo_age: z.string().optional(),
+  repo_age: StringNumberOrNull,
   language: z.string().nullable().optional(),
   relevance: z.string().optional(),
   topic_match: z.array(z.string()).optional(),
@@ -35,7 +41,7 @@ export const PulseItem = ItemBase.extend({
 export const MarketItem = ItemBase.extend({
   title: z.string(),
   takeaway: z.string().optional(),
-  amount: z.string().optional(),
+  amount: StringNumberOrNull,
   companies: z.array(z.string()).optional(),
   region: z.string().optional(),
 });
