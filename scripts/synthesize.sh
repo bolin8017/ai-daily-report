@@ -54,20 +54,36 @@ PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
     printf '\n\n---\n\n'
     cat "$QUALITY_FILE_PATH"
   fi
-  printf '\n\n---\n\n## Execute now\n\n'
-  printf 'Today is %s. Use the Read tool on the inputs listed above (curated/*.json + staging files + memory).\n\n' "$TODAY"
-  printf '**OUTPUT CONTRACT:**\n\n'
-  printf '- Write to `%s` ONLY the editorial layer:\n' "$EDITORIAL_FILE"
-  printf '  - `schema_version: "2.1-editorial"` (string literal)\n'
-  printf '  - `date: "%s"` (string)\n' "$TODAY"
-  printf '  - `theme: "%s"` (string)\n' "$ACTIVE_THEME"
-  printf '  - `lead: {html: "..."}`\n'
-  printf '  - `signals: {focus, sleeper, contrarian, predictions, prediction_updates}`\n'
-  printf '  - `ideation: {general, work}`\n\n'
-  printf '- Do NOT include `shipped`, `pulse`, `market`, `tech` sections in editorial.json. These are merged in by a separate step that runs after this one.\n\n'
-  printf '- Reference items in `source_links` by their **stable ids** (e.g., `shipped.trending.0:vllm-project/vllm`) — read the ids from `data/staging/curated/*.json`. The merge step validates every source_link id; dangling links abort the pipeline.\n\n'
-  printf '- Also write updated memory to `data/memory.json`.\n\n'
-  printf 'Final actions are two Write calls (editorial, then memory). Do not output prose, acknowledgement, or explanation. Begin with Read calls immediately.\n'
+  # Use a heredoc rather than per-line printf — printf treats argument
+  # starting with "-" as a flag, which silently dropped the OUTPUT
+  # CONTRACT bullets in a prior version of this script.
+  cat <<EOF
+
+
+---
+
+## Execute now
+
+Today is ${TODAY}. Use the Read tool on the inputs listed above (curated/*.json + staging files + memory).
+
+**OUTPUT CONTRACT:**
+
+- Write to \`${EDITORIAL_FILE}\` ONLY the editorial layer:
+  - \`schema_version: "2.1-editorial"\` (string literal)
+  - \`date: "${TODAY}"\` (string)
+  - \`theme: "${ACTIVE_THEME}"\` (string)
+  - \`lead: {html: "..."}\`
+  - \`signals: {focus, sleeper, contrarian, predictions, prediction_updates}\`
+  - \`ideation: {general, work}\`
+
+- Do NOT include \`shipped\`, \`pulse\`, \`market\`, \`tech\` sections in editorial.json. These are merged in by a separate step that runs after this one.
+
+- Reference items in \`source_links\` by their **stable ids** (e.g., \`shipped.trending.0:vllm-project/vllm\`) — read the ids from \`data/staging/curated/*.json\`. The merge step validates every source_link id; dangling links abort the pipeline.
+
+- Also write updated memory to \`data/memory.json\`.
+
+Final actions are two Write calls (editorial, then memory). Do not output prose, acknowledgement, or explanation. Begin with Read calls immediately.
+EOF
 } > "$PROMPT_FILE"
 
 echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"

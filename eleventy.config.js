@@ -101,8 +101,10 @@ export default function (eleventyConfig) {
 
     if (report.lead?.html) report.lead.html = s(report.lead.html);
 
-    // v2.0 (schema_version === 2): signals is an object; predictions live inside it.
-    if (report.schema_version === 2) {
+    // v2.x (schema_version 2 or 2.1): signals is an object; predictions live inside it.
+    // 2.1 = post-output-split format (editorial.json + merge); same shape as 2.0
+    // for renderers — the difference is in the upstream pipeline, not the on-disk shape.
+    if (report.schema_version === 2 || report.schema_version === 2.1) {
       const sig = report.signals ?? {};
       for (const focus of sig.focus ?? []) {
         if (focus.body) focus.body = s(focus.body);
