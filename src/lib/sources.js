@@ -1,5 +1,6 @@
 import baseRegistry from '../sources/registry.js';
-import config from './config.js';
+import { ACTIVE_THEME } from './config.js';
+import { loadTheme } from './theme.js';
 
 export function mergeSources(base, overlay) {
   const map = new Map(base.map((s) => [s.id, s]));
@@ -9,9 +10,11 @@ export function mergeSources(base, overlay) {
   return [...map.values()];
 }
 
-export function getEffectiveSources(lensId) {
-  if (!lensId) return baseRegistry.filter((s) => s.enabled !== false);
-  const lens = (config.lenses ?? []).find((l) => l.id === lensId);
-  const overlay = lens?.sources_overlay?.sources ?? [];
+// Resolve the effective source list for the active theme: base registry
+// merged with the theme's phison_overlay sources, filtered to enabled
+// entries. Called by src/collect.js at pipeline start.
+export async function resolveEffectiveSources() {
+  const theme = await loadTheme(ACTIVE_THEME);
+  const overlay = theme.sources?.phison_overlay?.sources ?? [];
   return mergeSources(baseRegistry, overlay).filter((s) => s.enabled !== false);
 }

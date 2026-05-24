@@ -28,12 +28,11 @@ import './fetchers/providers/native-rss.js';
 import './fetchers/providers/rsshub.js';
 
 import { runAll } from './fetchers/run-all.js';
-import { commitAndPush } from './lib/commit.js';
 import { condenseAll } from './lib/condense.js';
 import config from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
-import { getEffectiveSources } from './lib/sources.js';
+import { resolveEffectiveSources } from './lib/sources.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
 const FEED_SOURCE_IDS = new Set([
@@ -138,7 +137,7 @@ async function main() {
   // Each source has its own ordered chain (e.g. RSSHub → HN Firebase → Jina →
   // Firecrawl for HN), so one tool failure doesn't lose the content.
   banner('fetching sources');
-  const sources = getEffectiveSources();
+  const sources = await resolveEffectiveSources();
   const { results, degraded } = await runAll(sources, {
     date,
     minHealthy: Math.ceil(sources.length / 3),
@@ -220,19 +219,14 @@ async function main() {
     console.error(`  ✓ ${path}`);
   }
 
-  // Phase 6 — commit + push
+  // Phase 6 — staging + feeds-snapshot are Docker-volume-only ephemeral
+  // artifacts. The data branch stays trimmed to reports + memory.json
+  // (Stage 4 / analyze.sh commits those once synthesis succeeds).
   if (SKIP_PUSH) {
-    banner('SKIP_PUSH — stopping before commit');
+    banner('SKIP_PUSH — stopping before exit');
     return;
   }
-
-  banner('committing staging data');
-  const { pushed, sha } = await commitAndPush({
-    date,
-    message: `data: ${date} staging data collected`,
-    paths: ['data/staging/', 'data/feeds-snapshot.json'],
-  });
-  banner(pushed ? `done — pushed ${sha}` : 'done — nothing to push');
+  banner('staging data is volume-only — nothing to commit at collect stage');
 }
 
 main().catch((err) => {

@@ -1,0 +1,35 @@
+{# 市場 tab — market.ma / funding / policy / taiwan #}
+{% set marketGroups = [
+  {"key":"ma","label":"合作併購"},
+  {"key":"funding","label":"募資財報"},
+  {"key":"policy","label":"政策法規"},
+  {"key":"taiwan","label":"台灣動態"}
+] %}
+<section class="section-market tab-panel" id="market" role="tabpanel" aria-labelledby="tab-market">
+  <h2>市場 — 商業情報</h2>
+
+  <div class="section-filter" role="radiogroup" aria-label="市場 篩選">
+    <button type="button" class="section-chip active" role="radio" aria-checked="true" data-filter="all">全部</button>
+    {%- for g in marketGroups %}
+      {% if report.market[g.key] and (report.market[g.key] | length) %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="{{ g.key }}">{{ g.label }}</button>{% endif %}
+    {%- endfor %}
+  </div>
+
+  {% for group in marketGroups %}
+    {% if report.market[group.key] and (report.market[group.key] | length) %}
+    <div class="sub-section" data-subsection="{{ group.key }}">
+      <h3 class="sub-section-title"><span class="sub-title-text">{{ group.label }}</span><span class="sub-count">{{ report.market[group.key] | length }} 項</span></h3>
+      <ol class="market-list">
+        {%- for item in report.market[group.key] %}
+        <li id="{{ item.id }}" class="market-card" data-audience="{{ item.audience | default('general') }}">
+          {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.title }}</strong></a>{% else %}<strong>{{ item.title }}</strong>{% endif %}
+          {% if item.amount %}<span class="amount">{{ item.amount }}</span>{% endif %}
+          {% if item.companies and (item.companies | length) %}<span class="companies">{{ item.companies | join(' · ') }}</span>{% endif %}
+          {% if item.takeaway %}<p>{{ item.takeaway }}</p>{% endif %}
+        </li>
+        {%- endfor %}
+      </ol>
+    </div>
+    {% endif %}
+  {% endfor %}
+</section>

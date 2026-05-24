@@ -17,10 +17,19 @@ STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 TODAY="$(TZ=Asia/Taipei date +%F)"
 REPORT_FILE="data/reports/${TODAY}.json"
+EDITORIAL_FILE="${STAGING_DIR}/editorial.json"
 
 # CLI default 32K output cap truncates the synthesizer once curated bundles +
 # editorial layer exceed it. Sonnet 4.6's native cap is 64K.
+# (Phase 2 FEATURE_MERGE_STEP=1 removes curated bundles from synth output,
+# so editorial-only output rarely exceeds 6K — but keeping the headroom
+# in case editorial grows.)
 export CLAUDE_CODE_MAX_OUTPUT_TOKENS="${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-64000}"
+
+# Resolve prompt paths from the active theme bundle.
+ACTIVE_THEME="${ACTIVE_THEME:-ai-builder}"
+SYNTH_PROMPT_FILE_PATH="themes/${ACTIVE_THEME}/synthesizer.md"
+QUALITY_FILE_PATH="themes/${ACTIVE_THEME}/quality.md"
 
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR" "data/reports"
@@ -33,18 +42,48 @@ for sec in shipped pulse; do
 done
 
 PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
-# Assemble synthesizer prompt + daily-report-quality slop rules + explicit
-# "Execute now" imperative. Without the imperative the model ack-chats; with
-# it, the synthesizer immediately reads inputs and writes the report.
+# Assemble synthesizer prompt + quality slop rules + explicit "Execute
+# now" imperative. The synthesizer writes only the editorial layer
+# (lead/signals/ideation) to data/staging/editorial.json; a downstream
+# merge step composes the final report from editorial + curated/*.json.
+# Without the imperative the model ack-chats; with it, the synthesizer
+# immediately reads inputs and writes the output.
 {
-  cat .claude/synthesizer.md
-  if [ -f .claude/daily-report-quality.md ]; then
+  cat "$SYNTH_PROMPT_FILE_PATH"
+  if [ -f "$QUALITY_FILE_PATH" ]; then
     printf '\n\n---\n\n'
-    cat .claude/daily-report-quality.md
+    cat "$QUALITY_FILE_PATH"
   fi
-  printf '\n\n---\n\n## Execute now\n\n'
-  printf 'Today is %s. Use the Read tool on the inputs listed above. Synthesize the editorial layer (lead, signals, ideation) and copy curated sub-groups verbatim. Use the Write tool to write the full v2.0 report to `data/reports/%s.json` and the updated memory to `data/memory.json`.\n\n' "$TODAY" "$TODAY"
-  printf 'Do not output prose, acknowledgement, or explanation. Begin with Read calls immediately. Final actions are two Write calls (report, then memory).\n'
+  # Use a heredoc rather than per-line printf — printf treats argument
+  # starting with "-" as a flag, which silently dropped the OUTPUT
+  # CONTRACT bullets in a prior version of this script.
+  cat <<EOF
+
+
+---
+
+## Execute now
+
+Today is ${TODAY}. Use the Read tool on the inputs listed above (curated/*.json + staging files + memory).
+
+**OUTPUT CONTRACT:**
+
+- Write to \`${EDITORIAL_FILE}\` ONLY the editorial layer:
+  - \`schema_version: "2.1-editorial"\` (string literal)
+  - \`date: "${TODAY}"\` (string)
+  - \`theme: "${ACTIVE_THEME}"\` (string)
+  - \`lead: {html: "..."}\`
+  - \`signals: {focus, sleeper, contrarian, predictions, prediction_updates}\`
+  - \`ideation: {general, work}\`
+
+- Do NOT include \`shipped\`, \`pulse\`, \`market\`, \`tech\` sections in editorial.json. These are merged in by a separate step that runs after this one.
+
+- Reference items in \`source_links\` by their **stable ids** (e.g., \`shipped.trending.0:vllm-project/vllm\`) — read the ids from \`data/staging/curated/*.json\`. The merge step validates every source_link id; dangling links abort the pipeline.
+
+- Also write updated memory to \`data/memory.json\`.
+
+Final actions are two Write calls (editorial, then memory). Do not output prose, acknowledgement, or explanation. Begin with Read calls immediately.
+EOF
 } > "$PROMPT_FILE"
 
 echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
@@ -73,22 +112,21 @@ if [ "$RC" -ne 0 ]; then
   exit 1
 fi
 
-if [ ! -f "$REPORT_FILE" ]; then
-  echo "[synthesize.sh] $REPORT_FILE missing — synthesizer didn't Write it" >&2
+if [ ! -f "$EDITORIAL_FILE" ]; then
+  echo "[synthesize.sh] $EDITORIAL_FILE missing — synthesizer didn't Write it" >&2
   exit 2
 fi
 
 # Safety net: Sonnet occasionally drifts on `status` enum (e.g. invents
 # "needs_revision"). Coerce unknown values to "unverifiable" before schema
-# validation rather than throwing away 35 minutes of synthesis. The prompt
-# already tells the model the 4 valid values; this is the last-line defense.
+# validation rather than throwing away 35 minutes of synthesis.
 node -e "
   import('node:fs/promises').then(async fs => {
     const VALID = new Set(['pending', 'resolved-yes', 'resolved-no', 'unverifiable']);
-    const report = JSON.parse(await fs.readFile('$REPORT_FILE', 'utf8'));
+    const doc = JSON.parse(await fs.readFile('$EDITORIAL_FILE', 'utf8'));
     let fixed = 0;
     for (const key of ['predictions', 'prediction_updates']) {
-      for (const p of report.signals?.[key] ?? []) {
+      for (const p of doc.signals?.[key] ?? []) {
         if (p && typeof p.status === 'string' && !VALID.has(p.status)) {
           console.error('[synthesize.sh] coercing status=\"' + p.status + '\" -> unverifiable on ' + (p.id ?? '?'));
           p.status = 'unverifiable';
@@ -97,22 +135,22 @@ node -e "
       }
     }
     if (fixed > 0) {
-      await fs.writeFile('$REPORT_FILE', JSON.stringify(report, null, 2));
+      await fs.writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
       console.error('[synthesize.sh] coerced ' + fixed + ' invalid status value(s)');
     }
   });
 "
 
 if ! node -e "
-  import('./src/schemas/report.js').then(async m => {
+  import('./src/schemas/editorial.js').then(async m => {
     const fs = await import('node:fs/promises');
-    const report = JSON.parse(await fs.readFile('$REPORT_FILE','utf8'));
-    m.ReportSchema.parse(report);
-    console.log('[synthesize.sh] report validates against ReportSchema v2.0');
-  }).catch(e => { console.error('[synthesize.sh] VALIDATION FAILED:', e.message); process.exit(2); });
+    const doc = JSON.parse(await fs.readFile('$EDITORIAL_FILE','utf8'));
+    m.EditorialSchema.parse(doc);
+    console.log('[synthesize.sh] editorial validates against EditorialSchema 2.1-editorial');
+  }).catch(e => { console.error('[synthesize.sh] EDITORIAL VALIDATION FAILED:', e.message); process.exit(2); });
 "; then
   exit 2
 fi
 
-echo "[synthesize.sh] done. Report: $REPORT_FILE"
+echo "[synthesize.sh] done. editorial: $EDITORIAL_FILE"
 exit 0

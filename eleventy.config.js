@@ -2,9 +2,29 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sanitizeHtml from 'sanitize-html';
+import YAML from 'yaml';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reportsDir = path.join(__dirname, 'data', 'reports');
+
+// Theme bundle integration. ui-strings.yaml + theme.yaml are exposed
+// as Eleventy global data; section partials in
+// themes/$ACTIVE_THEME/sections/ are reachable via Nunjucks search
+// paths. The legacy v2/section-*.njk partials still drive the current
+// rendering path; future template edits can switch to theme-relative
+// includes without changing the build pipeline.
+const ACTIVE_THEME = process.env.ACTIVE_THEME || 'ai-builder';
+
+function loadThemeUiStrings(themeName) {
+  const p = path.join(__dirname, 'themes', themeName, 'ui-strings.yaml');
+  if (!fs.existsSync(p)) return null;
+  try {
+    return YAML.parse(fs.readFileSync(p, 'utf8'));
+  } catch (err) {
+    console.error(`[eleventy] theme ui-strings parse failed: ${err.message}`);
+    return null;
+  }
+}
 
 // List YYYY-MM-DD.json files in data/reports/, newest first.
 function getReportFiles() {
@@ -22,6 +42,19 @@ export default function (eleventyConfig) {
   // Cache-busting: build timestamp appended to asset URLs so CDN/browser
   // caches are invalidated on every deploy.
   eleventyConfig.addGlobalData('cacheBust', () => Date.now());
+
+  // Theme bundle globals.
+  eleventyConfig.addGlobalData('ACTIVE_THEME', ACTIVE_THEME);
+  const ui = loadThemeUiStrings(ACTIVE_THEME);
+  if (ui) eleventyConfig.addGlobalData('uiStrings', ui);
+  const themeManifestPath = path.join(__dirname, 'themes', ACTIVE_THEME, 'theme.yaml');
+  if (fs.existsSync(themeManifestPath)) {
+    try {
+      eleventyConfig.addGlobalData('theme', YAML.parse(fs.readFileSync(themeManifestPath, 'utf8')));
+    } catch (err) {
+      console.error(`[eleventy] theme.yaml parse failed: ${err.message}`);
+    }
+  }
 
   // --- Filters ---
 
@@ -68,8 +101,10 @@ export default function (eleventyConfig) {
 
     if (report.lead?.html) report.lead.html = s(report.lead.html);
 
-    // v2.0 (schema_version === 2): signals is an object; predictions live inside it.
-    if (report.schema_version === 2) {
+    // v2.x (schema_version 2 or 2.1): signals is an object; predictions live inside it.
+    // 2.1 = post-output-split format (editorial.json + merge); same shape as 2.0
+    // for renderers — the difference is in the upstream pipeline, not the on-disk shape.
+    if (report.schema_version === 2 || report.schema_version === 2.1) {
       const sig = report.signals ?? {};
       for (const focus of sig.focus ?? []) {
         if (focus.body) focus.body = s(focus.body);

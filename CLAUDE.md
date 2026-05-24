@@ -203,8 +203,73 @@ Optional:
 - `REPORT_TIMEZONE` — default `Asia/Taipei`.
 - `CLAUDE_MODEL` — override the model passed to `claude -p`; default `claude-opus-4-6`.
 - `SKIP_PUSH=1` — skip `git push` in both stages; also accessible as `--skip-push` CLI flag on `src/collect.js`.
+- `ACTIVE_THEME` — default `ai-builder`. Name of the theme directory under `themes/` to activate. See "Themes" section below.
+- `HOT_DAYS` — default `60`. Reports newer than this stay on the `data` branch; older ones archive monthly to GitHub Releases.
+- `HYDRATE_MONTHS` — default `12`. How many months of archived reports the CI build pulls back from Releases.
 
 See `.env.example` for all variables.
+
+## Themes
+
+The pipeline reads its persona, voice, anti-slop rules, source list, and section definitions from `themes/<ACTIVE_THEME>/`. The default theme is `ai-builder`. The structure is designed so that swapping focus (e.g., from "AI builder" to "ML researcher" or "Web3 developer") becomes a single-directory edit rather than touching 8+ files across the repo.
+
+### Theme structure
+
+```
+themes/<name>/
+├── theme.yaml              # manifest: persona, model assignment, sections list
+├── sources.yaml            # GitHub topics + RSS feed config (ported from config.json)
+├── ui-strings.yaml         # tab labels, site title, archive strings
+├── lens.md                 # persona / voice description (was .claude/lenses/<name>.md)
+├── synthesizer.md          # editorial prompt (was .claude/synthesizer.md)
+├── quality.md              # anti-slop rules (was .claude/daily-report-quality.md)
+└── sections/
+    ├── _shared.md          # shared curator prompt fragment
+    └── <section-id>/
+        ├── manifest.yaml   # id, tab_label, critical, audience_split, groups, paths
+        ├── curator.md      # curator prompt for this section
+        ├── schema.js       # Zod sub-schema for items in this section
+        └── partial.njk     # 11ty render partial
+```
+
+### Swap-a-theme workflow
+
+```bash
+# 1. Copy current theme as starting point
+cp -r themes/ai-builder themes/ml-researcher
+
+# 2. Edit (everything in one directory)
+#    themes/ml-researcher/theme.yaml          — display name, persona, focus
+#    themes/ml-researcher/lens.md             — voice / audience
+#    themes/ml-researcher/sources.yaml        — relevant feeds, GitHub topics
+#    themes/ml-researcher/sections/*/curator.md
+#    themes/ml-researcher/ui-strings.yaml     — tab labels
+
+# 3. Switch
+ACTIVE_THEME=ml-researcher bash scripts/run.sh --full
+```
+
+### Add-a-section workflow
+
+```bash
+mkdir -p themes/ai-builder/sections/research
+# Write manifest.yaml + curator.md + schema.js + partial.njk
+# Add to themes/ai-builder/theme.yaml `sections:` list:
+#   - id: research
+#     order: 55
+#     critical: false
+```
+
+The pipeline's next run automatically picks up the new section — no edits needed in `src/`, `scripts/`, or `eleventy.config.js`. Schema composition is dynamic via `buildReportSchema()` (see `src/schemas/report.js`); 11ty partial discovery is configured in `eleventy.config.js`.
+
+### Theme loader API
+
+`src/lib/theme.js`:
+- `loadTheme(name)` — returns parsed manifest + resolved paths + sources + ui_strings
+- `loadSection(theme, id)` — returns section manifest with resolved paths (curator/schema/partial)
+- `listActiveSections(theme)` — returns all sections in display order
+
+Used by `src/curators/_base.js` (curator prompt resolution), `src/lib/sources.js` (`resolveEffectiveSources()`), and `src/schemas/report.js` (`buildReportSchema()`). Test coverage in `tests/theme.test.js`.
 
 ## CI/CD
 

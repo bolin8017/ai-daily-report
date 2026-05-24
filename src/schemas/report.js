@@ -88,3 +88,39 @@ export const ReportSchema = z
     tech: TechSection,
   })
   .passthrough();
+
+// Dynamic ReportSchema composer. Reads the active theme's manifest +
+// per-section schemas to build a Zod schema that matches the composed
+// v2.1 report shape. Adding / removing a section is a folder-level
+// operation in themes/<theme>/sections/.
+import { ACTIVE_THEME } from '../lib/config.js';
+import { listActiveSections } from '../lib/theme.js';
+
+export async function buildReportSchema(themeName = ACTIVE_THEME) {
+  const sections = await listActiveSections(themeName);
+  const sectionShapes = {};
+  for (const sec of sections) {
+    const mod = await import(`../../themes/${themeName}/sections/${sec.id}/schema.js`);
+    sectionShapes[sec.id] = mod.sectionSchema;
+  }
+  return z
+    .object({
+      // Accepts legacy v2 reports (literal 2) and post-cutover v2.1 reports.
+      // Legacy 2 reports remain renderable until they age out of the
+      // 60-day hot window (current hot reports are pre-cutover).
+      schema_version: z.union([z.literal(2), z.literal(2.1)]),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      meta: ReportMetaSchema.optional(),
+      lead: z.object({ html: z.string() }),
+      signals: SignalsSection,
+      ideation: IdeationSection,
+      ...sectionShapes,
+    })
+    .passthrough();
+}
+
+// Always returns the composed schema; the previous flag-gated static
+// fallback is gone after Phase 4 cleanup.
+export async function resolveReportSchema() {
+  return buildReportSchema();
+}

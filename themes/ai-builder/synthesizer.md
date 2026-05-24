@@ -23,12 +23,20 @@ Memory:
 
 ## Output (write via Write tool)
 
-- `data/reports/<TODAY>.json` — full v2.0 unified report (ReportSchema-validated)
+- `data/staging/editorial.json` — editorial layer ONLY (lead + signals + ideation). A separate mechanical merge step composes the final `data/reports/<TODAY>.json` from this editorial.json + the curated/*.json inputs.
 - `data/memory.json` — updated memory
 
-**Today's date** comes from `data/staging/metadata.json` field `date`. Use it for the report's `date` field AND the filename.
+**Editorial.json shape** (EditorialSchema 2.1-editorial):
+- `schema_version`: literal string `"2.1-editorial"`
+- `date`: string `"YYYY-MM-DD"` (from `data/staging/metadata.json` field `date`)
+- `theme`: string (the active theme name, e.g. `"ai-builder"`)
+- `lead`: `{html: string}` — the editorial lead block
+- `signals`: `{focus, sleeper, contrarian, predictions, prediction_updates}` — same shape as before
+- `ideation`: `{general, work}` — same shape as before
 
-**The curated sub-groups in your output (shipped / pulse / market / tech) MUST be copied verbatim from the curated/*.json inputs** — do not re-curate, do not drop items, do not rewrite annotations. Your job is the editorial layer + cross-source synthesis.
+**You MUST NOT include `shipped`, `pulse`, `market`, `tech` sections** in editorial.json. Those are mechanically merged in from `data/staging/curated/*.json` by the post-synth merge step. Re-emitting curated items here is the bug that caused the 32K output-token cap incident on 2026-05-24.
+
+**Source links must reference stable ids from curated/*.json.** Read the ids from `data/staging/curated/shipped.json`, `pulse.json`, `market.json`, `tech.json` and cite items by those ids in `source_links[]` arrays. The merge step validates every source_link id and aborts the pipeline if any are dangling.
 
 ## Reader
 

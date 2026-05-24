@@ -19,3 +19,16 @@ const raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 const parsed = ConfigSchema.parse(raw);
 
 export default Object.freeze(parsed);
+
+// Active theme directory under themes/. Resolved by src/lib/theme.js
+// loaders; used throughout the pipeline for prompt / sources / sections
+// path resolution.
+export const ACTIVE_THEME = process.env.ACTIVE_THEME || 'ai-builder';
+
+// Storage hot/cold tuning knobs. The data branch keeps only the last
+// HOT_DAYS of reports; older reports archive monthly to GitHub Releases
+// as archive-YYYY-MM tags with reports-YYYY-MM.tar.gz attached. The CI
+// build step hydrates the most recent HYDRATE_MONTHS back into
+// data/reports/ before 11ty builds the site.
+export const HOT_DAYS = Number.parseInt(process.env.HOT_DAYS ?? '60', 10);
+export const HYDRATE_MONTHS = Number.parseInt(process.env.HYDRATE_MONTHS ?? '12', 10);

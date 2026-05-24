@@ -6,9 +6,10 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ACTIVE_THEME } from '../lib/config.js';
+import { loadSection } from '../lib/theme.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const CURATORS_DIR = join(__dirname, '..', '..', '.claude', 'curators');
 
 /**
  * Build a deterministic stable id for an item.
@@ -55,14 +56,18 @@ export function stableId(opts) {
 }
 
 /**
- * Read and concatenate the shared voice rules + a per-section curator prompt.
+ * Read and concatenate the shared voice rules + a per-section curator
+ * prompt from the active theme bundle.
  *
  * @param {string} section 'shipped' | 'pulse' | 'market' | 'tech'
  * @returns {Promise<string>}
  */
 export async function mergePrompts(section) {
-  const shared = await readFile(join(CURATORS_DIR, '_shared.md'), 'utf8');
-  const sectionPrompt = await readFile(join(CURATORS_DIR, `${section}.md`), 'utf8');
+  const sec = await loadSection(ACTIVE_THEME, section);
+  const sectionPath = sec.paths.curator_prompt;
+  const sharedPath = join(dirname(sectionPath), '..', '_shared.md');
+  const shared = await readFile(sharedPath, 'utf8');
+  const sectionPrompt = await readFile(sectionPath, 'utf8');
   return `${shared}\n\n---\n\n${sectionPrompt}`;
 }
 

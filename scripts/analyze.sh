@@ -47,6 +47,14 @@ if [ "$FEATURE_NEW_PIPELINE" = "1" ]; then
     exit 1
   fi
 
+  # Synthesizer wrote editorial.json only. Compose the final report.json
+  # mechanically from editorial + curated/*.json.
+  echo "[analyze] composing report from editorial + curated"
+  if ! bash scripts/merge-report.sh "$DATE"; then
+    echo "[analyze] FATAL: merge-report failed — aborting" >&2
+    exit 1
+  fi
+
   REPORT_FILE="data/reports/${DATE}.json"
 
   if [ "$SKIP_PUSH" = "1" ]; then

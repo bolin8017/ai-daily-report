@@ -1,0 +1,52 @@
+# Theme manifest — owns persona, model assignment, section list, and path
+# resolution for the "AI engineer who builds" daily brief.
+#
+# Activated by ACTIVE_THEME=ai-builder env (current default).
+
+name: ai-builder
+display_name: "AI Engineer Daily Brief"
+description: >
+  Daily creative tech brief for AI engineers who build (RAG / VLM /
+  fine-tuning / agent / MCP).
+
+persona:
+  audience: "AI engineers who build (not PMs, founders, decision-makers)"
+  voice: "senior analyst briefing busy CTO (FT/Bloomberg/Information/Stratechery style)"
+
+focus:
+  primary_domains: [rag, llm, agent, mcp, vlm, fine-tuning]
+  exclude_signals:
+    - "vendor strategy talk"
+    - "decision-maker territory"
+
+llm:
+  curator_model: claude-haiku-4-5
+  synthesizer_model: claude-sonnet-4-6
+  # Output budgets — surfaced in Phase 2 (Output split). Listed here for forward compat.
+  output_budget:
+    editorial_tokens_hard: 16000
+    editorial_tokens_soft: 6000
+
+prompt_files:
+  synthesizer: synthesizer.md
+  lens: lens.md
+  quality: quality.md
+
+sources_file: sources.yaml
+ui_strings_file: ui-strings.yaml
+
+# Section list — order controls tab display order in 11ty templates.
+# `critical: true` means curate failure aborts the pipeline.
+sections:
+  - id: shipped
+    order: 30
+    critical: true
+  - id: pulse
+    order: 40
+    critical: true
+  - id: market
+    order: 50
+    critical: false
+  - id: tech
+    order: 60
+    critical: false
