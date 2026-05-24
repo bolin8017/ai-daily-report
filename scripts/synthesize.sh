@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Stage 3: Synthesize — single claude -p Sonnet call.
-# Reads curated/* + raw staging + memory, writes v2.0 report + updated memory.
+# Reads curated/* + raw staging + memory, writes ONLY the editorial layer
+# (lead/signals/ideation) to data/staging/editorial.json + updated memory.
+# Stage 4 (merge-report.sh) composes the final report from editorial +
+# curated/*; the synthesizer never re-emits curated content.
 #
 # Env:
 #   CLAUDE_MODEL — model (default: claude-sonnet-4-6)
@@ -19,11 +22,10 @@ TODAY="$(TZ=Asia/Taipei date +%F)"
 REPORT_FILE="data/reports/${TODAY}.json"
 EDITORIAL_FILE="${STAGING_DIR}/editorial.json"
 
-# CLI default 32K output cap truncates the synthesizer once curated bundles +
-# editorial layer exceed it. Sonnet 4.6's native cap is 64K.
-# (Phase 2 FEATURE_MERGE_STEP=1 removes curated bundles from synth output,
-# so editorial-only output rarely exceeds 6K — but keeping the headroom
-# in case editorial grows.)
+# CLI default output cap is 32K. The editorial-only output rarely exceeds
+# ~6K tokens (curated bundles are no longer in the synth output — that's
+# what blew the 32K cap on 2026-05-24), but keep 64K headroom in case the
+# editorial layer grows. 64K is Sonnet 4.6's native max output.
 export CLAUDE_CODE_MAX_OUTPUT_TOKENS="${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-64000}"
 
 # Resolve prompt paths from the active theme bundle.

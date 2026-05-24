@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Stage 2: Analysis. Invokes Claude Code to produce daily reports per lens.
+# Orchestrates the LLM + merge stages: Stage 2 (curate) → Stage 3
+# (synthesize → editorial.json) → Stage 4 (merge → report.json) →
+# validate → commit (reports + memory to the data branch).
 #
-# Reads condensed data from data/staging/ (committed by Stage 1), and for
-# each enabled lens in config.json → lenses[], assembles the lens-specific
-# agent prompt + shared quality rules, invokes claude -p, validates output,
-# and commits.
+# Reads condensed data from data/staging/ (written by Stage 1). The active
+# theme (themes/$ACTIVE_THEME/) supplies all prompts + section definitions.
 #
-# Critical lenses (e.g., ai-builder) abort the deploy on failure; non-critical
-# lenses (e.g., phison-aidaptiv) log degraded and continue.
+# A legacy lens-based single-stage path is preserved behind
+# FEATURE_NEW_PIPELINE=0 (predates the 2026-05-22 redesign; rollback only).
 #
 # Prerequisites:
 #   - Claude CLI authenticated (~/.claude valid)
@@ -27,15 +27,14 @@ MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
 SKIP_PUSH="${SKIP_PUSH:-0}"
 
 # ── Pipeline routing ──────────────────────────────────────────────
-# FEATURE_NEW_PIPELINE=1 (default after IA redesign): run new
-# Stage 2 curate + Stage 3 synthesize, output v2.0 unified report.
+# FEATURE_NEW_PIPELINE=1 (default): run curate → synthesize → merge,
+# producing a schema 2.1 unified report.
 # FEATURE_NEW_PIPELINE=0: fall through to legacy lens-based pipeline
-# below — preserved as rollback path until new pipeline is proven in
-# production. Toggle via ~/.ai-daily-report.env on the VM.
+# below — preserved as rollback path. Toggle via ~/.ai-daily-report.env.
 FEATURE_NEW_PIPELINE="${FEATURE_NEW_PIPELINE:-1}"
 
 if [ "$FEATURE_NEW_PIPELINE" = "1" ]; then
-  echo "[analyze] $(date -Iseconds) — new pipeline: curate → synthesize (date=${DATE})"
+  echo "[analyze] $(date -Iseconds) — pipeline: curate → synthesize → merge (date=${DATE})"
 
   if ! bash scripts/curate.sh; then
     echo "[analyze] FATAL: curate failed — aborting" >&2
