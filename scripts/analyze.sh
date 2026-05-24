@@ -47,6 +47,16 @@ if [ "$FEATURE_NEW_PIPELINE" = "1" ]; then
     exit 1
   fi
 
+  # Phase 2 (FEATURE_MERGE_STEP=1) — synthesize wrote editorial.json only.
+  # Compose final report.json mechanically from editorial + curated/*.json.
+  if [ "${FEATURE_MERGE_STEP:-0}" = "1" ]; then
+    echo "[analyze] FEATURE_MERGE_STEP=1 — composing report from editorial + curated"
+    if ! bash scripts/merge-report.sh "$DATE"; then
+      echo "[analyze] FATAL: merge-report failed — aborting" >&2
+      exit 1
+    fi
+  fi
+
   REPORT_FILE="data/reports/${DATE}.json"
 
   if [ "$SKIP_PUSH" = "1" ]; then

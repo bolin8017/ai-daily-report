@@ -26,3 +26,11 @@ export default Object.freeze(parsed);
 // Default off until W1 validation gate completes.
 export const FEATURE_THEME_BUNDLE = process.env.FEATURE_THEME_BUNDLE === '1';
 export const ACTIVE_THEME = process.env.ACTIVE_THEME || 'ai-builder';
+
+// Phase 2 of pipeline redesign — output split.
+// When 1, the synthesizer writes only data/staging/editorial.json (lead /
+// signals / ideation + memory); a mechanical merge step composes the
+// final data/reports/<date>.json from editorial + curated/*.json. This
+// eliminates the 32K output-token cap risk by moving the bulk of report
+// content (curated items) out of the LLM's responsibility.
+export const FEATURE_MERGE_STEP = process.env.FEATURE_MERGE_STEP === '1';
