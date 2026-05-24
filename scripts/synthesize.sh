@@ -22,6 +22,17 @@ REPORT_FILE="data/reports/${TODAY}.json"
 # editorial layer exceed it. Sonnet 4.6's native cap is 64K.
 export CLAUDE_CODE_MAX_OUTPUT_TOKENS="${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-64000}"
 
+# Phase 1 pipeline redesign — when FEATURE_THEME_BUNDLE=1 resolve prompt
+# paths from the theme bundle. Otherwise stay on legacy .claude/ paths.
+if [ "${FEATURE_THEME_BUNDLE:-0}" = "1" ]; then
+  ACTIVE_THEME="${ACTIVE_THEME:-ai-builder}"
+  SYNTH_PROMPT_FILE_PATH="themes/${ACTIVE_THEME}/synthesizer.md"
+  QUALITY_FILE_PATH="themes/${ACTIVE_THEME}/quality.md"
+else
+  SYNTH_PROMPT_FILE_PATH=".claude/synthesizer.md"
+  QUALITY_FILE_PATH=".claude/daily-report-quality.md"
+fi
+
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR" "data/reports"
 
@@ -37,10 +48,10 @@ PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
 # "Execute now" imperative. Without the imperative the model ack-chats; with
 # it, the synthesizer immediately reads inputs and writes the report.
 {
-  cat .claude/synthesizer.md
-  if [ -f .claude/daily-report-quality.md ]; then
+  cat "$SYNTH_PROMPT_FILE_PATH"
+  if [ -f "$QUALITY_FILE_PATH" ]; then
     printf '\n\n---\n\n'
-    cat .claude/daily-report-quality.md
+    cat "$QUALITY_FILE_PATH"
   fi
   printf '\n\n---\n\n## Execute now\n\n'
   printf 'Today is %s. Use the Read tool on the inputs listed above. Synthesize the editorial layer (lead, signals, ideation) and copy curated sub-groups verbatim. Use the Write tool to write the full v2.0 report to `data/reports/%s.json` and the updated memory to `data/memory.json`.\n\n' "$TODAY" "$TODAY"

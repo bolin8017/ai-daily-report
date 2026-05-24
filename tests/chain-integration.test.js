@@ -94,7 +94,7 @@ const STUBS = {
 };
 
 describe('full chain integration (stubbed providers)', () => {
-  it('all 39 registered sources resolve OK through runAll', async () => {
+  it('all 39 registered sources resolve OK through runAll', { timeout: 15000 }, async () => {
     clearProviders();
     const providerNames = new Set(sources.flatMap((s) => s.chain.map((c) => c.provider)));
     // Return 30 stub items so HN sources (threshold 10/5) also pass

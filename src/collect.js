@@ -33,7 +33,7 @@ import { condenseAll } from './lib/condense.js';
 import config from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
-import { getEffectiveSources } from './lib/sources.js';
+import { resolveEffectiveSources } from './lib/sources.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
 const FEED_SOURCE_IDS = new Set([
@@ -138,7 +138,7 @@ async function main() {
   // Each source has its own ordered chain (e.g. RSSHub → HN Firebase → Jina →
   // Firecrawl for HN), so one tool failure doesn't lose the content.
   banner('fetching sources');
-  const sources = getEffectiveSources();
+  const sources = await resolveEffectiveSources();
   const { results, degraded } = await runAll(sources, {
     date,
     minHealthy: Math.ceil(sources.length / 3),

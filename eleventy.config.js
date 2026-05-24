@@ -2,9 +2,31 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sanitizeHtml from 'sanitize-html';
+import YAML from 'yaml';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reportsDir = path.join(__dirname, 'data', 'reports');
+
+// Phase 1 pipeline redesign — env-flagged theme bundle resolution.
+// When FEATURE_THEME_BUNDLE=1, ui-strings.yaml + theme metadata are
+// exposed as Eleventy global data; section partials in
+// themes/$ACTIVE_THEME/sections/ become reachable via 11ty's Nunjucks
+// search path. Current templates still reference v2/section-*.njk
+// directly, so flag=1 is a no-op on rendered HTML for now —
+// downstream Phase 2 templates may switch to theme-relative includes.
+const FEATURE_THEME_BUNDLE = process.env.FEATURE_THEME_BUNDLE === '1';
+const ACTIVE_THEME = process.env.ACTIVE_THEME || 'ai-builder';
+
+function loadThemeUiStrings(themeName) {
+  const p = path.join(__dirname, 'themes', themeName, 'ui-strings.yaml');
+  if (!fs.existsSync(p)) return null;
+  try {
+    return YAML.parse(fs.readFileSync(p, 'utf8'));
+  } catch (err) {
+    console.error(`[eleventy] theme ui-strings parse failed: ${err.message}`);
+    return null;
+  }
+}
 
 // List YYYY-MM-DD.json files in data/reports/, newest first.
 function getReportFiles() {
@@ -22,6 +44,27 @@ export default function (eleventyConfig) {
   // Cache-busting: build timestamp appended to asset URLs so CDN/browser
   // caches are invalidated on every deploy.
   eleventyConfig.addGlobalData('cacheBust', () => Date.now());
+
+  // Theme bundle globals — Phase 1 pipeline redesign.
+  eleventyConfig.addGlobalData('FEATURE_THEME_BUNDLE', FEATURE_THEME_BUNDLE);
+  eleventyConfig.addGlobalData('ACTIVE_THEME', ACTIVE_THEME);
+  if (FEATURE_THEME_BUNDLE) {
+    const ui = loadThemeUiStrings(ACTIVE_THEME);
+    if (ui) eleventyConfig.addGlobalData('uiStrings', ui);
+    // Future-proof: also expose theme.yaml so templates can branch on
+    // sections list, persona description, etc.
+    const themeManifestPath = path.join(__dirname, 'themes', ACTIVE_THEME, 'theme.yaml');
+    if (fs.existsSync(themeManifestPath)) {
+      try {
+        eleventyConfig.addGlobalData(
+          'theme',
+          YAML.parse(fs.readFileSync(themeManifestPath, 'utf8')),
+        );
+      } catch (err) {
+        console.error(`[eleventy] theme.yaml parse failed: ${err.message}`);
+      }
+    }
+  }
 
   // --- Filters ---
 

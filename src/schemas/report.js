@@ -88,3 +88,39 @@ export const ReportSchema = z
     tech: TechSection,
   })
   .passthrough();
+
+// Phase 1 pipeline redesign — dynamic composer. Reads theme manifest +
+// per-section schemas to build a ReportSchema equivalent to the static
+// one above when ACTIVE_THEME=ai-builder, but extensible (add/remove
+// sections by editing themes/<theme>/theme.yaml + sections/).
+//
+// Used by resolveReportSchema() to gate on FEATURE_THEME_BUNDLE.
+import { ACTIVE_THEME, FEATURE_THEME_BUNDLE } from '../lib/config.js';
+import { listActiveSections } from '../lib/theme.js';
+
+export async function buildReportSchema(themeName = ACTIVE_THEME) {
+  const sections = await listActiveSections(themeName);
+  const sectionShapes = {};
+  for (const sec of sections) {
+    const mod = await import(`../../themes/${themeName}/sections/${sec.id}/schema.js`);
+    sectionShapes[sec.id] = mod.sectionSchema;
+  }
+  return z
+    .object({
+      schema_version: z.union([z.literal(2), z.literal(2.1)]),
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      meta: ReportMetaSchema.optional(),
+      lead: z.object({ html: z.string() }),
+      signals: SignalsSection,
+      ideation: IdeationSection,
+      ...sectionShapes,
+    })
+    .passthrough();
+}
+
+export async function resolveReportSchema() {
+  if (FEATURE_THEME_BUNDLE) {
+    return buildReportSchema();
+  }
+  return ReportSchema;
+}

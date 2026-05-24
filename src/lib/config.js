@@ -19,3 +19,10 @@ const raw = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 const parsed = ConfigSchema.parse(raw);
 
 export default Object.freeze(parsed);
+
+// Phase 1 of pipeline redesign — feature flag for theme bundle paths.
+// When 1, the pipeline reads prompts / sources / sections from
+// themes/$ACTIVE_THEME/ instead of .claude/* and config.json.
+// Default off until W1 validation gate completes.
+export const FEATURE_THEME_BUNDLE = process.env.FEATURE_THEME_BUNDLE === '1';
+export const ACTIVE_THEME = process.env.ACTIVE_THEME || 'ai-builder';
