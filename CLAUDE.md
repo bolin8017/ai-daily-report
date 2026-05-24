@@ -12,13 +12,14 @@ For the public-facing overview and quick start, see [README.md](./README.md). Fo
 
 ## Deployment mode
 
-The pipeline is split into **three independent stages**, all running inside a Docker container on the VM (toggle via `FEATURE_NEW_PIPELINE` — default `1` after the 2026-05-22 IA redesign; set to `0` to fall back to the legacy single-stage analyze):
+The pipeline is split into **four stages**, all running inside a Docker container on the VM:
 
-- **Stage 1** (`src/collect.js`): pure Node.js — fetches 8 sources in parallel (feeds, github-trending, github-search with topic rotation, github-developers, leaderboards, mops, hf-trending, arxiv), condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`, then commits it to the `data` branch via plumbing in `src/lib/commit.js`.
-- **Stage 2** (`scripts/curate.sh`): 4 parallel `claude -p --model claude-haiku-4-5` subprocesses (one per section: shipped / pulse / market / tech). Each reads its staging slice, applies its prompt at `.claude/curators/<section>.md`, writes validated JSON to `data/staging/curated/<section>.json`. Critical sections (shipped, pulse) failure aborts; non-critical (market, tech) failure logs degraded.
-- **Stage 3** (`scripts/synthesize.sh`): single `claude -p --model claude-sonnet-4-6` invocation. Reads curated/* + raw staging + memory, applies `.claude/synthesizer.md`, writes v2.0 unified report (`data/reports/<date>.json`, ReportSchema 2.0) + updated memory.
+- **Stage 1 — collect** (`src/collect.js`): pure Node.js — fetches 8 sources in parallel (feeds, github-trending, github-search with topic rotation, github-developers, leaderboards, mops, hf-trending, arxiv), condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`. **Does not commit** — staging + feeds-snapshot are Docker-volume-only ephemeral artifacts (see "Storage" below).
+- **Stage 2 — curate** (`scripts/curate.sh`): 4 parallel `claude -p --model claude-haiku-4-5` subprocesses (one per section: shipped / pulse / market / tech). Each reads its staging slice, applies its prompt at `themes/<ACTIVE_THEME>/sections/<section>/curator.md`, writes validated JSON to `data/staging/curated/<section>.json`. Critical sections (shipped, pulse) failure aborts; non-critical (market, tech) failure logs degraded.
+- **Stage 3 — synthesize** (`scripts/synthesize.sh`): single `claude -p --model claude-sonnet-4-6` invocation. Reads curated/* + raw staging + memory, applies `themes/<ACTIVE_THEME>/synthesizer.md` + `quality.md`, writes **only the editorial layer** to `data/staging/editorial.json` (lead / signals / ideation, `EditorialSchema 2.1-editorial`) + updated `data/memory.json`. It does **not** emit curated sub-groups — that's what blew the 32K output-token cap on 2026-05-24.
+- **Stage 4 — merge** (`scripts/merge-report.sh` → `src/lib/merge.js`): pure Node, no LLM, idempotent. Composes the final `data/reports/<date>.json` (ReportSchema 2.1) from `editorial.json` + `curated/*.json`, validating that every `source_links` id exists in the curated outputs (aborts on dangling references).
 
-`scripts/analyze.sh` orchestrates Stage 2 → Stage 3 → validate → commit. With `FEATURE_NEW_PIPELINE=0` it falls back to the legacy lens-based single-stage path (preserved for rollback; produces v1.x reports rendered by templates' legacy partial).
+`scripts/analyze.sh` orchestrates Stage 2 → Stage 3 → Stage 4 → validate → commit (reports + memory only). A legacy lens-based single-stage path is still gated behind `FEATURE_NEW_PIPELINE=0` (predates this redesign; preserved for rollback, produces v1.x reports rendered by templates' legacy partial).
 
 GitHub Actions picks up either push (main for code, data for daily artifacts) and deploys the 11ty site to Pages.
 
@@ -27,13 +28,13 @@ GitHub Actions picks up either push (main for code, data for daily artifacts) an
 Two long-lived branches with distinct roles:
 
 - **`main`**: human-authored source — code, templates, CI, scripts, config. Bot never pushes here.
-- **`data`** (orphan branch, no shared history with `main`): bot-produced artifacts — `data/reports/`, `data/memory.json`, `data/feeds-snapshot.json`, `data/staging/`. Every Stage 1 / Stage 2 commit lands here.
+- **`data`** (orphan branch, no shared history with `main`): bot-produced artifacts — `data/reports/` (rolling 60-day hot window) and `data/memory.json`. Only the merge + commit step (Stage 4 / `analyze.sh`) lands here. Staging + feeds-snapshot are no longer committed (Docker-volume-only); older reports archive to GitHub Releases (see "Storage").
 
-`src/lib/commit.js` builds commits using git plumbing (`read-tree` into an isolated `GIT_INDEX_FILE`, `write-tree`, `commit-tree`, then `push commit:refs/heads/data`) — never checks out the data branch, never touches main's working tree or index. In CI the build job checks out `main` for code, then `git fetch` + `git checkout refs/remotes/origin/data -- data/` to pull in the report archive before running 11ty.
+`src/lib/commit.js` builds commits using git plumbing (`read-tree` into an isolated `GIT_INDEX_FILE`, `write-tree`, `commit-tree`, then `push commit:refs/heads/data`) — never checks out the data branch, never touches main's working tree or index. It also has a `--remove` mode (used by the monthly archive job to delete archived reports from the data branch). In CI the build job checks out `main` for code, then `git fetch` + `git checkout refs/remotes/origin/data -- data/` to pull in the recent reports, then hydrates older months from Releases before running 11ty.
 
-**Production runtime**: a Google Cloud e2-micro VM (always-free tier, us-west1) runs both stages daily at 04:00 Asia/Taipei via **systemd timer** → `scripts/cron-run.sh` → `docker run ai-daily-report:latest`. The Docker image contains Node 22, git, and the Claude Code CLI; the repo is cloned into a persistent Docker volume at `/workspace` and refreshed via `git pull` on each run.
+**Production runtime**: a Google Cloud e2-micro VM (always-free tier, us-west1) runs the pipeline daily at 04:00 Asia/Taipei via **systemd timer** → `scripts/cron-run.sh` → `docker run ai-daily-report:latest`. A second timer (`ai-daily-report-archive.timer`) runs the monthly archive job. The Docker image contains Node 22, git, and the Claude Code CLI; the repo is cloned into a persistent Docker volume at `/workspace` and refreshed via `git pull` on each run.
 
-**Why two stages instead of one process**: the original `pipeline.js` called `claude -p` as a subprocess from Node.js, which hung indefinitely due to FD table / SSE keepalive interactions. The two-stage split lets Stage 2 call `claude -p` directly from bash (no Node parent), avoiding the hang. It also gives the agent native tool access (Read/Write) instead of piping 50KB+ of data through the prompt body.
+**Why stages split from one process**: the original `pipeline.js` called `claude -p` as a subprocess from Node.js, which hung indefinitely due to FD table / SSE keepalive interactions. Splitting the LLM stages into bash-invoked `claude -p` calls (no Node parent) avoids the hang and gives the agent native tool access (Read/Write) instead of piping 50KB+ through the prompt body. The later editorial/merge split (Stage 3 → Stage 4) additionally keeps LLM output small (~3-5K tokens) so it never hits the output-token cap.
 
 **VM environment requirements** (managed by `scripts/setup-vm.sh`):
 
@@ -52,112 +53,112 @@ Two long-lived branches with distinct roles:
 | Command | What it does |
 |---|---|
 | `npm start` | Local dev: runs `scripts/run.sh` → Stage 1 only (fetch + snapshot + condense, no push, no LLM). |
-| `bash scripts/run.sh --full` | Stage 1 + Stage 2 (requires host Claude Code login). |
-| `bash scripts/run.sh --skip-push` | Stage 1 + Stage 2; writes outputs to local `data/` but skips both commit and push. Inspect the result by reading the files directly (e.g. `jq . data/reports/$(date +%F).json`). |
-| `bash scripts/run.sh --analyze` | Stage 2 only (assumes `data/staging/` is populated — run Stage 1 first, or hydrate from `data` branch: `git fetch origin data && git checkout origin/data -- data/`). |
+| `bash scripts/run.sh --full` | Stage 1 → 2 → 3 → 4 (requires host Claude Code login). |
+| `bash scripts/run.sh --skip-push` | Stages 1–4; writes outputs to local `data/` but skips commit/push. Inspect the result by reading the files directly (e.g. `jq . data/reports/$(date +%F).json`). |
+| `bash scripts/run.sh --analyze` | Stages 2–4 only (assumes `data/staging/` is populated — run Stage 1 first, or hydrate from `data` branch: `git fetch origin data && git checkout origin/data -- data/`). |
 | `npm run collect` / `npm run collect:dry` | Direct invocation of `node src/collect.js` with or without `--skip-push`. |
-| `npm run analyze` | Direct invocation of `bash scripts/analyze.sh`. |
-| `node src/fetchers/feeds.js` | Any single fetcher can still be run standalone; all 4 fetchers are dual-mode (importable + CLI). |
+| `npm run analyze` | Direct invocation of `bash scripts/analyze.sh` (curate → synthesize → merge → commit). |
+| `node src/fetchers/feeds.js` | Any single fetcher can still be run standalone; all fetchers are dual-mode (importable + CLI). |
 | `node src/lib/condense.js` | Standalone mode reads `tmp/*.json`, writes `tmp/*-condensed.json` — useful for debugging the condense budget. |
+| `bash scripts/merge-report.sh [DATE]` | Re-run Stage 4 alone against existing `editorial.json` + `curated/*` (debug the merge / dangling-link check without re-invoking the LLM). |
+| `ACTIVE_THEME=<name> bash scripts/run.sh --full` | Run the pipeline against an alternate theme directory. |
 | `npm run build` | Rebuild the static site. Requires `data/` populated locally — either run Stage 1 first, or `git fetch origin data && git checkout origin/data -- data/`. |
 | `npm run serve` | 11ty dev server with live reload. |
-| `npm test` | Vitest unit tests for schemas + condense. |
+| `npm test` | Vitest unit tests for schemas + condense + theme loader + merge. |
 | `npm run lint` / `npm run format` | Biome check / format --write. |
-| `npm run validate:report` | Validate the newest report in `data/reports/` against `ReportSchema`. |
+| `npm run check:sources` | Verify `docs/data-sources.md` is in sync with `themes/<ACTIVE_THEME>/sources.yaml`. |
+| `npm run validate:report` | Validate the newest report in `data/reports/` against the composed `ReportSchema`. |
 
 **VM operations** (on the production VM):
-- `bash scripts/setup-vm.sh` — one-time install (swap + Docker + systemd timer + image build). Idempotent.
-- `sudo systemctl start ai-daily-report.service` — one-off manual run.
-- `journalctl -u ai-daily-report --since today` — view latest run logs.
-- `systemctl list-timers ai-daily-report.timer` — check next scheduled run.
+- `bash scripts/setup-vm.sh` — one-time install (swap + Docker + both systemd timers + image build). Idempotent.
+- `sudo systemctl start ai-daily-report.service` — one-off manual daily run.
+- `sudo systemctl start ai-daily-report-archive.service` — one-off manual monthly archive run.
+- `journalctl -u ai-daily-report --since today` — view latest run logs (`-u ai-daily-report-archive` for the archive job).
+- `systemctl list-timers 'ai-daily-report*'` — check next scheduled runs (daily + monthly archive).
 
 ## Project Structure
 
 ```
 .
 ├── src/
-│   ├── collect.js                # Stage 1 entry — fetch → condense → snapshot → write staging → commit
-│   ├── fetchers/                 # All dual-mode (importable + standalone CLI)
-│   │   ├── _dispatch.js          # Shared helper that detects CLI mode and emits JSON
-│   │   ├── all.js                # Parallel runner — used by collect.js
-│   │   ├── feeds.js              # Unified RSSHub + RSS + JSON API fetcher
-│   │   ├── github-trending.js    # cheerio + Octokit GitHub trending scraper
-│   │   ├── github-search.js     # GitHub Search API by topic (freshness-first)
-│   │   └── github-developers.js  # Top GitHub developers' newest repos (global + regional)
+│   ├── collect.js                # Stage 1 entry — fetch → condense → snapshot → write staging (no commit)
+│   ├── fetchers/                 # Provider-chain fetchers (dual-mode: importable + standalone CLI)
+│   │   ├── providers/            # One file per provider; theme-aware ones read themes/<theme>/sources.yaml
+│   │   ├── run-all.js            # Parallel chain runner — used by collect.js
+│   │   └── _dispatch.js          # Shared helper that detects CLI mode and emits JSON
+│   ├── curators/                 # Stage 2 curator orchestrators (_base.js resolves theme curator paths)
 │   ├── schemas/                  # Zod schemas (single source of truth)
-│   │   ├── config.js
-│   │   ├── feed-item.js
+│   │   ├── config.js             # Minimal post-cutover config (providers + report only)
+│   │   ├── editorial.js          # EditorialSchema (Stage 3 output: lead/signals/ideation)
+│   │   ├── report.js             # ReportSchema + buildReportSchema() dynamic composer
 │   │   ├── memory.js
-│   │   ├── report.js
 │   │   └── staging.js            # Stage 1 → Stage 2 contract (metadata shape)
 │   └── lib/
-│       ├── config.js             # Validated config singleton (ConfigSchema.parse at import)
-│       ├── github.js             # Shared Octokit factory + getReadmeExcerpt helper
-│       ├── text-utils.js         # stripControlChars — sanitize README excerpts
-│       ├── validate.js           # CLI schema validator
-│       ├── snapshot.js           # Committed feeds-snapshot.json builder (dual-mode)
+│       ├── config.js             # Validated config singleton + ACTIVE_THEME / HOT_DAYS / HYDRATE_MONTHS
+│       ├── theme.js              # Theme loader (loadTheme / loadSection / getThemeSources)
+│       ├── sources.js            # resolveEffectiveSources() — base registry + theme phison_overlay
+│       ├── scope.js              # tagItemScope(item, theme) — boost theme-overlay items in condense
+│       ├── merge.js              # Stage 4 composeReport() + dangling-source_link check
 │       ├── condense.js           # Per-source ≤8500-token condenser (dual-mode)
-│       └── commit.js             # git add/commit/push with GITHUB_TOKEN-based push auth
+│       ├── snapshot.js           # feeds-snapshot.json builder (dual-mode)
+│       ├── commit.js             # git plumbing add/commit/push + --remove mode (archive job)
+│       └── validate.js           # CLI schema validator
+├── themes/                       # Swappable persona/voice/source/section bundles (see "Themes")
+│   └── ai-builder/               # Default theme — theme.yaml, sources.yaml, ui-strings.yaml,
+│                                 #   lens.md, synthesizer.md, quality.md, sections/<id>/{manifest,curator,schema,partial}
 ├── scripts/
-│   ├── analyze.sh                # Stage 2 — claude -p (bg) + watchdog + stderr capture → validate → commit
-│   ├── run.sh                    # Local dev wrapper (default: Stage 1 only, --full for both)
-│   ├── cron-run.sh               # Docker invocation — host git pull + image rebuild + docker run
-│   ├── docker-entrypoint.sh      # Inside-container entry: git pull + npm ci + collect/analyze/both
+│   ├── analyze.sh                # Stage 2→3→4 orchestrator: curate → synthesize → merge → validate → commit
+│   ├── curate.sh                 # Stage 2 — 4 parallel claude -p (Haiku) + watchdog
+│   ├── synthesize.sh             # Stage 3 — single claude -p (Sonnet) → editorial.json
+│   ├── merge-report.sh           # Stage 4 — mechanical compose editorial + curated → report.json
+│   ├── run.sh                    # Local dev wrapper (default: Stage 1 only, --full for all stages)
+│   ├── cron-run.sh               # Daily Docker invocation — host git pull + image rebuild + docker run
+│   ├── cron-archive.sh           # Monthly archive Docker invocation (host wrapper)
+│   ├── archive-month.sh          # Package reports >HOT_DAYS → GitHub Releases (curl + REST API)
+│   ├── hydrate-archive.sh        # CI build helper — pull last HYDRATE_MONTHS from Releases
+│   ├── docker-entrypoint.sh      # Inside-container entry: git pull + npm ci + collect/analyze/both/archive
 │   ├── watchdog.sh               # /proc/$PID/io + CPU liveness monitor for claude -p
-│   └── setup-vm.sh               # One-time VM setup: swap + Docker + systemd timer + OAuth
+│   └── setup-vm.sh               # One-time VM setup: swap + Docker + both systemd timers + OAuth
 ├── systemd/                      # systemd units (installed by setup-vm.sh)
-│   ├── ai-daily-report.service   # Service: runs cron-run.sh (no wall-clock timeout; watchdog-based liveness)
-│   ├── ai-daily-report.timer     # Timer: daily 04:00 Asia/Taipei, Persistent=true
-│   └── ai-daily-report-notify@.service  # Failure alert (optional webhook)
+│   ├── ai-daily-report.service / .timer          # Daily 04:00 Asia/Taipei
+│   ├── ai-daily-report-archive.service / .timer  # Monthly archive (1st, fires ~2nd 05:00 Taipei)
+│   └── ai-daily-report-notify@.service           # Failure alert (optional webhook)
 ├── Dockerfile                    # node:22-slim + git + tini + @anthropic-ai/claude-code (no project code)
 ├── .dockerignore
 ├── site/                         # 11ty source templates (Nunjucks)
-│   ├── _includes/                # base.njk, report-body.njk, idea-card.njk, shipped-item.njk
+│   ├── _includes/                # base.njk, report-body.njk (schema-version dispatcher), v2/*, lens/* (legacy)
 │   ├── assets/                   # style.css + app.js (tab + filter logic)
 │   ├── feed.njk                  # RSS feed template
-│   ├── index.njk                 # Main page (includes report-body.njk)
-│   └── archive.njk              # Archive pages via 11ty pagination
-├── tests/
-│   └── schemas.test.js           # Vitest smoke tests for all Zod schemas (including staging contract)
-├── data/                         # .gitignored on main; all files live on the `data` branch
-│   ├── reports/                  # Daily reports (YYYY-MM-DD.json)
-│   ├── staging/                  # Stage 1 output consumed by Stage 2 (condensed data + metadata)
+│   ├── index.njk                 # Main page (schema-version dispatcher → v2/unified.njk)
+│   └── archive.njk               # Archive pages via 11ty pagination
+├── tests/                        # Vitest (schemas, condense, theme loader, merge, scope, chain integration)
+├── data/                         # .gitignored on main; reports + memory live on the `data` branch
+│   ├── reports/                  # Daily reports (YYYY-MM-DD.json), rolling 60-day hot window
+│   ├── staging/                  # Stage 1→2→3 working files (Docker-volume-only, not committed)
 │   ├── memory.json               # v2 cross-day state
-│   └── feeds-snapshot.json       # Condensed snapshot for 11ty templates
-├── docs/                         # Project documentation (architecture, contributing)
+│   └── feeds-snapshot.json       # Condensed snapshot for 11ty templates (rebuilt each run, not committed)
+├── docs/                         # Project documentation (architecture, data-sources, firewall, specs)
 ├── _site/                        # 11ty build output (gitignored — built in CI)
-├── .github/workflows/deploy.yml  # CI: build + deploy to GitHub Pages via OIDC
-├── .claude/
-│   ├── agents/daily-report.md    # Agent prompt (piped to claude -p by analyze.sh)
-│   └── daily-report-quality.md   # Voice / slop rules (concatenated after agent prompt)
+├── .github/workflows/deploy.yml  # CI: hydrate archive → build → deploy to GitHub Pages via OIDC
+├── config.json                   # Minimal: providers (firecrawl/jina tuning) + report rendering
 ├── biome.json                    # Biome lint + format config
-└── eleventy.config.js            # 11ty build config (ESM)
+└── eleventy.config.js            # 11ty build config (ESM) — loads active theme ui-strings + manifest
 ```
+
+> The `.claude/` directory still holds machine settings + the legacy lens prompts (`.claude/lenses/phison-aidaptiv.md`) referenced only by the `FEATURE_NEW_PIPELINE=0` rollback path. The active pipeline's prompts now live under `themes/<ACTIVE_THEME>/`.
 
 ## Data Sources
 
-> Authoritative per-source list (URLs, categories, lens overlays) lives in [docs/data-sources.md](./docs/data-sources.md). Run `npm run check:sources` after changing `config.json` to confirm the doc still matches.
+> Authoritative per-source list (URLs, categories, Phison overlay) lives in [docs/data-sources.md](./docs/data-sources.md). Run `npm run check:sources` after changing `themes/<ACTIVE_THEME>/sources.yaml` to confirm the doc still matches.
 
-### `src/fetchers/feeds.js` (RSSHub + native APIs)
-Via RSSHub (public instances tried in order: `https://rsshub.pseudoyu.com` → `https://rsshub.rssforever.com` on any per-request failure):
-- **Hacker News** — front page + Show HN, enriched with Algolia API for scores/comments
-- **Dev.to** — top articles of the week
-- **Anthropic News**, **HuggingFace Daily Papers** — RSSHub routes
+Sources are fetched through **per-source provider chains** (`src/fetchers/providers/*` + `run-chain.js` / `run-all.js`): each source declares an ordered chain of providers (e.g. RSSHub → native RSS → Jina Reader → Firecrawl) so one provider failing falls through to the next. The base source list lives in `src/sources/registry.js`; the active theme's `sources.yaml` adds a `phison_overlay` (Phison-specific feeds + topics) on top.
 
-Via native JSON API:
-- **Lobsters** — `/hottest.json` (scores, comments, tags)
-
-Via native RSS:
-- **SegmentFault**, **OSChina**, **Changelog**, **Simon Willison**, **Gary Marcus**, **Karpathy**, **Google AI Blog**, **Phoronix**, **LWN**
-
-### `src/fetchers/github-trending.js`
-Scrapes `github.com/trending` with **cheerio** (replaces brittle regex), enriches each repo via **Octokit**.
-
-### `src/fetchers/github-search.js`
-**Freshness-first** topic search. Query is `topic:X stars:>100 created:>30daysAgo` + README excerpt enrichment per result. The original `pushed:>yesterday` query was replaced because in 2026 GitHub every popular repo has nightly CI commits matching "pushed yesterday" — that returned the same long-lived heavyweights every day (langchain / ragflow / ShareX), not genuinely new repos. The current query surfaces 30-day-old topic-matched items that haven't hit HN or GitHub Trending yet; these feed the **discovery picks** slot inside `shipped` (agent prompt Step 6 requires 3–5 discovery picks per report). Topics are config-driven (`config.json → sources.github_topics.topics`): `rag`, `llm`, `agent`, `mcp`, `vlm`, `ocr`, `vector-database`, `fine-tuning`, `web-scraping`.
-
-### `src/fetchers/github-developers.js`
-Top developers (global top N + per-region top M, configurable via `config.json → sources.github_developers`) and their newest repos within a 72h window. Feeds `dev_watch` (Taiwan + Global). Uses Octokit with its bundled throttling + retry plugins; batches README enrichment 5 at a time to stay under secondary rate limits.
+Key source families:
+- **Community feeds** (RSSHub instances tried in order from `themes/<theme>/sources.yaml → rsshub_urls`, plus native RSS / JSON): Hacker News (enriched via Algolia for scores/comments), Dev.to, Lobsters, Anthropic News, HuggingFace Daily Papers, Simon Willison, Karpathy, Gary Marcus, Google AI Blog, Phoronix, LWN, Chinese-community + Taiwan-media sources, etc.
+- **GitHub Trending** (`github-trending-html.js`): scrapes `github.com/trending`, enriches each repo via Octokit.
+- **GitHub topic search** (`github-search-api.js`): freshness-first `topic:X stars:>100 created:>30daysAgo` + README excerpt; feeds the **discovery picks** slot inside `shipped`. Topics come from `themes/<theme>/sources.yaml → github_topics` (a `tier.core` always-on set + `tier.rotating` set sampled per day).
+- **GitHub developer watch** (`github-developers-api.js`): top global + per-region (Taiwan) developers' newest repos within a 72h window → feeds `shipped.dev_watch_*`.
+- **Leaderboards / MOPS / HF trending / arXiv**: structured fetchers written raw to staging (no condense step).
 
 ## Schemas (Zod, single source of truth)
 
@@ -165,41 +166,44 @@ All data shapes are validated against Zod schemas in `src/schemas/`:
 
 | Schema | Validates | Used at |
 |---|---|---|
-| `ConfigSchema` | `config.json` | Startup (fetchers read config directly) |
-| `FetchOutputSchema` | per-fetcher envelope | Not enforced in-process; available for debugging standalone fetcher output |
+| `ConfigSchema` | `config.json` (now just `providers` + `report`) | Startup, in `src/lib/config.js` |
 | `StagingMetadataSchema` | `data/staging/metadata.json` | `src/collect.js` before writing (Stage 1 → Stage 2 contract) |
-| `ReportSchema` | `data/reports/YYYY-MM-DD.json` | `scripts/analyze.sh` after agent writes report |
-| `MemorySchema` | `data/memory.json` | `scripts/analyze.sh` after agent writes memory |
+| section `schema.js` (per theme section) | each `data/staging/curated/<section>.json` | Stage 2 curators after writing |
+| `EditorialSchema` | `data/staging/editorial.json` | `scripts/synthesize.sh` after Stage 3 |
+| `ReportSchema` / `buildReportSchema()` | `data/reports/YYYY-MM-DD.json` | Stage 4 merge + `scripts/analyze.sh` validate |
+| `MemorySchema` | `data/memory.json` | `scripts/analyze.sh` after Stage 3 |
+
+`buildReportSchema(theme)` composes the report schema at runtime from the active theme's section `schema.js` modules + the static editorial blocks (lead / signals / ideation), so adding a section never requires editing `report.js`. `resolveReportSchema()` returns it.
 
 **If validation fails, the pipeline aborts.** This catches schema drift between LLM output and template expectations early — before broken data reaches `_site/`.
 
-Note: `ReportSchema` uses `.passthrough()` at the top level and makes most sub-fields optional. This is intentional: the LLM output shape drifts slightly. A strict schema would reject cosmetically varied but semantically valid reports. The template layer handles missing fields gracefully (empty render rather than crash).
+Note: `ReportSchema` uses `.passthrough()` at the top level and makes most sub-fields optional. This is intentional: the LLM output shape drifts slightly. A strict schema would reject cosmetically varied but semantically valid reports. `schema_version` accepts both `2` (legacy, pre-2026-05-24) and `2.1` (post-cutover editorial+merge); both render via the same v2 unified partial.
 
 ## Output
 
 - **Static HTML** built in CI by 11ty, deployed to GitHub Pages via `actions/deploy-pages@v4` (OIDC artifact, not a `gh-pages` branch).
 - **Live URL:** https://bolin8017.github.io/ai-daily-report
-- **Archive:** `data/reports/YYYY-MM-DD.json` committed to git; 11ty pagination generates `_site/archive/YYYY-MM-DD.html` during build. Footer shows last 7; all reports kept permanently.
+- **Archive:** recent `data/reports/YYYY-MM-DD.json` live on the `data` branch (60-day hot window); older months archive to GitHub Releases and are hydrated back at build time. 11ty pagination generates `_site/archive/YYYY-MM-DD.html`. Footer shows last 7; all reports kept permanently (hot on branch, cold in Releases).
 - **RSS feed:** `_site/feed.xml`
 
 ## State Management
 
-All of these live on the `data` branch (not `main`). Hydrated into the working tree by `scripts/docker-entrypoint.sh` on each container run, and by `.github/workflows/deploy.yml` on each CI build.
+Hydrated into the working tree by `scripts/docker-entrypoint.sh` on each container run, and by `.github/workflows/deploy.yml` on each CI build.
 
-- `data/memory.json` — v2 schema: `short_term` (7-day) + `long_term` (30-day promotion), `topics` (frequency tracking), `narrative_arcs` (multi-day patterns), `predictions` (with status tracking).
-- `data/reports/YYYY-MM-DD.json` — daily reports; any update to this tree on the `data` branch triggers CI deploy via the workflow's paths filter. 11ty reads this directory to generate archive pages via pagination.
-- `data/feeds-snapshot.json` — condensed snapshot for 11ty templates (sources status + community feeds).
-- `data/staging/` — Stage 1 output consumed by Stage 2: 4 condensed JSON files + `metadata.json` (validated against `StagingMetadataSchema`).
+- `data/memory.json` (on `data` branch) — v2 schema: `short_term` (7-day) + `long_term` (30-day promotion), `topics` (frequency tracking), `narrative_arcs` (multi-day patterns), `predictions` (with status tracking). Written by Stage 3.
+- `data/reports/YYYY-MM-DD.json` (on `data` branch, 60-day hot window) — daily reports composed by Stage 4. 11ty reads this directory to generate archive pages.
+- `data/staging/` + `data/feeds-snapshot.json` — **ephemeral, Docker-volume-only** (no longer committed). Staging holds Stage 1 condensed files + `metadata.json` + Stage 2 `curated/*` + Stage 3 `editorial.json`. feeds-snapshot is rebuilt each run for the 11ty templates.
+- **Cold archive** — reports older than `HOT_DAYS` (60) live in GitHub Releases as `archive-YYYY-MM` tags (`reports-YYYY-MM.tar.gz` + sha256), produced by the monthly archive job.
 
 ## Environment
 
 Required:
 - `GITHUB_TOKEN` — PAT with `Contents: read/write` scope. Used by Octokit fetchers AND as the commit/push credential inside the container (see `src/lib/commit.js`, which injects the token as an `http.extraheader` via Git 2.31+'s `GIT_CONFIG_COUNT` env vars — the same mechanism `actions/checkout` uses — so the token never touches `.git/config` or the remote URL). On the VM, stored in `~/.ai-daily-report.env`. Locally, loaded from `.env`.
-- **Claude Code subscription** — `claude -p` in `scripts/analyze.sh` draws from the Max subscription (not API billing). Credentials live in `~/.claude` and are bind-mounted into the container.
-- **RSSHub** — `config.json → sources.rsshub_urls` is an ordered list of public instances. `src/fetchers/feeds.js` tries each URL in order per request, falling through on `5xx` / timeout / network error. `4xx` is treated as a route-level error (no retry). See `config.json` for the authoritative list.
+- **Claude Code subscription** — `claude -p` in Stage 2/3 draws from the Max subscription (not API billing). Credentials live in `~/.claude` and are bind-mounted into the container.
+- **RSSHub** — `themes/<ACTIVE_THEME>/sources.yaml → rsshub_urls` is an ordered list of public instances. The rsshub provider tries each URL in order per request, falling through on `5xx` / timeout / network error. `4xx` is treated as a route-level error (no retry). See `sources.yaml` for the authoritative list.
 
 Optional:
-- `RSSHUB_URL` — env var override. Forces a single URL and **disables the fallback list** — intended for local debugging against a private instance. Production should leave this unset and let `config.json` provide the ordered list.
+- `RSSHUB_URL` — env var override. Forces a single URL and **disables the fallback list** — intended for local debugging against a private instance. Production should leave this unset and let `sources.yaml` provide the ordered list.
 - `REPORT_TIMEZONE` — default `Asia/Taipei`.
 - `CLAUDE_MODEL` — override the model passed to `claude -p`; default `claude-opus-4-6`.
 - `SKIP_PUSH=1` — skip `git push` in both stages; also accessible as `--skip-push` CLI flag on `src/collect.js`.
@@ -275,7 +279,7 @@ Used by `src/curators/_base.js` (curator prompt resolution), `src/lib/sources.js
 
 | Workflow | Trigger | Job |
 |---|---|---|
-| `.github/workflows/deploy.yml` | (a) push to `main` matching the deploy paths (code/site/workflow changes), OR (b) pull_request matching the wider validation paths (`src/**`, `tests/**`, `scripts/**`, configs included), OR (c) `schedule: '0 21 * * *'` (21:00 UTC = 05:00 Asia/Taipei, ~1h after VM pipeline starts), OR (d) manual `workflow_dispatch`. Note: pushes to the `data` branch **do not** fire the workflow — the orphan `data` branch has no `.github/workflows/` tree, which is why the schedule trigger exists as the primary auto-deploy path for bot reports. | `build` job runs always: checkout `main` → hydrate `data/` from `data` branch → lint + tests + schema validation + 11ty build. `deploy` job runs on every event except `pull_request`: `upload-pages-artifact` → `deploy-pages` OIDC. PR validation ends after `build`. Concurrency group is per-PR (cancel-in-progress) for PRs and shared `pages` for everything else. |
+| `.github/workflows/deploy.yml` | (a) push to `main` matching the deploy paths (code/site/workflow changes), OR (b) pull_request matching the wider validation paths (`src/**`, `tests/**`, `scripts/**`, configs included), OR (c) `schedule: '0 21 * * *'` (21:00 UTC = 05:00 Asia/Taipei, ~1h after VM pipeline starts), OR (d) manual `workflow_dispatch`. Note: pushes to the `data` branch **do not** fire the workflow — the orphan `data` branch has no `.github/workflows/` tree, which is why the schedule trigger exists as the primary auto-deploy path for bot reports. | `build` job runs always: checkout `main` → hydrate recent `data/` from `data` branch → **hydrate cold archive from Releases** (`scripts/hydrate-archive.sh`, best-effort) → lint + tests + schema validation + 11ty build. `deploy` job runs on every event except `pull_request`: `upload-pages-artifact` → `deploy-pages` OIDC. PR validation ends after `build`. Concurrency group is per-PR (cancel-in-progress) for PRs and shared `pages` for everything else. |
 
 GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-pages` branch.
 
@@ -283,18 +287,18 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Notes
 
-- **Scheduling**: production runs happen on the production VM via systemd timer at 04:00 Asia/Taipei. Timer has `Persistent=true` (catches up after reboot) and `OnFailure=` (triggers alert). Logs: `journalctl -u ai-daily-report`.
-- **Schema-first**: when changing report sections, update `src/schemas/report.js` first, then the agent prompt, then the templates. This catches mismatches at validate time.
-- **Git push auth** — `src/lib/commit.js` injects `$GITHUB_TOKEN` as an `http.extraheader` via `GIT_CONFIG_COUNT` env vars (Git 2.31+). The token never touches `.git/config` or the remote URL, so a mid-pipeline container crash cannot leave the token persisted in the Docker volume. This is the same mechanism GitHub's own `actions/checkout` uses. `scripts/docker-entrypoint.sh` uses the same pattern for clone/fetch. Unlike the previous host-helper approach, this works inside the Docker container without needing gh CLI or SSH keys.
-- **External RSSHub dependency** — `config.json → sources.rsshub_urls` lists public instances tried in order. `feeds.js` falls through automatically on any per-request error (timeout, 5xx, network), so a single instance going slow or down degrades one request, not the whole run. `src/fetchers/all.js` additionally tolerates 1 of 4 fetchers failing at the fetcher level. To add a new instance, append its URL to the list; to force one instance for debugging, set `RSSHUB_URL=...` (which bypasses the list).
-- **Fetcher dual-mode** — every fetcher (`src/fetchers/*.js`) exports an importable async function AND still works as a standalone CLI that writes JSON to stdout. `src/fetchers/_dispatch.js` is the shared helper that detects CLI mode and emits the envelope. Useful for ad-hoc debugging: `GITHUB_TOKEN=... node src/fetchers/github-trending.js | jq '.items | length'`.
-- Report sections (v2.0 unified, see `.claude/synthesizer.md` + `.claude/curators/*.md`): unified report with 6 top-level tabs — **訊號** (signals: focus / sleeper / contrarian / predictions), **動手做** (ideation: general / work, split by `audience` tag), **上線** (shipped: trending / topic_discovery / dev_watch_taiwan / dev_watch_global), **脈動** (pulse: hn / lobsters / chinese_community / ai_bloggers), **市場** (market: ma / funding / policy / taiwan), **技術** (tech: vendor / models / benchmarks / aidaptiv). Every item carries an `audience` tag (`general` | `work` | `both`) for cross-tab filter chips. Items also carry stable ids so signals/ideas can `source_links` back to specific curated items for cross-tab navigation. Spec: `docs/superpowers/specs/2026-05-22-ia-redesign-design.md`.
-- Legacy v1.x reports (pre-2026-05-22) used a different shape (`ideas[]`, flat `shipped[]`, `pulse.curated/hn/lobsters`, `dev_watch`, `signals[]`); templates route them to the legacy partial via `schema_version` check.
+- **Scheduling**: production runs on the VM via two systemd timers — `ai-daily-report.timer` (daily 04:00 Asia/Taipei) and `ai-daily-report-archive.timer` (monthly). Both have `Persistent=true` (catch up after reboot) and `OnFailure=` (trigger alert). Logs: `journalctl -u ai-daily-report` / `journalctl -u ai-daily-report-archive`.
+- **Schema-first**: when changing report sections, update the section's `themes/<theme>/sections/<id>/schema.js` first (the dynamic composer picks it up), then the curator prompt, then the section `partial.njk`. This catches mismatches at validate time.
+- **Git push auth** — `src/lib/commit.js` injects `$GITHUB_TOKEN` as an `http.extraheader` via `GIT_CONFIG_COUNT` env vars (Git 2.31+). The token never touches `.git/config` or the remote URL, so a mid-pipeline container crash cannot leave the token persisted in the Docker volume. This is the same mechanism GitHub's own `actions/checkout` uses. `scripts/docker-entrypoint.sh` uses the same pattern for clone/fetch. The archive job's Releases uploads use plain `curl` with the same token (no gh CLI on the VM).
+- **External RSSHub dependency** — `themes/<theme>/sources.yaml → rsshub_urls` lists public instances tried in order. The rsshub provider falls through automatically on any per-request error (timeout, 5xx, network), so a single instance going slow or down degrades one request, not the whole run. `run-all.js` additionally tolerates a fraction of sources failing at the chain level. To add a new instance, append its URL to the list; to force one instance for debugging, set `RSSHUB_URL=...` (which bypasses the list).
+- **Provider-chain fetchers** — each source declares an ordered provider chain; `src/fetchers/providers/*` files register providers and `run-chain.js` walks the chain falling through on failure. Theme-aware providers (`rsshub.js`, `github-search-api.js`, `github-developers-api.js`) read their config from `themes/<theme>/sources.yaml` via `getThemeSources()`.
+- Report sections (schema 2.1 unified, prompts in `themes/<theme>/synthesizer.md` + `sections/<id>/curator.md`): unified report with 6 top-level tabs — **訊號** (signals: focus / sleeper / contrarian / predictions), **動手做** (ideation: general / work, split by `audience` tag), **上線** (shipped: trending / topic_discovery / dev_watch_taiwan / dev_watch_global), **脈動** (pulse: hn / lobsters / chinese_community / ai_bloggers), **市場** (market: ma / funding / policy / taiwan), **技術** (tech: vendor / models / benchmarks / aidaptiv). Every item carries an `audience` tag (`general` | `work` | `both`) for cross-tab filter chips. Items carry stable ids so signals/ideas `source_links` back to curated items — the merge step (Stage 4) validates these references. Spec: `docs/superpowers/specs/2026-05-22-ia-redesign-design.md` (IA) + `2026-05-24-pipeline-redesign-output-storage-themes-design.md` (output split / themes / storage).
+- Legacy v1.x reports (pre-2026-05-22) used a different shape (`ideas[]`, flat `shipped[]`, `pulse.curated/hn/lobsters`, `dev_watch`, `signals[]`); templates route them to the legacy partial via `schema_version` check. v2.0 reports (2026-05-22 to 2026-05-24, pre-output-split) and v2.1 reports (post-split) share the same on-disk shape and render via the same v2 unified partial.
 
 ## Quality bar
 
-- All `data/*.json` validate against Zod schemas — staging metadata in `src/collect.js`, report + memory in `scripts/analyze.sh`. Schema drift aborts the run before any commit.
+- All `data/*.json` validate against Zod schemas — staging metadata in `src/collect.js`, editorial in `scripts/synthesize.sh`, report + memory in the merge + `scripts/analyze.sh` steps. Schema drift aborts the run before any commit.
 - All JS/JSON formatted with Biome (`npm run lint` on every CI run).
-- Vitest schema tests run on `npm test` and in CI.
+- Vitest tests (schemas, condense, theme loader, merge, scope) run on `npm test` and in CI.
 - Conventional commits encouraged.
-- **Agent prompt is the quality lever** (`.claude/lenses/ai-builder.md`, ~485 lines). It's **outcome-oriented, not mechanism-prescriptive**: instead of hard count/length rules, it describes the reader persona (AI engineer who builds), gives positive paragraph examples of good vs slop voice, enumerates ~12 Chinese translation-smell patterns for structural anti-slop, and applies a "single slop test" (delete every sentence that, if removed, wouldn't make the reader lose a specific number / name / version / concrete claim). The prompt was calibrated against 4 external reviewers (tech editor / Chinese-language editor / strategy analyst / non-AI product manager) who independently flagged issues invisible to in-domain review (kebab-case slug leaks, unverifiable "first-ever" superlatives, internal contradictions, pattern-matching to overconfidence, audience split-personality). See [ARCHITECTURE.md](./ARCHITECTURE.md) for the design philosophy.
+- **The theme's lens + synthesizer prompts are the quality lever** (`themes/ai-builder/lens.md` ~485 lines + `themes/ai-builder/synthesizer.md` + `themes/ai-builder/quality.md`). They're **outcome-oriented, not mechanism-prescriptive**: instead of hard count/length rules, they describe the reader persona (AI engineer who builds), give positive paragraph examples of good vs slop voice, enumerate ~12 Chinese translation-smell patterns for structural anti-slop, and apply a "single slop test" (delete every sentence that, if removed, wouldn't make the reader lose a specific number / name / version / concrete claim). The prompt was calibrated against 4 external reviewers (tech editor / Chinese-language editor / strategy analyst / non-AI product manager) who independently flagged issues invisible to in-domain review (kebab-case slug leaks, unverifiable "first-ever" superlatives, internal contradictions, pattern-matching to overconfidence, audience split-personality). See [docs/architecture.md](./docs/architecture.md) for the design philosophy.

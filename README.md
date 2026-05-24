@@ -11,26 +11,36 @@ An automated daily tech brief for **AI engineers who build** — RAG, VLM, fine-
 
 ```
 systemd timer → Docker container (GCP e2-micro)
-  ├── Stage 1: Node.js fetchers → condense → commit staging data
-  └── Stage 2: claude -p (Opus 4.6) → read staging → write report → commit
+  ├── Stage 1 (collect):    Node.js fetchers → condense → snapshot (staging)
+  ├── Stage 2 (curate):     4× claude -p (Haiku 4.5) → curated/<section>.json
+  ├── Stage 3 (synthesize): claude -p (Sonnet 4.6) → editorial.json + memory
+  └── Stage 4 (merge):      mechanical compose → report.json → validate → commit
 
 GitHub Actions cron (daily 21:00 UTC) → pull from `data` branch → 11ty → Pages
 ```
 
-**Stage 1** fetches GitHub Trending, GitHub topic search, Hacker News, Lobsters, Dev.to, HuggingFace Daily Papers, and ~10 RSS sources in parallel, then condenses each to fit the LLM context budget.
+**Stage 1 (collect)** fetches GitHub Trending, GitHub topic search, Hacker News, Lobsters, Dev.to, HuggingFace Daily Papers, and ~10 RSS sources in parallel, then condenses each to fit the LLM context budget. Output stays in the Docker volume (`data/staging/`) — no longer committed to the `data` branch.
 
-**Stage 2** invokes `claude -p` with Read/Write tool access. The agent reads staged data, applies the analyst prompt, writes a structured JSON report, and validates it against Zod schemas before committing.
+**Stage 2 (curate)** runs four parallel `claude -p` subprocesses (one per section: shipped / pulse / market / tech), each on Haiku 4.5. Each applies its section curator prompt and writes validated `data/staging/curated/<section>.json`.
+
+**Stage 3 (synthesize)** runs a single `claude -p` on Sonnet 4.6. It reads the curated sections plus raw staging and memory, applies the editorial prompt, and writes **only** the editorial layer (`data/staging/editorial.json`: lead, signals, ideation) plus updated `data/memory.json`.
+
+**Stage 4 (merge)** is mechanical (no LLM): it composes `data/reports/<date>.json` from `editorial.json` + `curated/*.json`, checks for dangling `source_links`, validates against Zod schemas, then commits to the `data` branch.
 
 See [docs/architecture.md](./docs/architecture.md) for design decisions and trade-offs.
 
 ## Report sections
 
-| Section | Content |
+The report is a single unified document with six top-level tabs (schema `2.1`):
+
+| Tab | Content |
 |---|---|
-| **動手做 — 混搭靈感** | 3 side-project ideas with tech stack, hardware needs, difficulty grading |
-| **今日上線** | 12–20 curated items: HN, Lobsters, AI lab news, discovery picks, developer watch |
-| **社群脈動** | "If you only read 5 things" curated list + raw community feeds |
-| **趨勢訊號** | Lead analysis, trend signals, sleeper pick, contrarian take, binary predictions |
+| **訊號** | Lead analysis, focus / sleeper / contrarian signals, binary predictions |
+| **動手做** | Side-project ideas with tech stack, hardware needs, difficulty grading |
+| **上線** | Curated launches: GitHub trending, topic discovery, developer watch |
+| **脈動** | Community pulse: Hacker News, Lobsters, Chinese community, AI bloggers |
+| **市場** | M&A, funding, policy, Taiwan industry moves |
+| **技術** | Vendor updates, models, benchmarks, deep dives |
 
 ## Quick start
 
@@ -40,13 +50,13 @@ cd ai-daily-report
 npm ci
 cp .env.example .env   # then set GITHUB_TOKEN
 
-npm start              # Stage 1 only (fetch + condense, no LLM)
-bash scripts/run.sh --full       # Stage 1 + Stage 2 (requires claude login)
+npm start              # Stage 1 only (collect: fetch + condense, no LLM)
+bash scripts/run.sh --full       # Stages 1–4 (curate → synthesize → merge; requires claude login)
 bash scripts/run.sh --skip-push  # Full pipeline, no git push
 npm run serve          # 11ty dev server with live reload
 ```
 
-**Prerequisites:** Node.js 22+, GitHub PAT with `Contents: read/write`, Claude Code subscription (for Stage 2).
+**Prerequisites:** Node.js 22+, GitHub PAT with `Contents: read/write`, Claude Code subscription (for Stages 2–3).
 
 ## Data sources
 
@@ -60,14 +70,14 @@ npm run serve          # 11ty dev server with live reload
 | Dev.to, Anthropic News, HuggingFace Papers | RSSHub |
 | Simon Willison, Karpathy, Google AI Blog, Phoronix, LWN, etc. | Native RSS |
 
-Full per-source breakdown (with URLs, categories, and lens overlays): [docs/data-sources.md](./docs/data-sources.md). Run `npm run check:sources` to verify the doc stays in sync with `config.json`.
+Full per-source breakdown (with URLs and categories): [docs/data-sources.md](./docs/data-sources.md). The source list lives in `themes/<theme>/sources.yaml` (`config.json` now holds only `providers` + `report`). Run `npm run check:sources` to verify the doc stays in sync.
 
 ## Tech stack
 
 | Layer | Tool |
 |---|---|
 | Runtime | GCP e2-micro (free tier), Docker, systemd timer |
-| LLM | Claude Opus 4.6 via `claude -p` (Max subscription) |
+| LLM | Claude Haiku 4.5 (curators) + Sonnet 4.6 (synthesizer) via `claude -p` (Max subscription) |
 | Data | [Octokit](https://github.com/octokit/octokit.js), [cheerio](https://github.com/cheeriojs/cheerio), [rss-parser](https://github.com/rbren/rss-parser), [RSSHub](https://github.com/DIYgod/RSSHub) |
 | Validation | [Zod](https://github.com/colinhacks/zod) |
 | Site | [11ty](https://github.com/11ty/eleventy) (Nunjucks) |

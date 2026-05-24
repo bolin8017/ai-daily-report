@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Stage 4 (Phase 2 redesign): mechanical merge of editorial.json +
-# curated/*.json → data/reports/<date>.json. No LLM, no token cap, no
-# nondeterminism. Activated when FEATURE_MERGE_STEP=1.
+# Stage 4: mechanical merge of editorial.json + curated/*.json →
+# data/reports/<date>.json. No LLM, no token cap, no nondeterminism.
+# Invoked by scripts/analyze.sh after Stage 3 (synthesize) succeeds.
 #
 # Usage:
 #   bash scripts/merge-report.sh [DATE]

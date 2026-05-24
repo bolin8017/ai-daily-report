@@ -26,29 +26,37 @@ flowchart TD
       Entry["scripts/docker-entrypoint.sh<br/>git pull + npm ci --prefer-offline"]
 
       subgraph Stage1["Stage 1: Collect (node src/collect.js)"]
-        Fetch["runFetchers() — 4 parallel"]
+        Fetch["runAll() — providers in parallel"]
         Fetch --> Condense["condenseAll() + buildSnapshot()"]
-        Condense --> WriteStaging["write data/staging/*"]
-        WriteStaging --> CommitStaging["commitAndPush() staging data"]
+        Condense --> WriteStaging["write data/staging/* (volume-only, not committed)"]
       end
 
-      subgraph Stage2["Stage 2: Analyze (scripts/analyze.sh → claude -p)"]
-        Prompt["assemble prompt from agent MD + quality rules"]
-        Prompt --> ClaudeP["claude -p --allowedTools Read,Write"]
-        ClaudeP --> ReadStaging["Read data/staging/* files"]
-        ReadStaging --> Analyze["analyze + synthesize"]
-        Analyze --> WriteReport["Write data/reports/YYYY-MM-DD.json\n+ data/memory.json"]
+      subgraph Stage2["Stage 2: Curate (scripts/curate.sh)"]
+        Curate["4 parallel claude -p (Haiku),<br/>one per section"]
+        Curate --> WriteCurated["Write data/staging/curated/<section>.json"]
+      end
+
+      subgraph Stage3["Stage 3: Synthesize (scripts/synthesize.sh)"]
+        Synth["claude -p (Sonnet)"]
+        Synth --> WriteEditorial["Write data/staging/editorial.json\n+ data/memory.json"]
+      end
+
+      subgraph Stage4["Stage 4: Merge (scripts/merge-report.sh → src/lib/merge.js)"]
+        Compose["composeReport() — no LLM,<br/>idempotent; validate source_links"]
+        Compose --> WriteReport["Write data/reports/YYYY-MM-DD.json"]
         WriteReport --> Validate["Zod: ReportSchema + MemorySchema"]
         Validate --> CommitReport["commit + push report & memory"]
       end
 
       Entry --> Stage1
       Stage1 --> Stage2
+      Stage2 --> Stage3
+      Stage3 --> Stage4
     end
   end
 
   Timer --> CronRun
-  CommitReport --> DataBranch[(data branch<br/>orphan, bot-only)]
+  CommitReport --> DataBranch[(data branch<br/>orphan, bot-only — reports + memory)]
 
   GHACron[scheduled cron<br/>21:00 UTC daily] --> GHA[GitHub Actions: deploy.yml]
 
@@ -80,7 +88,7 @@ flowchart TD
 1. **Nested `claude -p` deadlock** — CCR sessions are themselves `claude` processes, so spawning `claude -p` as a subprocess produced 74-minute SSE keepalive hangs with zero streamed tokens. Small test prompts succeeded (response <10 bytes, streaming channel never strained) which masked the issue until real-payload runs.
 2. **10K-token Read-tool limit** — the agent design needed to Read a merged digest of 4 condensed sources (~19-30K tokens total). The Read tool refused anything over 10K per call. Splitting into multiple Reads worked, but by that point the design was hostile to CCR's constraints.
 
-A plain VM sidesteps both: `claude -p` is the primary process (no nesting), and in-process data flow has no tool-mediated size limits. The original `.claude/lenses/ai-builder.md` prompt became the text body passed to `claude -p` with an appended "output only JSON" instruction, keeping the voice/slop rules while shedding the agent-loop framing.
+A plain VM sidesteps both: `claude -p` is the primary process (no nesting), and the staging data is read by the agent via the Read tool rather than piped through the prompt body. The persona/voice/slop rules live in the theme bundle (`themes/ai-builder/lens.md`, `synthesizer.md`, `quality.md`) and are assembled into the prompt at invocation time, keeping the voice rules while shedding the agent-loop framing.
 
 ## Data flow
 
@@ -94,7 +102,9 @@ sequenceDiagram
   participant Collect as src/collect.js
   participant Fetchers as src/fetchers/*
   participant AnalyzeSh as scripts/analyze.sh
-  participant Claude as claude -p
+  participant Curate as scripts/curate.sh (Haiku × 4)
+  participant Synth as scripts/synthesize.sh (Sonnet)
+  participant Merge as scripts/merge-report.sh
   participant Git
   participant GHA as GitHub Actions
   participant Pages
@@ -102,35 +112,46 @@ sequenceDiagram
   Timer->>CronRun: trigger (04:00 Asia/Taipei)
   CronRun->>CronRun: load ~/.ai-daily-report.env
   CronRun->>Docker: run ai-daily-report:latest --memory=600m
-  Docker->>Entry: start (GITHUB_TOKEN injected, /home/pipeline/.claude:ro mounted)
+  Docker->>Entry: start (GITHUB_TOKEN injected, /home/pipeline/.claude mounted rw)
   Entry->>Entry: git pull origin main (into /workspace volume)
   Entry->>Entry: npm ci --omit=dev --prefer-offline
 
   Note over Entry,Collect: Stage 1: Collect
   Entry->>Collect: exec node src/collect.js
-  Collect->>Fetchers: runFetchers() — Promise.all × 4
-  Fetchers->>Collect: raw objects (feeds, trending, search, developers)
-  Collect->>Collect: condenseAll(raw) → 4 × ≤8500-token objects
+  Collect->>Fetchers: runAll() — providers in parallel
+  Fetchers->>Collect: raw objects (feeds, trending, search, developers, leaderboards, mops, hf, arxiv)
+  Collect->>Collect: condenseAll(raw) → ≤8500-token objects
   Collect->>Collect: buildSnapshot(raw.feeds) → data/feeds-snapshot.json
-  Collect->>Collect: write data/staging/*
-  Collect->>Git: commitAndPush staging data (x-access-token URL)
+  Collect->>Collect: write data/staging/* (volume-only, not committed)
 
-  Note over Entry,Claude: Stage 2: Analyze
+  Note over Entry,Merge: Stage 2-4: Analyze (curate → synthesize → merge)
   Entry->>AnalyzeSh: exec scripts/analyze.sh
-  AnalyzeSh->>AnalyzeSh: assemble prompt (agent MD + quality rules)
-  AnalyzeSh->>Claude: claude -p --allowedTools Read,Write
-  Claude->>Claude: Read data/staging/* files
-  Claude->>Claude: analyze + synthesize
-  Claude->>Claude: Write data/reports/YYYY-MM-DD.json + data/memory.json
+  AnalyzeSh->>Curate: bash scripts/curate.sh
+  Curate->>Curate: 4 parallel claude -p (Haiku), read staging slice + themes/.../sections/<id>/curator.md
+  Curate->>Curate: Write data/staging/curated/<section>.json
+  AnalyzeSh->>Synth: bash scripts/synthesize.sh
+  Synth->>Synth: claude -p (Sonnet), read curated/* + themes/.../synthesizer.md + quality.md
+  Synth->>Synth: Write data/staging/editorial.json + data/memory.json
+  AnalyzeSh->>Merge: bash scripts/merge-report.sh <date>
+  Merge->>Merge: composeReport() — editorial + curated → report; validate source_links
+  Merge->>Merge: Write data/reports/YYYY-MM-DD.json
   AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema + MemorySchema
   AnalyzeSh->>Git: commit + push report & memory (x-access-token URL)
 
-  Note over GHA: GHA cron fires independently<br/>at 21:00 UTC daily (not caused<br/>by the Stage 2 push)
+  Note over GHA: GHA cron fires independently<br/>at 21:00 UTC daily (not caused<br/>by the analyze push)
   GHA->>Git: fetch + checkout origin/data -- data/
   GHA->>GHA: lint + test + validate + 11ty build
   GHA->>Pages: actions/deploy-pages OIDC
   Pages-->>Timer: live in ~30s
 ```
+
+### Why four stages instead of one analyze call
+
+The pipeline was a single `claude -p` "analyze" stage through early 2026, then briefly a three-stage curate → synthesize split. The current four-stage shape (collect → curate → synthesize → **merge**) is the durable fix for a specific failure that hit on 2026-05-24: the synthesizer, asked to emit the *entire* report (editorial layer **plus** all curated `shipped`/`pulse`/`market`/`tech` content), ran into the 32K output-token cap mid-write and produced a truncated, schema-invalid report.
+
+Raising the cap only buys time — a richer signal day would hit it again. The structural fix is to stop the LLM from re-emitting content it didn't author. So Stage 3 now writes **only** the editorial layer (`lead` / `signals` / `ideation`) to `data/staging/editorial.json` — roughly 3-5K tokens, comfortably under any cap — and Stage 4 (`scripts/merge-report.sh` → `src/lib/merge.js`) mechanically composes the final `data/reports/<date>.json` by stitching `editorial.json` together with the already-validated `curated/*.json` from Stage 2. The merge is pure / deterministic / idempotent (no LLM, no token cap, re-running it yields the same bytes), and it validates that every `source_links` id referenced from the editorial layer actually exists in the curated outputs — a dangling reference aborts the run before a broken cross-tab link reaches the site.
+
+A side benefit: the curators (4 parallel Haiku calls, one per section) and the synthesizer (1 Sonnet call) now have cleanly separated jobs. Curators classify and filter raw items into sections cheaply; the expensive model spends its whole budget on the editorial voice rather than transcribing items it was handed.
 
 ## Schema-first design
 
@@ -138,22 +159,25 @@ Every data shape is defined once in `src/schemas/` and reused everywhere:
 
 ```mermaid
 flowchart LR
-  Schema[src/schemas/report.js<br/>ReportSchema] --> Agent[Agent reads it as<br/>output contract]
-  Schema --> Validator[Validator at runtime]
-  Schema --> Tests[Vitest tests]
+  Sections[themes/&lt;theme&gt;/sections/*/schema.js] --> Build[buildReportSchema&#40;&#41;<br/>composes ReportSchema]
+  Build --> Curators[Curators write to<br/>each section's shape]
+  Build --> Validator[Validator at runtime]
+  Build --> Tests[Vitest tests]
 ```
 
-This means:
+`ReportSchema` is no longer a single static object — it's **composed at runtime** by `buildReportSchema()` (in `src/schemas/report.js`) from the per-section `schema.js` files of the active theme. Adding or removing a report section is therefore a folder-level operation under `themes/<theme>/sections/` rather than an edit to a monolithic schema. This means:
 
-1. When you change `ReportSchema`, the agent prompt should be updated to match (but the validator catches it if you forget).
-2. When the agent's output drifts (a common LLM problem), validation aborts the pipeline before broken data hits `_site/`.
+1. When you change a section's `schema.js`, that section's curator prompt should be updated to match (but the composed validator catches it if you forget).
+2. When an LLM stage's output drifts (a common LLM problem), validation aborts the pipeline before broken data hits `_site/`.
 3. Vitest tests assert that real fixture data passes the schema, catching schema-vs-reality drift on every commit.
+
+**Schema versioning**: post-cutover reports are `schema_version: 2.1`; legacy `2.0` reports (pre-2026-05-24) still validate and render through the same v2 unified partial. `buildReportSchema()` accepts both via a `z.union([z.literal(2), z.literal(2.1)])`, so the archive stays renderable without a migration pass.
 
 **The passthrough trade-off**: `ReportSchema` and `MemorySchema` use `.passthrough()` at their top level and make most sub-fields optional. This is deliberate — an LLM's output shape naturally drifts with prompt iteration, and a strict schema would reject valid-looking reports for cosmetic reasons. The templates handle missing fields as empty renders rather than crashes.
 
 ## Agent prompt as the design surface
 
-The agent prompt at `.claude/lenses/ai-builder.md` (~485 lines) is the single biggest lever for output quality on this project, and it's designed around a specific philosophy: **outcome-oriented prompting**, not mechanism-prescriptive rule-listing.
+The persona / voice prompt at `themes/ai-builder/lens.md` (the synthesizer draws on it plus `themes/ai-builder/synthesizer.md` and `themes/ai-builder/quality.md`) is the single biggest lever for output quality on this project, and it's designed around a specific philosophy: **outcome-oriented prompting**, not mechanism-prescriptive rule-listing. (Before the 2026-05-24 theme-bundle move these files lived under `.claude/lenses/`, `.claude/synthesizer.md`, and `.claude/daily-report-quality.md`; relocating them into `themes/<theme>/` is what makes swapping the brief's whole focus a single-directory edit — see "Theme bundle" below.)
 
 ### Why outcome-oriented
 
@@ -204,23 +228,51 @@ All 4 reviewers independently flagged **pattern-matching to overconfidence** (e.
 
 Prompt iteration happens locally via two complementary paths:
 
-- `bash scripts/run.sh --skip-push` — runs Stage 1 + Stage 2 without pushing, useful for end-to-end validation of a prompt change.
-- `bash scripts/run.sh --analyze` — runs Stage 2 only (reuses existing staging data), useful for rapid prompt iteration without re-fetching sources. The inner loop is ~2-3 minutes per prompt tweak.
+- `bash scripts/run.sh --skip-push` — runs Stage 1 + the analyze stages (curate → synthesize → merge) without pushing, useful for end-to-end validation of a prompt change.
+- `bash scripts/run.sh --analyze` — runs the analyze stages only (reuses existing staging data), useful for rapid prompt iteration without re-fetching sources. The inner loop is ~2-3 minutes per prompt tweak.
 
-The agent prompt (`.claude/lenses/ai-builder.md`) is read fresh on every invocation, so editing the prompt doesn't require a rebuild.
+The theme prompts (`themes/ai-builder/lens.md`, `synthesizer.md`, `quality.md`, and the per-section `curator.md` files) are read fresh on every invocation, so editing a prompt doesn't require a rebuild.
 
-**The convergence bar**: "would I personally want to read this report if I wasn't the one writing it?" Three iteration rounds (v1-initial → v2-audience-lock → v3-slug-precision) were needed to reach convergence on the current prompt. The one-shot refactor (giving up the 10-step agent workflow in favour of a single `claude -p` call that reasons through Steps 2-6 internally) was validated against the same convergence bar during the VM migration.
+**The convergence bar**: "would I personally want to read this report if I wasn't the one writing it?" Three iteration rounds (v1-initial → v2-audience-lock → v3-slug-precision) were needed to reach convergence on the current prompt. That bar survived two later structural refactors — the VM migration's move from a 10-step agent workflow to a direct `claude -p` call, and the 2026-05-24 split that pushed item-classification down to the Haiku curators so the Sonnet synthesizer writes only the editorial voice layer.
+
+## Theme bundle
+
+Everything that defines *this particular brief* — persona, voice, anti-slop rules, source list, section definitions, UI strings — lives under `themes/<ACTIVE_THEME>/` (default `ai-builder`). Before 2026-05-24 these assets were scattered: the persona prompt under `.claude/lenses/`, the source list and lens overlays inside `config.json`, curator prompts under `.claude/curators/`, section schemas inline in `src/schemas/report.js`, and tab labels hardcoded in templates. Swapping the brief's focus (say, "AI builder" → "ML researcher") meant touching eight-plus files across the repo and was easy to get half-done.
+
+The bundle collapses that into a single directory:
+
+```
+themes/ai-builder/
+├── theme.yaml        # manifest: persona, model assignment, section list + order
+├── sources.yaml      # GitHub topics + RSS/API feed config (moved out of config.json)
+├── ui-strings.yaml   # tab labels, site title, archive strings
+├── lens.md           # persona / voice (was .claude/lenses/ai-builder.md)
+├── synthesizer.md    # editorial prompt (was .claude/synthesizer.md)
+├── quality.md        # anti-slop rules (was .claude/daily-report-quality.md)
+└── sections/<id>/    # one per report section (shipped, pulse, market, tech)
+    ├── manifest.yaml # id, tab label, critical flag, groups
+    ├── curator.md    # this section's curator prompt (was .claude/curators/<id>.md)
+    ├── schema.js     # Zod sub-schema, composed by buildReportSchema()
+    └── partial.njk   # 11ty render partial
+```
+
+The loader is `src/lib/theme.js` (`loadTheme` / `loadSection` / `listActiveSections`). The fetcher providers read their source list through `getThemeSources()` rather than `config.json`, the report schema is composed from the active sections' `schema.js` files, and 11ty discovers section partials by convention. The upshot: adding a section is `mkdir themes/ai-builder/sections/<id>` + four files + a line in `theme.yaml`; swapping the whole focus is `cp -r` the theme dir, edit, and set `ACTIVE_THEME`. No edits to `src/`, `scripts/`, or `eleventy.config.js`.
+
+**What stayed in `config.json`**: only cross-theme infrastructure tuning — the `providers` block (Firecrawl monthly cap, Jina Reader base URL) and `report` defaults (language, item caps). The `sources` and `lenses` blocks that used to live there moved into each theme's `sources.yaml`, because they *are* theme-specific.
 
 ## Fetcher strategy
 
-| Fetcher | Source | Method | Why |
-|---|---|---|---|
-| `src/fetchers/feeds.js` | RSSHub + native JSON/RSS | fetch + parse | One file handles 15 sources via `config.json` |
-| `src/fetchers/github-trending.js` | github.com/trending | cheerio + Octokit enrichment (README excerpts) | HTML scraping is unavoidable, but cheerio is far more robust than regex |
-| `src/fetchers/github-search.js` | GitHub Search API | Octokit + `created:>30daysAgo` freshness-first query + README enrichment per result (batched 5 at a time) | Returns genuinely fresh topic-matched repos for the shipped section's **discovery picks** — not "popular-with-CI-activity" heavyweights |
-| `src/fetchers/github-developers.js` | GitHub Search Users + Repos APIs | Octokit (batches of 5) + README enrichment | Used to be 273 lines of bash + curl + jq; rewritten to reuse Octokit's built-in throttling and retry |
+Fetchers are organized as **providers** under `src/fetchers/providers/`, each self-registering with `_registry.js` and run in parallel by `run-all.js`. Sources (RSS routes, GitHub topics, developer lists) come from the active theme's `sources.yaml` via `getThemeSources()`, not from `config.json`.
 
-**HN scoring trick**: RSSHub's `/hackernews/index` doesn't expose scores. We fetch from RSSHub for the front-page list, then enrich each item's `score` and `comments` via `https://hn.algolia.com/api/v1/items/{id}` in parallel batches of 10. See `feeds.js → enrichHNItems`.
+| Provider | Source | Method | Why |
+|---|---|---|---|
+| `providers/rsshub.js` + `native-rss.js` / `native-json.js` | RSSHub + native JSON/RSS | fetch + parse | Theme-driven feed list; RSSHub instances tried in order, native routes bypass RSSHub |
+| `providers/github-trending-html.js` | github.com/trending | cheerio + Octokit enrichment (README excerpts) | HTML scraping is unavoidable, but cheerio is far more robust than regex |
+| `providers/github-search-api.js` | GitHub Search API | Octokit + `created:>30daysAgo` freshness-first query + README enrichment per result (batched 5 at a time) | Returns genuinely fresh topic-matched repos for the shipped section's **discovery picks** — not "popular-with-CI-activity" heavyweights |
+| `providers/github-developers-api.js` | GitHub Search Users + Repos APIs | Octokit (batches of 5) + README enrichment | Used to be 273 lines of bash + curl + jq; rewritten to reuse Octokit's built-in throttling and retry |
+| `providers/hf-trending-json.js`, `leaderboard-html.js`, `mops-twse-openapi.js`, `arxiv-rss.js` | HuggingFace, leaderboards, TWSE MOPS, arXiv | per-source fetch | Theme-specific signal sources; written raw to staging (bypass condense) since payloads are small + structured |
+
+**HN scoring trick**: the front-page list doesn't expose scores, so the HN provider enriches each item's `score` and `comments` via the Algolia API (`src/fetchers/enrichers/hn-algolia.js`) in parallel batches. A separate `providers/hn-firebase.js` covers the Firebase item API.
 
 **github-search freshness rewrite**: the original query was `topic:X stars:>50 pushed:>yesterday`. In 2026, this returned the same long-lived heavyweights every day (langchain 132k★, ShareX from 2013, etc.) because every popular repo has nightly CI commits matching "pushed yesterday". The agent correctly refused to put langchain in "今日上線", so the fetcher was contributing 0 items to shipped. Query rewritten to `topic:X stars:>100 created:>30daysAgo` + README excerpt enrichment + higher per-topic limit (5 → 10). The result: the shipped section now gets 3–5 discovery picks per report from repos that haven't reached HN / Trending yet, which is the only way to differentiate the brief from "today's HN front page + github trending".
 
@@ -234,7 +286,7 @@ The agent prompt (`.claude/lenses/ai-builder.md`) is read fresh on every invocat
 - `narrative_arcs` — multi-day patterns: `{ arc_id, title, episodes: [...], status }`
 - `predictions` — falsifiable predictions with `status: pending | confirmed | failed`
 
-The agent produces both the report and updated memory in a single `claude -p` session (Steps 8-9 of the agent prompt). Stage 2's `analyze.sh` validates both against Zod schemas before committing.
+The synthesizer (Stage 3) produces the editorial layer **and** the updated memory in its single Sonnet `claude -p` session; the report itself is composed mechanically in Stage 4. `analyze.sh` validates the merged report and the memory against their Zod schemas before committing.
 
 We considered SQLite and a vector DB (Chroma) but the data doesn't need them. JSON is fine until it grows past ~10 MB (currently ~50 KB).
 
@@ -246,7 +298,7 @@ We considered SQLite and a vector DB (Chroma) but the data doesn't need them. JS
 | **Vitest** | Schema smoke tests | Native ESM, native TS, 10× faster than Jest |
 | **Zod** | Schema validation | TypeScript-first, single source of truth |
 | **Octokit** | GitHub API client | Bundles `@octokit/plugin-throttling` and `@octokit/plugin-retry` by default |
-| **cheerio** | HTML parsing | Used in `github-trending.js` to replace a regex-based scraper |
+| **cheerio** | HTML parsing | Used in `providers/github-trending-html.js` to replace a regex-based scraper |
 | **11ty** | Static site build | Mature, fast, ESM-native, no React/Vue overhead for content sites |
 
 ## Deploy
@@ -271,13 +323,18 @@ The production pipeline runs on a Google Cloud **e2-micro** VM (always-free tier
 | Create 2GB swap at `/swapfile` | e2-micro has limited RAM shared with existing services; LLM synthesis peaks need headroom or OOM-kill risks collateral damage |
 | `git clone` the repo to `~/ai-daily-report` | Host-side copy isn't required for runs (the container re-clones into its own volume) but convenient for operators who want to inspect code |
 | `docker build -t ai-daily-report:latest` | Builds the image from `Dockerfile`: node:22-slim + git + tini + `@anthropic-ai/claude-code` globally installed |
-| Claude Code OAuth (one time, interactive) | Run `claude /login` inside a throwaway container with `-v ~/.claude:/home/pipeline/.claude`; credentials land on the host and persist via bind mount |
+| Claude Code OAuth (one time, interactive) | Run `claude /login` inside a throwaway container with `-v ~/.claude:/home/pipeline/.claude` mounted **read-write**; credentials land on the host and persist via bind mount. The mount must be writable so the CLI can refresh the OAuth token before expiry — a read-only mount deadlocks the pipeline (see commit `faea48e`). |
 | Write `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh` at invocation time; `chmod 600` to protect the PAT |
-| Install systemd timer unit | `ai-daily-report.timer` with `OnCalendar=*-*-* 04:00:00` (Asia/Taipei) and `Persistent=true` so missed runs (e.g., after a VM reboot) are caught up automatically |
+| Install systemd timer units | `ai-daily-report.timer` (daily `OnCalendar=*-*-* 04:00:00` Asia/Taipei) **and** `ai-daily-report-archive.timer` (monthly). Both `Persistent=true` so missed runs (e.g., after a VM reboot) are caught up automatically |
 
-**systemd timer:**
+**systemd timers:**
 
-The timer unit (`ai-daily-report.timer`) fires `ai-daily-report.service`, which invokes `scripts/cron-run.sh`. `Persistent=true` ensures that if the VM was down at 04:00, the run triggers as soon as the machine comes back up. Logs are captured via `journalctl -u ai-daily-report`.
+Two timers fire two services, both ultimately host-side wrappers around `docker run`:
+
+- `ai-daily-report.timer` → `ai-daily-report.service` → `scripts/cron-run.sh` — the daily 04:00 report pipeline.
+- `ai-daily-report-archive.timer` → `scripts/cron-archive.sh` — the monthly hot/cold archive job (see "Storage: hot/cold split" below).
+
+`Persistent=true` on both ensures that if the VM was down at the scheduled time, the run triggers as soon as the machine comes back up. Logs are captured via `journalctl -u ai-daily-report`.
 
 **`scripts/cron-run.sh` responsibilities:**
 
@@ -291,40 +348,54 @@ The timer unit (`ai-daily-report.timer`) fires `ai-daily-report.service`, which 
 1. If `/workspace` is empty, `git clone https://x-access-token:$GITHUB_TOKEN@github.com/bolin8017/ai-daily-report.git .`
 2. Otherwise `git fetch origin main && git reset --hard origin/main` (fresh state every run)
 3. Run `npm ci --omit=dev --prefer-offline` only if `package-lock.json` changed since last install (marker file in `node_modules/.package-lock.json`)
-4. Run **Stage 1** (`node src/collect.js`) — collect and stage data
-5. Run **Stage 2** (`scripts/analyze.sh`) — synthesize report via `claude -p`
+4. Hydrate `data/` from the `data` orphan branch (reports + memory)
+5. Dispatch on the entrypoint mode (`both` is the default daily run; `archive` is the monthly job; `collect` / `analyze` run a single stage):
+   - **Stage 1** (`node src/collect.js`) — collect and stage data
+   - **Stages 2-4** (`scripts/analyze.sh`) — curate → synthesize → merge → validate → commit
 
-**Two-stage pipeline lifecycle:**
+**Pipeline lifecycle:**
 
 **Stage 1 — Collect** (deterministic Node process, `src/collect.js`):
 
 1. Compute today's date in `Asia/Taipei`
-2. `runFetchers()` — `Promise.all([fetchFeeds, fetchTrending, fetchSearch, fetchDevelopers])`; tolerate 1-of-4 degraded
+2. `runAll()` — providers run in parallel; tolerate degraded sources
 3. `buildSnapshot(raw.feeds)` — writes `data/feeds-snapshot.json` for 11ty
-4. `condenseAll(raw)` — 4 × ≤8500-token objects for prompt-size control
-5. Write condensed data to `data/staging/`
-6. `commitAndPush()` — stages and pushes staging data so it's available for Stage 2
+4. `condenseAll(raw)` — ≤8500-token objects for prompt-size control
+5. Write condensed data + metadata to `data/staging/`
+6. **No commit** — staging and `feeds-snapshot.json` are Docker-volume-only ephemeral artifacts now. The `data` branch is kept trimmed to reports + `memory.json`; only Stage 4's outputs get pushed.
 
-**Stage 2 — Analyze** (agent session, `scripts/analyze.sh`):
+**Stages 2-4 — Analyze** (`scripts/analyze.sh` orchestrates three sub-stages):
 
-1. Assemble the prompt from `.claude/lenses/ai-builder.md` + `.claude/daily-report-quality.md` + memory context
-2. Invoke `claude -p --allowedTools Read,Write --model claude-opus-4-6` — the agent reads staging files via the Read tool, synthesizes the report, and writes `data/reports/YYYY-MM-DD.json` + `data/memory.json` directly via the Write tool
-3. Validate outputs: `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
-4. `commitAndPush({ date })` — stages the report and memory files, commits as `report: <date> daily creative brief`, pushes to `HEAD:main` using `x-access-token:$GITHUB_TOKEN` URL rewrite
-5. GHA's daily 21:00 UTC cron hydrates `data/` from the `data` branch and deploys to Pages. The cron is independent of the Stage 2 push — the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow.
+1. **Curate** (`scripts/curate.sh`) — 4 parallel `claude -p` Haiku subprocesses, one per section (shipped / pulse / market / tech). Each reads its staging slice + `themes/<theme>/sections/<id>/curator.md` and writes validated JSON to `data/staging/curated/<section>.json`. Critical-section (shipped, pulse) failure aborts; non-critical (market, tech) failure logs degraded.
+2. **Synthesize** (`scripts/synthesize.sh`) — one `claude -p` Sonnet call. Reads `curated/*` + raw staging + memory + `themes/<theme>/synthesizer.md` + `quality.md`, writes **only** the editorial layer to `data/staging/editorial.json` plus updated `data/memory.json`.
+3. **Merge** (`scripts/merge-report.sh` → `src/lib/merge.js`) — mechanical, no LLM, idempotent. Composes `data/reports/YYYY-MM-DD.json` from `editorial.json` + `curated/*.json` and validates that every `source_links` id resolves to a real curated item (aborts on a dangling link).
+4. Validate outputs: composed `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
+5. Commit via `src/lib/commit.js` — stages the report + memory files, commits as `report: <date> daily creative brief`, and pushes to the `data` orphan branch (git plumbing + `x-access-token:$GITHUB_TOKEN` URL rewrite; never touches `main`'s working tree).
+6. GHA's daily 21:00 UTC cron hydrates `data/` from the `data` branch and deploys to Pages. The cron is independent of the analyze push — the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow.
 
 **Why systemd timer instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing you onto `ANTHROPIC_API_KEY` (paid, defeats the Max advantage) or OAuth secret juggling. A VM with a one-time interactive `claude /login` sidesteps both — the login token persists in `~/.claude` and every subsequent timer invocation just works.
 
 **Memory budget**: e2-micro has limited RAM shared with other services. Synthesis peaks (~500-700MB for fetchers + claude CLI context) pushed into the 2GB swapfile absorb the burst without OOM. `docker run --memory=600m --memory-swap=1g` caps the container so a runaway can never hurt the host.
 
+## Storage: hot/cold split
+
+Reports accumulate forever, but the `data` orphan branch is cloned on every container run and every CI build — an unbounded archive there would slow both. So the report store is split:
+
+- **Hot** — the most recent `HOT_DAYS` (default 60) of `data/reports/*.json` plus `memory.json` live on the `data` branch, always present after a clone.
+- **Cold** — older reports are packed monthly into `reports-YYYY-MM.tar.gz` (+ a `.sha256`) and uploaded to **GitHub Releases** under `archive-YYYY-MM` tags. `scripts/archive-month.sh` runs from the monthly timer, removes the now-archived files from the `data` branch, and is idempotent (skips a month whose Release already exists).
+
+At CI build time `scripts/hydrate-archive.sh` pulls the last `HYDRATE_MONTHS` (default 12) months of cold tarballs back into `data/reports/` so 11ty can paginate them into archive pages. Both scripts talk to the GitHub REST API directly with **curl**, not the `gh` CLI — the production VM doesn't have `gh` installed, and adding it just for an upload wasn't worth the dependency.
+
+This is why Stage 1 stopped committing staging and `feeds-snapshot.json` to the `data` branch: keeping the branch lean is the whole point, so only durable artifacts (reports + memory) belong there.
+
 ## Trade-offs and known issues
 
 | Issue | Impact | Mitigation |
 |---|---|---|
-| **GitHub Trending HTML can change** | github-trending fetcher returns 0 repos | cheerio is more resilient than regex; `runFetchers` tolerates 1 of 4 degraded; schema validator catches empty report and aborts the deploy |
-| **External RSSHub dependency** (list in `config.json → sources.rsshub_urls`) | Multiple feeds can time out together if a shared instance is slow | `feeds.js` tries each URL per request, falling through on `5xx` / timeout / network error — so when one instance is down, the next request gets the same route from the backup. `4xx` is treated as a route-level error (no retry, since a bad route will fail on every instance). `runFetchers` additionally tolerates 1-of-4 fetcher failure at the outer level. Self-hosting RSSHub was rejected as VM maintenance burden for a once-a-day read. |
+| **GitHub Trending HTML can change** | github-trending provider returns 0 repos | cheerio is more resilient than regex; `runAll` tolerates degraded sources; schema validator catches empty report and aborts the deploy |
+| **External RSSHub dependency** (list in the theme's `sources.yaml`) | Multiple feeds can time out together if a shared instance is slow | `rsshub.js` tries each instance per request, falling through on `5xx` / timeout / network error — so when one instance is down, the next request gets the same route from the backup. `4xx` is treated as a route-level error (no retry, since a bad route will fail on every instance). `runAll` additionally tolerates source-level failure at the outer level. Self-hosting RSSHub was rejected as VM maintenance burden for a once-a-day read. |
 | **HN Algolia API is undocumented** | Score enrichment may break | Wrapped in try/catch; missing scores degrade report quality but don't break the pipeline |
-| **LLM synthesis is the quality single point of failure** | Schema-invalid output blocks the day | The agent writes files directly via the Write tool (no JSON extraction from stdout needed); Zod validation in `analyze.sh` aborts the run before commit. Yesterday's report stays live. |
+| **LLM synthesis is the quality single point of failure** | Schema-invalid output blocks the day | The synthesizer writes only the small editorial layer (no 32K-cap exposure); the merge step composes and validates the report deterministically; Zod validation in `analyze.sh` aborts the run before commit. Yesterday's report stays live. |
 | **VM / Docker / systemd timer failure** | Report missed for the day | systemd timer's `Persistent=true` catches up missed runs after a reboot. `OnFailure=` unit can trigger alerting. `journalctl -u ai-daily-report` is the first place to look; `bash scripts/cron-run.sh` can be re-invoked manually. Host uptime is responsibility of the VM operator. |
 | **Claude subscription token expires** | `claude -p` calls start failing | `~/.claude` needs to be re-authed; pipeline fails loudly rather than silently degrading. Re-run `claude /login` in a throwaway container. |
 
