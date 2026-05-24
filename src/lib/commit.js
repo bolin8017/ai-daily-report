@@ -110,12 +110,14 @@ function sanitizeToken(str) {
  * @param {string} opts.date - YYYY-MM-DD (for logging only)
  * @param {string} [opts.message] - commit message (default: "report: {date} daily creative brief")
  * @param {string[]} [opts.paths] - paths to include (default: reports + memory + snapshot)
+ * @param {string[]} [opts.removePaths] - paths to remove from data branch (Phase 3 archive job)
  * @returns {Promise<{ pushed: boolean, sha: string | null }>}
  */
-export async function commitAndPush({ date, message, paths }) {
+export async function commitAndPush({ date, message, paths, removePaths }) {
   await ensureGitAuthor();
 
   const addPaths = paths ?? ['data/reports', 'data/memory.json', 'data/feeds-snapshot.json'];
+  const removeList = removePaths ?? [];
   const commitMsg = message ?? `report: ${date} daily creative brief`;
   const explicitPaths = Array.isArray(paths);
   const authEnv = gitAuthEnv();
@@ -149,15 +151,30 @@ export async function commitAndPush({ date, message, paths }) {
     // Stage paths. -f bypasses main's .gitignore which excludes data/.
     // If the caller passed explicit paths (analyze.sh for a specific
     // report file) a missing file is a real bug, not a benign skip.
-    for (const p of addPaths) {
-      if (!fs.existsSync(p)) {
-        if (explicitPaths) {
-          throw new Error(`[commit] explicit path missing on disk: ${p}`);
+    // Only stage additions if removeList is empty OR addPaths was explicitly
+    // provided — Phase 3 archive jobs pass remove-only and shouldn't add.
+    if (removeList.length === 0 || explicitPaths) {
+      for (const p of addPaths) {
+        if (!fs.existsSync(p)) {
+          if (explicitPaths) {
+            throw new Error(`[commit] explicit path missing on disk: ${p}`);
+          }
+          console.error(`[commit] default path missing (skipping): ${p}`);
+          continue;
         }
-        console.error(`[commit] default path missing (skipping): ${p}`);
-        continue;
+        await git(['add', '--force', '--', p], { env: indexEnv });
       }
-      await git(['add', '--force', '--', p], { env: indexEnv });
+    }
+
+    // Stage deletions. `git rm --cached` operates only on the index, so
+    // this removes paths from the next commit without touching the
+    // working tree (which is what `--cached` means here). Used by
+    // scripts/archive-month.sh to move reports off the data branch
+    // after they're safely on Releases.
+    for (const p of removeList) {
+      // Use --ignore-unmatch so re-running the archive job after partial
+      // success doesn't fail on paths already removed in a prior run.
+      await git(['rm', '--cached', '--ignore-unmatch', '--', p], { env: indexEnv });
     }
 
     const newTree = (await git(['write-tree'], { env: indexEnv })).stdout;
@@ -202,16 +219,29 @@ export async function commitAndPush({ date, message, paths }) {
   }
 }
 
-// CLI: `node src/lib/commit.js <date> <message> <path> [path ...]`
+// CLI: `node src/lib/commit.js <date> <message> [--remove] <path> [path ...]`
+//
+// Without --remove: paths are staged as additions (default behavior).
+// With --remove: paths are removed from the data branch via `git rm --cached`.
+// The --remove flag may appear before or after the path list.
 const isMain =
   process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  const [date, message, ...paths] = process.argv.slice(2);
-  if (!date || !message || paths.length === 0) {
-    console.error('usage: commit.js <date> <message> <path> [path ...]');
+  const [date, message, ...rest] = process.argv.slice(2);
+  if (!date || !message || rest.length === 0) {
+    console.error('usage: commit.js <date> <message> [--remove] <path> [path ...]');
     process.exit(2);
   }
-  commitAndPush({ date, message, paths }).catch((err) => {
+  const isRemove = rest[0] === '--remove';
+  const targetPaths = isRemove ? rest.slice(1) : rest;
+  if (targetPaths.length === 0) {
+    console.error('[commit] no paths given (--remove must be followed by paths)');
+    process.exit(2);
+  }
+  const opts = isRemove
+    ? { date, message, removePaths: targetPaths }
+    : { date, message, paths: targetPaths };
+  commitAndPush(opts).catch((err) => {
     console.error(`[commit] FATAL: ${err.message ?? err}`);
     process.exit(1);
   });

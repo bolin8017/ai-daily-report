@@ -226,6 +226,14 @@ async function main() {
     return;
   }
 
+  // Phase 3 pipeline redesign — under FEATURE_ARCHIVE_HOT_COLD=1, staging
+  // + feeds-snapshot become Docker-volume-only ephemeral artifacts (no
+  // longer committed). The data branch stays trimmed to reports + memory.
+  if (process.env.FEATURE_ARCHIVE_HOT_COLD === '1') {
+    banner('FEATURE_ARCHIVE_HOT_COLD=1 — skipping staging commit (volume-only)');
+    return;
+  }
+
   banner('committing staging data');
   const { pushed, sha } = await commitAndPush({
     date,
