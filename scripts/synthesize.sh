@@ -6,6 +6,7 @@
 #   CLAUDE_MODEL — model (default: claude-sonnet-4-6)
 #   STAGING_DIR  — input (default: data/staging)
 #   CURATED_DIR  — curated input dir (default: <STAGING_DIR>/curated)
+#   CLAUDE_CODE_MAX_OUTPUT_TOKENS — output cap (default: 64000)
 #
 # Exit: 0 ok | 1 claude failed | 2 schema validation failed | 3 missing input
 
@@ -16,6 +17,10 @@ STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 TODAY="$(TZ=Asia/Taipei date +%F)"
 REPORT_FILE="data/reports/${TODAY}.json"
+
+# CLI default 32K output cap truncates the synthesizer once curated bundles +
+# editorial layer exceed it. Sonnet 4.6's native cap is 64K.
+export CLAUDE_CODE_MAX_OUTPUT_TOKENS="${CLAUDE_CODE_MAX_OUTPUT_TOKENS:-64000}"
 
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR" "data/reports"
