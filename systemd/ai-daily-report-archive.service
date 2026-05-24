@@ -1,0 +1,50 @@
+# AI Daily Report — monthly archive service
+#
+# Runs the archive-month job inside the same Docker image as the daily
+# pipeline. The job packages reports older than HOT_DAYS (default 60)
+# into monthly tarballs, uploads them to GitHub Releases as
+# archive-YYYY-MM tags, then removes the archived reports from the
+# data branch via src/lib/commit.js --remove.
+#
+# Idempotent. Safe to re-run on the same day; months already uploaded
+# are skipped.
+#
+# Install via scripts/setup-vm.sh.
+
+[Unit]
+Description=AI Daily Report — monthly archive to GitHub Releases
+After=docker.service network-online.target ai-daily-report.service
+Wants=network-online.target
+Requires=docker.service
+OnFailure=ai-daily-report-notify@%n.service
+
+[Service]
+Type=oneshot
+User=__USER__
+ExecStart=__REPO_DIR__/scripts/cron-archive.sh
+
+TimeoutStartSec=900
+
+Environment=TZ=Asia/Taipei
+Environment=REPORT_TIMEZONE=Asia/Taipei
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ai-daily-report-archive
+
+# --- Hardening (same surface as daily service) ---
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=yes
+ReadWritePaths=/var/run/docker.sock __HOME__
+
+NoNewPrivileges=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

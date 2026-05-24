@@ -1,13 +1,14 @@
-// Smoke tests for the config singleton. Module-load-time failures
-// (ConfigSchema.parse throwing on malformed config) are covered here so
-// someone refactoring config.js sees the contract in one place.
+// Smoke tests for the config singleton + theme-sourced fetcher inputs.
+// After the theme bundle cutover, config.json only holds environment-level
+// tuning (cloud-fallback providers, report rendering). The persona / voice /
+// source list lives in themes/<active>/sources.yaml, validated separately.
 
 import { describe, expect, it } from 'vitest';
 import config from '../src/lib/config.js';
+import { getThemeSources } from '../src/lib/theme.js';
 
 describe('lib/config', () => {
-  it('exposes sources and report sections', () => {
-    expect(config).toHaveProperty('sources');
+  it('exposes report section', () => {
     expect(config).toHaveProperty('report');
   });
 
@@ -19,17 +20,25 @@ describe('lib/config', () => {
     }).toThrow(TypeError);
   });
 
-  it('has rsshub_urls as a non-empty ordered list', () => {
-    expect(Array.isArray(config.sources.rsshub_urls)).toBe(true);
-    expect(config.sources.rsshub_urls.length).toBeGreaterThan(0);
-    for (const url of config.sources.rsshub_urls) {
+  it('no longer carries `sources` or `lenses` (moved to theme bundle)', () => {
+    expect(config).not.toHaveProperty('sources');
+    expect(config).not.toHaveProperty('lenses');
+  });
+});
+
+describe('theme sources (post-cutover authoritative source)', () => {
+  it('has rsshub_urls as a non-empty ordered list', async () => {
+    const sources = await getThemeSources('ai-builder');
+    expect(Array.isArray(sources.rsshub_urls)).toBe(true);
+    expect(sources.rsshub_urls.length).toBeGreaterThan(0);
+    for (const url of sources.rsshub_urls) {
       expect(url).toMatch(/^https:\/\//);
     }
   });
 
-  it('github_topics resolves to non-empty strings (tier or legacy)', () => {
-    const gt = config.sources.github_topics;
-    // Either legacy flat shape (`topics: [...]`) or tier shape (`tier: { core, rotating }`).
+  it('github_topics resolves to non-empty strings (tier or legacy)', async () => {
+    const sources = await getThemeSources('ai-builder');
+    const gt = sources.github_topics;
     const allTopics = Array.isArray(gt.topics)
       ? gt.topics
       : [...(gt.tier?.core ?? []), ...(gt.tier?.rotating ?? [])];

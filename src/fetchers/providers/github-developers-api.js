@@ -1,5 +1,5 @@
-import config from '../../lib/config.js';
 import { getReadmeExcerpt, makeOctokit } from '../../lib/github.js';
+import { getThemeSources } from '../../lib/theme.js';
 import { defineProvider } from './_registry.js';
 
 const LOG_PREFIX = 'github-developers';
@@ -74,7 +74,8 @@ async function processUser(octokit, cutoffMs, login, region) {
 }
 
 export async function githubDevelopersApiProvider(_cfg, _ctx) {
-  const DEV_CONFIG = config.sources.github_developers;
+  const themeSources = await getThemeSources();
+  const DEV_CONFIG = themeSources.github_developers;
   if (!DEV_CONFIG.enabled) {
     return { ok: true, items: [] };
   }

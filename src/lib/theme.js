@@ -78,6 +78,26 @@ export async function listActiveSections(themeName) {
   return loaded;
 }
 
+// Cached theme + sources for hot paths (fetcher providers, scope tagger).
+// First call hits disk; subsequent calls return the same object. Safe to share
+// because theme files don't change between pipeline stages within a run.
+let _cachedTheme = null;
+let _cachedThemeName = null;
+
+export async function getCachedTheme(name = process.env.ACTIVE_THEME || 'ai-builder') {
+  if (_cachedTheme && _cachedThemeName === name) {
+    return _cachedTheme;
+  }
+  _cachedTheme = await loadTheme(name);
+  _cachedThemeName = name;
+  return _cachedTheme;
+}
+
+export async function getThemeSources(name) {
+  const theme = await getCachedTheme(name);
+  return theme.sources ?? {};
+}
+
 export async function loadSection(themeName, sectionId, themeArg = null) {
   const theme = themeArg ?? (await loadTheme(themeName));
   const declared = (theme.sections ?? []).find((s) => s.id === sectionId);

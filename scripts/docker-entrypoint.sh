@@ -27,7 +27,7 @@ fi
 # Pass-through mode: if args are not one of our commands, exec them directly.
 MODE="${1:-both}"
 case "$MODE" in
-  collect|analyze|both) ;;
+  collect|analyze|both|archive) ;;
   *) exec "$@" ;;
 esac
 
@@ -118,5 +118,9 @@ case "$MODE" in
     echo "[entrypoint] running Stage 1 + Stage 2"
     node src/collect.js
     exec bash scripts/analyze.sh
+    ;;
+  archive)
+    echo "[entrypoint] running monthly archive job"
+    exec bash scripts/archive-month.sh "${@:2}"
     ;;
 esac
