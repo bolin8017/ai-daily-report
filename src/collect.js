@@ -28,7 +28,6 @@ import './fetchers/providers/native-rss.js';
 import './fetchers/providers/rsshub.js';
 
 import { runAll } from './fetchers/run-all.js';
-import { commitAndPush } from './lib/commit.js';
 import { condenseAll } from './lib/condense.js';
 import config from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
@@ -220,27 +219,14 @@ async function main() {
     console.error(`  ✓ ${path}`);
   }
 
-  // Phase 6 — commit + push
+  // Phase 6 — staging + feeds-snapshot are Docker-volume-only ephemeral
+  // artifacts. The data branch stays trimmed to reports + memory.json
+  // (Stage 4 / analyze.sh commits those once synthesis succeeds).
   if (SKIP_PUSH) {
-    banner('SKIP_PUSH — stopping before commit');
+    banner('SKIP_PUSH — stopping before exit');
     return;
   }
-
-  // Phase 3 pipeline redesign — under FEATURE_ARCHIVE_HOT_COLD=1, staging
-  // + feeds-snapshot become Docker-volume-only ephemeral artifacts (no
-  // longer committed). The data branch stays trimmed to reports + memory.
-  if (process.env.FEATURE_ARCHIVE_HOT_COLD === '1') {
-    banner('FEATURE_ARCHIVE_HOT_COLD=1 — skipping staging commit (volume-only)');
-    return;
-  }
-
-  banner('committing staging data');
-  const { pushed, sha } = await commitAndPush({
-    date,
-    message: `data: ${date} staging data collected`,
-    paths: ['data/staging/', 'data/feeds-snapshot.json'],
-  });
-  banner(pushed ? `done — pushed ${sha}` : 'done — nothing to push');
+  banner('staging data is volume-only — nothing to commit at collect stage');
 }
 
 main().catch((err) => {

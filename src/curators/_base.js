@@ -6,11 +6,10 @@ import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ACTIVE_THEME, FEATURE_THEME_BUNDLE } from '../lib/config.js';
+import { ACTIVE_THEME } from '../lib/config.js';
 import { loadSection } from '../lib/theme.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const LEGACY_CURATORS_DIR = join(__dirname, '..', '..', '.claude', 'curators');
 
 /**
  * Build a deterministic stable id for an item.
@@ -57,26 +56,16 @@ export function stableId(opts) {
 }
 
 /**
- * Read and concatenate the shared voice rules + a per-section curator prompt.
- *
- * When FEATURE_THEME_BUNDLE=1, paths resolve via theme bundle
- * (themes/$ACTIVE_THEME/sections/<id>/curator.md + sections/_shared.md).
- * Otherwise legacy .claude/curators/ paths.
+ * Read and concatenate the shared voice rules + a per-section curator
+ * prompt from the active theme bundle.
  *
  * @param {string} section 'shipped' | 'pulse' | 'market' | 'tech'
  * @returns {Promise<string>}
  */
 export async function mergePrompts(section) {
-  let sharedPath;
-  let sectionPath;
-  if (FEATURE_THEME_BUNDLE) {
-    const sec = await loadSection(ACTIVE_THEME, section);
-    sectionPath = sec.paths.curator_prompt;
-    sharedPath = join(dirname(sectionPath), '..', '_shared.md');
-  } else {
-    sharedPath = join(LEGACY_CURATORS_DIR, '_shared.md');
-    sectionPath = join(LEGACY_CURATORS_DIR, `${section}.md`);
-  }
+  const sec = await loadSection(ACTIVE_THEME, section);
+  const sectionPath = sec.paths.curator_prompt;
+  const sharedPath = join(dirname(sectionPath), '..', '_shared.md');
   const shared = await readFile(sharedPath, 'utf8');
   const sectionPrompt = await readFile(sectionPath, 'utf8');
   return `${shared}\n\n---\n\n${sectionPrompt}`;

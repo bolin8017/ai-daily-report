@@ -70,9 +70,7 @@ export async function loadTheme(name) {
 
 export async function listActiveSections(themeName) {
   const theme = await loadTheme(themeName);
-  const declared = [...theme.sections].sort(
-    (a, b) => (a.order ?? 999) - (b.order ?? 999),
-  );
+  const declared = [...theme.sections].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
   const loaded = [];
   for (const decl of declared) {
     loaded.push(await loadSection(themeName, decl.id, theme));

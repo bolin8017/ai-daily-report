@@ -203,16 +203,15 @@ Optional:
 - `REPORT_TIMEZONE` — default `Asia/Taipei`.
 - `CLAUDE_MODEL` — override the model passed to `claude -p`; default `claude-opus-4-6`.
 - `SKIP_PUSH=1` — skip `git push` in both stages; also accessible as `--skip-push` CLI flag on `src/collect.js`.
-- `FEATURE_THEME_BUNDLE=1` — Phase 1 pipeline redesign flag (default `0`). When `1`, the pipeline reads prompts / sources / sections from `themes/$ACTIVE_THEME/` instead of `.claude/*` + `config.json`. See "Themes" section below.
-- `ACTIVE_THEME` — default `ai-builder`. Name of the theme directory under `themes/` to activate (only consulted when `FEATURE_THEME_BUNDLE=1`).
+- `ACTIVE_THEME` — default `ai-builder`. Name of the theme directory under `themes/` to activate. See "Themes" section below.
+- `HOT_DAYS` — default `60`. Reports newer than this stay on the `data` branch; older ones archive monthly to GitHub Releases.
+- `HYDRATE_MONTHS` — default `12`. How many months of archived reports the CI build pulls back from Releases.
 
 See `.env.example` for all variables.
 
 ## Themes
 
 The pipeline reads its persona, voice, anti-slop rules, source list, and section definitions from `themes/<ACTIVE_THEME>/`. The default theme is `ai-builder`. The structure is designed so that swapping focus (e.g., from "AI builder" to "ML researcher" or "Web3 developer") becomes a single-directory edit rather than touching 8+ files across the repo.
-
-Theme bundle is gated by `FEATURE_THEME_BUNDLE=1` during Phase 1 rollout (currently default `0` — legacy `.claude/` + `config.json` paths still authoritative). Phase 4 cleanup removes the flag and deletes the legacy paths.
 
 ### Theme structure
 
@@ -247,7 +246,7 @@ cp -r themes/ai-builder themes/ml-researcher
 #    themes/ml-researcher/ui-strings.yaml     — tab labels
 
 # 3. Switch
-FEATURE_THEME_BUNDLE=1 ACTIVE_THEME=ml-researcher bash scripts/run.sh --full
+ACTIVE_THEME=ml-researcher bash scripts/run.sh --full
 ```
 
 ### Add-a-section workflow

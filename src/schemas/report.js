@@ -89,13 +89,11 @@ export const ReportSchema = z
   })
   .passthrough();
 
-// Phase 1 pipeline redesign — dynamic composer. Reads theme manifest +
-// per-section schemas to build a ReportSchema equivalent to the static
-// one above when ACTIVE_THEME=ai-builder, but extensible (add/remove
-// sections by editing themes/<theme>/theme.yaml + sections/).
-//
-// Used by resolveReportSchema() to gate on FEATURE_THEME_BUNDLE.
-import { ACTIVE_THEME, FEATURE_THEME_BUNDLE } from '../lib/config.js';
+// Dynamic ReportSchema composer. Reads the active theme's manifest +
+// per-section schemas to build a Zod schema that matches the composed
+// v2.1 report shape. Adding / removing a section is a folder-level
+// operation in themes/<theme>/sections/.
+import { ACTIVE_THEME } from '../lib/config.js';
 import { listActiveSections } from '../lib/theme.js';
 
 export async function buildReportSchema(themeName = ACTIVE_THEME) {
@@ -107,6 +105,9 @@ export async function buildReportSchema(themeName = ACTIVE_THEME) {
   }
   return z
     .object({
+      // Accepts legacy v2 reports (literal 2) and post-cutover v2.1 reports.
+      // Legacy 2 reports remain renderable until they age out of the
+      // 60-day hot window (current hot reports are pre-cutover).
       schema_version: z.union([z.literal(2), z.literal(2.1)]),
       date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
       meta: ReportMetaSchema.optional(),
@@ -118,9 +119,8 @@ export async function buildReportSchema(themeName = ACTIVE_THEME) {
     .passthrough();
 }
 
+// Always returns the composed schema; the previous flag-gated static
+// fallback is gone after Phase 4 cleanup.
 export async function resolveReportSchema() {
-  if (FEATURE_THEME_BUNDLE) {
-    return buildReportSchema();
-  }
-  return ReportSchema;
+  return buildReportSchema();
 }
