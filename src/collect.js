@@ -29,10 +29,11 @@ import './fetchers/providers/rsshub.js';
 
 import { runAll } from './fetchers/run-all.js';
 import { condenseAll } from './lib/condense.js';
-import config from './lib/config.js';
+import { ACTIVE_THEME } from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
 import { resolveEffectiveSources } from './lib/sources.js';
+import { getCachedTheme } from './lib/theme.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
 const FEED_SOURCE_IDS = new Set([
@@ -150,18 +151,18 @@ async function main() {
   buildSnapshot(raw.feeds);
 
   // Phase 3 — tag scope on RAW items BEFORE condense.
-  // Items from global sources get ["global"]; items also matching a lens's
-  // sources_overlay get ["global", "<lens-id>"]. Tagging here (rather than
-  // post-condense) lets condense reserve quota for lens-tagged items so
-  // low-star lens-overlay signals (e.g. niche github topics like kv-cache)
-  // aren't crowded out by popular global items.
+  // Items from global sources get ["global"]; items also matching the theme's
+  // phison_overlay (specific source ids or GitHub topics) get
+  // ["global", "<theme-name>"]. Tagging here (rather than post-condense) lets
+  // condense reserve quota for theme-tagged items so low-star overlay signals
+  // (e.g. niche github topics like kv-cache) aren't crowded out by popular
+  // global items.
   // Only tag the 4 "core" fetchers — new IA-redesign fetchers (leaderboards,
   // mops, hf_trending, arxiv) bypass condense entirely (written raw to staging).
+  const theme = await getCachedTheme(ACTIVE_THEME);
   for (const fetcherKey of ['feeds', 'trending', 'search', 'developers']) {
     if (raw[fetcherKey] && Array.isArray(raw[fetcherKey].items)) {
-      raw[fetcherKey].items = raw[fetcherKey].items.map((item) =>
-        tagItemScope(item, config.lenses),
-      );
+      raw[fetcherKey].items = raw[fetcherKey].items.map((item) => tagItemScope(item, theme));
     }
   }
 

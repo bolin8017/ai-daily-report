@@ -95,12 +95,19 @@ step_systemd() {
   log "installing systemd units..."
 
   # Generate service file from template (substitute __USER__ and __REPO_DIR__)
-  sed -e "s|__USER__|${USER}|g" -e "s|__REPO_DIR__|${REPO_DIR}|g" \
+  sed -e "s|__USER__|${USER}|g" -e "s|__REPO_DIR__|${REPO_DIR}|g" -e "s|__HOME__|${HOME}|g" \
     "$REPO_DIR/systemd/ai-daily-report.service" \
     | sudo tee "$UNIT_DIR/ai-daily-report.service" > /dev/null
 
   # Timer has no user-specific placeholders
   sudo cp "$REPO_DIR/systemd/ai-daily-report.timer" "$UNIT_DIR/ai-daily-report.timer"
+
+  # Monthly archive service + timer (Phase 3 storage hot/cold)
+  sed -e "s|__USER__|${USER}|g" -e "s|__REPO_DIR__|${REPO_DIR}|g" -e "s|__HOME__|${HOME}|g" \
+    "$REPO_DIR/systemd/ai-daily-report-archive.service" \
+    | sudo tee "$UNIT_DIR/ai-daily-report-archive.service" > /dev/null
+
+  sudo cp "$REPO_DIR/systemd/ai-daily-report-archive.timer" "$UNIT_DIR/ai-daily-report-archive.timer"
 
   # Failure notification service (template unit)
   sed -e "s|__USER__|${USER}|g" -e "s|__HOME__|${HOME}|g" \
@@ -108,12 +115,13 @@ step_systemd() {
     | sudo tee "$UNIT_DIR/ai-daily-report-notify@.service" > /dev/null
 
   sudo systemctl daemon-reload
-  sudo systemctl enable ai-daily-report.timer
-  sudo systemctl start ai-daily-report.timer
+  sudo systemctl enable ai-daily-report.timer ai-daily-report-archive.timer
+  sudo systemctl start ai-daily-report.timer ai-daily-report-archive.timer
 
-  log "timer status: $(systemctl is-active ai-daily-report.timer)"
-  log "next trigger:"
-  systemctl list-timers ai-daily-report.timer --no-pager | sed 's/^/  /'
+  log "daily timer:   $(systemctl is-active ai-daily-report.timer)"
+  log "archive timer: $(systemctl is-active ai-daily-report-archive.timer)"
+  log "next triggers:"
+  systemctl list-timers ai-daily-report.timer ai-daily-report-archive.timer --no-pager | sed 's/^/  /'
 
   # Remove old crontab entry if it exists
   if crontab -l 2>/dev/null | grep -q 'cron-run.sh'; then

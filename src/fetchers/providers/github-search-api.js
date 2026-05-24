@@ -1,5 +1,5 @@
-import config from '../../lib/config.js';
 import { getReadmeExcerpt, makeOctokit } from '../../lib/github.js';
+import { getThemeSources } from '../../lib/theme.js';
 import { defineProvider } from './_registry.js';
 
 const LOG_PREFIX = 'github-search';
@@ -99,7 +99,8 @@ async function searchTopic(octokit, topic, since, limit) {
 }
 
 export async function githubSearchApiProvider(_cfg, _ctx) {
-  const TOPICS_CONFIG = config.sources.github_topics;
+  const themeSources = await getThemeSources();
+  const TOPICS_CONFIG = themeSources.github_topics;
   if (!TOPICS_CONFIG.enabled) {
     return { ok: true, items: [] };
   }

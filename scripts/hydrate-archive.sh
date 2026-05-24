@@ -1,37 +1,38 @@
 #!/usr/bin/env bash
-# Phase 3 hydrate job — downloads the last HYDRATE_MONTHS months of
-# archived reports from GitHub Releases into data/reports/ so 11ty
-# pagination can render them at build time.
+# Phase 3 hydrate job — downloads the last HYDRATE_MONTHS months of archived
+# reports from GitHub Releases into data/reports/ so 11ty pagination can
+# render them at build time.
 #
-# Designed to be safe to run in CI (no auth needed for public repo's
-# Releases; uses gh CLI which respects GITHUB_TOKEN if present).
+# Uses curl + GitHub API directly (no gh CLI dependency); works in CI with
+# the default GITHUB_TOKEN.
 #
-# Idempotent: skips months already present in data/reports/.
+# Idempotent: skips months whose reports are already on disk.
 #
 # Usage:
 #   bash scripts/hydrate-archive.sh
 #
 # Env:
-#   HYDRATE_MONTHS=12   # how many months back to hydrate
-#   ACTIVE_THEME=ai-builder (informational; archives are theme-agnostic in shape)
+#   HYDRATE_MONTHS=12        # how many months back to hydrate
+#   GITHUB_REPO=bolin8017/ai-daily-report
+#   GITHUB_TOKEN             # optional for public repos but recommended
 #
 # Exits:
 #   0 success (incl. partial — best-effort hydrate)
-#   1 missing dependency
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
 HYDRATE_MONTHS="${HYDRATE_MONTHS:-12}"
+GITHUB_REPO="${GITHUB_REPO:-bolin8017/ai-daily-report}"
+API_BASE="https://api.github.com/repos/${GITHUB_REPO}"
 REPORTS_DIR="data/reports"
 mkdir -p "$REPORTS_DIR"
 
-if ! command -v gh >/dev/null 2>&1; then
-  echo "[hydrate-archive] WARN: gh CLI not installed — skipping hydration" >&2
+if ! command -v curl >/dev/null 2>&1; then
+  echo "[hydrate-archive] WARN: curl not installed — skipping hydration" >&2
   exit 0
 fi
 
-# Compute last HYDRATE_MONTHS months as YYYY-MM strings.
 THIS_MONTH=$(TZ=Asia/Taipei date +%Y-%m)
 MONTHS=()
 for i in $(seq 1 "$HYDRATE_MONTHS"); do
@@ -44,6 +45,20 @@ echo "[hydrate-archive] targeting last $HYDRATE_MONTHS months: ${MONTHS[*]}"
 WORK_DIR=$(mktemp -d -t hydrate.XXXXXX)
 trap "rm -rf '$WORK_DIR'" EXIT
 
+AUTH_HEADER=()
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  AUTH_HEADER=(-H "Authorization: token $GITHUB_TOKEN")
+fi
+
+# Fetch release JSON for tag $1; emit asset download URLs (name<TAB>url) on stdout
+release_assets() {
+  local tag="$1"
+  curl -sS "${AUTH_HEADER[@]}" \
+    -H "Accept: application/vnd.github+json" \
+    "$API_BASE/releases/tags/$tag" \
+    | jq -r '.assets[]? | [.name, .browser_download_url] | @tsv'
+}
+
 HYDRATED=0
 SKIPPED=0
 FAILED=0
@@ -51,7 +66,6 @@ FAILED=0
 for ym in "${MONTHS[@]}"; do
   TAG="archive-${ym}"
 
-  # Check if any reports for this month are already present.
   EXISTING=$(find "$REPORTS_DIR" -maxdepth 1 -name "${ym}-*.json" 2>/dev/null | wc -l)
   if [ "$EXISTING" -gt 0 ]; then
     echo "[hydrate-archive] $ym already has $EXISTING report(s) locally — skipping"
@@ -59,27 +73,38 @@ for ym in "${MONTHS[@]}"; do
     continue
   fi
 
-  # Try to download the Release tarball.
-  if ! gh release view "$TAG" >/dev/null 2>&1; then
-    echo "[hydrate-archive] $TAG not on Releases — skipping"
+  ASSETS=$(release_assets "$TAG" 2>/dev/null || true)
+  if [ -z "$ASSETS" ]; then
+    echo "[hydrate-archive] $TAG not on Releases (or no assets) — skipping"
     SKIPPED=$((SKIPPED + 1))
     continue
   fi
 
-  if ! gh release download "$TAG" -p "reports-${ym}.tar.gz" -p "reports-${ym}.sha256" -D "$WORK_DIR"; then
-    echo "[hydrate-archive] failed to download $TAG" >&2
+  TAR_URL=$(echo "$ASSETS" | awk -F$'\t' "/^reports-${ym}\\.tar\\.gz/ {print \$2}")
+  SHA_URL=$(echo "$ASSETS" | awk -F$'\t' "/^reports-${ym}\\.sha256/ {print \$2}")
+  if [ -z "$TAR_URL" ] || [ -z "$SHA_URL" ]; then
+    echo "[hydrate-archive] $TAG missing tarball or sha256 asset — skipping" >&2
     FAILED=$((FAILED + 1))
     continue
   fi
 
-  # Verify sha256
+  if ! curl -fsSL "${AUTH_HEADER[@]}" -o "${WORK_DIR}/reports-${ym}.tar.gz" "$TAR_URL"; then
+    echo "[hydrate-archive] failed to download $TAR_URL" >&2
+    FAILED=$((FAILED + 1))
+    continue
+  fi
+  if ! curl -fsSL "${AUTH_HEADER[@]}" -o "${WORK_DIR}/reports-${ym}.sha256" "$SHA_URL"; then
+    echo "[hydrate-archive] failed to download $SHA_URL" >&2
+    FAILED=$((FAILED + 1))
+    continue
+  fi
+
   (cd "$WORK_DIR" && sha256sum -c "reports-${ym}.sha256" >/dev/null 2>&1) || {
     echo "[hydrate-archive] $TAG sha256 mismatch — skipping extract" >&2
     FAILED=$((FAILED + 1))
     continue
   }
 
-  # Extract into data/reports/
   tar -xzf "${WORK_DIR}/reports-${ym}.tar.gz" -C "$REPORTS_DIR"
   COUNT=$(find "$REPORTS_DIR" -maxdepth 1 -name "${ym}-*.json" | wc -l)
   echo "[hydrate-archive] $ym hydrated ($COUNT files)"

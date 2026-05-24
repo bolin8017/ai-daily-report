@@ -1,12 +1,12 @@
-import config from '../../lib/config.js';
+import { getThemeSources } from '../../lib/theme.js';
 import { defineProvider } from './_registry.js';
 
 const TIMEOUT = 30_000;
 
-function defaultUrls() {
-  return process.env.RSSHUB_URL
-    ? [process.env.RSSHUB_URL]
-    : (config.sources.rsshub_urls ?? ['https://rsshub.pseudoyu.com']);
+async function defaultUrls() {
+  if (process.env.RSSHUB_URL) return [process.env.RSSHUB_URL];
+  const sources = await getThemeSources();
+  return sources.rsshub_urls ?? ['https://rsshub.pseudoyu.com'];
 }
 
 function stripHTML(html) {
@@ -60,7 +60,7 @@ function normalizeGeneric(item, sourceName, category, rank) {
 }
 
 export async function rsshubProvider(cfg, ctx) {
-  const urls = (cfg.urls ?? defaultUrls()).map((u) => u.replace(/\/$/, ''));
+  const urls = (cfg.urls ?? (await defaultUrls())).map((u) => u.replace(/\/$/, ''));
   const suffix = `${cfg.route}?format=json&limit=${cfg.limit ?? 30}`;
 
   let lastError;

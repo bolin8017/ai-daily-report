@@ -1,0 +1,18 @@
+# AI Daily Report — monthly archive timer
+#
+# Fires on the 1st of each month at 05:00 Asia/Taipei (= 21:00 UTC
+# previous day), one hour after the regular daily run completes. The
+# archive job is idempotent so missed firings catch up via Persistent=true.
+
+[Unit]
+Description=AI Daily Report — monthly archive 1st 05:00 Asia/Taipei schedule
+
+[Timer]
+# 05:00 Asia/Taipei (UTC+8) on the 1st = 21:00 UTC on last day of prev month
+OnCalendar=*-*-01 21:00:00 UTC
+
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
