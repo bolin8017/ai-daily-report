@@ -117,6 +117,8 @@ docker run --rm \
   --add-host metadata.google.internal:127.0.0.1 \
   --add-host metadata:127.0.0.1 \
   -e GITHUB_TOKEN \
+  -e FIRECRAWL_API_KEY \
+  -e FIRECRAWL_DISABLED \
   -e REPORT_TIMEZONE="${REPORT_TIMEZONE:-Asia/Taipei}" \
   -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}" \
   -v "$VOLUME":/workspace \
