@@ -76,7 +76,11 @@ const TechSection = z.object({
 
 export const ReportSchema = z
   .object({
-    schema_version: z.literal(2),
+    // Accept both 2 (v2.0) and 2.1 (post-2026-05-24 editorial/merge split).
+    // Must stay in sync with buildReportSchema() below — validate.js uses
+    // this static schema, merge.js uses the dynamic one; a literal(2) here
+    // silently rejected every 2.1 report once validate.js stopped skipping it.
+    schema_version: z.union([z.literal(2), z.literal(2.1)]),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     meta: ReportMetaSchema.optional(),
     lead: z.object({ html: z.string() }),
