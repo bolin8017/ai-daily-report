@@ -236,11 +236,13 @@ export default function (eleventyConfig) {
     policy: ['market'],
     台灣媒體: ['market'],
   };
-  // For snapshot source names that don't match any config.json entry verbatim.
+  // Keyed by source *id* (matching feeds-snapshot.json by_source keys), for
+  // theme-overlay-only sources that aren't in the base registry, so
+  // loadSourceCategoryMap() can't resolve their category. Without these they'd
+  // render with empty data-tabs and show only on the synthesis tabs.
   const OVERRIDE_TABS = {
-    'NVIDIA Developer': ['tech'],
-    'Phison Blog': ['tech', 'market'],
-    'SK Hynix News': ['tech'],
+    'phison-blog': ['tech', 'market'],
+    'sk-hynix-news': ['tech'],
   };
 
   function loadSourceCategoryMap() {
