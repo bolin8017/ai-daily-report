@@ -48,9 +48,7 @@ const FEED_ITEM_TYPES = new Set(['rss-post', 'hn-story']);
 // developers, leaderboards, mops, hf_trending, arxiv}` shape so downstream
 // condense / snapshot / scope logic keeps working without per-source rewrite.
 function mapResultsToLegacyShape(results, sources) {
-  const feedIds = new Set(
-    sources.filter((s) => FEED_ITEM_TYPES.has(s.itemType)).map((s) => s.id),
-  );
+  const feedIds = new Set(sources.filter((s) => FEED_ITEM_TYPES.has(s.itemType)).map((s) => s.id));
   const out = {};
   out.feeds = {
     ok: true,
