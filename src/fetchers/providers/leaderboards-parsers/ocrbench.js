@@ -1,30 +1,21 @@
-import { fetchText } from './_base.js';
+import { fetchText, parseCsv } from './_base.js';
 
-const README_URL = 'https://raw.githubusercontent.com/Yuliang-Liu/MultimodalOCR/main/README.md';
+// OCRBench-v2 leaderboard, served as a CSV from the HF Space (resolve endpoint
+// 307-redirects to the HF CDN; Node fetch follows redirects). The CSV is
+// unsorted, so we rank by Average Score descending. (The old v1 README markdown
+// scrape — Yuliang-Liu/MultimodalOCR — is a different, smaller benchmark.)
+const OCRBENCH_CSV_URL =
+  'https://huggingface.co/spaces/ling99/OCRBench-v2-leaderboard/resolve/main/OCRBench_en.csv';
 
-export function parseOcrBenchTable(markdown) {
-  const lines = markdown.split('\n');
-  const tableStart = lines.findIndex((l) => /\|\s*Model\s*\|/i.test(l));
-  if (tableStart === -1) return [];
-  const entries = [];
-  for (let i = tableStart + 2; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line.startsWith('|')) break;
-    const cells = line
-      .split('|')
-      .map((c) => c.trim())
-      .filter(Boolean);
-    if (cells.length < 2) continue;
-    const model = cells[0];
-    const score = parseFloat(cells[cells.length - 1]);
-    if (Number.isNaN(score)) continue;
-    entries.push({ model_id: model, score });
-  }
-  entries.sort((a, b) => b.score - a.score);
-  return entries.map((e, i) => ({ ...e, rank: i + 1 }));
+// Pure: parse OCRBench_en.csv → [{ model_id, score, rank }] ranked by score.
+export function parseOcrBenchCsv(csvText) {
+  return parseCsv(csvText)
+    .map((r) => ({ model_id: r.Model?.trim(), score: Number.parseFloat(r['Average Score']) }))
+    .filter((e) => e.model_id && Number.isFinite(e.score))
+    .sort((a, b) => b.score - a.score)
+    .map((e, i) => ({ ...e, rank: i + 1 }));
 }
 
 export async function fetchOcrBench() {
-  const md = await fetchText(README_URL);
-  return parseOcrBenchTable(md);
+  return parseOcrBenchCsv(await fetchText(OCRBENCH_CSV_URL));
 }
