@@ -19,6 +19,11 @@ describe('parseBfclCsv', () => {
     const csv = ['Rank,Overall Acc,Model', '1,80.0%,"Model, v2"'].join('\n');
     expect(parseBfclCsv(csv)[0].model_id).toBe('Model, v2');
   });
+
+  it('strips a leading UTF-8 BOM so the first header key is intact', () => {
+    const csv = `﻿${['Rank,Overall Acc,Model', '1,80.0%,ModelA'].join('\n')}`;
+    expect(parseBfclCsv(csv)[0]).toMatchObject({ model_id: 'ModelA', rank: 1, score: 80 });
+  });
 });
 
 describe('parseOcrBenchCsv', () => {

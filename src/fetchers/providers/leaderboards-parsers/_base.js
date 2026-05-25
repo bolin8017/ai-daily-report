@@ -63,6 +63,10 @@ export async function fetchJson(url, { timeoutMs = 20000 } = {}) {
 // newlines, and "" escapes. Returns an array of row objects keyed by the
 // header row. Used by the leaderboard parsers that read official CSV exports.
 export function parseCsv(text) {
+  // Strip a leading UTF-8 BOM — otherwise it corrupts the first header key
+  // (e.g. "﻿Model") and that column reads as undefined for every row,
+  // silently emptying the board.
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const records = [];
   let record = [];
   let field = '';
