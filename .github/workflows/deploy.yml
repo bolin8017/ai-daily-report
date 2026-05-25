@@ -3,7 +3,7 @@ name: CI / Deploy to Pages
 # Two responsibilities in one workflow:
 #   - on pull_request: validate the change (lint + test + schema + 11ty
 #     build) before merge so we don't find out at deploy time
-#   - on push to main, scheduled cron (21:00 UTC daily), or manual
+#   - on push to main, scheduled cron (00:00 UTC daily), or manual
 #     workflow_dispatch: validate, then deploy to Pages. The daily cron
 #     is the primary auto-deploy path — pushes to the `data` orphan
 #     branch cannot themselves fire this workflow (no .github/workflows/
@@ -55,12 +55,12 @@ on:
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
   schedule:
-    # 21:00 UTC = 05:00 Asia/Taipei — ~1h after the VM pipeline starts
-    # its daily run at 04:00 Asia/Taipei. Primary auto-deploy path:
+    # 00:00 UTC = 08:00 Asia/Taipei — ~1h after the VM pipeline starts
+    # its daily run at 07:00 Asia/Taipei. Primary auto-deploy path:
     # pushes to the `data` orphan branch cannot trigger workflows
     # (no .github/workflows/ tree on that branch), so we poll on cron
     # and pull whatever reports are currently on `data`.
-    - cron: '0 21 * * *'
+    - cron: '0 0 * * *'
 
 permissions:
   contents: read

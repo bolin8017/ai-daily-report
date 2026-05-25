@@ -45,9 +45,14 @@ try {
 // sections). They predate the strict v2 schema; templates render them via
 // the legacy partial routed by schema_version. Skip them in CI so older
 // archived reports don't break the validation gate when a v2 schema lands.
-if (kind === 'report' && data.schema_version !== 2) {
+//
+// Use `>= 2` (not `=== 2`): v2.0 reports carry schema_version 2 and v2.1
+// (post-2026-05-24 editorial/merge split) carry 2.1 — both render via the v2
+// unified partial and MUST be validated. A bare `!== 2` check silently
+// skipped every 2.1 report, turning this validation gate into a no-op.
+if (kind === 'report' && !(data.schema_version >= 2)) {
   console.error(
-    `↷ ${path} is a v1.x legacy report (no schema_version=2) — skipping v2 schema validation`,
+    `↷ ${path} is a v1.x legacy report (schema_version < 2) — skipping v2 schema validation`,
   );
   process.exit(0);
 }

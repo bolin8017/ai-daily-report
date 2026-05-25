@@ -22,7 +22,7 @@ paths:
 
 - Template variables use `__PLACEHOLDER__` (double underscores): `__USER__`, `__REPO_DIR__`, `__HOME__`
 - `scripts/setup-vm.sh` substitutes placeholders with `sed -e "s|__X__|${X}|g"` and writes to `/etc/systemd/system/`
-- The timer fires at UTC time equivalent to 04:00 Asia/Taipei (currently 20:00 UTC)
+- The timer fires at UTC time equivalent to 07:00 Asia/Taipei (currently 23:00 UTC)
 - `Persistent=true` ensures catch-up after missed triggers
 
 ## When editing scripts

@@ -1,14 +1,16 @@
 # AI Daily Report — systemd timer unit
 #
-# Triggers the pipeline daily at 04:00 Asia/Taipei.
+# Triggers the pipeline daily at 07:00 Asia/Taipei.
 # Install via scripts/setup-vm.sh.
 
 [Unit]
-Description=AI Daily Report — daily 04:00 Asia/Taipei schedule
+Description=AI Daily Report — daily 07:00 Asia/Taipei schedule
 
 [Timer]
-# 04:00 Asia/Taipei (UTC+8) = 20:00 UTC previous calendar day
-OnCalendar=*-*-* 20:00:00 UTC
+# 07:00 Asia/Taipei (UTC+8) = 23:00 UTC previous calendar day.
+# Picked to land after Taiwan tech/finance media publish their morning
+# stories (~06:00–07:00 local), so the daily brief captures same-day TW news.
+OnCalendar=*-*-* 23:00:00 UTC
 
 # If the VM was down at trigger time, run as soon as it comes back
 Persistent=true
