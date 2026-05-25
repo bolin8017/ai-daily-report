@@ -62,6 +62,12 @@ if [ "$FEATURE_NEW_PIPELINE" = "1" ]; then
     COMMIT_PATHS=()
     [ -f "$REPORT_FILE" ] && COMMIT_PATHS+=("$REPORT_FILE")
     [ -f "data/memory.json" ] && COMMIT_PATHS+=("data/memory.json")
+    # feeds-snapshot.json drives the footer source-status pills + community
+    # feed lists at 11ty build time. Stage 1 rebuilds it every run; it's
+    # otherwise volume-only, but CI builds from the data branch, so commit it
+    # too or the footer renders a frozen snapshot (it had been stuck on the
+    # last pre-cutover commit, showing stale source counts).
+    [ -f "data/feeds-snapshot.json" ] && COMMIT_PATHS+=("data/feeds-snapshot.json")
     if [ "${#COMMIT_PATHS[@]}" -eq 0 ]; then
       echo "[analyze] no outputs to commit — exiting nonzero" >&2
       exit 1

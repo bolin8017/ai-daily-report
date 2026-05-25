@@ -362,7 +362,7 @@ Two timers fire two services, both ultimately host-side wrappers around `docker 
 3. `buildSnapshot(raw.feeds)` — writes `data/feeds-snapshot.json` for 11ty
 4. `condenseAll(raw)` — ≤8500-token objects for prompt-size control
 5. Write condensed data + metadata to `data/staging/`
-6. **No commit** — staging and `feeds-snapshot.json` are Docker-volume-only ephemeral artifacts now. The `data` branch is kept trimmed to reports + `memory.json`; only Stage 4's outputs get pushed.
+6. **No commit here** — Stage 1 only writes the volume; commits happen in Stage 4. Staging stays Docker-volume-only, but the `feeds-snapshot.json` it builds is committed by Stage 4 (the 11ty footer needs it at build time). The `data` branch otherwise stays trimmed to reports + `memory.json`.
 
 **Stages 2-4 — Analyze** (`scripts/analyze.sh` orchestrates three sub-stages):
 
@@ -386,7 +386,7 @@ Reports accumulate forever, but the `data` orphan branch is cloned on every cont
 
 At CI build time `scripts/hydrate-archive.sh` pulls the last `HYDRATE_MONTHS` (default 12) months of cold tarballs back into `data/reports/` so 11ty can paginate them into archive pages. Both scripts talk to the GitHub REST API directly with **curl**, not the `gh` CLI — the production VM doesn't have `gh` installed, and adding it just for an upload wasn't worth the dependency.
 
-This is why Stage 1 stopped committing staging and `feeds-snapshot.json` to the `data` branch: keeping the branch lean is the whole point, so only durable artifacts (reports + memory) belong there.
+This is why Stage 1's bulky staging (condensed source dumps, ~hundreds of KB) stays off the `data` branch: keeping the branch lean is the whole point, so only durable artifacts (reports + memory) — plus the small, overwritten `feeds-snapshot.json` the 11ty footer reads at build time — belong there.
 
 ## Trade-offs and known issues
 

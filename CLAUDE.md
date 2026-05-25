@@ -14,7 +14,7 @@ For the public-facing overview and quick start, see [README.md](./README.md). Fo
 
 The pipeline is split into **four stages**, all running inside a Docker container on the VM:
 
-- **Stage 1 — collect** (`src/collect.js`): pure Node.js — fetches 8 sources in parallel (feeds, github-trending, github-search with topic rotation, github-developers, leaderboards, mops, hf-trending, arxiv), condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`. **Does not commit** — staging + feeds-snapshot are Docker-volume-only ephemeral artifacts (see "Storage" below).
+- **Stage 1 — collect** (`src/collect.js`): pure Node.js — fetches 8 sources in parallel (feeds, github-trending, github-search with topic rotation, github-developers, leaderboards, mops, hf-trending, arxiv), condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`. **Does not commit** — staging is Docker-volume-only; the feeds snapshot it builds is committed later by Stage 4 for the 11ty footer (see "Storage" below).
 - **Stage 2 — curate** (`scripts/curate.sh`): 4 parallel `claude -p --model claude-haiku-4-5` subprocesses (one per section: shipped / pulse / market / tech). Each reads its staging slice, applies its prompt at `themes/<ACTIVE_THEME>/sections/<section>/curator.md`, writes validated JSON to `data/staging/curated/<section>.json`. Critical sections (shipped, pulse) failure aborts; non-critical (market, tech) failure logs degraded.
 - **Stage 3 — synthesize** (`scripts/synthesize.sh`): single `claude -p --model claude-sonnet-4-6` invocation. Reads curated/* + raw staging + memory, applies `themes/<ACTIVE_THEME>/synthesizer.md` + `quality.md`, writes **only the editorial layer** to `data/staging/editorial.json` (lead / signals / ideation, `EditorialSchema 2.1-editorial`) + updated `data/memory.json`. It does **not** emit curated sub-groups — that's what blew the 32K output-token cap on 2026-05-24.
 - **Stage 4 — merge** (`scripts/merge-report.sh` → `src/lib/merge.js`): pure Node, no LLM, idempotent. Composes the final `data/reports/<date>.json` (ReportSchema 2.1) from `editorial.json` + `curated/*.json`, validating that every `source_links` id exists in the curated outputs (aborts on dangling references).
@@ -28,7 +28,7 @@ GitHub Actions picks up either push (main for code, data for daily artifacts) an
 Two long-lived branches with distinct roles:
 
 - **`main`**: human-authored source — code, templates, CI, scripts, config. Bot never pushes here.
-- **`data`** (orphan branch, no shared history with `main`): bot-produced artifacts — `data/reports/` (rolling 60-day hot window) and `data/memory.json`. Only the merge + commit step (Stage 4 / `analyze.sh`) lands here. Staging + feeds-snapshot are no longer committed (Docker-volume-only); older reports archive to GitHub Releases (see "Storage").
+- **`data`** (orphan branch, no shared history with `main`): bot-produced artifacts — `data/reports/` (rolling 60-day hot window), `data/memory.json`, and `data/feeds-snapshot.json` (small, overwritten each run — the 11ty footer reads it at build time). Only the merge + commit step (Stage 4 / `analyze.sh`) lands here. Staging is not committed (Docker-volume-only); older reports archive to GitHub Releases (see "Storage").
 
 `src/lib/commit.js` builds commits using git plumbing (`read-tree` into an isolated `GIT_INDEX_FILE`, `write-tree`, `commit-tree`, then `push commit:refs/heads/data`) — never checks out the data branch, never touches main's working tree or index. It also has a `--remove` mode (used by the monthly archive job to delete archived reports from the data branch). In CI the build job checks out `main` for code, then `git fetch` + `git checkout refs/remotes/origin/data -- data/` to pull in the recent reports, then hydrates older months from Releases before running 11ty.
 
@@ -136,7 +136,7 @@ Two long-lived branches with distinct roles:
 │   ├── reports/                  # Daily reports (YYYY-MM-DD.json), rolling 60-day hot window
 │   ├── staging/                  # Stage 1→2→3 working files (Docker-volume-only, not committed)
 │   ├── memory.json               # v2 cross-day state
-│   └── feeds-snapshot.json       # Condensed snapshot for 11ty templates (rebuilt each run, not committed)
+│   └── feeds-snapshot.json       # Condensed snapshot for 11ty templates (rebuilt each run, committed for the footer/feed lists)
 ├── docs/                         # Project documentation (architecture, data-sources, firewall, specs)
 ├── _site/                        # 11ty build output (gitignored — built in CI)
 ├── .github/workflows/deploy.yml  # CI: hydrate archive → build → deploy to GitHub Pages via OIDC
@@ -192,7 +192,8 @@ Hydrated into the working tree by `scripts/docker-entrypoint.sh` on each contain
 
 - `data/memory.json` (on `data` branch) — v2 schema: `short_term` (7-day) + `long_term` (30-day promotion), `topics` (frequency tracking), `narrative_arcs` (multi-day patterns), `predictions` (with status tracking). Written by Stage 3.
 - `data/reports/YYYY-MM-DD.json` (on `data` branch, 60-day hot window) — daily reports composed by Stage 4. 11ty reads this directory to generate archive pages.
-- `data/staging/` + `data/feeds-snapshot.json` — **ephemeral, Docker-volume-only** (no longer committed). Staging holds Stage 1 condensed files + `metadata.json` + Stage 2 `curated/*` + Stage 3 `editorial.json`. feeds-snapshot is rebuilt each run for the 11ty templates.
+- `data/staging/` — **ephemeral, Docker-volume-only** (not committed). Holds Stage 1 condensed files + `metadata.json` + Stage 2 `curated/*` + Stage 3 `editorial.json`.
+- `data/feeds-snapshot.json` — rebuilt each Stage 1 run and **committed by Stage 4** (small, overwritten daily). The 11ty footer source-status pills + community feed lists read it at build time, and CI builds from the `data` branch, so it must be committed or the footer renders a stale snapshot.
 - **Cold archive** — reports older than `HOT_DAYS` (60) live in GitHub Releases as `archive-YYYY-MM` tags (`reports-YYYY-MM.tar.gz` + sha256), produced by the monthly archive job.
 
 ## Environment
