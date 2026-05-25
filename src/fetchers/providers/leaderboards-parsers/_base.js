@@ -58,3 +58,54 @@ export async function fetchJson(url, { timeoutMs = 20000 } = {}) {
   if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
   return resp.json();
 }
+
+// Minimal RFC-4180-ish CSV parser: handles quoted fields, embedded commas /
+// newlines, and "" escapes. Returns an array of row objects keyed by the
+// header row. Used by the leaderboard parsers that read official CSV exports.
+export function parseCsv(text) {
+  // Strip a leading UTF-8 BOM — otherwise it corrupts the first header key
+  // (e.g. "﻿Model") and that column reads as undefined for every row,
+  // silently emptying the board.
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  const records = [];
+  let record = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ',') {
+      record.push(field);
+      field = '';
+    } else if (c === '\n') {
+      record.push(field);
+      records.push(record);
+      record = [];
+      field = '';
+    } else if (c !== '\r') {
+      field += c;
+    }
+  }
+  if (field.length > 0 || record.length > 0) {
+    record.push(field);
+    records.push(record);
+  }
+  if (records.length === 0) return [];
+  const headers = records[0];
+  return records
+    .slice(1)
+    .filter((r) => r.length === headers.length)
+    .map((r) => Object.fromEntries(headers.map((h, idx) => [h, r[idx]])));
+}

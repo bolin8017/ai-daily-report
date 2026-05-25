@@ -1,16 +1,16 @@
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
-import { fetchMteb } from './leaderboards-parsers/mteb.js';
 import { fetchOcrBench } from './leaderboards-parsers/ocrbench.js';
-import { fetchPinchBench } from './leaderboards-parsers/pinchbench.js';
 import { fetchSwebench } from './leaderboards-parsers/swebench.js';
 
+// mteb + pinchbench dropped 2026-05-25: MTEB no longer publishes a precomputed
+// ranking (the leaderboard is computed client-side by the mteb package), and
+// pinchbench exposes no stable API (data only lives in its Next.js RSC stream).
+// Both would require exactly the fragile scraping this provider moved away from.
 const FETCHERS = {
   bfcl: fetchBfcl,
-  mteb: fetchMteb,
   ocrbench: fetchOcrBench,
-  pinchbench: fetchPinchBench,
   swebench: fetchSwebench,
 };
 

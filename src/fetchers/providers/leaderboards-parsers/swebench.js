@@ -1,19 +1,25 @@
 import { fetchJson } from './_base.js';
 
-const PRIMARY_URL =
-  'https://raw.githubusercontent.com/swe-bench/experiments/main/evaluation/verified/leaderboard.json';
+// The official leaderboard site's own data file. Note: branch is `master`, and
+// the file holds several named leaderboards; we track "Verified" and rank by
+// `resolved` (% of SWE-bench Verified instances solved). The old
+// swe-bench/experiments path no longer exists.
+const SWEBENCH_URL =
+  'https://raw.githubusercontent.com/SWE-bench/swe-bench.github.io/master/data/leaderboards.json';
+const DEFAULT_SPLIT = 'Verified';
 
-export function parseSwebenchResults(raw) {
-  const arr = raw?.results ?? raw?.entries ?? (Array.isArray(raw) ? raw : []);
-  const sorted = [...arr].sort((a, b) => (b.resolved_rate ?? 0) - (a.resolved_rate ?? 0));
-  return sorted.map((r, i) => ({
-    model_id: r.model ?? r.system ?? r.name,
-    rank: i + 1,
-    score: r.resolved_rate ?? r.score ?? null,
-  }));
+// Pure: pick the named leaderboard, rank its entries by `resolved` desc.
+export function parseSwebenchLeaderboards(data, split = DEFAULT_SPLIT) {
+  const boards = Array.isArray(data?.leaderboards) ? data.leaderboards : [];
+  const board = boards.find((b) => b.name === split);
+  if (!board || !Array.isArray(board.results)) return [];
+  return board.results
+    .map((r) => ({ model_id: r.name?.trim(), score: Number.parseFloat(r.resolved) }))
+    .filter((e) => e.model_id && Number.isFinite(e.score))
+    .sort((a, b) => b.score - a.score)
+    .map((e, i) => ({ ...e, rank: i + 1 }));
 }
 
 export async function fetchSwebench() {
-  const raw = await fetchJson(PRIMARY_URL);
-  return parseSwebenchResults(raw);
+  return parseSwebenchLeaderboards(await fetchJson(SWEBENCH_URL));
 }
