@@ -16,7 +16,7 @@ This document explains the design decisions behind the AI Daily Report pipeline.
 
 ```mermaid
 flowchart TD
-  Timer["systemd timer @ 04:00 Asia/Taipei<br/>Persistent=true"] --> Host
+  Timer["systemd timer @ 07:00 Asia/Taipei<br/>Persistent=true"] --> Host
 
   subgraph Host["GCP e2-micro VM"]
     CronRun["scripts/cron-run.sh<br/>loads GITHUB_TOKEN from ~/.ai-daily-report.env"]
@@ -58,7 +58,7 @@ flowchart TD
   Timer --> CronRun
   CommitReport --> DataBranch[(data branch<br/>orphan, bot-only — reports + memory)]
 
-  GHACron[scheduled cron<br/>21:00 UTC daily] --> GHA[GitHub Actions: deploy.yml]
+  GHACron[scheduled cron<br/>00:00 UTC daily] --> GHA[GitHub Actions: deploy.yml]
 
   subgraph GHACI["GITHUB ACTIONS — hosted, free"]
     GHA --> Hydrate[hydrate data/ from<br/>`data` branch]
@@ -109,7 +109,7 @@ sequenceDiagram
   participant GHA as GitHub Actions
   participant Pages
 
-  Timer->>CronRun: trigger (04:00 Asia/Taipei)
+  Timer->>CronRun: trigger (07:00 Asia/Taipei)
   CronRun->>CronRun: load ~/.ai-daily-report.env
   CronRun->>Docker: run ai-daily-report:latest --memory=600m
   Docker->>Entry: start (GITHUB_TOKEN injected, /home/pipeline/.claude mounted rw)
@@ -138,7 +138,7 @@ sequenceDiagram
   AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema + MemorySchema
   AnalyzeSh->>Git: commit + push report & memory (x-access-token URL)
 
-  Note over GHA: GHA cron fires independently<br/>at 21:00 UTC daily (not caused<br/>by the analyze push)
+  Note over GHA: GHA cron fires independently<br/>at 00:00 UTC daily (not caused<br/>by the analyze push)
   GHA->>Git: fetch + checkout origin/data -- data/
   GHA->>GHA: lint + test + validate + 11ty build
   GHA->>Pages: actions/deploy-pages OIDC
@@ -325,13 +325,13 @@ The production pipeline runs on a Google Cloud **e2-micro** VM (always-free tier
 | `docker build -t ai-daily-report:latest` | Builds the image from `Dockerfile`: node:22-slim + git + tini + `@anthropic-ai/claude-code` globally installed |
 | Claude Code OAuth (one time, interactive) | Run `claude /login` inside a throwaway container with `-v ~/.claude:/home/pipeline/.claude` mounted **read-write**; credentials land on the host and persist via bind mount. The mount must be writable so the CLI can refresh the OAuth token before expiry — a read-only mount deadlocks the pipeline (see commit `faea48e`). |
 | Write `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh` at invocation time; `chmod 600` to protect the PAT |
-| Install systemd timer units | `ai-daily-report.timer` (daily `OnCalendar=*-*-* 04:00:00` Asia/Taipei) **and** `ai-daily-report-archive.timer` (monthly). Both `Persistent=true` so missed runs (e.g., after a VM reboot) are caught up automatically |
+| Install systemd timer units | `ai-daily-report.timer` (daily `OnCalendar=*-*-* 07:00:00` Asia/Taipei) **and** `ai-daily-report-archive.timer` (monthly). Both `Persistent=true` so missed runs (e.g., after a VM reboot) are caught up automatically |
 
 **systemd timers:**
 
 Two timers fire two services, both ultimately host-side wrappers around `docker run`:
 
-- `ai-daily-report.timer` → `ai-daily-report.service` → `scripts/cron-run.sh` — the daily 04:00 report pipeline.
+- `ai-daily-report.timer` → `ai-daily-report.service` → `scripts/cron-run.sh` — the daily 07:00 report pipeline.
 - `ai-daily-report-archive.timer` → `scripts/cron-archive.sh` — the monthly hot/cold archive job (see "Storage: hot/cold split" below).
 
 `Persistent=true` on both ensures that if the VM was down at the scheduled time, the run triggers as soon as the machine comes back up. Logs are captured via `journalctl -u ai-daily-report`.
@@ -371,7 +371,7 @@ Two timers fire two services, both ultimately host-side wrappers around `docker 
 3. **Merge** (`scripts/merge-report.sh` → `src/lib/merge.js`) — mechanical, no LLM, idempotent. Composes `data/reports/YYYY-MM-DD.json` from `editorial.json` + `curated/*.json` and validates that every `source_links` id resolves to a real curated item (aborts on a dangling link).
 4. Validate outputs: composed `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
 5. Commit via `src/lib/commit.js` — stages the report + memory files, commits as `report: <date> daily creative brief`, and pushes to the `data` orphan branch (git plumbing + `x-access-token:$GITHUB_TOKEN` URL rewrite; never touches `main`'s working tree).
-6. GHA's daily 21:00 UTC cron hydrates `data/` from the `data` branch and deploys to Pages. The cron is independent of the analyze push — the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow.
+6. GHA's daily 00:00 UTC cron hydrates `data/` from the `data` branch and deploys to Pages. The cron is independent of the analyze push — the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow.
 
 **Why systemd timer instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing you onto `ANTHROPIC_API_KEY` (paid, defeats the Max advantage) or OAuth secret juggling. A VM with a one-time interactive `claude /login` sidesteps both — the login token persists in `~/.claude` and every subsequent timer invocation just works.
 

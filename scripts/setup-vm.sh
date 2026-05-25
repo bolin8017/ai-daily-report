@@ -7,7 +7,7 @@
 #   2. Add 2GB swap (required because the VM has limited RAM and runs other
 #      services; LLM synthesis peaks need headroom to avoid OOM)
 #   3. Clone the repo and build the Docker image
-#   4. Install systemd timer for daily 04:00 Asia/Taipei execution
+#   4. Install systemd timer for daily 07:00 Asia/Taipei execution
 #   5. Print instructions for Claude CLI OAuth and secrets
 #
 # Usage on the VM:
@@ -176,13 +176,13 @@ Remaining manual steps:
    Watch for a new commit on origin/main and a green GitHub Actions build.
 
 4. VERIFY TIMER
-   The systemd timer is already enabled and will fire daily at 04:00 Asia/Taipei.
+   The systemd timer is already enabled and will fire daily at 07:00 Asia/Taipei.
    Check status with:
 
      systemctl list-timers ai-daily-report.timer
      journalctl -u ai-daily-report --since today
 
-   If the VM reboots and misses 04:00, the timer catches up automatically
+   If the VM reboots and misses 07:00, the timer catches up automatically
    (Persistent=true).
 
 EOF

@@ -3,7 +3,7 @@
 [![Live](https://img.shields.io/badge/live-bolin8017.github.io/ai--daily--report-e2a84b)](https://bolin8017.github.io/ai-daily-report/)
 [![Deploy](https://github.com/bolin8017/ai-daily-report/actions/workflows/deploy.yml/badge.svg)](https://github.com/bolin8017/ai-daily-report/actions/workflows/deploy.yml)
 
-An automated daily tech brief for **AI engineers who build** — RAG, VLM, fine-tuning, agents, MCP. A Claude Code agent collects signals from 15+ sources, synthesizes them into a senior-analyst-style brief, and publishes to GitHub Pages. Every day at 04:00 Asia/Taipei, zero human intervention.
+An automated daily tech brief for **AI engineers who build** — RAG, VLM, fine-tuning, agents, MCP. A Claude Code agent collects signals from 15+ sources, synthesizes them into a senior-analyst-style brief, and publishes to GitHub Pages. Every day at 07:00 Asia/Taipei, zero human intervention.
 
 > **Live:** https://bolin8017.github.io/ai-daily-report/
 
@@ -16,7 +16,7 @@ systemd timer → Docker container (GCP e2-micro)
   ├── Stage 3 (synthesize): claude -p (Sonnet 4.6) → editorial.json + memory
   └── Stage 4 (merge):      mechanical compose → report.json → validate → commit
 
-GitHub Actions cron (daily 21:00 UTC) → pull from `data` branch → 11ty → Pages
+GitHub Actions cron (daily 00:00 UTC) → pull from `data` branch → 11ty → Pages
 ```
 
 **Stage 1 (collect)** fetches GitHub Trending, GitHub topic search, Hacker News, Lobsters, Dev.to, HuggingFace Daily Papers, and ~10 RSS sources in parallel, then condenses each to fit the LLM context budget. Output stays in the Docker volume (`data/staging/`) — no longer committed to the `data` branch.
