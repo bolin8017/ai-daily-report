@@ -4,7 +4,7 @@
 
 You curate the **市場 (Market)** section. Read:
 - `data/staging/unified.json` (market-category feeds)
-- `data/staging/mops.json` (TWSE OpenAPI 重大訊息 filtered to tracked tickers)
+- `data/staging/mops.json` (TWSE + TPEx OpenAPI 重大訊息 filtered to tracked tickers)
 
 Write strict JSON matching `MarketCuratedSchema` to `data/staging/curated/market.json`.
 
@@ -51,9 +51,9 @@ Same fields as ma. `region` important.
 
 ### taiwan (cap 8) — 台灣動態
 
-Source: mops.json (TWSE 重大訊息 for tracked tickers) + feeds.json from `iThome`, `TechNews`, `Inside`, `TechOrange`, `DIGITIMES`.
+Source: mops.json (TWSE + TPEx 重大訊息 for tracked tickers) + feeds.json from `iThome`, `TechNews`, `Inside`, `TechOrange`, `EE Times Taiwan`, `鉅亨網科技`, `經濟日報產業`, `T客邦`, `國科會 NSTC`.
 
-- **Include:** Taiwan AI vendor product news (MediaTek / TSMC / Phison / ASE etc.), MOPS 重大訊息 from tracked tickers (8299 Phison / 2454 聯發科 / 2330 台積電 / 3711 日月光 / 2382 廣達 / 3231 緯創 / 6669 緯穎 / 2376 技嘉 / 2357 華碩 / 2353 宏碁), Taiwan AI startup developments, 公部門 AI 政策.
+- **Include:** Taiwan AI vendor product news (MediaTek / TSMC / Phison / ASE etc.), MOPS 重大訊息 from the tracked Phison-ecosystem watchlist — 記憶體/控制 IC: 8299 群聯 / 2337 旺宏 / 2344 華邦電 / 2408 南亞科 / 3260 威剛 / 4967 十銓 / 8271 宇瞻 / 2451 創見; aiDAPTIV+ 夥伴與 AI server/PC: 2376 技嘉 / 3515 華擎 / 2395 研華 / 6166 凌華 / 2377 微星 / 2357 華碩 / 2353 宏碁 / 6669 緯穎 / 2382 廣達 / 3231 緯創 / 2356 英業達; 晶圓/封測/server 晶片: 2330 台積電 / 3711 日月光 / 2454 聯發科 / 5274 信驊 — Taiwan AI startup developments, 公部門 AI 政策.
 - **Exclude:** consumer tech reviews, generic gadget news, recruitment ads.
 - **Audience auto-upgrade:** items mentioning Phison / SK Hynix / Micron / Samsung / memory / SSD / KV-cache / on-device / aiDAPTIV / HBM auto-upgrade from `general` to `both`.
 

@@ -36,55 +36,24 @@ import { resolveEffectiveSources } from './lib/sources.js';
 import { getCachedTheme } from './lib/theme.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
-const FEED_SOURCE_IDS = new Set([
-  'hackernews',
-  'hackernews-show',
-  'dev-to-top',
-  'lobsters',
-  'changelog',
-  'simon-willison',
-  'gary-marcus',
-  'karpathy',
-  'eugene-yan',
-  'hamel-husain',
-  'lilian-weng',
-  'sebastian-raschka',
-  'latent-space',
-  'anthropic-news',
-  'google-ai-blog',
-  'openai',
-  'microsoft-research-ai',
-  'aws-ml-blog',
-  'nvidia-developer-blog',
-  'meta-research',
-  'samsung-semiconductor',
-  'blocksandfiles',
-  'vllm-releases',
-  'lmcache-releases',
-  'aidaptiv-phison-releases',
-  'phoronix',
-  'lwn',
-  'segmentfault',
-  'oschina',
-  'ithome',
-  'inside',
-  'techorange',
-  'technews-tw',
-  'digitimes',
-  'techcrunch-venture',
-  'stratechery',
-  'lawfare',
-]);
+// Feed-type sources are exactly the RSS/Atom + Hacker News chains; everything
+// else (github-*, hf-trending, mops, arxiv, leaderboard-*) is a structured
+// fetcher mapped to its own bucket below. Derive the set from the resolved
+// source registry by itemType rather than maintaining a parallel hardcoded
+// list — a hardcoded list silently dropped every theme-overlay feed (phison-blog,
+// sk-hynix-news) and any newly-added source that wasn't also added here.
+const FEED_ITEM_TYPES = new Set(['rss-post', 'hn-story']);
 
 // Map per-source chain results into the legacy `{feeds, trending, search,
 // developers, leaderboards, mops, hf_trending, arxiv}` shape so downstream
 // condense / snapshot / scope logic keeps working without per-source rewrite.
-function mapResultsToLegacyShape(results) {
+function mapResultsToLegacyShape(results, sources) {
+  const feedIds = new Set(sources.filter((s) => FEED_ITEM_TYPES.has(s.itemType)).map((s) => s.id));
   const out = {};
   out.feeds = {
     ok: true,
     items: Object.entries(results)
-      .filter(([id]) => FEED_SOURCE_IDS.has(id))
+      .filter(([id]) => feedIds.has(id))
       .flatMap(([, r]) => r.items ?? []),
   };
   out.trending = results['github-trending'] ?? { ok: false, items: [] };
@@ -143,7 +112,7 @@ async function main() {
     date,
     minHealthy: Math.ceil(sources.length / 3),
   });
-  const raw = mapResultsToLegacyShape(results);
+  const raw = mapResultsToLegacyShape(results, sources);
   if (degraded.length) raw._degraded = degraded;
 
   // Phase 2 — build feeds snapshot (committed to data/feeds-snapshot.json for 11ty)

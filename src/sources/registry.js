@@ -208,7 +208,7 @@ export default [
     homepageUrl: 'https://lwn.net/',
   }),
 
-  // === 中文社群 + 台灣媒體 (7) ===
+  // === 中文社群 + 台灣媒體 (10) ===
   rss('segmentfault', 'SegmentFault', '中文社群', 'https://segmentfault.com/feeds', {
     homepageUrl: 'https://segmentfault.com/',
   }),
@@ -218,7 +218,10 @@ export default [
   rss('ithome', 'iThome', '中文社群', 'https://www.ithome.com.tw/rss', {
     homepageUrl: 'https://www.ithome.com.tw/',
   }),
-  rss('inside', 'Inside', '台灣媒體', 'https://feeds.feedburner.com/inside', {
+  // Native INSIDE feed. The old feeds.feedburner.com/inside endpoint went dead
+  // (empty / unrelated blog); the chain only recovered correct content via the
+  // Jina scrape fallback. inside.com.tw/feed/rss is the real native feed.
+  rss('inside', 'Inside', '台灣媒體', 'https://www.inside.com.tw/feed/rss', {
     homepageUrl: 'https://www.inside.com.tw/',
   }),
   rss('techorange', 'TechOrange', '台灣媒體', 'https://buzzorange.com/techorange/feed/', {
@@ -227,11 +230,29 @@ export default [
   rss('technews-tw', 'TechNews', '台灣媒體', 'https://technews.tw/feed/', {
     homepageUrl: 'https://technews.tw/',
   }),
-  rss('digitimes', 'DIGITIMES', '台灣媒體', 'https://www.digitimes.com.tw/rss/all.xml', {
-    homepageUrl: 'https://www.digitimes.com.tw/',
+  // DIGITIMES dropped 2026-05-25: its RSS (/rss/all.xml) now 404s and the site
+  // blocks scrapers, so the chain returned 0 items every run. Replaced by the
+  // semiconductor/finance feeds below (verified live 2026-05-25).
+  rss('eettaiwan', 'EE Times Taiwan', '台灣媒體', 'https://www.eettaiwan.com/feed/', {
+    homepageUrl: 'https://www.eettaiwan.com/',
+  }),
+  rss('cnyes-tech', '鉅亨網科技', '台灣媒體', 'https://news.cnyes.com/rss/v1/news/category/tech', {
+    homepageUrl: 'https://news.cnyes.com/',
+  }),
+  rss(
+    'money-udn-tech',
+    '經濟日報產業',
+    '台灣媒體',
+    'https://money.udn.com/rssfeed/news/1001/5591?ch=money',
+    {
+      homepageUrl: 'https://money.udn.com/money/cate/5591',
+    },
+  ),
+  rss('techbang', 'T客邦', '台灣媒體', 'https://feeds.feedburner.com/techbang', {
+    homepageUrl: 'https://www.techbang.com/',
   }),
 
-  // === Market / Policy (3) ===
+  // === Market / Policy (4) ===
   rss(
     'techcrunch-venture',
     'TechCrunch Venture',
@@ -246,6 +267,11 @@ export default [
   }),
   rss('lawfare', 'Lawfare', 'policy', 'https://www.lawfaremedia.org/feeds/articles', {
     homepageUrl: 'https://www.lawfaremedia.org/',
+  }),
+  // 國科會 — Taiwan science/tech policy + grants. Low-frequency signal source
+  // for 市場 policy/taiwan; curator filters out recruiting/admin noise.
+  rss('nstc', '國科會 NSTC', 'policy', 'https://www.nstc.gov.tw/nstc/rss/news.xml', {
+    homepageUrl: 'https://www.nstc.gov.tw/',
   }),
 
   // === 論文 / Research (2) ===
