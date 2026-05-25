@@ -118,26 +118,9 @@ phison_overlay:
             sourceName: lmcache-releases
             category: kv-cache-research
 
-    - id: nvidia-developer
-      label: NVIDIA Developer
-      category: kv-cache-research
-      itemType: rss-post
-      chain:
-        - provider: native-rss
-          config:
-            url: https://developer.nvidia.com/blog/feed
-            sourceName: nvidia-developer
-            category: kv-cache-research
-        - provider: jina-reader
-          config:
-            url: https://developer.nvidia.com/blog/
-            sourceName: nvidia-developer
-            category: kv-cache-research
-        - provider: firecrawl
-          config:
-            url: https://developer.nvidia.com/blog/
-            sourceName: nvidia-developer
-            category: kv-cache-research
+    # nvidia-developer removed 2026-05-25: same feed URL as the base registry's
+    # `nvidia-developer-blog` (大廠技術), so the fetcher deduped it to 0 every
+    # run. NVIDIA Developer Blog content still arrives via the base source.
 
     - id: sk-hynix-news
       label: SK Hynix News
