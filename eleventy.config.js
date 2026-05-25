@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sanitizeHtml from 'sanitize-html';
 import YAML from 'yaml';
+import SOURCE_REGISTRY from './src/sources/registry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reportsDir = path.join(__dirname, 'data', 'reports');
@@ -210,12 +211,18 @@ export default function (eleventyConfig) {
   // gives users discriminating info per tab instead of the same dense list
   // everywhere.
   //
-  // Category → tab mapping derived from config.json. GitHub-derived sources
-  // (Trending, Topic Discovery, Dev Watch …) aren't in by_source — they're
-  // synthesized from report.shipped.<key> at render time and tagged ['shipped'].
-  // Sources missing from config (e.g. legacy "NVIDIA Developer" without
-  // "Blog" suffix) fall through to OVERRIDE_TABS; unmatched ones default
-  // to [] which means "show only on the synthesis tabs" (訊號 / 動手做).
+  // Category → tab mapping derived from the source registry. GitHub-derived
+  // sources (Trending, Topic Discovery, Dev Watch …) aren't in by_source —
+  // they're synthesized from report.shipped.<key> at render time and tagged
+  // ['shipped']. Sources missing from the registry fall through to
+  // OVERRIDE_TABS; unmatched ones default to [] which means "show only on the
+  // synthesis tabs" (訊號 / 動手做).
+  //
+  // NOTE: feeds-snapshot.json keys by_source on the source *id* (e.g.
+  // "technews-tw"), so the category map must also be keyed by id. The 2026-05-24
+  // cutover emptied config.json's sources.feeds (sources moved to the registry),
+  // which silently turned every pill's tabs into [] — the footer showed
+  // "來源 · 0" on every non-synthesis tab. Reading the registry restores it.
   const CATEGORY_TO_TABS = {
     community: ['pulse'],
     中文社群: ['pulse'],
@@ -236,21 +243,19 @@ export default function (eleventyConfig) {
     'SK Hynix News': ['tech'],
   };
 
-  function loadConfigCategoryMap() {
-    try {
-      const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
-      const map = {};
-      for (const f of cfg?.sources?.feeds ?? []) {
-        if (f?.name && f?.category) map[f.name] = f.category;
-      }
-      return map;
-    } catch {
-      return {};
+  function loadSourceCategoryMap() {
+    const map = {};
+    for (const s of SOURCE_REGISTRY) {
+      if (s?.id && s?.category) map[s.id] = s.category;
     }
+    return map;
   }
 
   function shippedSyntheticSources(latestReport) {
-    if (latestReport?.schema_version !== 2 || !latestReport?.shipped) return [];
+    // `>= 2` (not `=== 2`): v2.1 reports (post-2026-05-24 split) must still
+    // synthesize the 上線-tab pills. A bare `!== 2` dropped them for every 2.1
+    // report, so the 上線 tab footer showed no source pills.
+    if (!(latestReport?.schema_version >= 2) || !latestReport?.shipped) return [];
     const groups = [
       ['trending', 'GitHub Trending'],
       ['topic_discovery', 'Topic Discovery'],
@@ -280,7 +285,7 @@ export default function (eleventyConfig) {
     }
     if (!snapshot.by_source) return [];
 
-    const categoryMap = loadConfigCategoryMap();
+    const categoryMap = loadSourceCategoryMap();
     const feedSources = Object.entries(snapshot.by_source).map(([name, items]) => {
       const category = categoryMap[name];
       const tabs = category ? (CATEGORY_TO_TABS[category] ?? []) : (OVERRIDE_TABS[name] ?? []);
