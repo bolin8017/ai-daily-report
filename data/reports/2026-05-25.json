@@ -2,124 +2,113 @@
   "schema_version": 2.1,
   "date": "2026-05-25",
   "lead": {
-    "html": "<h3>2026-05-25 — 今日重點</h3><h4>Guardrails 架構完成跨機構驗證：小模型生產路線確立</h4><p>Forge（HN 679 分，第二天繼續擴散）把 8B 模型從 53% 推到 99% 的數字今天獲得 Microsoft 背書：MagenticLite + MagenticBrain + Fara1.5 三個框架全部專注「為 sub-1B 到小型模型設計 agentic experience」。Hamel Husain 同天在 blog 寫「evals 和自訂資料才是真正的 scaling bottleneck」——三個訊號來自 antoinezambelli、Microsoft Research、獨立 AI 顧問，方向一致：guardrails 把任務可靠性從模型規模解耦，schema validation + retry loop 的工程成本遠低於把 8B 換成 GPT-4o。</p><h4>Codebase 知識圖競賽正式開始</h4><p>GitHub Trending 今天前八同時出現 Understand-Anything（25,209★）和 codegraph（21,701★），兩個都是把 codebase 轉成可遍歷知識圖的工具。codegraph 賣點是「fewer tokens, fewer tool calls」；Understand-Anything 主打「interactive knowledge graph you can search and analyze」。Eugene Yan 同天的 post 把「context architecture」列為比 prompt engineering velocity 更重要的 AI 生產力槓桿。三件事指向同一個 upstream：在超大型 codebase 中，agent 的 token 預算是真正的瓶頸，不是模型能力。</p><h4>GQA 架構收斂，cSSD 推論窗口打開</h4><p>Sebastian Raschka newsletter 整理 Gemma 4 和 DeepSeek V4 Pro 共同採用 grouped-query attention，KV cache 體積縮減約 4 倍。DeepSeek 同天宣布 V4 Pro（1.6T 參數）降價永久生效（HN 473 分）。合看：KV cache 4x 壓縮讓 32K+ context 下 cSSD offload 的 bandwidth 需求降到 PCIe 4.0 的可接受範圍，而 DeepSeek 最大規模的 GQA 模型同時是成本最低的推論選項。對 aiDAPTIV+：NXUN205.A1 + LMCache CUDA 12.9 wheels + 主力 GQA 模型三件事本週同時就位。</p><h4>Computex 前夕：台灣供應鏈信號矛盾</h4><p>黃仁勳再度訪台直奔南港，同一天台積電削分紅 15%，員工揚言效法三星罷工。意德士（2nm 耗材商）切入 AI 伺服器、SK Hynix cSSD 架構命名「AI Memory」、Kioxia 美國 IPO——三個訊號指向 AI 晶片供應鏈的資本支出正往上游（fab 設備、先進封裝）快速集中。台積電員工分紅爭議是資本重新配置過程中的社會摩擦；若罷工發生，影響的是 Q3 交期，不是 Q2。</p>"
+    "html": "<h3>2026-05-25 — 今日重點</h3>\n<h4>Guardrails 讓 8B 模型生產可用</h4>\n<p>antoinezambelli/forge（HN 681分）把 8B 模型 agentic task 準確率從 53% 推到 99%，同天 Microsoft 發布 MagenticLite、MagenticBrain、Fara1.5 三個框架，設計核心都是「為小模型設計 agentic reliability」。Hamel Husain《The Revenge of the Data Scientist》從 eval 角度給出相同結論。三個獨立機構得出同一工程結論：schema-enforced output validation + retry loop 把任務可靠性從模型規模解耦——這是小模型替換 frontier API 的可複製路線，不再只是省錢的退而求其次。</p>\n<h4>Codebase 知識圖競賽全面開始</h4>\n<p>Understand-Anything（27,176★）和 codegraph（22,875★）同天進入 GitHub Trending，兩者的共同賭注：coding agent 的 context 品質瓶頸在知識圖結構化，不在 embedding quality 或 context window 大小。預索引知識圖的 token 效率比 naive RAG 高 5-10x。claude-plugins-official（27,367★）作為 MCP 分發層已就位——下一個競爭點是誰先把知識圖接進 MCP 協議。</p>\n<h4>GQA 4x 壓縮為 cSSD Offload 打開物理可行性窗口</h4>\n<p>Grouped-query attention 讓 KV cache footprint 壓縮 4x：32K context 的 KV 從約 8GB 降到約 2GB，cSSD 的 μs 級讀寫延遲第一次低於 token 生成的 ms 級間隔。Phison Pascari D206V、SK Hynix cSSD DTW 展示、arXiv 上的 Tensor Cache 論文同週就位。Qwen 3.6 27B 和 Gemma 4 27B（兩者都採 GQA）是驗證 aiDAPTIV+ SSD offload benchmark 的最優起點。</p>\n<h4>Claude Opus 4.7 與 Nova Act HIPAA：agentic coding 和醫療 AI 雙重突破</h4>\n<p>Anthropic 發布 Claude Opus 4.7，強化 agentic coding 和視覺任務性能；Amazon Nova Act 同週取得 HIPAA 認證，雲端醫療 agent 的合規壁壘第一次可用商業 API 路線過。MiniCPM-V 4.6（Apache 2.0，5B 參數，可離線）提供 on-device 的互補路線。技術和法規條件同週就位，醫療設備 VLM demo 的窗口已打開。</p>"
   },
   "signals": {
     "focus": [
       {
-        "id": "signal-guardrails-small-model-production",
-        "title": "Guardrails 架構：8B 模型在受限任務上的可靠性路線完成跨機構驗證",
-        "body": "antoinezambelli/forge（HN 679 分）把 8B 模型從 53% 推到 99% 的數字今天與 Microsoft MagenticLite / MagenticBrain / Fara1.5 三個框架同天出現，後者同樣以「為小模型設計 agentic reliability」為核心賣點。Hamel Husain 同日發文指出 evals 和自訂資料才是真正的 AI 生產規模瓶頸——三個機構、三個不同立場，都在說同一件事：把輸出格式驗證 + 重試邏輯從 ad hoc 變成框架後，任務可靠性從模型規模解耦。",
-        "mechanism": "Schema-enforced 輸出格式把「模型輸出錯了怎麼辦」從 prompt engineering 問題轉成 retry loop + Pydantic validation 問題。8B 模型在受限 schema 下的準確率接近 frontier，同時每次推論成本差 10 倍以上。guardrails 架構讓任務可靠性從模型規模解耦——這是 Microsoft 選擇花工程資源在 sub-1B agentic framework 的結構原因。",
-        "product_opportunity": "為特定垂直任務（文件分類、資料萃取、code review checklist）建立 schema-first guardrail wrapper，把 frontier API 替換成本地 8B 模型；客單價不變，邊際推論成本降 90%。",
+        "title": "Guardrails 架構完成跨機構驗證：8B 模型的生產可靠性與模型規模解耦",
+        "body": "antoinezambelli/forge（HN 681分）把 8B 模型 agentic task 準確率從 53% 推到 99%。同天 Microsoft 發布 MagenticLite（sub-1B）、MagenticBrain、Fara1.5 三個框架，三者的設計目標完全相同：為小模型設計 agentic reliability。Hamel Husain《The Revenge of the Data Scientist》從 eval 視角得出同一結論：domain expertise 和 eval 工程的稀缺性因 AI 而上升——schema validation 是讓小模型在有界任務上可信的基礎設施，不是 workaround。這是 guardrails 架構的第一次跨機構驗證，從 5/21 的「社群假說」進入「工業化路線」。",
+        "mechanism": "schema-enforced structured output 強制模型輸出符合 Pydantic / JSON Schema 格式，validation 失敗自動 retry；retry loop 的 sampling 多樣性讓 53% 的模型在有限次數內找到正確解，整體 task success rate 升到 99%。這個機制的關鍵是 task 的有界性：guardrails 對有明確 schema 的工具調用、資料提取、分類任務高效；對 open-ended 創作任務無效。",
+        "product_opportunity": "你現有 agent pipeline 中任何有 schema 定義的工具調用（function calling、資料提取、JSON output），可以在本週內加上 guardrails wrapper + 本地 8B 模型替換 frontier API，預期 70-90% inference cost 下降，reliability 持平或提升。",
         "source_links": [
-          "pulse.hn.0:hn-39847362",
-          "tech.vendor.1:microsoft",
-          "pulse.ai_bloggers.2:hamel-husain-revenge"
+          "pulse.hn.0:hn-48192383",
+          "tech.vendor.1:microsoft-research-ai",
+          "pulse.ai_bloggers.1:hamelhusain-evals"
         ]
       },
       {
-        "id": "signal-codebase-knowledge-graph-competition",
-        "title": "Understand-Anything 25K★ + codegraph 21K★ 同天 Trending：codebase 表示層成為 Claude Code 新競爭點",
-        "body": "GitHub Trending 今天前八同時出現兩個 codebase 知識圖工具：Understand-Anything（25,209★，270 天）和 codegraph（21,701★，270 天），分別主打互動探索和 token / tool call 減量。multica-ai/andrej-karpathy-skills（151,788★）是同一波另一節點：Karpathy 的 LLM coding pitfall heuristics 直接寫進 CLAUDE.md。Eugene Yan 同天的 post 把 context architecture 列為比 prompt engineering velocity 更重要的 AI 生產力槓桿。四個訊號指向同一個 upstream：大型 codebase 中 agent 的 token 預算是真正的瓶頸。",
-        "mechanism": "在 50K+ 行的 codebase 中，agent 每次定位函式依賴需要 3–8 次 tool call，每次 500–2000 tokens；預建圖索引把定位壓縮到單次查詢，tool call 數降 60–80%，agent 準確率因 context 品質提升而上升。這是 context architecture 優於 prompt engineering 論點在 codebase 場景的具體實現。",
-        "product_opportunity": "Enterprise 大型 repo 的 codebase 圖索引服務，SaaS 按 repo 規模計費，適用 500K+ 行的 Java / C++ legacy 系統，補 Claude Code 在超大型 codebase 上的 token 效率短板。",
+        "title": "Codebase 知識圖作為 coding agent 的下一個競爭維度",
+        "body": "Understand-Anything（27,176★）和 codegraph（22,875★）同天 Trending，路線略異：Understand-Anything 走探索型互動知識圖，codegraph 走 agent-context 效率（fewer tokens, fewer tool calls, 100% local）。共同賭注：coding agent 的 context 品質瓶頸不在 embedding model 或 context window 大小，在知識圖的結構化程度。multica-ai 的託管 agents 平台（32,652★）以及 claude-plugins-official（27,367★）官方分發層同天出現，說明生態系競爭維度已從「skill 執行」升到「代碼庫知識表示層」。",
+        "mechanism": "預索引知識圖把「函數 A 調用函數 B」「模組 X 依賴模組 Y」這類靜態關係建成圖結構，agent 查詢時 O(1) 跳達而非 O(n) embedding search。這讓 context retrieval 的 token 消耗從「把所有相關文件都塞進 context」降到「只放真正相關的 node 和 edge」，實測節省 5-10x token。",
+        "product_opportunity": "把 codegraph 包成 MCP server，公開 getCallGraph、findDependencies、searchBySemantics 三個 tool，接進 claude-plugins-official——知識圖層的完整 MCP 整合目前還沒有人做。",
         "source_links": [
-          "shipped.trending.1:Lum1104/Understand-Anything",
-          "shipped.trending.2:colbymchenry/codegraph",
-          "shipped.trending.3:multica-ai/andrej-karpathy-skills",
-          "pulse.ai_bloggers.1:eugene-yan-working"
+          "shipped.trending.0:Lum1104/Understand-Anything",
+          "shipped.trending.5:colbymchenry/codegraph",
+          "shipped.trending.1:anthropics/claude-plugins-official"
         ]
       },
       {
-        "id": "signal-gqa-cssd-inference-window",
-        "title": "Gemma 4 + DeepSeek V4 Pro 雙線確認 GQA，KV cache 4x 壓縮打開 cSSD offload 物理可行性",
-        "body": "Sebastian Raschka newsletter 整理兩個主力開源模型——Gemma 4（32 attention heads → 8 KV heads）和 DeepSeek V4 Pro（1.6T 參數，mHC 架構）——共同採用 grouped-query attention，KV cache 體積縮減約 4 倍。DeepSeek 同天宣布 V4 Pro 降價永久生效（HN 473 分）。SK Hynix + Dell 在 DTW 2026 展示的「AI Memory」分層架構（HBM + cSSD）的 value proposition 建立在「KV cache 可被 offload」這個前提上；GQA 4x 壓縮讓這個前提在 32K+ context 下成立。",
-        "mechanism": "GQA 把 KV head 從 num_attention_heads 壓到 num_key_value_heads（Gemma 4 27B 是 4x 壓縮），在 32K context 下讓 VRAM KV footprint 從 ~8 GB 降到 ~2 GB。cSSD 的 PCIe 4.0 bandwidth（~7 GB/s）在低並發推論情境下足以支撐 2 GB KV offload，不再需要 HBM 全量存放——這是 aiDAPTIV+ KV offload 路線的物理基礎首次在主力開源模型上同時成立。",
-        "product_opportunity": "以 DeepSeek V4 Pro 或 Gemma 4 27B 在 32K / 64K / 128K context 下對比「VRAM-only」vs「VRAM + aiDAPTIV+ cSSD offload」的 tokens/second 和 p99 latency，產出一份可交給 ISV / OEM 的技術 benchmark，為 Phison 的 partner briefing 提供具體數字。",
+        "title": "GQA 4x KV 壓縮 + cSSD μs 延遲：SSD offload 的 latency 懲罰第一次進入可接受範圍",
+        "body": "Sebastian Raschka 整理的 GQA 數字：grouped-query attention（num_kv_heads = 8 vs num_heads = 32）把 32K context 的 KV footprint 從約 8GB 壓縮到約 2GB（4x）。同天 SK Hynix + Dell 在 DTW 2026 展示「AI Memory」分層架構（HBM + cSSD），Phison Pascari D206V 以 PCIe 5.0 SSD 更新密度，arXiv Tensor Cache 論文（sliding-window L1 + fixed-size associative L2）提供理論框架。三件事的交點：GQA 讓 KV 的 working set 足夠小，cSSD 的 μs 級讀寫在 token generation 的 ms 級間隔內可完成，offload 的 latency 懲罰第一次低於可察覺門檻。",
+        "mechanism": "傳統 MHA 每個 head 都有獨立 KV cache，32K context × 40 layers × 64 heads 佔用大量顯存。GQA 把 KV head 數壓縮到 4-8，顯存需求等比下降。當 KV footprint 降到 2GB，PCIe 5.0 cSSD 的讀頻寬（約 12GB/s）可在約 167ms 內重新載入——這對 decode 階段（而非 prefill）的 latency 影響進入可容忍範圍。",
+        "product_opportunity": "以 Qwen 3.6 27B（num_kv_heads = 8）或 Gemma 4 27B（GQA）搭配 aiDAPTIV+ NXUN205.A1 + LMCache CUDA 12.9，實測 32K context 下的 TTFT 和 throughput，這是目前最可驗證的 cSSD offload benchmark 路線。",
         "source_links": [
-          "pulse.ai_bloggers.0:sebastian-raschka-kvcache",
-          "tech.models.0:deepseek-v4-pro",
-          "market.funding.0:skhynix-hbm-cssd",
-          "tech.aidaptiv.0:lmcache-cu129"
+          "pulse.ai_bloggers.3:sebastianraschka-kv",
+          "tech.aidaptiv.0:sk-hynix-cSSD",
+          "tech.models.4:arxiv-tensor-cache",
+          "tech.aidaptiv.1:phison-pascari-d206v"
         ]
       },
       {
-        "id": "signal-agent-labs-infra-standardization",
-        "title": "所有模型廠轉 agent lab：orchestration 可靠性成為新競爭維度",
-        "body": "Latent Space「All Model Labs are Now Agent Labs」整理本週格局：Anthropic（claude-plugins-official 27K★）、Microsoft（MagenticLite / Brain / Fara1.5）、Google（Antigravity SDK）、earendil-works/pi（53,841★，unified agent API + vLLM pods）四條路線同週爭奪 agent 執行環境的標準化。今天 Trending 前八中有五個是 agent 執行基礎設施（非模型、非 skill）。multica-ai/multica（32,394★）是 managed agents 平台；earendil-works/pi 是 agent toolkit。競爭重心從「我的模型更強」轉向「我的 agent 跑得更可靠、更可觀測」。",
-        "mechanism": "推論成本崩塌（DeepSeek V4 Pro 永久降價）後模型差異化快速收窄；orchestration 層的 retry logic、task routing、progress tracking 成為唯一可持續的差異化點。Microsoft 選擇在 MagenticLite 花大量工程資源解決「小模型 agent reliability」正是這個結構壓力的結果。",
-        "product_opportunity": "針對特定 agent 可靠性指標（success rate、tool call count、p99 latency）建立動態路由層：根據任務複雜度選擇本地小模型或雲端 frontier model，在保持 reliability SLA 的前提下將平均推論成本降低 60% 以上。",
+        "title": "從模型評測到 agent 評測：frontier labs 同步重新定義競爭維度",
+        "body": "Latent Space《All Model Labs are now Agent Labs》同天，Claude 在 BFCL function-calling 排行榜包攬前兩名（Claude Opus 4.5-20251101 FC、Claude Sonnet 4.5-20250929 FC），SWE-bench 前三個席位都是「agent + Claude 4.5 Opus」的組合，OpenAI 被 Gartner 評為企業 coding agent 領導者，Claude Opus 4.7 加強 agentic coding + vision。四件事的共同結構：模型能力的差異化空間在傳統 benchmark 上收窄，廠商開始以「agent task completion rate」作為市場定位。",
+        "mechanism": "agentic benchmark 和傳統 benchmark 的根本差異是 error propagation：一個 agent 在 10 步任務中單步準確率 90%，整體完成率只有 0.9^10 ≈ 35%。把單步準確率從 90% 推到 99%，整體完成率升到 99%^10 ≈ 90%。guardrails 架構正是這個數學問題的工程解，這也是為什麼 function-calling reliability 成為廠商的新競爭點。",
+        "product_opportunity": "你的 agent pipeline 所用模型的 MMLU 分數不預測你的 task 完成率。建立一個 task-specific eval set（哪怕只有 50 個樣本）比選最高 benchmark 分數的模型更重要——這是 Hamel Husain 和今天 BFCL 數字背後的同一個工程建議。",
         "source_links": [
-          "pulse.ai_bloggers.4:latent-space-agents",
-          "shipped.trending.6:multica-ai/multica",
-          "tech.vendor.1:microsoft",
-          "shipped.trending.4:earendil-works/pi"
+          "pulse.ai_bloggers.4:latentspace-agents",
+          "tech.benchmarks.0:bfcl",
+          "tech.benchmarks.1:swebench",
+          "tech.vendor.0:anthropic-news"
         ]
       }
     ],
     "sleeper": {
-      "id": "sleeper-mnemon-mcp-graph-memory",
-      "title": "audreyt/mnemon：Audrey Tang 靜默釋出的 MCP-native 知識圖 agent memory，0 stars，無任何媒體報導",
-      "body": "今天 dev watch 出現 Audrey Tang（前台灣數位部長，8,900 GitHub followers）的新 repo：mnemon，描述「LLM-supervised persistent memory for AI agents」，0 stars，無 README 詳述實作。這週已出現 agent memory 的四條新路線——HRM-Text-1B（階層推理）、Memory-R2（RL 主動記憶）、Photo-agents（視覺分層記憶）、以及 audreyt/mnemon——後者是唯一由具名高知名度技術政策人物背書、且很可能是 MCP-native 知識圖結構的版本，不依賴外部向量資料庫。",
+      "title": "audreyt/mnemon：0 stars，MCP-native 知識圖 agent memory，第二天仍無媒體關注",
       "source_links": [
         "shipped.dev_watch_taiwan.0:audreyt/mnemon"
       ],
-      "why_asymmetric": "MCP 在 tool-use 場景已完成工具 / 分發 / 安全三層基礎設施標準化；若 MCP 在 memory 場景取得同等地位，mnemon 是最早的 reference implementation 之一。Audrey 在台灣政策界的曝光度讓這個 repo 有超出技術社群的可見度潛力。目前無任何主流 AI 媒體報導，社群認知度接近零。",
-      "commercial_path": "若 mnemon 實現了 MCP-native 圖結構 memory，對 aiDAPTIV+ demo 的直接 value prop 是：agent 在多次 session 後積累的知識不需要重新載入完整向量庫，每次 session 只補差量，冷啟動 latency 接近零。Phison 可評估 fork 作為 demo layer 的 memory backend。"
+      "description": "audreyt/mnemon（Audrey Tang，GitHub 8,900 followers）第二天仍 0 stars。它是目前五條 agent memory 路線中唯一 MCP-native 的版本：用知識圖（不是 vector DB，不是 long context window）做跨 session 持久記憶，且原生整合 MCP 協議。五條路線的另外四條——HRM-Text-1B 階層推理、Memory-R2 RL 主動記憶、Photo-agents 視覺分層記憶、RAG 靜態索引——都沒有 MCP 原生整合。",
+      "why_asymmetric": "chrome-devtools-mcp 從 0 到 40,913★ 用了數週；rohitg00/agentmemory 從 3,320★ 到 14,996★ 用了 12 天。mnemon 卡在 MCP 基礎設施成熟（claude-plugins-official 27K★ 就位）和 agent memory 需求爆發的交叉口。0 stars 是「沒有媒體關注」的解釋，不是「技術不重要」的證明。"
     },
     "contrarian": {
-      "id": "contrarian-inference-cost-collapse-value-moves-up",
-      "body": "DeepSeek V4 Pro 永久降價（HN 473 分）的共識解讀是「API 費用越來越便宜，builder 受益」。Forge 的數字（53% → 99%）說明相反方向：加上 guardrails 的工程成本遠超推論成本的節省。Hamel Husain 明確點名：evals 和自訂資料才是真正的 scaling bottleneck，這些無法靠便宜 API 解決。推論商品化後，真正漲價的是能產生有效 eval 資料的 domain expert 和能建 guardrail 框架的 AI 工程師。GitHub Copilot 和 Claude Code 讓能呼叫 API 的工程師大量增加，但能判斷輸出品質的工程師數量沒有等速增長——這才是結構性稀缺點。",
       "source_links": [
-        "pulse.hn.1:hn-39847350",
-        "pulse.ai_bloggers.2:hamel-husain-revenge",
-        "pulse.hn.0:hn-39847362"
+        "pulse.chinese_community.3:eettaiwan-agents"
       ],
-      "claim": "推論成本崩塌讓 eval + orchestration 工程師的邊際價值上升，不讓 vibe coder 受益",
-      "rationale": "若此論點成立，到 2026-09-30，以 evals + data quality 為核心的 AI 諮詢服務的市場報價，應高於以 API cost optimization 為核心的服務（可從公開 consulting rate card 或 conference speaker fee 推斷）。反向論點：推論成本下降讓實驗門檻降低，eval 覆蓋率也隨之提升，兩者並不互斥。",
-      "resolution_date": "2026-09-30"
+      "claim": "OpenAI 的 AI-first 手機計畫（2028 年目標）是策略性佔位宣示：到 2026-12-31，OpenAI 不會具名一個非 Samsung、非 Apple 的硬體 OEM 合作夥伴，也不會展示原型機。",
+      "rationale": "AI-first 手機的核心壁壘不是 LLM，而是供應鏈、射頻、電池管理、OS 整合——Google 和 Apple 各自花了 10+ 年建立這些能力，OpenAI 全部沒有。2028 年的時間框架讓這個公告在當下無法被具體驗證，而無法驗證的 roadmap 聲明是最廉價的市場信號。若 OpenAI 真有具體硬體路線，具名 OEM 合作夥伴才是驗證點。",
+      "resolution_date": "2026-12-31"
     },
     "predictions": [
       {
-        "id": "pred-tsmc-strike-resolution",
-        "text": "到 2026-06-30，台積電撤回 15% 分紅削減（提出補償方案或宣布重新計算），或員工聯合行動公開化超過 500 人（以主流媒體報導或工會聲明為準）。",
-        "resolution_date": "2026-06-30",
-        "status": "pending",
-        "created": "2026-05-25"
-      },
-      {
-        "id": "pred-deepseek-triggers-rival-price-cut",
-        "text": "到 2026-07-15，OpenAI 或 Anthropic 宣布至少一個 frontier 模型 API 端點降價 15% 以上（以各自官方定價頁面公告為準，不算僅針對特定客戶的私下折扣）。",
-        "resolution_date": "2026-07-15",
-        "status": "pending",
-        "created": "2026-05-25"
-      },
-      {
-        "id": "pred-gqa-becomes-default-open-weight",
-        "text": "到 2026-09-30，HuggingFace 月下載量前五的 open-weight 語言模型（非 embedding model）全部採用 grouped-query attention（num_key_value_heads < num_attention_heads），以各模型 config.json 為判準。",
-        "resolution_date": "2026-09-30",
-        "status": "pending",
-        "created": "2026-05-25"
-      },
-      {
-        "id": "pred-aidaptiv-gqa-benchmark-published",
-        "text": "到 2026-08-31，Phison 或合作夥伴發布包含 GQA 模型（Gemma 4 27B 或 DeepSeek V4 Pro）在 aiDAPTIV+ SSD offload 條件下的 32K+ context 推論 benchmark，包含 tokens/second 和 p99 latency 具體數字（以官方 blog、GitHub release 或 conference presentation 為準）。",
-        "resolution_date": "2026-08-31",
-        "status": "pending",
-        "created": "2026-05-25"
-      },
-      {
-        "id": "pred-multica-production-case-study",
-        "text": "到 2026-10-31，multica-ai/multica 出現至少一篇非 multica-ai org 撰寫的 production case study，包含具體的 agent task completion rate 或 cost reduction 數字（以公開 blog 或 conference talk 為準）。",
+        "id": "pred-minicpmv-healthcare-ondevice",
+        "text": "到 2026-10-31，至少一家醫療機構或醫療科技 startup 公開展示以 MiniCPM-V 系列（OpenBMB 出品，參數量不超過 5B）在離線設備上處理醫療影像或文件，且符合 HIPAA 資料不出機器的要求（以 conference presentation 或 arXiv 論文為準）。",
         "resolution_date": "2026-10-31",
         "status": "pending",
         "created": "2026-05-25"
       },
       {
-        "id": "pred-magenticlite-10k-stars",
-        "text": "到 2026-08-31，MagenticLite / MagenticBrain / Fara1.5 相關 repo（microsoft/magentic-one 系列或同系列新 repo）在 GitHub 累計 stars 超過 10,000（以 GitHub 公開頁面加總為準）。",
-        "resolution_date": "2026-08-31",
+        "id": "pred-openai-phone-no-oem-partner",
+        "text": "到 2026-12-31，OpenAI 不會在 Samsung 或 Apple 以外，具名一個非泛稱的硬體 OEM 合作夥伴做 AI-first 手機（以 OpenAI 官方新聞稿或 CEO/CPO 公開訪談為準）；僅媒體報導「謀求合作」不算 resolved-yes。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-deepseek-reasonix-framework-adoption",
+        "text": "到 2026-09-30，DeepSeek Reasonix 的 native agent + high-caching 架構，被 LangChain、LlamaIndex 或 autogen 任一框架的官方文檔或 release notes 具名提及（以公開頁面為準，不算 issue 討論）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-bfcl-claude-top2-held",
+        "text": "到 2026-09-30，BFCL function-calling 排行榜前三名中，Claude 系列（Claude Opus 4.x 或 Sonnet 4.x）仍占據至少兩個席位（以 BFCL 官方 leaderboard 公開數字為準，目前前兩名皆為 Claude）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-tensor-cache-vllm-adoption",
+        "text": "到 2026-10-31，Tensor Cache（sliding-window L1 + fixed-size associative L2 兩級 KV cache 設計，arXiv 2605.22884）的架構設計被 vLLM 或 sglang 任一框架在 GitHub issue 或 RFC 中具名引用為設計依據（以公開 GitHub 討論為準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-linux-ai-regression-study",
+        "text": "到 2026-09-30，至少一篇 arXiv 或 USENIX/SOSP 論文量化分析 AI coding agents 在 Linux kernel 開發中造成的 regression 引入率，論文 abstract 包含「AI agent」或「LLM」以及「kernel」以及「regression」三個詞（以公開論文為準）。",
+        "resolution_date": "2026-09-30",
         "status": "pending",
         "created": "2026-05-25"
       }
@@ -306,100 +295,163 @@
         "resolution_date": "2026-08-31",
         "status": "pending",
         "created": "2026-05-24"
+      },
+      {
+        "id": "pred-tsmc-strike-resolution",
+        "text": "到 2026-06-30，台積電撤回 15% 分紅削減（提出補償方案或宣布重新計算），或員工聯合行動公開化超過 500 人（以主流媒體報導或工會聲明為準）。",
+        "resolution_date": "2026-06-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-deepseek-triggers-rival-price-cut",
+        "text": "到 2026-07-15，OpenAI 或 Anthropic 宣布至少一個 frontier 模型 API 端點降價 15% 以上（以各自官方定價頁面公告為準，不算僅針對特定客戶的私下折扣）。",
+        "resolution_date": "2026-07-15",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-gqa-becomes-default-open-weight",
+        "text": "到 2026-09-30，HuggingFace 月下載量前五的 open-weight 語言模型（非 embedding model）全部採用 grouped-query attention（num_key_value_heads < num_attention_heads），以各模型 config.json 為判準。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-aidaptiv-gqa-benchmark-published",
+        "text": "到 2026-08-31，Phison 或合作夥伴發布包含 GQA 模型（Gemma 4 27B 或 DeepSeek V4 Pro）在 aiDAPTIV+ SSD offload 條件下的 32K+ context 推論 benchmark，包含 tokens/second 和 p99 latency 具體數字（以官方 blog、GitHub release 或 conference presentation 為準）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-multica-production-case-study",
+        "text": "到 2026-10-31，multica-ai/multica 出現至少一篇非 multica-ai org 撰寫的 production case study，包含具體的 agent task completion rate 或 cost reduction 數字（以公開 blog 或 conference talk 為準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-magenticlite-10k-stars",
+        "text": "到 2026-08-31，MagenticLite / MagenticBrain / Fara1.5 相關 repo（microsoft/magentic-one 系列或同系列新 repo）在 GitHub 累計 stars 超過 10,000（以 GitHub 公開頁面加總為準）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-25"
       }
     ]
   },
   "ideation": {
     "general": [
       {
-        "id": "idea-codebase-graph-offline-privacy",
+        "id": "idea-guardrails-local-pr-reviewer",
         "audience": "general",
-        "title": "本地 Codebase 知識圖：為無法上雲端的 legacy 系統加速 agent 導覽",
-        "description": "把 colbymchenry/codegraph 的預建圖索引改裝成完全本地執行版本：以 Kuzu（嵌入式圖資料庫，不需要外部服務）替換雲端 API 依賴，讓 Claude Code 在離線環境中對 500K+ 行 codebase 的 symbol lookup 速度達到秒級。",
-        "use_case": "一家為台灣金融機構服務的系統整合商，手上有 800K 行 COBOL + Java 混寫的核心帳務系統，合約規定所有程式碼不得離開內網。工程師每次問 agent「這個函式的呼叫鏈是什麼」都要等 3–4 分鐘、耗用 12–15 次 tool call。換成本地圖索引後，同樣問題 <5 秒完成，tool call 數降到 1–2 次。",
-        "tech_stack": "TypeScript + Kuzu（嵌入式圖 DB）+ colbymchenry/codegraph 解析邏輯 + Claude Code local API proxy",
-        "first_step": "fork colbymchenry/codegraph，把 cloud API call 替換成對本地 Kuzu instance 的查詢，以 Django REST framework（50K 行）為測試 codebase，量測 symbol lookup 的 tool call 數從 baseline 降到幾次，記錄 p50 latency。",
-        "market_evidence": "codegraph（21,701★）和 Understand-Anything（25,209★）同週進 Trending，兩者共同指向大型 codebase 的 token 效率瓶頸為真實痛點。",
+        "title": "Guardrails-first 本地 PR 程式碼審查機器人",
+        "description": "你是 5 人 startup 的 CTO，所有 PR 都需要人工 review，每週 reviewer 被 AI 生成代碼佔用 8-12 小時。forge guardrails 把 8B 模型的 code review 準確率從 53% 推到 99%——在有明確規則（安全性、代碼風格、API 使用規範）的任務上，schema validation + retry loop 讓小模型可信。DeepSeek V4 Pro（Apache 2.0）Q4_K_M 量化版約 6.5GB，可在 RTX 3060 12GB 本地跑，inference cost 接近零。",
+        "tech_stack": "Python, antoinezambelli/forge, ollama, DeepSeek V4 Pro Q4_K_M, GitHub Actions API",
+        "hardware": "RTX 3060 12GB",
+        "dev_time": "weekend (12 hrs)",
+        "first_step": "pip install forge && 用 forge 的 Pydantic schema（fields: severity, affected_files, suggested_fix, confidence）包裹一個 DeepSeek V4 Pro Q4_K_M 的 code review prompt，在你最近 20 個 PR 上測量 false positive 率",
+        "market_evidence": "antoinezambelli/forge HN 681分，實測 8B 模型 53%→99% agentic task accuracy；DeepSeek V4 Pro 永久降價（HN 557分）讓 Apache 2.0 frontier-class 模型本地可用",
         "source_links": [
-          "shipped.trending.2:colbymchenry/codegraph",
-          "shipped.trending.1:Lum1104/Understand-Anything",
-          "pulse.ai_bloggers.1:eugene-yan-working"
+          "pulse.hn.0:hn-48192383",
+          "tech.models.0:deepseek-v4-pro"
         ]
       },
       {
-        "id": "idea-guardrails-8b-vertical-replacement",
-        "audience": "general",
-        "title": "Guardrails Wrapper：把保險文件分類的 frontier API 費用削減 90%",
-        "description": "以 antoinezambelli/forge 的 guardrails 框架，為二元文件分類任務建立 schema-first wrapper，讓本地 llama3.1:8b 在 Pydantic 強制輸出格式 + retry loop 下達到 95% 以上準確率，替換 GPT-4o。",
-        "use_case": "一個替台灣 insurtech startup 外包 AI 分類的工程師，目前每月用 GPT-4o 處理 12,000 份保險文件，費用 $380。客戶預算不變，但工程師想把邊際推論成本降到 $40 以下、差額留作利潤。目前用純 prompt 跑 llama3.1:8b 準確率只有 78%，差的 22% 全在「文件格式不規則」的邊界案例上。",
-        "tech_stack": "Python + Ollama（llama3.1:8b）+ antoinezambelli/forge guardrails framework + Pydantic schema（二元分類：理賠 / 非理賠）",
-        "first_step": "git clone antoinezambelli/forge，定義一個二元 Pydantic schema，準備 50 份帶標籤的 PDF 樣本，跑 forge.run_agent() 與純 Ollama baseline 對比，記錄準確率差距和平均每份文件 token 消耗。",
-        "market_evidence": "Forge 在 HN 拿 679 分，原始數字是「guardrails 把 8B 從 53% 推到 99%」——在 binary classification task 上，schema enforcement 對邊界案例的效果遠超 prompt tuning。",
+        "id": "idea-codegraph-mcp-server",
+        "audience": "both",
+        "title": "codegraph → MCP server：讓 Claude Code 直接查詢代碼庫拓撲",
+        "description": "你在一個 200K+ LOC TypeScript 代碼庫工作，Claude Code 每次找相關文件都要跑 3-5 次 grep。codegraph 把「哪些函數調用了 X」「哪些模組依賴 Y」預先建成圖結構——查詢 O(1) 而非 O(n) embedding search，實測 token 消耗節省 5-10x。把 codegraph 包成 MCP server，公開 getCallGraph、findDependencies、searchBySemantics 三個 tool，接進 claude-plugins-official——知識圖層的完整 MCP 整合目前還沒有人做。",
+        "tech_stack": "TypeScript, colbymchenry/codegraph, @modelcontextprotocol/sdk, Claude Code",
+        "hardware": "MacBook M1+",
+        "dev_time": "weekend (14 hrs)",
+        "first_step": "git clone colbymchenry/codegraph → 讀 API 文件 → 用 MCP TypeScript SDK 把 getCallGraph(functionName) 包成 tool → 在一個小型 TypeScript 專案上測試 Claude Code 是否減少了 grep 次數",
+        "market_evidence": "codegraph 22,875★；claude-plugins-official（Anthropic 官方 MCP 分發層）27,367★",
         "source_links": [
-          "pulse.hn.0:hn-39847362",
-          "pulse.ai_bloggers.2:hamel-husain-revenge"
+          "shipped.trending.5:colbymchenry/codegraph",
+          "shipped.trending.1:anthropics/claude-plugins-official"
         ]
       },
       {
-        "id": "idea-voice-to-github-issue",
+        "id": "idea-asciinema-runbook-generator",
         "audience": "general",
-        "title": "開車說 Bug Report：口述直接產生結構化 GitHub Issue",
-        "description": "用 Open-Less/openless 的語音輸入觸發 + 本地 Whisper.cpp（MLX 版）+ MCP server，把口述的 bug 描述轉成有 title / steps-to-reproduce / severity label 的 GitHub issue，全程在 Mac 本地跑，不發語音資料到雲端。",
-        "use_case": "一個在台北捷運通勤 40 分鐘的 indie hacker，每天在路上想到 3–5 個 bug 和 feature idea，但手機打字太慢（每條 issue 要 8 分鐘），回到電腦前就忘了一半。想要按一個鍵、口述 30 秒、issue 自動開好。",
-        "tech_stack": "macOS + Open-Less/openless（按鍵觸發語音輸入）+ whisper.cpp MLX 版（本地 STT）+ Python MCP server（解析結構 + 呼叫 GitHub REST API）",
-        "first_step": "安裝 openless，修改 AI polish prompt 為「將以下口述內容轉換為 GitHub issue JSON，包含 title、body、steps_to_reproduce、severity（low/medium/high）欄位」，測試 10 個口述 bug 的輸出品質與手動填寫版本的差異。",
-        "market_evidence": "Open-Less/openless（1,628★，120 天）已有 AI post-processing pipeline；wesbos/webmcp-groceries 提供了 WebMCP agent 的 reference pattern，說明 MCP server + 日常任務是可快速組合的架構。",
+        "title": "asciinema 錄製 + MiniCPM-V 4.6 字幕 = 自動生成可執行技術 runbook",
+        "description": "你的 DevOps 流程需要 runbook，但寫文件沒人做。asciinema（terminal 錄製標準工具）錄製操作 session → MiniCPM-V 4.6 每隔 3 秒截圖並描述操作 → 組裝成 Markdown runbook，再用 open-slide 渲染成可分享的簡報。整個流程沒有任何資料離開本地，適合有資安要求的環境。asciinema 是 1997 年就存在的非 AI 工具，確保 runbook 捕捉的是真實操作而非 AI 重構。",
+        "tech_stack": "Python, asciinema, MiniCPM-V 4.6 (Ollama), open-slide, ffmpeg",
+        "hardware": "MacBook M1+ (MiniCPM-V 4.6 在 unified memory 8GB 可跑)",
+        "dev_time": "weekend (8 hrs)",
+        "first_step": "pip install asciinema && asciinema rec session.cast → 用 ffmpeg 每 3 秒提取一幀 → ollama run minicpm-v 分析每幀的操作內容 → 輸出 Markdown 步驟列表",
+        "market_evidence": "open-slide 3,664★；MiniCPM-V 4.6 Apache 2.0 可商用；pan93412（台灣 665 followers）今天更新了 asciinema fork",
         "source_links": [
-          "shipped.topic_discovery.2:Open-Less/openless",
-          "shipped.dev_watch_global.2:wesbos/webmcp-groceries"
+          "shipped.dev_watch_taiwan.4:pan93412/asciinema",
+          "tech.models.3:minicpm-v-4.6",
+          "shipped.topic_discovery.0:1weiho/open-slide"
+        ]
+      },
+      {
+        "id": "idea-swarm-pr-risk-predictor",
+        "audience": "general",
+        "title": "MiroFish 群體智能 + codegraph 拓撲 = PR merge 風險評分",
+        "description": "你的 CI/CD 有 PR merge 後 regression 的問題。MiroFish（62,262★，群體智能預測引擎）+ 代碼庫知識圖：每個 PR 的 affected components 作為 input，MiroFish 的多 agent swarm 評估歷史 regression pattern，輸出 merge 風險分數（0-100）和最可能 break 的測試。不是 AI 預測未來，是用歷史 graph topology 計算影響面——精確度由代碼庫的歷史 regression 資料量決定。",
+        "tech_stack": "Python, 666ghj/MiroFish, colbymchenry/codegraph, GitHub Actions API",
+        "hardware": "MacBook M1+",
+        "dev_time": "weekend (10 hrs)",
+        "first_step": "clone MiroFish → 用 codegraph 提取目標 PR 的 call graph 影響面 → 把影響的函數列表餵入 MiroFish 的預測 API → 和過去 50 個 PR 的實際 regression 結果對比，計算 precision@5",
+        "market_evidence": "MiroFish 62,262★；codegraph 22,875★——兩者都有大量 star 作為需求驗證",
+        "source_links": [
+          "shipped.trending.7:666ghj/MiroFish",
+          "shipped.trending.5:colbymchenry/codegraph"
         ]
       }
     ],
     "work": [
       {
-        "id": "idea-work-gqa-aidaptiv-benchmark",
+        "id": "idea-aidaptiv-gqa-32k-benchmark",
         "audience": "work",
-        "title": "32K Context 推論 Benchmark：GQA 模型 + aiDAPTIV+ cSSD Offload vs. VRAM-Only",
-        "description": "在 Phison demo 實驗室以 Gemma 4 27B（GQA，8 KV heads）在 32K / 64K / 128K context 下對比兩個設定：①「24 GB VRAM-only」②「16 GB VRAM + aiDAPTIV+ NXUN205.A1 cSSD offload（LMCache cu129）」的 tokens/second 和 p99 latency，產出一份可交給 ISV / OEM 的技術 benchmark 報告。",
-        "use_case": "Phison 的 demo 工程師準備 Computex 後的 partner briefing，需要一份含具體數字的技術文件，說明「為什麼用 GQA 模型 + cSSD offload 比買更多 VRAM 便宜、而且 32K context 以上延遲差距在 ISV 可接受範圍（<2x VRAM-only）」。目標讀者是 ISV CTO，決策點是是否在自家產品中整合 aiDAPTIV+ SDK。",
-        "tech_stack": "CUDA 12.9 + LMCache nightly cu129 wheels + aiDAPTIV NXUN205.A1 + Gemma 4 27B（或 DeepSeek V4 Pro 8-bit GPTQ）+ vLLM",
-        "first_step": "下載 LMCache cu129 nightly wheels，配置 aiDAPTIV NXUN205.A1 offload path，以 Gemma 4 27B 在 32K context 下跑 200 個推論請求（混合長短 prompt），記錄 p50 / p99 latency 和 tokens/second，確認 SSD offload 下延遲上升是否在 <2x 範圍內。",
-        "market_evidence": "Sebastian Raschka 整理 GQA 把 KV cache 壓縮 4x；SK Hynix + Dell 在 DTW 2026 已把 HBM + cSSD 分層架構命名「AI Memory」並展示於市場，cSSD-as-KV-cache 有廠商市場共識背書。",
+        "title": "Qwen 3.6 27B + aiDAPTIV+ NXUN205.A1 = 32K context SSD offload PoC benchmark",
+        "description": "Phison demo lab 場景：用 Qwen 3.6 27B（GQA，num_kv_heads = 8 vs num_heads = 32，KV footprint 4x 壓縮）+ aiDAPTIV+ NXUN205.A1 + LMCache CUDA 12.9，實測 32K context 下的 TTFT 和 tokens/second，與純 GPU 顯存基線對比。SK Hynix + Dell DTW 2026 展示「AI Memory 分層架構」，Sebastian Raschka 的 GQA 分析（4x 壓縮）提供理論預期值——Phison 的獨立實測數字是外部客戶決策的依據。",
+        "tech_stack": "Python, vLLM, LMCache CUDA 12.9, aiDAPTIV+ NXUN205.A1 SDK, Qwen 3.6 27B (Q8 量化)",
+        "hardware": "NVIDIA workstation + Phison Pascari D206V（Phison demo lab）",
+        "dev_time": "1 week PoC",
+        "first_step": "pip install lmcache vllm → 配置 LMCache 使用 aiDAPTIV+ Pascari D206V 作為 L2 KV store → 以 Qwen 3.6 27B Q8 量化在 32K context 下跑 1,000 個 decode step，記錄每步的 KV miss 率和 p50/p99 TTFT",
+        "market_evidence": "SK Hynix + Dell DTW 2026 聯合展示「AI Memory 分層架構」；Sebastian Raschka 確認 GQA 帶來 4x KV 壓縮；Phison Pascari D206V PCIe 5.0 提供實測存儲基礎",
         "source_links": [
-          "pulse.ai_bloggers.0:sebastian-raschka-kvcache",
-          "tech.aidaptiv.0:lmcache-cu129",
-          "tech.aidaptiv.2:phison-nxun205",
-          "tech.models.0:deepseek-v4-pro"
+          "tech.aidaptiv.1:phison-pascari-d206v",
+          "tech.aidaptiv.0:sk-hynix-cSSD",
+          "tech.models.1:qwen-3.6",
+          "pulse.ai_bloggers.3:sebastianraschka-kv"
         ]
       },
       {
-        "id": "idea-work-medical-ondevice-vision",
+        "id": "idea-minicpmv-hipaa-medical-demo",
         "audience": "work",
-        "title": "醫療 On-Device Vision Demo：MiniCPM-V-4.6 + aiDAPTIV+ 不出院網",
-        "description": "在 Phison demo 工作站以 MiniCPM-V-4.6（OpenBMB，on-device vision，4-bit GPTQ）處理模擬病患護理記錄照片，推論全程在本地完成，展示「符合 HIPAA 隱私要求、不出院網的視覺 AI 摘要」場景，記錄推論延遲，確認 <5 秒回應可達成。",
-        "use_case": "Phison 的 BD 工程師準備向台灣某醫院 IT 部門 demo：護理師在病房以工作站查詢病患記錄，VLM 自動摘要護理照片（包含傷口癒合進度、生命跡象圖表），推論不離開院網，主治醫師對 PHI（個人健康資訊）的合規要求靠本地部署滿足。Amazon Nova Act 取得 HIPAA 資格是市場信號：醫療 AI 部署障礙正在縮小，現在建 demo 時機好。",
-        "tech_stack": "Python + MiniCPM-V-4.6 4-bit GPTQ + aiDAPTIV NXUN205.A1 + vLLM（或 llama.cpp multimodal）+ 本地 REST API gateway",
-        "first_step": "下載 MiniCPM-V-4.6 4-bit GPTQ weights（約 4 GB），在 aiDAPTIV+ 工作站跑 20 張模擬護理記錄截圖的摘要，量測推論延遲，確認 p50 latency <5 秒，記錄 GPU / SSD I/O 的實際分配比例。",
-        "market_evidence": "Amazon Nova Act 取得 HIPAA 合規資格說明醫療 AI 的法規障礙正在縮小；MiniCPM-V-4.6 是 OpenBMB 最新的端設備視覺模型，在保持輕量的前提下多模態推理效能達到新里程碑。",
+        "title": "MiniCPM-V 4.6 + HIPAA framing = 醫療設備視覺 QA 離線 demo",
+        "description": "Phison app/demo layer 場景：給醫療設備 OEM 展示，MiniCPM-V 4.6（Apache 2.0，5B 參數，需 12GB VRAM）分析 DICOM 影像，所有資料不出設備。Amazon Nova Act 取得 HIPAA 認證說明雲端路線的合規路徑已打開，而本地 VLM 提供資料完全不出機器的最高隱私保障。目標展示物：上傳 DICOM → 本地 MiniCPM-V 4.6 描述影像特徵 → 結構化 JSON output（modality、region、findings）→ 5 秒以內完成，零網路調用。",
+        "tech_stack": "Python, MiniCPM-V 4.6 (Hugging Face transformers), pydicom, FastAPI, aiDAPTIV+ NXUN205.A1 SDK",
+        "hardware": "NVIDIA workstation（MiniCPM-V 4.6 需 12GB VRAM）",
+        "dev_time": "1 week PoC",
+        "first_step": "pip install transformers pydicom → 從 Hugging Face 下載 openbmb/MiniCPM-V-4.6 → 載入 NIH CXR14 dataset 中的一張公開 DICOM 轉 PNG → MiniCPM-V 4.6 描述影像 → 確認延遲在 5 秒以內，輸出包含 structured JSON",
+        "market_evidence": "Amazon Nova Act HIPAA 認證說明監管路徑已打開；MiniCPM-V 4.6 Apache 2.0 可商用；醫療 AI 三個傳統進入障礙（技術/合規/資料）本週同時收縮",
         "source_links": [
-          "tech.vendor.2:aws",
-          "tech.models.3:openbmb-minicpm-v-4",
-          "tech.aidaptiv.2:phison-nxun205"
+          "tech.models.3:minicpm-v-4.6",
+          "tech.vendor.3:aws-ml-blog",
+          "tech.aidaptiv.1:phison-pascari-d206v"
         ]
       },
       {
-        "id": "idea-work-hybrid-routing-aidaptiv",
+        "id": "idea-latent-kv-hybrid-router-poc",
         "audience": "work",
-        "title": "Hybrid Router Demo：根據任務複雜度動態路由 aiDAPTIV+ on-device 7B vs. Claude Sonnet",
-        "description": "用 earendil-works/pi 的 unified LLM API + aiDAPTIVLink 2/3 路由能力，建立一個 agent 問答流程的動態路由層：簡單問題（單步查詢，token count < 150）在本地 7B 跑，複雜問題（multi-hop reasoning）路由到 Claude Sonnet，即時顯示兩軌的 latency、cost 差異，以及整體 agent task completion rate。",
-        "use_case": "Phison 的 demo 工程師在 partner briefing 中展示「aiDAPTIV+ 不是跟雲端 AI 競爭，而是補充」：本地 7B 處理 90% 的低複雜度查詢（推論成本接近零），困難問題才上雲端 Sonnet，整體 API 費用降 70%，所有低複雜度任務的資料不離開本機。",
-        "tech_stack": "TypeScript + earendil-works/pi SDK + aiDAPTIVLink 2 API + Claude Sonnet API + 自製複雜度分類器（基於 token count + question type heuristic）",
-        "first_step": "用 earendil-works/pi 建一個簡單 router：if token_count(question) < 150 AND question_type == 'factual' → local 7B；else → Claude Sonnet。準備 20 個 Q&A 對（10 簡單、10 複雜），量測路由準確率和整體成本，確認「預期節省 70%」是否可達成。",
-        "market_evidence": "earendil-works/pi（53,841★，270 天）的 unified LLM API 抽象已有大量 community 驗證；Latent Space 報導指出 orchestration reliability 已成為模型廠的新競爭維度，routing 是其中最可量化的子問題。",
+        "title": "Latent Cache Flow：KV space 模型間通信，消除 Hybrid-Router 序列化開銷",
+        "description": "Phison demo 場景：Hybrid-Router 的 routing agent（小模型）完成 intent classification 後，通常把結果序列化成 text 再交給執行模型（大模型）重新 tokenize。arXiv 2605.22863《Latent Cache Flow》提出直接在 KV space 傳遞，跳過序列化，消除一次完整 prefill 的 latency。在 aiDAPTIV+ 的 KV offload 架構下，小模型的 KV output 直接作為大模型的 KV input，Hybrid-Router 的端到端 TTFT 理論上可再降 30-50%。ModeSwitch-LLM（arXiv 2605.23057）提供 runtime 模式切換的互補框架。",
+        "tech_stack": "Python, vLLM, Latent Cache Flow paper code (arXiv 2605.22863), Qwen 3.6 27B (router) + Qwen 3.6 35B-A3B MoE (executor)",
+        "hardware": "NVIDIA workstation（兩張 GPU 或 aiDAPTIV+ SSD offload，Qwen 3.6 27B + 35B-A3B MoE 合計約需 60GB VRAM 或 SSD offload）",
+        "dev_time": "2 week PoC",
+        "first_step": "讀 arXiv 2605.22863 的 Implementation 章節 → 用 Qwen 3.6 27B（router）到 Qwen 3.6 35B-A3B MoE（executor）pair 實作簡化版 KV transfer → 對比有 KV transfer vs 無（text serialization）的端到端延遲差",
+        "market_evidence": "aiDAPTIV+ Hybrid-Router 是 Phison 產品線的核心 differentiator；Latent Cache Flow 論文有完整 implementation；ModeSwitch-LLM 提供 runtime 路由的互補理論框架",
         "source_links": [
-          "shipped.trending.4:earendil-works/pi",
-          "tech.aidaptiv.2:phison-nxun205",
-          "pulse.ai_bloggers.4:latent-space-agents"
+          "tech.aidaptiv.3:arxiv-kv-cache-flow",
+          "tech.aidaptiv.4:arxiv-modeswitch",
+          "tech.models.1:qwen-3.6"
         ]
       }
     ]
@@ -407,96 +459,92 @@
   "shipped": {
     "trending": [
       {
-        "id": "shipped.trending.0:anthropics/claude-plugins-official",
-        "audience": "both",
-        "url": "https://github.com/anthropics/claude-plugins-official",
-        "name": "anthropics/claude-plugins-official",
-        "desc": "Official, Anthropic-managed directory of high quality Claude Code Plugins.",
-        "stars": 27173,
-        "repo_age": 365,
-        "language": "Python",
-        "relevance": "Anthropic curates plugins as the canonical agent integration surface.",
-        "topic_match": [
-          "dev-productivity",
-          "claude-code",
-          "mcp"
-        ]
-      },
-      {
-        "id": "shipped.trending.1:Lum1104/Understand-Anything",
+        "id": "shipped.trending.0:Lum1104/Understand-Anything",
         "audience": "both",
         "url": "https://github.com/Lum1104/Understand-Anything",
-        "name": "Lum1104/Understand-Anything",
-        "desc": "Graphs that teach > graphs that impress. Turn any code into an interactive knowledge graph you can explore, search, and analyze.",
-        "stars": 25209,
-        "repo_age": 270,
+        "name": "Understand-Anything",
+        "desc": "Graphs that teach > graphs that impress. Turn any code into an interactive knowledge graph you can explore, search, and understand.",
+        "stars": 27176,
         "language": "TypeScript",
-        "relevance": "Codebase knowledge graphs reduce token overhead—Claude Code skill for quick navigation.",
+        "relevance": "Knowledge graph codex for agent RAG & codebase analysis — Claude Code integration.",
         "topic_match": [
-          "dev-productivity",
+          "rag",
+          "knowledge-graph",
           "claude-code",
-          "knowledge-graph"
+          "dev-productivity"
         ]
       },
       {
-        "id": "shipped.trending.2:colbymchenry/codegraph",
+        "id": "shipped.trending.1:anthropics/claude-plugins-official",
         "audience": "both",
-        "url": "https://github.com/colbymchenry/codegraph",
-        "name": "colbymchenry/codegraph",
-        "desc": "Pre-indexed code knowledge graph for Claude Code, Codex, Cursor, OpenCode, and Hermes Agent — fewer tokens, fewer tool calls.",
-        "stars": 21701,
-        "repo_age": 270,
-        "language": "TypeScript",
-        "relevance": "Graph-indexed code reduces token overhead in Claude Code symbol lookup.",
+        "url": "https://github.com/anthropics/claude-plugins-official",
+        "name": "claude-plugins-official",
+        "desc": "Official, Anthropic-managed directory of high quality Claude Code Plugins.",
+        "stars": 27367,
+        "language": "Python",
+        "relevance": "Official registry for Claude Code plugins — the canonical extension mechanism.",
         "topic_match": [
-          "dev-productivity",
           "claude-code",
-          "knowledge-graph"
+          "mcp",
+          "dev-productivity"
         ]
       },
       {
-        "id": "shipped.trending.3:multica-ai/andrej-karpathy-skills",
+        "id": "shipped.trending.2:multica-ai/andrej-karpathy-skills",
         "audience": "both",
         "url": "https://github.com/multica-ai/andrej-karpathy-skills",
-        "name": "multica-ai/andrej-karpathy-skills",
+        "name": "andrej-karpathy-skills",
         "desc": "A single CLAUDE.md file to improve Claude Code behavior, derived from Andrej Karpathy's observations on LLM coding pitfalls.",
-        "stars": 151788,
-        "repo_age": 365,
+        "stars": 152690,
         "language": null,
-        "relevance": "LLM code-failure heuristics applied to Claude Code reasoning—operational patterns.",
+        "relevance": "Karpathy's LLM-coding practices distilled as CLAUDE.md — agent behavior tuning.",
         "topic_match": [
+          "claude-code",
           "dev-productivity",
-          "claude-code"
+          "agent-framework"
         ]
       },
       {
-        "id": "shipped.trending.4:earendil-works/pi",
+        "id": "shipped.trending.3:earendil-works/pi",
         "audience": "both",
         "url": "https://github.com/earendil-works/pi",
-        "name": "earendil-works/pi",
+        "name": "pi",
         "desc": "AI agent toolkit: coding agent CLI, unified LLM API, TUI & web UI libraries, Slack bot, vLLM pods",
-        "stars": 53841,
-        "repo_age": 270,
+        "stars": 54082,
         "language": "TypeScript",
-        "relevance": "Unified agent API + CLI + UI layer abstracts provider differences—operator-friendly.",
+        "relevance": "Agent toolkit with unified LLM API abstraction + vLLM inference pods — multi-backend abstraction layer.",
         "topic_match": [
-          "agent",
-          "dev-productivity",
-          "llm"
+          "agent-framework",
+          "inference-engine",
+          "llm-api"
         ]
       },
       {
-        "id": "shipped.trending.5:Alishahryar1/free-claude-code",
-        "audience": "general",
+        "id": "shipped.trending.4:Alishahryar1/free-claude-code",
+        "audience": "both",
         "url": "https://github.com/Alishahryar1/free-claude-code",
-        "name": "Alishahryar1/free-claude-code",
+        "name": "free-claude-code",
         "desc": "Use claude-code for free in the terminal, VSCode extension or discord like OpenClaw (voice supported)",
-        "stars": 29066,
-        "repo_age": 270,
+        "stars": 29257,
         "language": "Python",
-        "relevance": "Claude Code CLI access—lowers friction for budget-constrained builders.",
+        "relevance": "Claude Code CLI for terminal + VSCode — open-source agent harness.",
         "topic_match": [
-          "dev-productivity",
+          "claude-code",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.trending.5:colbymchenry/codegraph",
+        "audience": "both",
+        "url": "https://github.com/colbymchenry/codegraph",
+        "name": "codegraph",
+        "desc": "Pre-indexed code knowledge graph for Claude Code, Codex, Cursor, OpenCode, and Hermes Agent — fewer tokens, fewer tool calls, faster context retrieval.",
+        "stars": 22875,
+        "language": "TypeScript",
+        "relevance": "Pre-indexed codebase knowledge graph for agents — token-efficient context retrieval.",
+        "topic_match": [
+          "rag",
+          "knowledge-graph",
           "claude-code"
         ]
       },
@@ -504,30 +552,29 @@
         "id": "shipped.trending.6:multica-ai/multica",
         "audience": "both",
         "url": "https://github.com/multica-ai/multica",
-        "name": "multica-ai/multica",
-        "desc": "The open-source managed agents platform. Turn coding agents into real teammates — assign tasks, track progress, compound workflows.",
-        "stars": 32394,
-        "repo_age": 270,
+        "name": "multica",
+        "desc": "The open-source managed agents platform. Turn coding agents into real teammates — assign tasks, track progress, compound intelligence.",
+        "stars": 32652,
         "language": "TypeScript",
-        "relevance": "Agent team platform—task dispatch, tracking, capability routing for workflows.",
+        "relevance": "Managed agents platform — agent task orchestration + progress tracking.",
         "topic_match": [
-          "agent",
-          "dev-productivity"
+          "agent-framework",
+          "agent-management"
         ]
       },
       {
-        "id": "shipped.trending.7:manaflow-ai/cmux",
+        "id": "shipped.trending.7:666ghj/MiroFish",
         "audience": "general",
-        "url": "https://github.com/manaflow-ai/cmux",
-        "name": "manaflow-ai/cmux",
-        "desc": "Ghostty-based macOS terminal with vertical tabs and notifications for AI coding agents",
-        "stars": 18929,
-        "repo_age": 270,
-        "language": "Swift",
-        "relevance": "Claude Code-aware terminal—agent status visible without distracting popups.",
+        "url": "https://github.com/666ghj/MiroFish",
+        "name": "MiroFish",
+        "desc": "A Simple and Universal Swarm Intelligence Engine, Predicting Anything. 简洁通用的群体智能引擎，预测万物",
+        "stars": 62262,
+        "language": "Python",
+        "relevance": "Multi-agent swarm intelligence + knowledge graph for forecasting — agent choreography for prediction.",
         "topic_match": [
-          "dev-productivity",
-          "claude-code"
+          "agent-framework",
+          "multi-agent",
+          "knowledge-graph"
         ]
       }
     ],
@@ -536,132 +583,125 @@
         "id": "shipped.topic_discovery.0:1weiho/open-slide",
         "audience": "general",
         "url": "https://github.com/1weiho/open-slide",
-        "name": "1weiho/open-slide",
+        "name": "open-slide",
         "desc": "A slide framework built for agents.",
-        "stars": 3645,
-        "repo_age": 120,
+        "stars": 3664,
         "language": "TypeScript",
-        "relevance": "Slide framework gives agents document generation and presentation capability.",
+        "relevance": "Presentation authoring framework designed for agent generation — LLM-native output format.",
         "topic_match": [
-          "agent"
+          "agent-framework",
+          "dev-productivity"
         ]
       },
       {
-        "id": "shipped.topic_discovery.1:opensquilla/opensquilla",
+        "id": "shipped.topic_discovery.1:raiyanyahya/how-to-train-your-gpt",
+        "audience": "general",
+        "url": "https://github.com/raiyanyahya/how-to-train-your-gpt",
+        "name": "how-to-train-your-gpt",
+        "desc": "Build a modern LLM from scratch. Every line commented. Explained like we are five.",
+        "stars": 1796,
+        "language": "Jupyter Notebook",
+        "relevance": "LLM training from first principles — educational reference for builders.",
+        "topic_match": [
+          "fine-tuning",
+          "llm",
+          "education"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.2:opensquilla/opensquilla",
         "audience": "both",
         "url": "https://github.com/opensquilla/opensquilla",
-        "name": "opensquilla/opensquilla",
+        "name": "opensquilla",
         "desc": "OpenSquilla — Token-Efficient AI Agent with same budget, higher intelligence density",
-        "stars": 1692,
-        "repo_age": 90,
+        "stars": 1734,
         "language": "Python",
-        "relevance": "Achieves higher token efficiency in agents through budget-aware reasoning.",
+        "relevance": "Token-budget optimization for multi-hop agents — inference efficiency.",
         "topic_match": [
-          "agent",
-          "llm",
-          "mcp"
+          "agent-framework",
+          "inference-optimization"
         ]
       },
       {
-        "id": "shipped.topic_discovery.2:Open-Less/openless",
+        "id": "shipped.topic_discovery.3:Open-Less/openless",
         "audience": "general",
         "url": "https://github.com/Open-Less/openless",
-        "name": "Open-Less/openless",
+        "name": "openless",
         "desc": "Hold a key, speak, release — AI-polished text appears at your cursor in any app. Open-source voice input for macOS & Windows.",
-        "stars": 1628,
-        "repo_age": 120,
+        "stars": 1638,
         "language": "HTML",
-        "relevance": "Voice-to-text with AI post-processing—hands-free interface for agent operators.",
+        "relevance": "Voice-to-text LLM polish for any app — multimodal input layer.",
         "topic_match": [
           "voice",
-          "llm"
-        ]
-      },
-      {
-        "id": "shipped.topic_discovery.3:lightseekorg/tokenspeed",
-        "audience": "both",
-        "url": "https://github.com/lightseekorg/tokenspeed",
-        "name": "lightseekorg/tokenspeed",
-        "desc": "TokenSpeed is a speed-of-light LLM inference engine.",
-        "stars": 1121,
-        "repo_age": 90,
-        "language": "Python",
-        "relevance": "Ultra-low-latency inference—critical for agent response loops.",
-        "topic_match": [
-          "inference-engine",
-          "llm"
+          "tts-stt"
         ]
       },
       {
         "id": "shipped.topic_discovery.4:DenisSergeevitch/agents-best-practices",
         "audience": "general",
         "url": "https://github.com/DenisSergeevitch/agents-best-practices",
-        "name": "DenisSergeevitch/agents-best-practices",
+        "name": "agents-best-practices",
         "desc": "Provider-neutral Agent Skill for Codex, Claude Code, and agentic harness design.",
-        "stars": 1046,
-        "repo_age": 90,
+        "stars": 1055,
         "language": null,
-        "relevance": "Portable agent patterns work across Claude Code, Codex, and other harnesses.",
+        "relevance": "Agent skill patterns — reusable choreography across Claude Code, Codex, Hermes.",
         "topic_match": [
-          "agent",
-          "dev-productivity"
+          "agent-framework",
+          "mcp"
         ]
       },
       {
-        "id": "shipped.topic_discovery.5:jmerelnyc/Photo-agents",
-        "audience": "general",
-        "url": "https://github.com/jmerelnyc/Photo-agents",
-        "name": "jmerelnyc/Photo-agents",
-        "desc": "Autonomous self-evolving agents. Vision-grounded layered memory and self-written skills for LLM agents that operate your desktop.",
-        "stars": 1020,
-        "repo_age": 90,
-        "language": "Python",
-        "relevance": "Vision-grounded agents evolve behaviors autonomously—desktop automation from screenshots.",
-        "topic_match": [
-          "agent",
-          "vlm"
-        ]
-      },
-      {
-        "id": "shipped.topic_discovery.6:feder-cr/invisible_playwright",
+        "id": "shipped.topic_discovery.5:feder-cr/invisible_playwright",
         "audience": "general",
         "url": "https://github.com/feder-cr/invisible_playwright",
-        "name": "feder-cr/invisible_playwright",
+        "name": "invisible_playwright",
         "desc": "AI Browser, Stealth Firefox that passes every bot detection test. Drop-in Playwright replacement.",
-        "stars": 996,
-        "repo_age": 120,
+        "stars": 1003,
         "language": "Python",
-        "relevance": "Stealth browser automation defeats bot detection—unblocks agent web scraping.",
+        "relevance": "Stealth browser automation — agent web scraping without detection.",
         "topic_match": [
           "web-scraping",
-          "browser-automation"
+          "browser-agent"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.6:jmerelnyc/Photo-agents",
+        "audience": "both",
+        "url": "https://github.com/jmerelnyc/Photo-agents",
+        "name": "Photo-agents",
+        "desc": "Autonomous self-evolving agents. Vision-grounded layered memory and self-written skills for LLM agents that operate your desktop.",
+        "stars": 1022,
+        "language": "Python",
+        "relevance": "Vision-grounded agent memory + autonomous skill synthesis — embodied multimodal agents.",
+        "topic_match": [
+          "vlm",
+          "agent-framework",
+          "computer-vision"
         ]
       },
       {
         "id": "shipped.topic_discovery.7:google-antigravity/antigravity-sdk-python",
         "audience": "general",
         "url": "https://github.com/google-antigravity/antigravity-sdk-python",
-        "name": "google-antigravity/antigravity-sdk-python",
+        "name": "antigravity-sdk-python",
         "desc": "A Python library for building AI agents that leverage the full power of Google Antigravity.",
-        "stars": 965,
-        "repo_age": 90,
+        "stars": 979,
         "language": "Python",
-        "relevance": "Programmatic interface to Google Antigravity—integrate into agent workflows.",
+        "relevance": "Google Antigravity agent SDK — managed agents platform integration.",
         "topic_match": [
-          "agent",
-          "llm"
+          "agent-framework",
+          "llm-api"
         ]
       },
       {
         "id": "shipped.topic_discovery.8:alvinunreal/openpets",
-        "audience": "both",
+        "audience": "general",
         "url": "https://github.com/alvinunreal/openpets",
-        "name": "alvinunreal/openpets",
+        "name": "openpets",
         "desc": "Desktop pets for AI coding agents. Install pets, connect Claude Code via MCP, and see live coding status on your desktop.",
-        "stars": 945,
-        "repo_age": 90,
+        "stars": 946,
         "language": "TypeScript",
-        "relevance": "MCP-driven desktop pets display Claude Code agent status—operational visibility.",
+        "relevance": "Agent status visualization — Claude Code MCP + live feedback UI.",
         "topic_match": [
           "claude-code",
           "mcp",
@@ -669,18 +709,17 @@
         ]
       },
       {
-        "id": "shipped.topic_discovery.9:nduckmink/arkon",
+        "id": "shipped.topic_discovery.9:raindrop-ai/workshop",
         "audience": "general",
-        "url": "https://github.com/nduckmink/arkon",
-        "name": "nduckmink/arkon",
-        "desc": "Arkon: Enterprise AI Knowledge Hub & MCP Server. Self-hosted knowledge base for teams to manage RAG contexts, access policy.",
-        "stars": 853,
-        "repo_age": 120,
-        "language": "Python",
-        "relevance": "Enterprise RAG system with fine-grained access—safe knowledge for agent teams.",
+        "url": "https://github.com/raindrop-ai/workshop",
+        "name": "workshop",
+        "desc": "Give your coding agent the power to write and run agent evals.",
+        "stars": 736,
+        "language": "TypeScript",
+        "relevance": "Agent-native eval authoring + execution — self-testing agents.",
         "topic_match": [
-          "rag",
-          "mcp"
+          "agent-framework",
+          "eval-framework"
         ]
       }
     ],
@@ -693,163 +732,250 @@
         "desc": "Audrey Tang (8.9k followers) — LLM-supervised persistent memory for AI agents",
         "stars": 0,
         "language": null,
-        "relevance": "Cross-session memory for agents—persistence without external vector DB."
+        "relevance": "Persistent cross-session agent memory — core infrastructure for agents.",
+        "topic_match": [
+          "agent-framework",
+          "memory"
+        ]
       },
       {
         "id": "shipped.dev_watch_taiwan.1:strategist922/notebooklm-py",
         "audience": "general",
         "url": "https://github.com/strategist922/notebooklm-py",
         "name": "strategist922/notebooklm-py",
-        "desc": "Hacker (831 followers) — Unofficial Python API and agentic skill for Google NotebookLM",
+        "desc": "strategist922 (831 followers) — Unofficial Python API and agentic skill for Google NotebookLM",
         "stars": 0,
         "language": null,
-        "relevance": "NotebookLM as programmatic building block—RAG synthesis for agent workflows."
+        "relevance": "NotebookLM API — agent-native document analysis interface.",
+        "topic_match": [
+          "rag",
+          "document-ai",
+          "mcp"
+        ]
       },
       {
         "id": "shipped.dev_watch_taiwan.2:doggy8088/capcap",
         "audience": "general",
         "url": "https://github.com/doggy8088/capcap",
         "name": "doggy8088/capcap",
-        "desc": "doggy8088 (4.4k followers) — Lightweight native macOS screenshot tool, menu-bar resident",
+        "desc": "doggy8088 (4.4k followers) — Lightweight native macOS screenshot tool in menu bar",
         "stars": 0,
         "language": "Swift",
-        "relevance": "New utility for Taiwan dev ecosystem—potential agent integration point."
+        "relevance": "Quick screenshot utility — developer productivity.",
+        "topic_match": [
+          "dev-productivity"
+        ]
       },
       {
-        "id": "shipped.dev_watch_taiwan.3:pan93412/asciinema",
+        "id": "shipped.dev_watch_taiwan.3:roberthsu2003/ditl-website",
+        "audience": "general",
+        "url": "https://github.com/roberthsu2003/ditl-website",
+        "name": "roberthsu2003/ditl-website",
+        "desc": "roberthsu2003 (714 followers) — Company website",
+        "stars": 0,
+        "language": "TypeScript",
+        "relevance": "TypeScript web project from Taiwan developer.",
+        "topic_match": []
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.4:pan93412/asciinema",
         "audience": "general",
         "url": "https://github.com/pan93412/asciinema",
         "name": "pan93412/asciinema",
-        "desc": "Pan (665 followers) — Terminal session recorder and player",
+        "desc": "pan93412 (665 followers) — Terminal session recorder, streamer and player",
         "stars": 0,
         "language": null,
-        "relevance": "Lightweight terminal logging—useful for agent execution introspection."
+        "relevance": "Terminal automation recording — demo + debugging tool.",
+        "topic_match": [
+          "dev-productivity"
+        ]
       }
     ],
     "dev_watch_global": [
       {
-        "id": "shipped.dev_watch_global.0:lucidrains/populora",
+        "id": "shipped.dev_watch_global.0:microsoft/CopilotAnalyticsLabs",
         "audience": "general",
-        "url": "https://github.com/lucidrains/populora",
-        "name": "lucidrains/populora",
-        "desc": "lucidrains (59.9k followers) — Implementation and explorations into PopuLoRA, Co-Evolving LLM Populations for Reasoning Self-Play",
-        "stars": 7,
-        "language": null,
-        "relevance": "PopuLoRA co-evolution approach—population-based reasoning via self-play."
+        "url": "https://github.com/microsoft/CopilotAnalyticsLabs",
+        "name": "CopilotAnalyticsLabs",
+        "desc": "microsoft (120.5k followers) — Copilot Analytics Labs for experimental Copilot analytics in Viva Insights",
+        "stars": 0,
+        "language": "TypeScript",
+        "relevance": "Copilot analytics framework — agent impact measurement.",
+        "topic_match": [
+          "agent-framework",
+          "analytics"
+        ]
       },
       {
-        "id": "shipped.dev_watch_global.1:steipete/ds4",
+        "id": "shipped.dev_watch_global.1:lucidrains/populora",
+        "audience": "both",
+        "url": "https://github.com/lucidrains/populora",
+        "name": "populora",
+        "desc": "lucidrains (59.9k followers) — PopuLoRA: Co-Evolving LLM Populations for Reasoning Self-Play",
+        "stars": 7,
+        "language": null,
+        "relevance": "LLM population co-evolution for self-improvement — novel training approach.",
+        "topic_match": [
+          "fine-tuning",
+          "reasoning"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.2:steipete/ds4",
         "audience": "both",
         "url": "https://github.com/steipete/ds4",
-        "name": "steipete/ds4",
+        "name": "ds4",
         "desc": "steipete (50.4k followers) — DeepSeek 4 Flash local inference engine for Metal and CUDA",
         "stars": 3,
         "language": null,
-        "relevance": "Fast local inference—on-device agents for latency-sensitive workflows."
+        "relevance": "Local inference engine for DS4 — on-device LLM optimization.",
+        "topic_match": [
+          "inference-engine",
+          "edge-ai",
+          "quantization"
+        ]
       },
       {
-        "id": "shipped.dev_watch_global.2:wesbos/webmcp-groceries",
+        "id": "shipped.dev_watch_global.3:wesbos/webmcp-groceries",
         "audience": "general",
         "url": "https://github.com/wesbos/webmcp-groceries",
-        "name": "wesbos/webmcp-groceries",
-        "desc": "wesbos (35.5k followers) — WebMCP in practice: grocery list agent demo",
+        "name": "webmcp-groceries",
+        "desc": "wesbos (35.5k followers) — WebMCP groceries integration",
         "stars": 5,
         "language": "TypeScript",
-        "relevance": "Live WebMCP server example—shows MCP agent instantiation patterns."
+        "relevance": "MCP integration reference — agent protocol implementation.",
+        "topic_match": [
+          "mcp",
+          "agent-framework"
+        ]
       },
       {
-        "id": "shipped.dev_watch_global.3:bradtraversy/linesmith",
+        "id": "shipped.dev_watch_global.4:facebookresearch/outlier_impact",
         "audience": "general",
-        "url": "https://github.com/bradtraversy/linesmith",
-        "name": "bradtraversy/linesmith",
-        "desc": "bradtraversy (75.9k followers) — VS Code extension for auto typing code for tutorials",
+        "url": "https://github.com/facebookresearch/outlier_impact",
+        "name": "outlier_impact",
+        "desc": "facebookresearch (36.0k followers) — Research on detecting outliers by their impact",
         "stars": 2,
-        "language": "TypeScript",
-        "relevance": "Tutorial automation via simulated input—potential agent demonstration framework."
+        "language": "Python",
+        "relevance": "Outlier detection research — evaluation anomaly identification.",
+        "topic_match": [
+          "research",
+          "eval-framework"
+        ]
       }
     ]
   },
   "pulse": {
     "hn": [
       {
-        "id": "pulse.hn.0:hn-39847362",
-        "audience": "work",
+        "id": "pulse.hn.0:hn-48192383",
+        "audience": "general",
         "url": "https://github.com/antoinezambelli/forge",
         "title": "Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks",
-        "score": 679,
+        "score": 681,
         "comments": 62,
-        "takeaway": "Guardrails framework boosts 8B-model agentic task success from 53% to 99%—size vs safety trade-off shifts."
+        "takeaway": "Structured output guardrails lift 8B agentic reliability from 53% to 99%."
       },
       {
-        "id": "pulse.hn.1:hn-39847350",
+        "id": "pulse.hn.1:hn-48237663",
         "audience": "general",
         "url": "https://api-docs.deepseek.com/quick_start/pricing",
         "title": "DeepSeek makes the V4 Pro price discount permanent",
-        "score": 473,
-        "comments": 58,
-        "takeaway": "DeepSeek locks permanent V4 Pro discount, intensifying inference cost competition with OpenAI and Anthropic."
+        "score": 557,
+        "comments": 62,
+        "takeaway": "Permanent V4 Pro discount sharpens inference cost competition at scale."
+      },
+      {
+        "id": "pulse.hn.2:hn-48256953",
+        "audience": "both",
+        "url": "https://esengine.github.io/DeepSeek-Reasonix/",
+        "title": "DeepSeek reasonix, DeepSeek native coding agent with high caching and low cost",
+        "score": 493,
+        "comments": 47,
+        "takeaway": "Native agent framework leverages KV caching for cost-efficient code generation."
       }
     ],
     "lobsters": [
       {
-        "id": "pulse.lobsters.0:phoronix-copilot-linux",
-        "audience": "work",
-        "url": "https://www.phoronix.com/news/Linux-7.1-rc5-AI-This-Week",
-        "title": "GitHub Copilot & Claude Code Helped With Graphics, WiFi Linux Driver Issues This Week",
-        "takeaway": "AI coding assistants now embedded in kernel driver development; accelerating low-level systems workflows."
+        "id": "pulse.lobsters.0:phoronix-linux71rc5",
+        "audience": "general",
+        "url": "https://www.phoronix.com/news/Linux-7.1-rc5-Released",
+        "title": "Linux 7.1-rc5 Released With Fixes Ramping Up From AI Coding Agents",
+        "takeaway": "Linux kernel merges AI agent workload fixes into mainline release cycle."
+      },
+      {
+        "id": "pulse.lobsters.1:lwn-kernel71rc5",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1074172/",
+        "title": "Kernel prepatch 7.1-rc5",
+        "takeaway": "Kernel development tracking system-level requirements for agentic workloads."
       }
     ],
     "chinese_community": [
       {
-        "id": "pulse.chinese_community.0:oschina-easyai",
+        "id": "pulse.chinese_community.0:oschina-officedex",
         "audience": "work",
-        "url": "https://www.oschina.net/news/444721",
-        "title": "EasyAi：让 Java 程序员挺直腰杆做 AI，不用在 Python 门口罚站",
-        "takeaway": "EasyAi 框架讓 Java 開發者直接構建 AI，繞過 Python 學習障礙。"
+        "url": "https://www.oschina.net/p/officedex",
+        "title": "面向办公文档生产场景的 AI 桌面工作台 OfficeDex",
+        "takeaway": "中文辦公文件自動化工具，簡化簽核流程的實戰案例。"
       },
       {
-        "id": "pulse.chinese_community.1:techorange-ai-unicorn",
+        "id": "pulse.chinese_community.1:ithome-ai-hpc",
+        "audience": "work",
+        "url": "https://www.ithome.com.tw/news/176089",
+        "title": "CIS推出支援AI與HPC的強化映像檔，協助企業在AWS部署安全雲端環境",
+        "takeaway": "CIS硬化映像加入AI/HPC支援，降低AWS雲端部署的安全設置障礙。"
+      },
+      {
+        "id": "pulse.chinese_community.2:techorange-campus",
         "audience": "general",
-        "url": "https://techorange.com/2026/05/23/2026-market-update/?utm_source=rss&utm_medium=feed&utm_campaign=techorange_rss",
-        "title": "【Redpoint 發佈全球創投風向】AI 獨角獸展開極速生長週期，解析 AI 創投三大賽道與企業「二次創業」藍圖",
-        "takeaway": "AI 獨角獸成長週期加速；三大投資賽道與企業內創新模式成型。"
+        "url": "https://techorange.com/2026/05/25/ai-tku-icampus-speed/?utm_source=rss&utm_medium=feed&utm_campaign=techorange_rss",
+        "title": "AI 公文走入行政校務，淡江大學邁向智慧校園 3.0",
+        "takeaway": "台灣大學用AI簡化行政簽核，驗證校務自動化的實現路徑。"
+      },
+      {
+        "id": "pulse.chinese_community.3:eettaiwan-agents",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260525nt01-openai-prepares-ai-first-smartphone-for-2028/",
+        "title": "AI Agent取代App？　OpenAI傳2028推AI-First手機",
+        "takeaway": "OpenAI 2028邊界AI手機戰略信號，Agent優先於應用商店的設備端轉向。"
       }
     ],
     "ai_bloggers": [
       {
-        "id": "pulse.ai_bloggers.0:sebastian-raschka-kvcache",
-        "audience": "both",
-        "url": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures",
-        "title": "Recent Developments in LLM Architectures: KV Sharing, mHC, and Compressed Attention",
-        "takeaway": "KV-cache compression and sharing reshape inference; Gemma 4 and DeepSeek V4 implementations diverge on strategy."
-      },
-      {
-        "id": "pulse.ai_bloggers.1:eugene-yan-working",
+        "id": "pulse.ai_bloggers.0:eugeneyan-work-ai",
         "audience": "work",
         "url": "https://eugeneyan.com/writing/working-with-ai/",
         "title": "How to Work and Compound with AI",
-        "takeaway": "Context architecture and taste-as-constraint drive AI impact compounding more than prompt engineering velocity."
+        "takeaway": "把 AI 當基礎設施而非自動化魔法，強調上下文與品味的槓桿作用。"
       },
       {
-        "id": "pulse.ai_bloggers.2:hamel-husain-revenge",
+        "id": "pulse.ai_bloggers.1:hamelhusain-evals",
         "audience": "work",
         "url": "https://hamel.dev/blog/posts/revenge/",
         "title": "The Revenge of the Data Scientist",
-        "takeaway": "Evals and custom data become scaling bottleneck; LLM capability gains alone insufficient for production AI."
+        "takeaway": "Eval 與資料科學專業在 Agent 部署中重新成為關鍵競爭力。"
       },
       {
-        "id": "pulse.ai_bloggers.3:lilian-weng-thinking",
+        "id": "pulse.ai_bloggers.2:lilianweng-reasoning",
         "audience": "general",
         "url": "https://lilianweng.github.io/posts/2025-05-01-thinking/",
         "title": "Why We Think",
-        "takeaway": "Analysis of reasoning chains and thought scaffolding in frontier model architectures post-o1 era."
+        "takeaway": "深度拆解 LLM 推理鏈的黑盒機制，揭示思考過程的設計空間。"
       },
       {
-        "id": "pulse.ai_bloggers.4:latent-space-agents",
-        "audience": "work",
+        "id": "pulse.ai_bloggers.3:sebastianraschka-kv",
+        "audience": "both",
+        "url": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures",
+        "title": "Recent Developments in LLM Architectures: KV Sharing, mHC, and Compressed Attention",
+        "takeaway": "KV 快取共享與壓縮技術降低推理記憶體壓力，加速 Agent 採納。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:latentspace-agents",
+        "audience": "general",
         "url": "https://www.latent.space/p/ainews-all-model-labs-are-now-agent",
         "title": "[AINews] All Model Labs are now Agent Labs",
-        "takeaway": "Model labs shift to agent-first research; infrastructure standardization for agentic reliability emerges."
+        "takeaway": "模型評測框架統一向 Agent 基準靠攏，行業轉向明確。"
       }
     ]
   },
@@ -861,23 +987,11 @@
         "audience": "both",
         "url": "https://news.skhynix.com/dtw-2026/",
         "title": "What Brought Dell and SK hynix Together in Las Vegas? From HBM to cSSD, Reaffirming the Limitless Scalability of AI Memory",
-        "takeaway": "SK Hynix與Dell展示HBM/cSSD應對AI記憶體瓶頸的可擴展性",
+        "takeaway": "SK Hynix + Dell showcase HBM and cSSD scalability for AI inference memory architecture.",
         "amount": null,
         "companies": [
           "SK Hynix",
           "Dell"
-        ],
-        "region": "global"
-      },
-      {
-        "id": "market.funding.1:kioxia-ai-listing",
-        "audience": "both",
-        "url": "https://www.blocksandfiles.com/flash/2026/05/21/kioxia-rides-the-ai-wave-to-record-revenues-and-a-us-listing/5241267",
-        "title": "Kioxia rides the AI wave to record revenues and a US listing",
-        "takeaway": "Kioxia因AI需求創下紀錄營收，規劃赴美上市",
-        "amount": null,
-        "companies": [
-          "Kioxia"
         ],
         "region": "global"
       }
@@ -885,48 +999,26 @@
     "policy": [],
     "taiwan": [
       {
-        "id": "market.taiwan.0:technews-yeedx",
+        "id": "market.taiwan.0:tsmc-1nm-2030",
         "audience": "both",
-        "url": "https://technews.tw/2026/05/22/yeedx-eletronic-2nm-ai-server/",
-        "title": "半導體背後的關鍵耗材廠，意德士切入 2 奈米與 AI 伺服器",
-        "takeaway": "意德士供應2奈米及AI伺服器之關鍵耗材",
+        "url": "https://www.techbang.com/posts/129546-tsmc-1nm-mass-production-2030",
+        "title": "台積電提前佈局1奈米製程，最快2030年啟動量產",
+        "takeaway": "TSMC targets 1nm production by 2030, maintaining foundry edge for high-compute AI workloads.",
         "amount": null,
         "companies": [
-          "意德士"
+          "TSMC"
         ],
         "region": "taiwan"
       },
       {
-        "id": "market.taiwan.1:inside-nvidia-huang",
+        "id": "market.taiwan.1:phison-pascari-d206v",
         "audience": "both",
-        "url": "https://www.inside.com.tw/article/41364-nvidia-jensen-huang-taiwan-visit-computex-2025",
-        "title": "蘇姿丰行程甫告一段落，黃仁勳今再訪台、直奔南港開講",
-        "takeaway": "黃仁勳再度訪台，強化NVIDIA在台灣AI晶片供應鏈的戰略地位。",
+        "url": "https://phisonblog.com/award-winning-pascari-d206v-ushers-in-a-new-era-of-storage-density/",
+        "title": "Award-Winning Pascari D206V Ushers in a New Era of Storage Density",
+        "takeaway": "Phison Pascari D206V improves SSD density per controller, reducing overhead in scale-out inference systems.",
+        "amount": null,
         "companies": [
-          "NVIDIA"
-        ],
-        "region": "taiwan"
-      },
-      {
-        "id": "market.taiwan.2:technews-tsmc-dividend",
-        "audience": "both",
-        "url": "https://finance.technews.tw/2026/05/24/general-strike/",
-        "title": "台積電驚傳大砍 15% 分紅！員工不滿揚言「效法三星」發起大罷工",
-        "takeaway": "台積電分紅削減15%，員工罷工威脅恐衝擊全球AI晶片供應鏈。",
-        "companies": [
-          "TSMC",
-          "Samsung"
-        ],
-        "region": "taiwan"
-      },
-      {
-        "id": "market.taiwan.3:techorange-redpoint",
-        "audience": "general",
-        "url": "https://techorange.com/2026/05/23/2026-market-update/?utm_source=rss&utm_medium=feed&utm_campaign=techorange_rss",
-        "title": "【Redpoint 發佈全球創投風向】AI 獨角獸展開極速生長週期，解析 AI 創投三大賽道與企業「二次創業」藍圖",
-        "takeaway": "紅點創投分析AI獨角獸成長軌跡與創投三大賽道，揭示市場融資趨勢。",
-        "companies": [
-          "Redpoint"
+          "Phison"
         ],
         "region": "taiwan"
       }
@@ -935,128 +1027,218 @@
   "tech": {
     "vendor": [
       {
-        "id": "tech.vendor.0:anthropic",
+        "id": "tech.vendor.0:anthropic-news",
         "audience": "general",
-        "url": "https://www.anthropic.com/research/glasswing-initial-update",
-        "title": "Project Glasswing: An initial update",
-        "takeaway": "推理架構進展，多模態理解能力優化",
+        "url": "https://www.anthropic.com/news/claude-opus-4-7",
+        "title": "Introducing Claude Opus 4.7",
+        "takeaway": "Opus 4.7 strengthens performance on agentic coding + vision tasks",
         "companies": [
           "Anthropic"
         ]
       },
       {
-        "id": "tech.vendor.1:microsoft",
+        "id": "tech.vendor.1:microsoft-research-ai",
         "audience": "general",
         "url": "https://www.microsoft.com/en-us/research/blog/magenticlite-magenticbrain-fara1-5-an-agentic-experience-optimized-for-small-models/",
-        "title": "MagenticLite, MagenticBrain, Fara1.5: An agentic experience optimized for small models",
-        "takeaway": "小模型代理框架成熟，推理成本降低",
+        "title": "MagenticLite, MagenticBrain, Fara1.5: agentic experience optimized for small models",
+        "takeaway": "Agentic frameworks optimize inference efficiency for edge small models",
         "companies": [
           "Microsoft"
         ]
       },
       {
-        "id": "tech.vendor.2:aws",
+        "id": "tech.vendor.2:openai",
+        "audience": "general",
+        "url": "https://openai.com/index/gartner-2026-agentic-coding-leader",
+        "title": "OpenAI named a Leader in enterprise coding agents by Gartner",
+        "takeaway": "OpenAI leads Gartner coding-agent benchmark",
+        "companies": [
+          "OpenAI"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:aws-ml-blog",
         "audience": "general",
         "url": "https://aws.amazon.com/blogs/machine-learning/amazon-nova-act-is-now-hipaa-eligible/",
         "title": "Amazon Nova Act is now HIPAA eligible",
-        "takeaway": "Nova Act 醫療合規就緒，企業部署加速",
+        "takeaway": "Nova Act clears HIPAA certification for healthcare inference",
         "companies": [
-          "Amazon"
+          "AWS"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:google-io",
+        "audience": "general",
+        "url": "https://blog.google/innovation-and-ai/technology/ai/io-2026-dialogues-recap/",
+        "title": "Google I/O 2026 Dialogues: AI systems and agent architectures",
+        "takeaway": "Google I/O 2026 covers LLM system design + agent frameworks",
+        "companies": [
+          "Google"
         ]
       }
     ],
     "models": [
       {
         "id": "tech.models.0:deepseek-v4-pro",
-        "audience": "general",
+        "audience": "work",
         "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
-        "title": "DeepSeek-V4-Pro on Hugging Face",
-        "takeaway": "1.6T 參數超大規模開源推理優先選",
+        "title": "DeepSeek V4 Pro",
+        "takeaway": "DeepSeek V4 Pro (Apache 2.0) accessible via pricing discount now permanent",
         "companies": [
           "DeepSeek"
         ]
       },
       {
-        "id": "tech.models.1:sulphurai-sulphur-2",
-        "audience": "general",
-        "url": "https://huggingface.co/SulphurAI/Sulphur-2-base",
-        "title": "Sulphur-2-base: Text-to-Video Generation",
-        "takeaway": "文本轉視頻開源模型成熟度提升",
+        "id": "tech.models.1:qwen-3.6",
+        "audience": "work",
+        "url": "https://huggingface.co/Qwen",
+        "title": "Qwen 3.6 series: 27B MTP and 35B A3B MoE releases",
+        "takeaway": "Qwen 3.6 27B (dense) + 35B MoE available in multiple quantizations",
         "companies": [
-          "SulphurAI"
+          "Qwen/Alibaba"
         ]
       },
       {
         "id": "tech.models.2:cohere-command-a-plus",
         "audience": "general",
-        "url": "https://huggingface.co/CohereLabs/command-a-plus-05-2026-bf16",
-        "title": "Command A+ 05-2026: Advanced multimodal model",
-        "takeaway": "Command A+ 視覺多模態推理已就緒",
+        "url": "https://huggingface.co/CohereLabs/command-a-plus-05-2026-w4a4",
+        "title": "Command A Plus (05-2026 w4a4 + bf16 variants)",
+        "takeaway": "Cohere Command A Plus multimodal model in fp8 + w4a4 quantization",
         "companies": [
           "Cohere"
         ]
       },
       {
-        "id": "tech.models.3:openbmb-minicpm-v-4",
+        "id": "tech.models.3:minicpm-v-4.6",
         "audience": "both",
         "url": "https://huggingface.co/openbmb/MiniCPM-V-4.6",
-        "title": "MiniCPM-V-4.6: Lightweight On-Device Vision",
-        "takeaway": "端設備視覺模型推理效能突破",
+        "title": "MiniCPM-V 4.6: lightweight multimodal VLM",
+        "takeaway": "MiniCPM-V 4.6 on-device VLM with Apache 2.0 license",
         "companies": [
           "OpenBMB"
         ]
       },
       {
-        "id": "tech.models.4:sapient-hrm-text-1b",
-        "audience": "general",
-        "url": "https://huggingface.co/sapientinc/HRM-Text-1B",
-        "title": "HRM-Text-1B: Hierarchical Reasoning Model",
-        "takeaway": "階層推理小模型架構創新",
+        "id": "tech.models.4:arxiv-tensor-cache",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2605.22884",
+        "title": "Tensor Cache: Eviction-conditioned Associative Memory for Transformers",
+        "takeaway": "Two-level KV cache (sliding-window L1 + fixed-size associative L2) for long-context",
         "companies": [
-          "Sapient Inc"
-        ]
-      },
-      {
-        "id": "tech.models.5:tencent-hy-mt2-30b",
-        "audience": "general",
-        "url": "https://huggingface.co/tencent/Hy-MT2-30B-A3B",
-        "title": "Hy-MT2-30B-A3B: Multilingual Translation",
-        "takeaway": "跨語言翻譯 30B 開源版本可用",
-        "companies": [
-          "Tencent"
+          "Research"
         ]
       }
     ],
-    "benchmarks": [],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:bfcl",
+        "audience": "general",
+        "url": "https://huggingface.co/spaces/xlang-ai/BFCL",
+        "title": "BFCL (Function Calling Leaderboard): Claude dominates top-5",
+        "takeaway": "Claude Opus + Sonnet hold top positions on function-calling evals",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Claude-Opus-4-5-20251101 (FC)",
+            "Claude-Sonnet-4-5-20250929 (FC)",
+            "Gemini-3-Pro-Preview (Prompt)",
+            "GLM-4.6 (FC thinking)",
+            "Grok-4-1-fast-reasoning (FC)"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:swebench",
+        "audience": "work",
+        "url": "https://huggingface.co/spaces/swe-bench/leaderboard",
+        "title": "SWE-bench Verified: agentic code-solve performance",
+        "takeaway": "Claude 4.5 Opus agents lead software-engineering task resolution",
+        "benchmark_changes": {
+          "new_top_5": [
+            "live-SWE-agent + Claude 4.5 Opus medium (20251101)",
+            "Sonar Foundation Agent + Claude 4.5 Opus",
+            "TRAE + Doubao-Seed-Code",
+            "live-SWE-agent + Gemini 3 Pro Preview",
+            "Atlassian Rovo Dev"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.2:ocrbench",
+        "audience": "general",
+        "url": "https://huggingface.co/spaces/mteb/leaderboard",
+        "title": "OCRBench: vision models on text extraction",
+        "takeaway": "Llama Nemotron + InternVL lead open-source OCR evaluation",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Llama Nemotron Nano VL 8B",
+            "InternVL-3-14B",
+            "Gemini-Pro",
+            "Qwen2-VL-7B",
+            "InternVL2.5-26B"
+          ]
+        }
+      }
+    ],
     "aidaptiv": [
       {
-        "id": "tech.aidaptiv.0:lmcache-cu129",
+        "id": "tech.aidaptiv.0:sk-hynix-cSSD",
         "audience": "work",
-        "url": "https://github.com/LMCache/LMCache/releases/tag/nightly-cu129",
-        "title": "LMCache Nightly: CUDA 12.9 Wheels",
-        "takeaway": "KV 快取卸載方案持續優化",
+        "url": "https://news.skhynix.com/dtw-2026/",
+        "title": "SK hynix & Dell DTW 2026: HBM to cSSD for AI memory scalability",
+        "takeaway": "cSSD (compute-NAND SSD) extends AI memory hierarchy beyond HBM for training/inference",
         "companies": [
-          "LMCache"
+          "SK Hynix",
+          "Dell"
         ]
       },
       {
-        "id": "tech.aidaptiv.1:blocksandfiles-huawei",
+        "id": "tech.aidaptiv.1:phison-pascari-d206v",
+        "audience": "both",
+        "url": "https://phisonblog.com/award-winning-pascari-d206v-ushers-in-a-new-era-of-storage-density/",
+        "title": "Pascari D206V: PCIe 5.0 enterprise storage density leap",
+        "takeaway": "Pascari D206V expands PCIe 5.0 SSD capacity for AI workload hot-storage offload",
+        "companies": [
+          "Phison"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:blocksandfiles-huawei-flash",
         "audience": "work",
         "url": "https://www.blocksandfiles.com/flash/2026/05/22/norways-2-petabytes-of-huawei-flash-storage-and-llm-training/5244910",
-        "title": "Norway's 2 petabytes of Huawei flash storage and LLM training",
-        "takeaway": "PB 級 SSD 基礎設施支撐大模型訓練",
+        "title": "Norway 2PB Huawei flash storage for LLM training infrastructure",
+        "takeaway": "2PB Huawei flash deployment signals SSD viability for training-scale LLM workloads",
         "companies": [
           "Huawei"
         ]
       },
       {
-        "id": "tech.aidaptiv.2:phison-nxun205",
+        "id": "tech.aidaptiv.3:arxiv-kv-cache-flow",
         "audience": "work",
-        "url": "https://github.com/aiDAPTIV-Phison/aiDAPTIV/releases/tag/NXUN205.A1",
-        "title": "aiDAPTIV-Phison NXUN205.A1 Release",
-        "takeaway": "Phison aiDAPTIV+ 推理加速版本更新",
+        "url": "https://arxiv.org/abs/2605.22863",
+        "title": "Latent Cache Flow: Model-to-Model Communication Without Text",
+        "takeaway": "Direct KV-space communication between models eliminates serialization overhead",
         "companies": [
-          "Phison"
+          "Research"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.4:arxiv-modeswitch",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2605.23057",
+        "title": "ModeSwitch-LLM: Cross-mode inference controller for single-GPU efficiency",
+        "takeaway": "Runtime mode selector routes requests to FP16/quantized/speculative-decode paths per load",
+        "companies": [
+          "Research"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.5:arxiv-moe-quantization",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2605.23078",
+        "title": "GEMQ: Global Expert-Level Mixed-Precision Quantization for MoE LLMs",
+        "takeaway": "Per-expert precision allocation cuts MoE memory via extreme low-bit quantization",
+        "companies": [
+          "Research"
         ]
       }
     ]
