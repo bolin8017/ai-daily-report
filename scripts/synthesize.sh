@@ -119,28 +119,23 @@ if [ ! -f "$EDITORIAL_FILE" ]; then
   exit 2
 fi
 
-# Safety net: Sonnet occasionally drifts on `status` enum (e.g. invents
-# "needs_revision"). Coerce unknown values to "unverifiable" before schema
-# validation rather than throwing away 35 minutes of synthesis.
-node -e "
-  import('node:fs/promises').then(async fs => {
-    const VALID = new Set(['pending', 'resolved-yes', 'resolved-no', 'unverifiable']);
-    const doc = JSON.parse(await fs.readFile('$EDITORIAL_FILE', 'utf8'));
-    let fixed = 0;
-    for (const key of ['predictions', 'prediction_updates']) {
-      for (const p of doc.signals?.[key] ?? []) {
-        if (p && typeof p.status === 'string' && !VALID.has(p.status)) {
-          console.error('[synthesize.sh] coercing status=\"' + p.status + '\" -> unverifiable on ' + (p.id ?? '?'));
-          p.status = 'unverifiable';
-          fixed++;
-        }
-      }
-    }
-    if (fixed > 0) {
-      await fs.writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
-      console.error('[synthesize.sh] coerced ' + fixed + ' invalid status value(s)');
-    }
-  });
+# Safety net: repair known synthesizer drift before schema validation rather
+# than throwing away an expensive synthesis. repairEditorial() backfills any
+# prediction_updates emitted as a terse {id, status} delta with the
+# text/resolution_date from memory.json (the 2026-05-27 abort, where 43/43
+# updates lacked those required fields), and coerces any out-of-enum status to
+# "unverifiable". Logic + unit tests live in src/lib/repair-editorial.js.
+node --input-type=module -e "
+  import { readFile, writeFile } from 'node:fs/promises';
+  import { repairEditorial } from './src/lib/repair-editorial.js';
+  const doc = JSON.parse(await readFile('$EDITORIAL_FILE', 'utf8'));
+  let memory = {};
+  try { memory = JSON.parse(await readFile('data/memory.json', 'utf8')); } catch {}
+  const r = repairEditorial(doc, memory);
+  if (r.backfilled || r.statusCoerced || r.dropped) {
+    await writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
+    console.error('[synthesize.sh] repaired editorial: backfilled=' + r.backfilled + ' statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped);
+  }
 "
 
 if ! node -e "
