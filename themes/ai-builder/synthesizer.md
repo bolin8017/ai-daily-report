@@ -123,9 +123,11 @@ Binary predictions. Each **must** have `resolution_date` (ISO YYYY-MM-DD) — sc
 
 ## `signals.prediction_updates`
 
-For each prediction in `memory.json`:
-- if `resolution_date` has passed → set `status` to one of `resolved-yes` / `resolved-no` / `unverifiable` (NEVER any other value)
-- if `resolution_date` has NOT passed → set `status` to `pending` (carry forward; do NOT invent revisions, do NOT use `needs_revision`)
+Emit one **complete** entry per prediction in `memory.json` — copy `id`, `text`, `resolution_date`, and `created` **verbatim** from memory, then set `status`. Do NOT emit a terse `{id, status}` delta: `text` and `resolution_date` are schema-required, and a missing one aborts the whole run.
+
+Set `status` per entry:
+- if `resolution_date` has passed → one of `resolved-yes` / `resolved-no` / `unverifiable` (NEVER any other value)
+- if `resolution_date` has NOT passed → `pending` (carry forward; do NOT invent revisions, do NOT use `needs_revision`)
 
 If the framing of an old prediction now seems flawed but its resolution date hasn't arrived, leave it `pending` and write a NEW prediction in `signals.predictions[]` capturing the revised view. **Do not invent new status values to express "this needs updating".**
 
