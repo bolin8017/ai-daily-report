@@ -57,12 +57,13 @@ Read that file first for the workflow (Steps 1–6 section descriptions), then a
 
 **檢查紀律**：寫完每個 prose 欄位，mentally grep 一遍 `arc-` / `topic-` / `thread-` / `pred-` prefix。任何命中 = 用對應 arc / topic / prediction 的人類可讀 title 替換。不要偷懶用 `<arc title here>` 這類 placeholder——必須是讀者能直接讀懂的中文短語。
 7. **Superlative 斷言沒有 due diligence**。「第一次」「唯一」「從來沒有」「歷史上第一」是財經記者的紅燈詞。用之前問：我真的檢查過歷史同類事件嗎？如果沒有，降級為比較級（「近期最高規格的」「過去 6 個月最顯眼的」），或直接刪掉這個 angle。**具體反例**（v1 的真實 bug）：「今天是模型廠 CEO 第一次以個人身份具名回應 Cabinet 層級官員」——這忽略了 Sam Altman 在 Senate 作證過、Sundar Pichai 跟 Satya Nadella 都直接跟 White House 往返過。改「近期最高規格的直接回應」更誠實也更可辯護。
-8. **Pattern claim 沒有 mechanism**。把 3-4 個事件包裝成一個 arc 或 trend 之前，問自己：**為什麼這幾件事會發生在同一天？** 有 upstream cause 嗎？市場壓力？週期效應？如果答案是「應該就是巧合吧」，那你在描述 noise 不是 signal——刪掉或降級。**具體反例**（v1 的真實 bug）：「arc-model-lab-vertical-integration Ep3 = 今天浮上來的政治副作用」，但沒解釋為什麼垂直整合會導致政治曝險。Google 從 2015 就有整條 ML 供應鏈卻沒被 Secretary of War 點名——政治曝險來自「成為 Cabinet 官員討論的 frontier lab」，不是來自垂直整合。**Trend 以 mechanism 評分，不以 metaphor 評分。**
+8. **Pattern claim 沒有 mechanism**。把 3-4 個事件包裝成一個 arc 或 trend 之前，問自己：**為什麼這幾件事會發生在同一天？** 有 upstream cause 嗎？市場壓力？週期效應？如果答案是「應該就是巧合吧」，那你在描述 noise 不是 signal——刪掉或降級。**具體反例**（v1 的真實 bug）：「arc-model-lab-vertical-integration Ep3 = 今天浮上來的政治副作用」，但沒解釋為什麼垂直整合會導致政治曝險。Google 從 2015 就有整條 ML 供應鏈卻沒被 Secretary of War 點名——政治曝險來自「成為 Cabinet 官員討論的 frontier lab」，不是來自垂直整合。**Trend 以 mechanism 評分，不以 metaphor 評分。** **另一個具體反例**（2026-05-26 的真實 bug）：lead 把五篇 arxiv 論文寫成「同一天湧現」並當成 KV-cache 研究爆發的訊號——但那五篇的 `published` 同日只是 arxiv **公告批次**的假象（實際投稿在數天前，其中四篇前一天的報告就已討論過）。同一個 `published` 時間戳不是 mechanism，是 fetch artifact。看到「多篇論文同日」先問：這是真的同日成果，還是 arxiv 公告批次？答不出來就不要寫成訊號。
 9. **Internal contradiction within one item**。寫完每個 idea 後回頭讀一次：
    - `dev_time` 跟 `description` 暗示的工作量匹配嗎？「週末 POC」+「需要自己 reimplement arxiv paper 的 core kernel」是嚴重矛盾（v1 的真實 bug）。
    - 技術路線真的可行嗎？「MegaTrain 的 CPU-offload 技巧 + Apple Silicon unified memory 是天作之合」是方向相反的錯——unified memory 正是 MegaTrain 要解決的問題（v1 的真實 bug，被技術背景的外審抓到）。
    - 一個 idea 的 market evidence 說「3 independent signals」，這 3 個 signal 的 upstream 是同一個事件嗎？一個論文作者在 HN 宣傳之後的漣漪**不是** three convergent signals。
 10. **自我頒獎式 insight**。「Simon Willison / Gary Marcus 還沒覆蓋這件事」——停下來想：**更可能的解讀是他們判斷這件事不值得寫**，不是你領先他們三週。「information asymmetry」是真的 insight 只有當你能 commit「如果 X 天內他們還沒跟進，那我的判斷就錯了」的時候。沒有這個 commit，「社群還沒跟上」等於自己頒獎。
+11. **把具體斷言掛到沒這樣說的具名來源上**。引用一個具名的人 / blog / 論文時，只能 attribute 那個來源**實際寫出來**的東西——不要把你自己的歸納、或在別處看到的數字，安到他頭上。**具體反例**（2026-05-26 的真實 bug）：lead 寫「Sebastian Raschka 整理出 Gemma 4 和 DeepSeek V4 Pro 都採用 GQA、KV cache 壓縮約 4 倍」——但原文說的是 DeepSeek V4 **不用** GQA、Gemma 靠 cross-layer 共享省下約 2 倍。模型把「both GQA / 4×」這個自己腦補的結論掛到具名作者頭上。寫「根據 X」之前回去確認 X 真的這樣說；確認不了就改成不具名的一般陳述、或刪掉那個數字。
 
 **內容 slop：**
 

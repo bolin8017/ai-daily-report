@@ -16,7 +16,7 @@ Raw staging (for cross-source synthesis when curated isn't enough):
 - `data/staging/leaderboards.json` — benchmark snapshots + diffs
 - `data/staging/mops.json` — Taiwan 重大訊息 (tracked tickers)
 - `data/staging/hf_trending.json` — HF trending models
-- `data/staging/arxiv.json` — cs.LG / cs.CL papers
+- `data/staging/arxiv.json` — recently-announced cs.LG / cs.CL papers. Each item's `published` is the arXiv **announcement** date, NOT the submission date: arXiv announces in daily batches, so most items share the *same* timestamp even though the work was often posted days earlier. A shared `published` is therefore **not** evidence of a "same-day" cluster or a research surge. Treat arxiv.json as a rolling pool of recent papers — never write that papers "dropped today", and never frame same-`published` papers as a temporal signal.
 
 Memory:
 - `data/memory.json` — cross-day state (predictions, narrative arcs, audience_state)
