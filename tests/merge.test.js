@@ -92,6 +92,52 @@ describe('findDanglingSourceLinks', () => {
     expect(dangling).toHaveLength(1);
     expect(dangling[0]).toMatch(/nonexistent\.id/);
   });
+
+  // Regression: the 2026-05-28 run aborted because the synthesizer wrote
+  // source_links as the bare "group.subgroup.index" prefix, dropping the
+  // ":slug" suffix curators append to each item id. The prefix is already
+  // unique, so a prefix-only reference must still resolve to its item.
+  it('resolves a source_link that omits the curated id :slug suffix', () => {
+    const editorial = fixtureEditorial({
+      signals: {
+        focus: [
+          {
+            id: 'sig.focus.0',
+            title: 's',
+            body: 'b',
+            audience: 'general',
+            source_links: ['shipped.trending.0'],
+          },
+        ],
+        predictions: [],
+      },
+    });
+    const idSpace = extractIdSpace(fixtureCurated());
+    expect(findDanglingSourceLinks(editorial, idSpace)).toEqual([]);
+  });
+
+  // Prefix tolerance must not resolve references to indices that do not
+  // exist — a wrong index is still a genuine dangling link.
+  it('still flags a prefix that points to no curated item', () => {
+    const editorial = fixtureEditorial({
+      signals: {
+        focus: [
+          {
+            id: 'sig.focus.0',
+            title: 's',
+            body: 'b',
+            audience: 'general',
+            source_links: ['shipped.trending.9'],
+          },
+        ],
+        predictions: [],
+      },
+    });
+    const idSpace = extractIdSpace(fixtureCurated());
+    const dangling = findDanglingSourceLinks(editorial, idSpace);
+    expect(dangling).toHaveLength(1);
+    expect(dangling[0]).toMatch(/shipped\.trending\.9/);
+  });
 });
 
 describe('composeReport', () => {
@@ -130,6 +176,32 @@ describe('composeReport', () => {
         themeName: 'ai-builder',
       }),
     ).rejects.toThrow(/dangling source_link/);
+  });
+
+  // The 2026-05-28 run aborted here: every source_link was a bare prefix
+  // missing its :slug, so the merge reported 44 dangling references and the
+  // pipeline produced no report. Composing must now succeed.
+  it('composes when source_links use the bare prefix (no :slug)', async () => {
+    const report = await composeReport({
+      editorial: fixtureEditorial({
+        signals: {
+          focus: [
+            {
+              id: 'sig.focus.0',
+              title: 's',
+              body: 'b',
+              audience: 'general',
+              source_links: ['shipped.trending.0', 'pulse.hn.0'],
+            },
+          ],
+          predictions: [],
+        },
+      }),
+      curated: fixtureCurated(),
+      themeName: 'ai-builder',
+    });
+    expect(report.schema_version).toBe(2.1);
+    expect(report.signals.focus[0].source_links).toEqual(['shipped.trending.0', 'pulse.hn.0']);
   });
 
   it('preserves editorial fields under the same names in the merged report', async () => {
