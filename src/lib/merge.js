@@ -67,17 +67,39 @@ export function extractIdSpace(curated) {
 }
 
 /**
+ * Reduce an item id to its unique "group.subgroup.index" prefix, dropping
+ * the curator-appended ":slug" suffix. The synthesizer routinely references
+ * source_links by prefix alone (it dropped every :slug on the 2026-05-28
+ * run, which aborted the whole merge), so matching on the prefix — which is
+ * already unique per item — is what makes the dangling check resilient to
+ * that drift instead of throwing away an expensive synthesis.
+ *
+ * @param {string} id
+ * @returns {string}
+ */
+function idPrefix(id) {
+  const colon = id.indexOf(':');
+  return colon === -1 ? id : id.slice(0, colon);
+}
+
+/**
  * Return a list of "<path>: <id>" strings, one per source_link in editorial
  * that doesn't resolve to any curated item id. Empty list means clean.
+ * Matching is on the "group.subgroup.index" prefix (see idPrefix), so a
+ * reference resolves whether or not it carries the curated ":slug" suffix.
  *
  * @param {object} editorial
  * @param {Set<string>} idSpace
  * @returns {string[]}
  */
 export function findDanglingSourceLinks(editorial, idSpace) {
+  const prefixSpace = new Set();
+  for (const id of idSpace) {
+    prefixSpace.add(idPrefix(id));
+  }
   const dangling = [];
   for (const { path, id } of iterSourceLinks(editorial)) {
-    if (!idSpace.has(id)) {
+    if (!prefixSpace.has(idPrefix(id))) {
       dangling.push(`${path}: ${id}`);
     }
   }
