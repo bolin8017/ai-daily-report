@@ -77,7 +77,7 @@ export function extractIdSpace(curated) {
  * @param {string} id
  * @returns {string}
  */
-function idPrefix(id) {
+export function idPrefix(id) {
   const colon = id.indexOf(':');
   return colon === -1 ? id : id.slice(0, colon);
 }
