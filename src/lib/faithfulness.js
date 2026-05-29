@@ -72,3 +72,69 @@ export function buildCuratedIndex(curated) {
   }
   return { byPrefix, items };
 }
+
+/**
+ * Flatten the editorial's prose-bearing fields. lead.html has no source_links
+ * (sourceLinks=null → entity-match path); signal/ideation fields carry them.
+ * @param {object} editorial
+ * @returns {{path:string, text:string, sourceLinks:(string[]|null)}[]}
+ */
+export function collectProseFields(editorial) {
+  const fields = [];
+  const lead = editorial?.lead?.html;
+  if (typeof lead === 'string') fields.push({ path: 'lead.html', text: lead, sourceLinks: null });
+
+  const sig = editorial?.signals ?? {};
+  const signalEntries = [
+    ...(Array.isArray(sig.focus) ? sig.focus.map((it, i) => [`signals.focus[${i}]`, it]) : []),
+    ...(sig.sleeper ? [['signals.sleeper', sig.sleeper]] : []),
+    ...(sig.contrarian ? [['signals.contrarian', sig.contrarian]] : []),
+  ];
+  for (const [base, it] of signalEntries) {
+    for (const f of ['body', 'mechanism']) {
+      if (typeof it?.[f] === 'string') {
+        fields.push({ path: `${base}.${f}`, text: it[f], sourceLinks: it.source_links ?? [] });
+      }
+    }
+  }
+
+  const ide = editorial?.ideation ?? {};
+  for (const grp of ['general', 'work']) {
+    const arr = Array.isArray(ide[grp]) ? ide[grp] : [];
+    arr.forEach((it, i) => {
+      if (typeof it?.description === 'string') {
+        fields.push({
+          path: `ideation.${grp}[${i}].description`,
+          text: it.description,
+          sourceLinks: it.source_links ?? [],
+        });
+      }
+    });
+  }
+  return fields;
+}
+
+/**
+ * Resolve a prose field to its curated source items. Fields with source_links
+ * resolve by id-prefix; lead (sourceLinks=null) resolves by entity match — the
+ * source name or a distinctive title appearing in the (lowercased) text.
+ * @param {{sourceLinks:(string[]|null), text:string}} field
+ * @param {{byPrefix:Map, items:object[]}} index
+ * @returns {object[]}
+ */
+export function resolveFieldItems(field, { byPrefix, items }) {
+  if (Array.isArray(field.sourceLinks)) {
+    const out = [];
+    for (const link of field.sourceLinks) {
+      const it = byPrefix.get(idPrefix(link));
+      if (it) out.push(it);
+    }
+    return out;
+  }
+  const text = (field.text ?? '').toLowerCase();
+  return items.filter((it) => {
+    const src = typeof it.source === 'string' ? it.source.toLowerCase() : '';
+    const title = typeof it.title === 'string' ? it.title.toLowerCase() : '';
+    return (src.length >= 4 && text.includes(src)) || (title.length >= 6 && text.includes(title));
+  });
+}
