@@ -1,0 +1,1537 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-05-30",
+  "lead": {
+    "html": "<h3>2026-05-30 — 今日重點</h3>\n<h4>兩張支票，兩條邏輯</h4>\n<p>Anthropic 完成 $65B Series H，投後估值 $965B；同日，DeepSeek 首輪融資以 $450B 投前估值告成，中國國家大基金領投。前者是私人資本押 frontier model 推理能力的長期壟斷；後者是主權資本押 LLM 的地緣政治替代——訓練資料、對齊標準和出口限制三個變數在這筆錢投入後開始走向不同制度框架。對 builder：API 供應商短期不消失，但跨系統的 eval baseline 從此刻起是剛需，不是選配。</p>\n<h4>KV Cache 硬體軟體五路同週就位</h4>\n<p>Samsung HBM4E 12 層樣品開始出貨，頻寬 2.1 GB/s；vLLM v0.22.1rc0 加入連續 KV 驅逐重用；LMCache v0.4.6 跨請求前綴快取把生成延遲砍 30–40%；Phison Pascari aiDAPTIV+ NAND flash offload 讓 HBM 成本降 50%；Mistral 選擇 VAST Data SSD-first 架構作為訓練底座。GQA 架構普及讓 KV 張量數量增多但尺寸縮小，使記憶體層次優化的邊際成本第一次低到工業化量產可接受的範圍。</p>\n<h4>Eval 精度成為不能外包的護城河</h4>\n<p>BFCL 排行榜前兩名繼續由 Claude Opus 4.5 系列包攬；live SWE-agent 搭配 Claude 4.5 Opus 在 SWE-bench Verified 突破 40% 解題率。Hamel Husain 同天的論點直接揭開機制：production LLM 的成敗由 eval pipeline 嚴謹度決定，不是模型大小。SWE-bench 40%+ 是多年 eval-first 工程的累積——這個數字無法靠換模型複製，只能靠建 eval pipeline。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "title": "KV Cache 工程化週期：硬體、軟體、儲存五路同週收斂",
+        "body": "Samsung HBM4E 開始出樣、vLLM v0.22.1rc0 加入 KV 驅逐重用、LMCache v0.4.6 跨請求前綴快取減少 30–40% 生成延遲、Phison Pascari NAND flash offload 把 HBM 成本壓 50%、Mistral 選擇 VAST Data SSD-first 架構——五個訊號在同一週從不同技術層匯合。Sebastian Raschka 同天整理 KV 共享架構演進，提供了理論框架把五路訊號串連在同一個因果鏈上。",
+        "mechanism": "GQA 架構普及後，每個推論請求的 KV 張量數量增加但尺寸縮小，使記憶體層次優化的邊際成本降低。上游硬體（HBM4E、iHBM）、推論框架（vLLM KV eviction）、跨請求快取（LMCache 前綴重用）、SSD offload（Phison、VAST Data）四層同時降本，讓完整的 KV cache 階層方案在成本上首次可行。Mistral 把 SSD-first 延伸到訓練側，是從「推論優化」升格為「訓練基礎設施」的第一個具體信號。",
+        "product_opportunity": "在 vLLM v0.22.1rc0 + LMCache v0.4.6 組合上跑 GQA 模型（Qwen3.6-35B-A3B），量化 SSD offload 條件下的 p99 latency，作為 aiDAPTIV+ 合作夥伴簡報的基準數字。",
+        "source_links": [
+          "tech.aidaptiv.0:samsung-hbm4e",
+          "tech.aidaptiv.1:phison-pascari",
+          "tech.aidaptiv.3:vllm-v0-22-1",
+          "tech.aidaptiv.4:lmcache-v0-4-6",
+          "tech.aidaptiv.5:mistral-vast-data",
+          "pulse.ai_bloggers.3:sebastian-raschka-kv-cache"
+        ]
+      },
+      {
+        "title": "雙軌 AI 資本競賽：私人押壟斷，主權押替代",
+        "body": "Anthropic $65B、DeepSeek $450B 投前估值，兩筆錢同天曝光，邏輯鏈完全不同。Groq 同天傳出 $650M 融資，押注 NVIDIA 以外的專用 AI 加速器。Latent Space 的 Anthropic 新輪分析提到，$965B 估值要求 frontier model 推理能力保持領先。三筆錢代表三條邏輯：frontier model 能力壟斷（Anthropic）、地緣政治 LLM 獨立（DeepSeek）、推論架構去 NVIDIA 化（Groq）。",
+        "mechanism": "出口管制加速了中國主權資本對 AI 基礎設施的投入；DeepSeek 的國家基金背書讓其開源策略的持續性打了問號——主權資本的治理邏輯通常不支持以 MIT/Apache 授權讓地緣競爭對手免費使用。Anthropic 的 $965B 估值設定了 12–24 個月內必須啟動流動性事件（IPO 或後繼輪）的壓力。Groq 的 $650M 是 NVIDIA 生態外加速器市場的第二次大額機構驗證。",
+        "product_opportunity": "設計同時評估 Claude、DeepSeek V4 Pro 和本地 Qwen3.6 的跨模型 eval baseline，避免供應商政策分叉造成系統遷移成本——現在建 baseline 的成本遠低於未來被迫遷移的成本。",
+        "source_links": [
+          "market.funding.0:anthropic-series-h",
+          "market.funding.1:deepseek-450b-valuation",
+          "market.ma.1:groq-650m-raise",
+          "pulse.ai_bloggers.4:latent-space-anthropic"
+        ]
+      },
+      {
+        "title": "Eval Rigor 從附屬功能升格為核心護城河",
+        "body": "BFCL 排行榜前兩名由 Claude Opus 4.5 系列包攬；live SWE-agent 搭配 Claude 4.5 Opus 在 SWE-bench Verified 達到 40%+ 解題率。Hamel Husain 〈資料科學家的復仇〉和 Eugene Yan 〈與 AI 一起複利工作〉同天發表，指向同一個結論：production LLM 的成功取決於 eval pipeline 的精度。HN 370 分的代理人許可疲勞遊戲從側面說明同一件事：當人類無法有效審核每個 agent 步驟，eval 自動化是唯一出路。",
+        "mechanism": "SWE-bench 40%+ 是多年累積 eval 工程的產物，不是模型縮放的自然結果。每個百分點的提升需要更精細的任務分解和更嚴格的測試集管理。模型廠無法把這個能力外包給客戶，所以 BFCL 和 SWE-bench 排名成為 eval pipeline 品質的間接指標——排名領先反映的是內部 eval 基礎設施的成熟度，不只是模型本身的能力。",
+        "product_opportunity": "在 Arkon 自托管 RAG + MCP 上建立 domain-specific eval pipeline，以 SQLite 記錄每次召回的 query、retrieved_chunks、model_answer、human_rating，把人工 spot check 從每週改為由低評分觸發。",
+        "source_links": [
+          "pulse.ai_bloggers.2:hamel-husain-data-scientist",
+          "pulse.ai_bloggers.1:eugene-yan-working-ai",
+          "tech.benchmarks.0:bfcl-claude-opus",
+          "tech.benchmarks.1:swebench-live-agent",
+          "pulse.hn.0:continue-yn-agent",
+          "shipped.topic_discovery.9:nduckmink/arkon"
+        ]
+      },
+      {
+        "title": "3B 視覺模型在文件理解上超越 30B+ 同類",
+        "body": "Llama Nemotron Nano VL 8B 在 OCRBench 名列第一，超過多個 30B+ 對手；NVIDIA LocateAnything-3B 以 3B 參數在開放詞彙物件定位上達到工業級精度；OpenBMB MiniCPM5-1B 加入長 context 和工具呼叫，驗證 1B 邊緣推論路線的可行性。Hugging Face 開設 CAD 生成 benchmark 進一步說明多模態 eval 向專業工程領域擴張。四個訊號從不同廠商、不同架構方向同時確認：3–8B 視覺模型的文件理解和座標定位能力已跨過工業部署的精度門檻。",
+        "mechanism": "架構創新（GQA、cross-layer KV 共享、sparse MoE）讓模型在同等參數規模下有更高的有效計算密度，使小型視覺模型首次能在文件理解任務上與大模型正面競爭。這打開了 edge 設備上多模態 agent 的實際部署窗口——硬體天花板從「需要 30B+」降到「3B 即可生產」。",
+        "product_opportunity": "把 NVIDIA LocateAnything-3B 整合進 aiDAPTIV+ 本地推論 demo，展示「截圖輸入 → 開放詞彙座標定位 → JSON 輸出」的端對端流程，作為工業 PC 或醫療 HMI 場景的概念驗證。",
+        "source_links": [
+          "tech.benchmarks.2:ocrbench-llama-nemotron",
+          "tech.models.3:nvidia-LocateAnything-3B",
+          "tech.models.2:openbmb-MiniCPM5-1B",
+          "shipped.dev_watch_global.1:huggingface/cadgenbench"
+        ]
+      }
+    ],
+    "sleeper": {
+      "title": "Compound Engineering Plugin：IDE 協調層成為新鎖定點",
+      "body": "EveryInc 的 Compound Engineering Plugin 以 18,111 個 GitHub stars 出現在 Trending，把 Claude Code、OpenAI Codex、Cursor 三個主要 agentic coding 平台的工作流統一在一個 TypeScript 插件裡。這不是功能聚合，是鎖定層的位移：誰控制 IDE 協調層，誰就控制 agent 的輸出管道，不論底層用哪個模型。目前幾乎所有討論集中在模型能力和 agent framework，對 IDE 插件層的競爭注意力接近零。",
+      "source_links": [
+        "shipped.trending.2:everyinc/compound-engineering-plugin"
+      ],
+      "why_asymmetric": "IDE 協調層的轉換成本比模型 API 的轉換成本高出不止一個數量級——一旦工作流封裝進一個插件，替換的摩擦力從 API 層移到工具習慣層。Compound Engineering Plugin 的 18K 星數說明需求已確認，但市場上還沒有第二個直接競爭者。早期整合者可以在三個平台的 agent 工作流中植入 eval hook，獲得跨平台的 eval 數據優勢。"
+    },
+    "contrarian": {
+      "body": "HN 370 分的「Continue? Y/N」遊戲把代理人許可對話框設定為待解的 UX 問題，隱含的假設是：更好設計的許可介面可以讓 agent 既自主又可控。這個假設已被生產數據否定。Devin 的 80% 非同步提交和 Dcard 的 80% 工作流時間削減，都來自移除人類檢查點，而不是改善它。任何要求用戶在場審核每個 agent 步驟的部署模式，都無法達到讓 agent 有 ROI 的生產規模。UI 設計師最擅長讓複雜互動變得流暢，但在這個場景中，流暢的許可對話只是把根本性的架構問題藏得更好看。",
+      "source_links": [
+        "pulse.hn.0:continue-yn-agent",
+        "pulse.ai_bloggers.4:latent-space-anthropic"
+      ],
+      "claim": "代理人許可疲勞的解法不是更好的許可介面，而是完全移除它",
+      "rationale": "正確的問題不是「如何讓許可介面更好」，而是「什麼樣的任務可以安全地不問許可就執行」。到 2026-12-31，主流 coding agent 平台的主要 UX 演進方向是「自主模式 / 信任等級」（移除許可），而非「更好的許可對話設計」（美化許可）。以 GitHub Copilot、Cursor、Windsurf、Devin 四個平台的官方 changelog 中是否出現命名的「autonomous mode」或「trust tier」為判準。",
+      "resolution_date": "2026-12-31"
+    },
+    "predictions": [
+      {
+        "id": "pred-deepseek-national-fund-closed",
+        "text": "到 2026-12-31，DeepSeek 在國家大基金入股後發布的首個新主力模型（V5 或後繼者）的 HuggingFace 授權欄位不是 MIT 或 Apache 2.0（以 HuggingFace model page license 欄位或 DeepSeek 官方公告為準；若不在 HuggingFace 上發布則標記為 unverifiable）。主權資本的治理邏輯通常不支持以最寬鬆授權讓地緣競爭對手免費使用。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-30"
+      },
+      {
+        "id": "pred-lmcache-vllm-native-merge",
+        "text": "到 2026-10-31，LMCache v0.4.x 的跨請求 KV 重用功能以 merged PR 形式合入 vLLM 主線（非 fork 或 plugin，以 vLLM GitHub merged PR 或 release notes 具名 LMCache 為準）。目前兩者為獨立部署，API 相容性高，整合阻力低。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-30"
+      },
+      {
+        "id": "pred-mistral-vast-data-benchmark",
+        "text": "到 2026-08-31，Mistral 或 VAST Data 在公開場合（官方 blog、conference talk 或 arXiv）發布以 SSD-first 架構運行 Mistral 模型的具體 throughput 或 latency 數字（需包含 tokens/second 或 step/second 的具體數值；一般性架構描述不算 resolved-yes）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-30"
+      },
+      {
+        "id": "pred-locateanything-3b-500k",
+        "text": "到 2026-09-30，nvidia/LocateAnything-3B 在 HuggingFace 的下載量（含所有衍生量化版本加總）超過 500,000 次（以 HuggingFace 模型頁面公開數字為準）。NVIDIA 3B 視覺模型在 OCRBench 超越 30B+ 同類，必然吸引大量 agent builder 整合。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-30"
+      },
+      {
+        "id": "pred-anthropic-ipo-signal",
+        "text": "到 2026-12-31，出現以下任一公開可查的 IPO 訊號：Anthropic 指定投資銀行 mandate、向 SEC 提交 S-1 草稿、或 CEO/CFO 在公開場合（以錄影或文字紀錄為準）提及「上市」作為 12 個月內的計畫。$965B 投後估值在無流動性事件的情況下，難以維持二級市場參與者的信心。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-30"
+      },
+      {
+        "id": "pred-swebench-open-weight-50",
+        "text": "到 2026-09-30，至少一個可公開下載 weights 的 open-weight 模型（任何系列），搭配任意 agent framework，在 SWE-bench Verified 上達到 50% 以上（以 SWE-bench 官方 leaderboard 公開數字為準）。目前最高紀錄是 live-SWE-agent 搭配 Claude 4.5 Opus 剛超過 40%。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-30"
+      },
+      {
+        "id": "pred-agent-autonomous-mode-2-of-4",
+        "text": "到 2026-12-31，GitHub Copilot、Cursor、Windsurf、Devin 四個主流 coding agent 平台中，至少兩個正式發布命名的「自主模式」或「信任等級」功能，允許 agent 在沒有逐步人工確認的情況下執行完整任務（以官方 changelog 或發布公告為準，不算實驗性 flag）。代理人許可對話框不是 UX 設計問題，而是架構問題，廠商的解法是移除它而不是美化它。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-30"
+      }
+    ],
+    "prediction_updates": [
+      {
+        "id": "pred-anthropic-asic",
+        "text": "Anthropic 與 Broadcom 的合作在 2026-12-31 前產出具名的 ASIC tape-out 或官方 benchmark 公告（非僅 marketing 頁面）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-04-14"
+      },
+      {
+        "id": "pred-mcp-registry-by-july",
+        "text": "到 2026-07-31，modelcontextprotocol 組織在 GitHub 上發布一個 public MCP server registry 或 server discovery 機制（以 modelcontextprotocol org 下出現帶有 README 和至少 50 個 server 列表的 repo 為準）。",
+        "resolution_date": "2026-07-31",
+        "status": "pending",
+        "created": "2026-04-28"
+      },
+      {
+        "id": "pred-google-io-local-ai-benchmark",
+        "text": "到 2026-05-21（Google I/O 結束當天），google/windtunnel、google/esmeralda、google/opencl-kernel-profiler 三個 repo 中至少一個發布帶有 README 的初始版本，或 Google 在 I/O 官方 session 中具名提及其中任何一個工具。",
+        "resolution_date": "2026-05-21",
+        "status": "unverifiable",
+        "created": "2026-05-14"
+      },
+      {
+        "id": "pred-karpathy-announcement-before-may26",
+        "text": "到 2026-05-26，Karpathy 的「Coming soon」substack 頁面變成一篇有 full content 的文章，或 Karpathy 發布一個 YouTube 視頻或新 GitHub repo。",
+        "resolution_date": "2026-05-26",
+        "status": "unverifiable",
+        "created": "2026-05-19"
+      },
+      {
+        "id": "pred-karpathy-no-research-paper-6m",
+        "text": "到 2026-11-20（6 個月後），Karpathy 不會是 Anthropic 任何 peer-reviewed 論文的一作或二作（以 arXiv 或正式期刊的 author affiliation 列表為準）。",
+        "resolution_date": "2026-11-20",
+        "status": "pending",
+        "created": "2026-05-20"
+      },
+      {
+        "id": "pred-cli-anything-reliability-issues",
+        "text": "到 2026-09-30，HKUDS/CLI-Anything 的 GitHub issue tracker 上有至少 80 個 open issues 的 title 或 label 包含 'reliability'、'unexpected output'、'tool failure' 或 'wrong output' 其中一個關鍵字（以 GitHub issue list URL 為判準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-19"
+      },
+      {
+        "id": "pred-forge-stars-3000",
+        "text": "到 2026-07-31，antoinezambelli/forge 的 GitHub stars 超過 3000（以 GitHub star count 的 public 頁面數字為判準）。",
+        "resolution_date": "2026-07-31",
+        "status": "pending",
+        "created": "2026-05-21"
+      },
+      {
+        "id": "pred-mcpguard-production-adoption",
+        "text": "到 2026-08-31，facebook/mcpguard-dynamic 在 GitHub 獲得 500+ stars，並出現至少一篇非 Meta org 撰寫的 production deployment 部落格文章或 conference talk（以公開 URL 為準）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-22"
+      },
+      {
+        "id": "pred-kioxia-us-ipo",
+        "text": "到 2026-12-31，Kioxia 在 NYSE 或 NASDAQ 完成正式掛牌（以交易所官方公告或 SEC filing 為準，不算 SPAC 路線）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-22"
+      },
+      {
+        "id": "pred-cssd-kvcache-independent-benchmark",
+        "text": "到 2026-09-30，至少一家非 Phison、非 SK Hynix 的獨立研究機構發布以 cSSD 作為 KV cache offload 層的公開推理 benchmark（以 arXiv 或正式 conference paper 為準，需包含 tokens/second 和 latency 數字）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-22"
+      },
+      {
+        "id": "pred-slop-detection-ide-integration",
+        "text": "到 2026-09-30，noslopgrenade 或功能相似的 slop detection 工具出現在 VS Code marketplace 或 JetBrains 插件商店，且該插件的 install count 超過 10,000（以商店頁面公開數字為準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-22"
+      },
+      {
+        "id": "pred-hrm-finetune-adoption",
+        "text": "到 2026-09-30，HRM-Text-1B（sapientinc）在 HuggingFace 上被至少一個有 100K+ downloads 的 finetune 使用，或在 arXiv 上被引用次數超過 10 次（以公開數據為準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-22"
+      },
+      {
+        "id": "pred-qwen36-windows-stars",
+        "text": "到 2026-07-31，devnen/qwen3.6-windows-server 的 GitHub stars 超過 2000（以 GitHub 公開頁面為準）。",
+        "resolution_date": "2026-07-31",
+        "status": "pending",
+        "created": "2026-05-23"
+      },
+      {
+        "id": "pred-chrome-devtools-mcp-60k",
+        "text": "到 2026-08-31，ChromeDevTools/chrome-devtools-mcp 的 GitHub stars 超過 60,000（目前 40,913）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-23"
+      },
+      {
+        "id": "pred-entmaxkv-vllm-integration",
+        "text": "到 2026-09-30，EntmaxKV 的稀疏注意力解碼方法被 vLLM 或 LMCache 合入主線（以 merged PR 或官方 release notes 為準，非 fork 或 plugin）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-23"
+      },
+      {
+        "id": "pred-vscode-codesigning-mandate",
+        "text": "到 2026-12-31，VS Code marketplace 宣布對所有新上架或更新的外掛強制要求程式碼簽署（code signing），違者下架（以 Microsoft 官方公告為準）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-23"
+      },
+      {
+        "id": "pred-cssd-consumer-nas",
+        "text": "到 2026-09-30，至少一家 NAS 廠商（Synology、QNAP、TerraMaster）宣布支援以 cSSD 或 NVMe SSD 作為本地 LLM KV cache offload 層的功能（以官方產品公告或發布會為準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-23"
+      },
+      {
+        "id": "pred-mcp-fortune500-public",
+        "text": "到 2026-09-30，至少 3 家 Fortune 500 公司在公開場合（press release、conference talk、or official blog）具名宣布採用 MCP 整合企業內部工具（非泛稱「AI agent」）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-23"
+      },
+      {
+        "id": "pred-glasswing-numeric-benchmark",
+        "text": "到 2026-08-31，Anthropic 為 Project Glasswing 發布包含具體數字的公開 benchmark（如「context 長度 X → 準確率 Y%」），而非僅更新 blog 進度報告（以 Anthropic.com 官方頁面或 arXiv 論文為準）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-qwen36-gguf-2m-downloads",
+        "text": "到 2026-08-31，Qwen 3.6 系列（27B 加 35B-A3B）GGUF 量化變體在 HuggingFace 的累計下載量超過 200 萬次（以 HuggingFace 頁面公開數字加總為準）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-nova-act-healthcare-named-deals",
+        "text": "到 2026-10-31，至少 2 家具名的美國醫療機構（醫院系統、保險業者或製藥公司）公開宣布在 production 中使用 Amazon Nova Act（以新聞稿或 conference talk 為準，非泛稱「AWS 服務」）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-guardrails-8b-production-case-study",
+        "text": "到 2026-09-30，至少一篇非 antoinezambelli 本人撰寫的公開文章（部落格或 arXiv）記錄了以 guardrails framework 使 10B 以下模型在特定 agentic task 上達到 90% 以上準確率的 production 部署案例（需包含具體 benchmark 數字）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-multica-50k-stars",
+        "text": "到 2026-08-31，multica-ai/multica 的 GitHub stars 超過 50,000（目前 32,182）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-kv-sharing-majority-top10",
+        "text": "到 2026-10-31，HuggingFace 下載量前十名的 open-weight 模型中，至少 6 個以 grouped-query attention（GQA）或等效 KV-sharing 架構為預設（以各模型的官方技術報告或 config.json 為判準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-aidaptiv-external-partner-demo",
+        "text": "到 2026-09-30，至少一家非 Phison 的公司（ISV、OEM 或研究機構）在公開場合（新聞稿、conference presentation 或 GitHub repo）具名展示以 aiDAPTIV+ 作為 KV-cache offload 層的產品或 PoC。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-mnemon-500-stars",
+        "text": "到 2026-08-31，audreyt/mnemon 的 GitHub stars 超過 500（目前 0 stars）。若 repo 被刪除或設為私有則標記為 unverifiable。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-24"
+      },
+      {
+        "id": "pred-tsmc-strike-resolution",
+        "text": "到 2026-06-30，台積電撤回 15% 分紅削減（提出補償方案或宣布重新計算），或員工聯合行動公開化超過 500 人（以主流媒體報導或工會聲明為準）。",
+        "resolution_date": "2026-06-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-deepseek-triggers-rival-price-cut",
+        "text": "到 2026-07-15，OpenAI 或 Anthropic 宣布至少一個 frontier 模型 API 端點降價 15% 以上（以各自官方定價頁面公告為準，不算僅針對特定客戶的私下折扣）。",
+        "resolution_date": "2026-07-15",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-gqa-becomes-default-open-weight",
+        "text": "到 2026-09-30，HuggingFace 月下載量前五的 open-weight 語言模型（非 embedding model）全部採用 grouped-query attention（num_key_value_heads < num_attention_heads），以各模型 config.json 為判準。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-aidaptiv-gqa-benchmark-published",
+        "text": "到 2026-08-31，Phison 或合作夥伴發布包含 GQA 模型（Gemma 4 27B 或 DeepSeek V4 Pro）在 aiDAPTIV+ SSD offload 條件下的 32K+ context 推論 benchmark，包含 tokens/second 和 p99 latency 具體數字（以官方 blog、GitHub release 或 conference presentation 為準）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-multica-production-case-study",
+        "text": "到 2026-10-31，multica-ai/multica 出現至少一篇非 multica-ai org 撰寫的 production case study，包含具體的 agent task completion rate 或 cost reduction 數字（以公開 blog 或 conference talk 為準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-magenticlite-10k-stars",
+        "text": "到 2026-08-31，MagenticLite / MagenticBrain / Fara1.5 相關 repo（microsoft/magentic-one 系列或同系列新 repo）在 GitHub 累計 stars 超過 10,000（以 GitHub 公開頁面加總為準）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-minicpmv-healthcare-ondevice",
+        "text": "到 2026-10-31，至少一家醫療機構或醫療科技 startup 公開展示以 MiniCPM-V 系列（OpenBMB 出品，參數量不超過 5B）在離線設備上處理醫療影像或文件，且符合 HIPAA 資料不出機器的要求（以 conference presentation 或 arXiv 論文為準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-openai-phone-no-oem-partner",
+        "text": "到 2026-12-31，OpenAI 不會在 Samsung 或 Apple 以外，具名一個非泛稱的硬體 OEM 合作夥伴做 AI-first 手機（以 OpenAI 官方新聞稿或 CEO/CPO 公開訪談為準）；僅媒體報導「謀求合作」不算 resolved-yes。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-deepseek-reasonix-framework-adoption",
+        "text": "到 2026-09-30，DeepSeek Reasonix 的 native agent + high-caching 架構，被 LangChain、LlamaIndex 或 autogen 任一框架的官方文檔或 release notes 具名提及（以公開頁面為準，不算 issue 討論）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-bfcl-claude-top2-held",
+        "text": "到 2026-09-30，BFCL function-calling 排行榜前三名中，Claude 系列（Claude Opus 4.x 或 Sonnet 4.x）仍占據至少兩個席位（以 BFCL 官方 leaderboard 公開數字為準，目前前兩名皆為 Claude）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-tensor-cache-vllm-adoption",
+        "text": "到 2026-10-31，Tensor Cache（sliding-window L1 + fixed-size associative L2 兩級 KV cache 設計，arXiv 2605.22884）的架構設計被 vLLM 或 sglang 任一框架在 GitHub issue 或 RFC 中具名引用為設計依據（以公開 GitHub 討論為準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-linux-ai-regression-study",
+        "text": "到 2026-09-30，至少一篇 arXiv 或 USENIX/SOSP 論文量化分析 AI coding agents 在 Linux kernel 開發中造成的 regression 引入率，論文 abstract 包含「AI agent」或「LLM」以及「kernel」以及「regression」三個詞（以公開論文為準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-25"
+      },
+      {
+        "id": "pred-latent-cache-flow-vllm",
+        "text": "到 2026-10-31，Latent Cache Flow（arXiv 2605.22863）的 KV adapter 跨模型通訊方案，在 vLLM 或 sglang 的 GitHub 上出現以此論文為設計依據的 PR 或 RFC（以公開 GitHub 討論且 PR 狀態為 open 或 merged 為準；issue 討論不算）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-26"
+      },
+      {
+        "id": "pred-modeswitch-inference-integration",
+        "text": "到 2026-09-30，ModeSwitch-LLM（arXiv 2605.23057）的請求邊界動態模式切換方案，被 vLLM、TGI 或 LMDeploy 任一框架以實驗性功能或 feature flag 合入主線（以 merged PR 或 release notes 為準，非 fork）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-26"
+      },
+      {
+        "id": "pred-deepseek-flash-5m-monthly",
+        "text": "到 2026-08-31，DeepSeek-V4-Flash（284B，目前 HuggingFace 顯示 2.4M downloads）的 HuggingFace 月下載量超過 500 萬次（以 HuggingFace 模型頁面的月下載數字為準；含衍生量化版本加總）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-26"
+      },
+      {
+        "id": "pred-taiwan-power-datacenter-relocation",
+        "text": "到 2026-12-31，NVIDIA、Google、Microsoft 或 Meta 任一家公司在公開場合（earnings call、investor day 或官方新聞稿）具名提及「台灣電力供給」或「Taiwan power availability」是導致其將新 AI 訓練或推理資料中心選址在台灣以外的原因之一（以 transcript 或官方文件為準）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-26"
+      },
+      {
+        "id": "pred-gemq-gguf-adoption",
+        "text": "到 2026-09-30，GEMQ（arXiv 2605.23078）的 per-expert mixed-precision MoE 量化方案，被 llama.cpp 或 Unsloth 任一項目在 GitHub 合入主線（以 merged PR 或 release notes 具名 GEMQ 或「per-expert quantization」為準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-26"
+      },
+      {
+        "id": "pred-agentcore-payments-case-study",
+        "text": "到 2026-12-31，AWS 在公開 case study 或 re:Invent 2026 presentation 中，公布 AgentCore Payments 累計處理的 transaction volume 超過 $1M 美元（以 AWS 官方文件或 conference 錄影為準，不算第三方估算）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-27"
+      },
+      {
+        "id": "pred-coding-agent-workspace-isolation",
+        "text": "到 2026-10-31，至少一家主要 coding agent 平台（GitHub Copilot、Cursor、Windsurf、Codeium 之一）正式發布命名的 workspace isolation 功能，明確以 filesystem scope 限制 agent 可讀取的路徑（以官方 changelog 或 blog post 為準，不算社群外掛或實驗性 flag）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-27"
+      },
+      {
+        "id": "pred-open-weight-swebench-70",
+        "text": "到 2026-10-31，至少一個可公開下載 weights 的 open-weight 模型（非 GPT/Claude/Gemini 系列），搭配開源 agent framework，在 SWEBench Verified 上達到 70% 以上（以 SWEBench 官方 leaderboard 公開數字為準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-27"
+      },
+      {
+        "id": "pred-eval-tooling-3-commercial",
+        "text": "到 2026-09-30，eval rigor 工具市場出現至少 3 個有公開定價頁面的 SaaS 產品（功能以 LLM output evaluation 為核心，非 APM 或 observability 工具的附屬功能），且每個產品的月活客戶超過 100 個（以產品官網、blog 或 investor announcement 公布數字為準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-27"
+      },
+      {
+        "id": "pred-bumblebee-ci-adoption",
+        "text": "到 2026-09-30，Perplexity Bumblebee 或功能相似的零開銷靜態供應鏈掃描器，被至少 5 個 GitHub stars > 5,000 的開源 ML 項目採用為 CI 標準工具（以各 repo 的 GitHub Actions 或 CI 配置文件明確引用為準）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-27"
+      },
+      {
+        "id": "pred-local-inference-roi-case-study",
+        "text": "到 2026-10-31，至少一篇非 LLM 廠商撰寫的公開 case study，記錄了 B2B SaaS 公司將 frontier API 替換為本地 open-weight 推論後的具體 ROI（需含成本降幅百分比和 task accuracy 對比，以公開 blog 或 conference talk 為準）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-27"
+      },
+      {
+        "id": "pred-coding-agent-credential-exfil",
+        "text": "到 2026-09-30，至少一個公開報告的安全事件，涉及 AI coding agent 在沒有明確授權的情況下讀取並外洩開發環境中的敏感憑證（API key、資料庫連接字串或私鑰），且事件細節由受害方或安全研究員公開披露（以 security blog、CVE 或 GitHub advisory 為準，不算理論性 PoC）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-27"
+      },
+      {
+        "id": "pred-cognition-100m-arr",
+        "text": "到 2026-12-31，Cognition AI（Devin）公布或由 Bloomberg、The Information、Forbes 以具名訪談或文件確認 ARR 超過 $100M（不算第三方估算或投資人 deck 洩露）。$26B Series D 估值在 ARR 低於 $100M 的情況下難以在二級市場維持，此預測是對估值合理性的測試。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-28"
+      },
+      {
+        "id": "pred-phison-kioxia-joint-product",
+        "text": "到 2026-12-31，Phison 在公開資料（法說會投影片、新聞稿或 GitHub release note）中具名提及 Kioxia NAND 與 aiDAPTIV+ 的整合方案，或 Kioxia 在任何公開場合具名提及 Phison aiDAPTIV+（以官方文件為準，不算媒體報導推測）。Kioxia 進入 Phison 董事會是觸發聯合產品路線圖的治理前提。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-28"
+      },
+      {
+        "id": "pred-hqmq-framework-citation",
+        "text": "到 2026-10-31，HQMQ（Hurwitz Quaternion Multiplicative Quantization，arXiv 2605.27646）在 vLLM 或 LMCache 的 GitHub 以 issue、PR 或 RFC 形式具名引用（以公開 GitHub 討論為準；非 fork，非 issue 中的無意提及）。calibration-free 特性讓它比同類方案更易集成，是採用速度的關鍵差異。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-28"
+      },
+      {
+        "id": "pred-duckduckgo-retention",
+        "text": "到 2026-10-31，DuckDuckGo 在官方 blog 或年度透明報告中確認，相較 2026 年 5 月基線，月搜尋量增長超過 15%（以 DuckDuckGo 官方數字為準；SimilarWeb 等第三方估算不構成 resolved-yes）。+28% 的一週衝刺是否轉化為持久留存，是判斷消費端 AI 疲態是否結構性的測試。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-05-28"
+      },
+      {
+        "id": "pred-eval-api-native-endpoint",
+        "text": "到 2026-09-30，OpenAI 或 Anthropic 宣布在其主 API 中提供原生 output evaluation endpoint（在 API response 中直接返回 quality score 的功能，無需第三方工具），以官方 API changelog 或 blog post 為準。若模型廠直接內建 eval，第三方 eval 市場的 PMF 窗口將在此之前關閉。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-28"
+      },
+      {
+        "id": "pred-asrock-together-joint-announcement",
+        "text": "到 2026-12-31，Together Computer 或華擎（ASRock）在公開場合（press release、CES 2027 或電腦展）宣布一款共同開發或搭配銷售的 AI 推論加速板卡或主機，包含具名的 AI 推論技術規格（以官方媒體稿或展會公告為準）。$10M 特別股投資後若 12 個月內無產品公告，說明這是純財務投資而非技術整合前奏。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-28"
+      },
+      {
+        "id": "pred-claude-opus-48-bfcl-85",
+        "text": "到 2026-08-31，Claude Opus 4.8 在 BFCL 官方 Function Calling 排行榜的整體準確率達到 ≥ 85%（以 BFCL 官方頁面公開數字為準；目前 Claude Opus 4.5 為前兩名之一，Opus 4.8 尚未出現）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-29"
+      },
+      {
+        "id": "pred-youtube-ai-label-delay",
+        "text": "到 2026-09-30，YouTube 官方宣布 AI 生成內容強制標示的執行時程延後至少 3 個月，或將標示要求從強制執行降級為指引建議（以 YouTube Creator Blog 或 Google 新聞稿為準；僅媒體報導創作者抵制不算 resolved-yes）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-29"
+      },
+      {
+        "id": "pred-async-agent-no-10pct-coding-ide",
+        "text": "到 2026-09-30，GitHub Copilot、Cursor、Windsurf 三個主流 AI coding 平台中，沒有任何一個公布其非同步或背景代理人任務功能的活躍用戶採用率超過 10%。若無任何平台公布相關數字，標記為 unverifiable。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-05-29"
+      },
+      {
+        "id": "pred-figure04-500-units",
+        "text": "到 2026-12-31，Figure AI 在官方公告（新聞稿、CEO 訪談或投資人活動）中確認 Figure 04 累計出貨量超過 500 台（以官方文件為準，不算媒體推測）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-29"
+      },
+      {
+        "id": "pred-mtplx-1k-stars",
+        "text": "到 2026-08-31，youssofal/MTPLX 的 GitHub stars 超過 1,000（目前 624）。若 repo 被刪除或設為私有則標記為 unverifiable。MTP speculative decoding 在 Apple Silicon 上的影響力能否從個人項目擴散到工具鏈採用，是測試原生 Metal inference 社群成熟度的指標。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "created": "2026-05-29"
+      },
+      {
+        "id": "pred-taiwan-texas-first-delivery",
+        "text": "到 2026-12-31，緯穎（Wiwynn）或緯創（Wistron）德州設施在年度財報、法說會投影片或官方新聞稿中確認首批 AI 伺服器實際出貨（不算施工進度公告）。若兩家都未公布具體交付數字，標記為 unverifiable。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-05-29"
+      }
+    ]
+  },
+  "ideation": {
+    "general": [
+      {
+        "id": "idea-vision-grounding-agent-automation",
+        "audience": "general",
+        "title": "本地視覺接地 agent：用 3B 模型從 UI 截圖萃取座標",
+        "description": "把 NVIDIA LocateAnything-3B 裝進 Playwright 自動化工作流，讓 agent 不再依靠硬編碼的 CSS 選擇器或 XPath，改用自然語言描述定位 UI 元素。模型在 M1 Mac 上以 MPS 推論，每張截圖不到 1 秒。",
+        "use_case": "一家 B2B SaaS 的 QA 工程師，手上有 2,000 張 UI 截圖需要核對特定元素座標，目前靠人工每張花 2 分鐘，每次 UI 改版就要重新跑一遍。換成 LocateAnything-3B 後，批次處理不需要維護選擇器，改版後重跑成本從兩天降到半小時。",
+        "tech_stack": "Python, huggingface transformers, nvidia/LocateAnything-3B, Playwright",
+        "hardware": "MacBook M1+（MPS 推論）或 RTX 3060+",
+        "dev_time": "週末 12 小時",
+        "first_step": "pip install transformers 後載入 nvidia/LocateAnything-3B，對一張真實 UI 截圖跑 open-vocab 定位推論，確認中文 UI 標籤的識別率是否可接受再設計 batch pipeline。",
+        "market_evidence": "Llama Nemotron Nano VL 8B 在 OCRBench 超越多個 30B+ 同類，說明 8B 以下視覺模型已達到文件理解任務的工業精度門檻。",
+        "source_links": [
+          "tech.models.3:nvidia-LocateAnything-3B",
+          "tech.benchmarks.2:ocrbench-llama-nemotron",
+          "pulse.hn.0:continue-yn-agent"
+        ],
+        "market_evidence_source_link": "tech.benchmarks.2:ocrbench-llama-nemotron"
+      },
+      {
+        "id": "idea-eval-first-rag-sqlite-audit",
+        "audience": "general",
+        "title": "Eval-first RAG pipeline：SQLite 審計軌跡讓 spot check 從定期改為觸發式",
+        "description": "在 Arkon 自托管 RAG 基礎上加一層 SQLite 審計表，記錄每次召回的 query、retrieved_chunks、model_answer、human_rating 四欄。用這個資料集訓練一個域專屬的 reranker，把人工審核從定期全量改為由低評分觸發。評分標準採書面 rubric（5 分制），避免模型評模型的循環問題。",
+        "use_case": "一家法律科技 startup 的 CTO，手上有 50,000 份合約文件進 RAG，老闆每季要求匯報召回準確率，但沒有預算做全量人工審核。SQLite 審計軌跡提供可重播的歷史記錄，每次準確率下降可以定位到具體的文件批次，而不是只能回答「不知道為什麼壞了」。",
+        "tech_stack": "Python, SQLite, Arkon MCP server, sentence-transformers（reranker fine-tuning）",
+        "hardware": "MacBook M1+（PoC 用 CPU 推論即可）",
+        "dev_time": "週末 14 小時",
+        "first_step": "在 Arkon repo 中新增 eval_log table（query TEXT, chunks TEXT, answer TEXT, rating INT, timestamp TEXT），對現有 RAG 流程的每次請求插入一筆紀錄，從第一批 100 筆確認資料格式正確。",
+        "market_evidence": "Hamel Husain 指出 production LLM 的成敗由 eval pipeline 嚴謹度決定，Arkon（912 stars，不到一個月）是自托管 RAG eval 的最短路線。",
+        "source_links": [
+          "pulse.ai_bloggers.2:hamel-husain-data-scientist",
+          "pulse.ai_bloggers.1:eugene-yan-working-ai",
+          "shipped.topic_discovery.9:nduckmink/arkon"
+        ],
+        "market_evidence_source_link": "pulse.ai_bloggers.2:hamel-husain-data-scientist"
+      },
+      {
+        "id": "idea-async-task-queue-claude",
+        "audience": "general",
+        "title": "非同步 Claude Code task queue：睡前提交，早上取結果",
+        "description": "用 SQLite 作為 job queue，把 claude -p 呼叫包在帶有重試邏輯和結果持久化的 worker 裡。前端是一個輕量 CLI：submit、status、results 三個指令。整個系統完全本地執行，不需要任何雲端依賴。Job queue 的優先級和重試邏輯用純 SQL 實作。",
+        "use_case": "一個維護 5 個開源 repo、PR 積壓 200 份的工程師。睡前跑 claude-queue submit --batch pr_list.txt，把 200 份 PR 的 diff 送進 queue；早上看 claude-queue results 的 markdown 摘要，選擇性人工確認後批次 reply。每個 PR review 從 15 分鐘降到 30 秒人工決定。",
+        "tech_stack": "Python, SQLite, Claude Code CLI, Click（CLI framework）",
+        "hardware": "MacBook M1+",
+        "dev_time": "週末 10 小時",
+        "first_step": "建立 tasks.db，schema：id TEXT PRIMARY KEY, prompt TEXT, status TEXT DEFAULT 'pending', result TEXT, created_at TEXT；寫一個 claude_worker.py 從 db 取 pending 任務、執行 subprocess 呼叫 claude -p、把 stdout 寫回 result 並更新 status 為 done。",
+        "market_evidence": "HN 370 分的代理人許可疲勞遊戲說明同步執行模式的上限已見頂；非同步批次執行是突破這個天花板的工程路線。",
+        "source_links": [
+          "pulse.hn.0:continue-yn-agent",
+          "shipped.trending.4:anthropics/claude-code",
+          "pulse.ai_bloggers.4:latent-space-anthropic"
+        ],
+        "market_evidence_source_link": "pulse.hn.0:continue-yn-agent"
+      },
+      {
+        "id": "idea-cross-model-eval-baseline",
+        "audience": "general",
+        "title": "跨模型 eval baseline：一次量測 Claude、DeepSeek、本地 Qwen",
+        "description": "建一個 benchmark runner，對同一組任務測試 Claude API、DeepSeek V4 Pro API、本地 Qwen3.6-35B-A3B。評分器用書面 rubric（5 分制，結構化定義），輸出格式是 SQLite + CSV，可直接接入 BI 工具。Rubric 設計參照傳統法律或財務文件審核的評分標準，避免模型評模型的循環問題。",
+        "use_case": "一家 SaaS 公司的 AI 工程師，老闆問如果 Anthropic 定價漲 30% 該怎麼辦。目前沒有任何 eval 資料可以回答「DeepSeek V4 Pro 在我們的任務上差多少」。這個工具讓他在一個週末建立可重複的跨模型 baseline，讓漲價討論有數字依據而不是直覺。",
+        "tech_stack": "Python, anthropic SDK, DeepSeek API, llama.cpp（本地 Qwen3.6）, SQLite",
+        "hardware": "MacBook M1 Max+（本地 Qwen3.6-35B 需要 64GB+）；純 API 測試任何機器均可",
+        "dev_time": "週末 16 小時",
+        "first_step": "定義 5 個核心任務場景（各 20 個測試樣本），對每個場景寫一個 rubric，對 Claude Sonnet 4.6 跑完整基準作為控制組，再對 DeepSeek V4 Pro 跑同一組任務比較分差。",
+        "market_evidence": "Anthropic $65B 融資 + DeepSeek $450B 國家基金背書，訓練資料和對齊標準開始走向不同制度框架，跨模型 eval baseline 從風險管理加分項變成供應商鎖定的保險。",
+        "source_links": [
+          "market.funding.0:anthropic-series-h",
+          "market.funding.1:deepseek-450b-valuation",
+          "tech.models.0:deepseek-ai-DeepSeek-V4-Pro",
+          "tech.models.1:Qwen-Qwen3.6-35B-A3B"
+        ],
+        "market_evidence_source_link": "market.funding.0:anthropic-series-h"
+      }
+    ],
+    "work": [
+      {
+        "id": "work-vllm-lmcache-aidaptiv-benchmark",
+        "audience": "work",
+        "title": "vLLM + LMCache + aiDAPTIV+ 三層堆疊 benchmark：量化 SSD offload 的邊際延遲",
+        "description": "在 vLLM v0.22.1rc0 + LMCache v0.4.6 組合上部署 Qwen3.6-35B-A3B（GQA sparse MoE），啟用 aiDAPTIV+ SSD tier 作為 KV offload 目標，在三種配置下量化 p50/p99 latency：純 DRAM、DRAM + SSD offload、DRAM + LMCache 跨請求重用 + SSD offload。輸出格式符合合作夥伴簡報的 benchmark 規範（表格 + 折線圖）。",
+        "use_case": "Phison demo lab 工程師，Computex 後兩週要對第一批潛在 ISV 合作夥伴展示 35B GQA 模型在 32GB DRAM + aiDAPTIV SSD 條件下的 p99 latency，目前缺少一個可重複執行的 benchmark 腳本，每次 demo 都是手動跑不同配置。",
+        "tech_stack": "Python, vLLM v0.22.1rc0, LMCache v0.4.6, Phison aiDAPTIV+ SDK, Qwen3.6-35B-A3B GGUF",
+        "hardware": "NVIDIA workstation + Phison aiDAPTIV+ SSD（demo lab 環境）",
+        "dev_time": "1 週 PoC",
+        "first_step": "在 demo lab workstation 安裝 vLLM v0.22.1rc0，跑 Qwen3.6-35B-A3B 的純 DRAM baseline，記錄 32K context 下的 p99 latency 和 tokens/sec 作為控制組。",
+        "market_evidence": "LMCache v0.4.6 跨請求前綴快取把生成延遲降 30–40%；Mistral 選擇 VAST Data SSD-first 架構說明 NAND flash tier 的推論成本已達生產門檻。",
+        "source_links": [
+          "tech.aidaptiv.3:vllm-v0-22-1",
+          "tech.aidaptiv.4:lmcache-v0-4-6",
+          "tech.aidaptiv.1:phison-pascari",
+          "tech.models.1:Qwen-Qwen3.6-35B-A3B"
+        ],
+        "market_evidence_source_link": "tech.aidaptiv.4:lmcache-v0-4-6"
+      },
+      {
+        "id": "work-locateanything-aidaptiv-multimodal-demo",
+        "audience": "work",
+        "title": "LocateAnything-3B + aiDAPTIV+ 多模態邊緣推論 demo：截圖輸入到座標輸出",
+        "description": "整合 nvidia/LocateAnything-3B 進 aiDAPTIV+ 推論堆疊，建立「工業 HMI 截圖輸入 → 開放詞彙目標定位 → JSON 座標輸出」的端對端 pipeline。目標場景：工業 PC 或醫療 HMI 設備的 AI 視覺助手，完全本地執行，不依賴雲端服務。",
+        "use_case": "Phison aiDAPTIVLink 產品線的 demo team，下一個 ISV 合作簡報需要一個多模態 on-device 使用場景。LocateAnything-3B 在 OCRBench 超越 30B+ 同類，但目前沒有在 aiDAPTIV workstation 上的本地推論 benchmark，這個 PoC 填補這個空缺並提供可引用的 ms/frame 數字。",
+        "tech_stack": "Python, nvidia/LocateAnything-3B（HuggingFace）, Phison aiDAPTIV+ inference API, FastAPI（結果輸出層）",
+        "hardware": "NVIDIA workstation + Phison aiDAPTIV+ SSD（demo lab）",
+        "dev_time": "1 週 PoC",
+        "first_step": "從 HuggingFace 下載 nvidia/LocateAnything-3B，在 aiDAPTIV workstation 上跑官方範例（英文 UI 截圖），記錄推論速度（ms/frame）和記憶體用量，確認是否在 32GB DRAM 限制內可獨立執行。",
+        "market_evidence": "NVIDIA LocateAnything-3B 在 3B 參數下達到工業級物件定位精度；Hugging Face 的 CAD 生成 benchmark 說明多模態 eval 已延伸到工業專業領域。",
+        "source_links": [
+          "tech.models.3:nvidia-LocateAnything-3B",
+          "tech.benchmarks.2:ocrbench-llama-nemotron",
+          "tech.aidaptiv.1:phison-pascari",
+          "shipped.dev_watch_global.1:huggingface/cadgenbench"
+        ],
+        "market_evidence_source_link": "tech.models.3:nvidia-LocateAnything-3B"
+      },
+      {
+        "id": "work-aiDAPTIVLink-hybrid-router-kv-poc",
+        "audience": "work",
+        "title": "aiDAPTIVLink Hybrid-Router KV 路由 PoC：三條策略的命中率對比",
+        "description": "設計一個以「共享系統 prompt 前綴 + 不同使用者問題後綴」為場景的 benchmark，比較三條 KV 路由策略：全部打進 GPU DRAM、LMCache 跨請求前綴快取打入 DRAM、LMCache 前綴快取 offload 到 aiDAPTIV SSD。量化每條策略的 KV cache 命中率、p99 latency、DRAM 使用峰值，產出可引用的三欄對比表。",
+        "use_case": "Phison aiDAPTIVLink 2/3 產品線的工程師，要向潛在 OEM 客戶說明「Hybrid-Router 是路由策略，不是 KV cache 演算法改進」這個差異定位。目前這個差異只有文字說明，缺少具體數字支撐。這個 PoC 產出三條策略的命中率、延遲、DRAM 節省量三組數字，讓 OEM 客戶可以自行計算 ROI。",
+        "tech_stack": "Python, LMCache v0.4.6, aiDAPTIVLink SDK, vLLM v0.22.1rc0",
+        "hardware": "NVIDIA workstation + Phison aiDAPTIV+ SSD",
+        "dev_time": "1–2 週 PoC",
+        "first_step": "定義 benchmark 場景：1,000 個請求，前 500 字是固定系統 prompt，後 100–500 字是隨機問題。用 LMCache v0.4.6 跑完整測試，記錄 KV cache 命中率（預期在 60–80% 範圍），作為三條策略的對比起點。",
+        "market_evidence": "LMCache v0.4.6 跨請求前綴快取讓生成延遲降 30–40%；Phison Pascari NAND offload 讓 HBM 成本降 50%——兩個數字合看說明 Hybrid-Router 路由策略的技術前提已在生產環境中成立。",
+        "source_links": [
+          "tech.aidaptiv.4:lmcache-v0-4-6",
+          "tech.aidaptiv.3:vllm-v0-22-1",
+          "tech.aidaptiv.1:phison-pascari",
+          "tech.aidaptiv.0:samsung-hbm4e"
+        ],
+        "market_evidence_source_link": "tech.aidaptiv.4:lmcache-v0-4-6"
+      }
+    ]
+  },
+  "shipped": {
+    "trending": [
+      {
+        "id": "shipped.trending.0:harry0703/moneyprinterturbo",
+        "audience": "general",
+        "url": "https://github.com/harry0703/MoneyPrinterTurbo",
+        "name": "harry0703/MoneyPrinterTurbo",
+        "desc": "利用AI大模型，一键生成高清短视频 Generate short videos with one click using AI LLM.",
+        "stars": 69542,
+        "language": "Python",
+        "relevance": "Short video generation from LLM prompts at scale—production-grade tooling for content automation builders.",
+        "topic_match": [
+          "video-generation",
+          "llm-app"
+        ]
+      },
+      {
+        "id": "shipped.trending.1:microsoft/markitdown",
+        "audience": "general",
+        "url": "https://github.com/microsoft/markitdown",
+        "name": "microsoft/markitdown",
+        "desc": "Python tool for converting files and office documents to Markdown.",
+        "stars": 129850,
+        "language": "Python",
+        "relevance": "Document-to-markdown with Langchain integration—essential preprocessing for RAG context windows.",
+        "topic_match": [
+          "rag",
+          "document-processing"
+        ]
+      },
+      {
+        "id": "shipped.trending.2:everyinc/compound-engineering-plugin",
+        "audience": "general",
+        "url": "https://github.com/EveryInc/compound-engineering-plugin",
+        "name": "EveryInc/compound-engineering-plugin",
+        "desc": "Official Compound Engineering plugin for Claude Code, Codex, Cursor, and more",
+        "stars": 18111,
+        "language": "TypeScript",
+        "relevance": "Unified IDE plugin for Claude Code/Cursor/Codex—consolidates agentic workflows across three major platforms.",
+        "topic_match": [
+          "dev-tools",
+          "claude-code",
+          "ide-integration"
+        ]
+      },
+      {
+        "id": "shipped.trending.3:twentyhq/twenty",
+        "audience": "general",
+        "url": "https://github.com/twentyhq/twenty",
+        "name": "twentyhq/twenty",
+        "desc": "The open alternative to Salesforce, designed for AI.",
+        "stars": 48387,
+        "language": "TypeScript",
+        "relevance": "Open CRM explicitly designed for AI agents—validates enterprise adoption of agentic product architecture.",
+        "topic_match": [
+          "ai-product",
+          "crm"
+        ]
+      },
+      {
+        "id": "shipped.trending.4:anthropics/claude-code",
+        "audience": "both",
+        "url": "https://github.com/anthropics/claude-code",
+        "name": "anthropics/claude-code",
+        "desc": "Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster",
+        "stars": 127841,
+        "language": "Python",
+        "relevance": "Native tool access + codebase understanding reshape builder velocity—core infrastructure for agentic development.",
+        "topic_match": [
+          "agentic-coding",
+          "dev-tools"
+        ]
+      },
+      {
+        "id": "shipped.trending.5:leonxlnx/taste-skill",
+        "audience": "general",
+        "url": "https://github.com/Leonxlnx/taste-skill",
+        "name": "Leonxlnx/taste-skill",
+        "desc": "Taste-Skill - gives your AI good taste. stops the AI from generating boring, generic slop",
+        "stars": 28061,
+        "language": "Shell",
+        "relevance": "Taste-skill framework for Claude Code stops generic output—directly addresses agentic repetition at scale.",
+        "topic_match": [
+          "agent-quality",
+          "claude-code"
+        ]
+      },
+      {
+        "id": "shipped.trending.6:affaan-m/ecc",
+        "audience": "both",
+        "url": "https://github.com/affaan-m/ECC",
+        "name": "affaan-m/ECC",
+        "desc": "The agent harness performance optimization system. Skills, instincts, memory, security, and research-first development",
+        "stars": 198539,
+        "language": "JavaScript",
+        "relevance": "Production agent harness with skills, memory, security—abstraction layer that scales multi-agent workflows.",
+        "topic_match": [
+          "agent-framework",
+          "mcp"
+        ]
+      },
+      {
+        "id": "shipped.trending.7:crosstalk-solutions/project-nomad",
+        "audience": "general",
+        "url": "https://github.com/Crosstalk-Solutions/project-nomad",
+        "name": "Crosstalk-Solutions/project-nomad",
+        "desc": "Project N.O.M.A.D, is a self-contained, offline survival computer packed with critical tools, knowledge, and AI to keep",
+        "stars": 26932,
+        "language": "TypeScript",
+        "relevance": "Offline-first AI toolkit for edge deployment—extends agent reach beyond internet-connected infrastructure.",
+        "topic_match": [
+          "agent-infrastructure",
+          "edge-ai"
+        ]
+      }
+    ],
+    "topic_discovery": [
+      {
+        "id": "shipped.topic_discovery.0:raiyanyahya/how-to-train-your-gpt",
+        "audience": "general",
+        "url": "https://github.com/raiyanyahya/how-to-train-your-gpt",
+        "name": "raiyanyahya/how-to-train-your-gpt",
+        "desc": "Build a modern LLM from scratch. Every line commented. Explained like we are five.",
+        "stars": 2155,
+        "language": "Jupyter Notebook",
+        "relevance": "Educational LLM implementation with line-by-line walkthrough—reference architecture for builders implementing custom models.",
+        "topic_match": [
+          "llm-training",
+          "education"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.1:opensquilla/opensquilla",
+        "audience": "general",
+        "url": "https://github.com/opensquilla/opensquilla",
+        "name": "opensquilla/opensquilla",
+        "desc": "OpenSquilla — Token-Efficient AI Agent with same budget, higher intelligence density",
+        "stars": 2091,
+        "language": "Python",
+        "relevance": "Token-efficient agent architecture—cost optimization technique for long-context agentic workflows.",
+        "topic_match": [
+          "agent-optimization",
+          "inference"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.2:helvesec/rmux",
+        "audience": "general",
+        "url": "https://github.com/Helvesec/rmux",
+        "name": "Helvesec/rmux",
+        "desc": "Universal Rust multiplexer with a typed SDK — drive any CLI or TUI app from code. Native on Linux, macOS, and Windows.",
+        "stars": 1327,
+        "language": "Rust",
+        "relevance": "Typed CLI automation SDK—enables agents to drive legacy tools and TUIs without parsing brittle text output.",
+        "topic_match": [
+          "agent-tooling",
+          "cli-automation"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.3:lightseekorg/tokenspeed",
+        "audience": "both",
+        "url": "https://github.com/lightseekorg/tokenspeed",
+        "name": "lightseekorg/tokenspeed",
+        "desc": "TokenSpeed is a speed-of-light LLM inference engine.",
+        "stars": 1294,
+        "language": "Python",
+        "relevance": "LLM inference engine optimized for throughput—infrastructure for scaling agentic deployments.",
+        "topic_match": [
+          "inference-engine"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.4:denissergeevitch/agents-best-practices",
+        "audience": "general",
+        "url": "https://github.com/DenisSergeevitch/agents-best-practices",
+        "name": "DenisSergeevitch/agents-best-practices",
+        "desc": "Provider-neutral Agent Skill for Codex, Claude Code, and agentic harness design.",
+        "stars": 1124,
+        "language": null,
+        "relevance": "Provider-neutral agent skill patterns—architecture guidance across Claude Code, Codex, and generic harnesses.",
+        "topic_match": [
+          "agent-patterns",
+          "mcp"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.5:feder-cr/invisible_playwright",
+        "audience": "general",
+        "url": "https://github.com/feder-cr/invisible_playwright",
+        "name": "feder-cr/invisible_playwright",
+        "desc": "Anti-Detect Browser that passes every bot detection test. Drop-in Playwright replacement.",
+        "stars": 1073,
+        "language": "Python",
+        "relevance": "Playwright wrapper that bypasses bot detection—enables agents to interact with protected web surfaces.",
+        "topic_match": [
+          "web-scraping",
+          "agent-tooling"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.6:tddworks/baguette",
+        "audience": "general",
+        "url": "https://github.com/tddworks/baguette",
+        "name": "tddworks/baguette",
+        "desc": "Headless iOS Simulator manager/farm + host-side input injection for iOS 26 — taps, swipes, multi-finger gestures, and 60",
+        "stars": 1027,
+        "language": "Swift",
+        "relevance": "Headless iOS simulator farm with programmatic input—enables mobile agents to test and automate iOS apps at scale.",
+        "topic_match": [
+          "agent-automation",
+          "mobile-testing"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.7:alvinunreal/openpets",
+        "audience": "general",
+        "url": "https://github.com/alvinunreal/openpets",
+        "name": "alvinunreal/openpets",
+        "desc": "Desktop pets for AI coding agents. Install pets, connect Claude Code via MCP, and see live coding status on your desktop",
+        "stars": 977,
+        "language": "TypeScript",
+        "relevance": "Claude Code MCP-connected desktop UI for agent status visualization—human-in-the-loop affordance for long-running tasks.",
+        "topic_match": [
+          "claude-code",
+          "mcp"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.8:jmerelnyc/photo-agents",
+        "audience": "general",
+        "url": "https://github.com/jmerelnyc/Photo-agents",
+        "name": "jmerelnyc/Photo-agents",
+        "desc": "Autonomous self-evolving agents. Vision-grounded layered memory and self-written skills for LLM agents that operate your",
+        "stars": 968,
+        "language": "Python",
+        "relevance": "Vision-grounded agents with self-written skills—shows multimodal memory and skill adaptation at agent scale.",
+        "topic_match": [
+          "vlm",
+          "agent-architecture"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.9:nduckmink/arkon",
+        "audience": "general",
+        "url": "https://github.com/nduckmink/arkon",
+        "name": "nduckmink/arkon",
+        "desc": "Arkon: Enterprise AI Knowledge Hub & MCP Server. Self-hosted knowledge base for teams to manage RAG contexts, access pol",
+        "stars": 912,
+        "language": "Python",
+        "relevance": "Self-hosted RAG knowledge hub with MCP interface—production-grade context management for multi-agent teams.",
+        "topic_match": [
+          "rag",
+          "mcp"
+        ]
+      }
+    ],
+    "dev_watch_taiwan": [
+      {
+        "id": "shipped.dev_watch_taiwan.0:strategist922/mano-p",
+        "audience": "both",
+        "url": "https://github.com/strategist922/mano-p",
+        "name": "strategist922/mano-p",
+        "desc": "strategist922 (841 followers) — new repo",
+        "stars": 1,
+        "language": null,
+        "relevance": "GUI-VLA agent #1 on OSWorld benchmark—Taiwan builder pushing multimodal embodied AI into production.",
+        "topic_match": [
+          "vlm",
+          "agent"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.1:cw1997/pytorch-playground",
+        "audience": "general",
+        "url": "https://github.com/cw1997/pytorch-playground",
+        "name": "cw1997/pytorch-playground",
+        "desc": "cw1997 (1225 followers) — new repo",
+        "stars": 0,
+        "language": "Python",
+        "relevance": "PyTorch experimentation—Taiwan ML engineer exploring model training patterns.",
+        "topic_match": [
+          "llm-training"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.2:jacoblinecool/think-aloud",
+        "audience": "general",
+        "url": "https://github.com/JacobLinCool/think-aloud",
+        "name": "JacobLinCool/think-aloud",
+        "desc": "JacobLinCool (441 followers) — new repo",
+        "stars": 0,
+        "language": "Swift",
+        "relevance": "Local-first voice input for macOS with AI optimization—Taiwan builder focusing on edge speech interfaces.",
+        "topic_match": [
+          "voice-ai",
+          "edge-ai"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.3:fongmi/mpv-android",
+        "audience": "general",
+        "url": "https://github.com/FongMi/mpv-android",
+        "name": "FongMi/mpv-android",
+        "desc": "FongMi (2038 followers) — new repo",
+        "stars": 0,
+        "language": "Kotlin",
+        "relevance": "Android video player foundation—Taiwan mobile developer building media infrastructure.",
+        "topic_match": [
+          "video-infrastructure"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.4:peterdevahello/input-remapper",
+        "audience": "general",
+        "url": "https://github.com/PeterDaveHello/input-remapper",
+        "name": "PeterDaveHello/input-remapper",
+        "desc": "PeterDaveHello (1804 followers) — new repo",
+        "stars": 0,
+        "language": null,
+        "relevance": "Input device automation—Taiwan developer building terminal automation foundations.",
+        "topic_match": [
+          "automation"
+        ]
+      }
+    ],
+    "dev_watch_global": [
+      {
+        "id": "shipped.dev_watch_global.0:microsoft/amplifier-bundle-llm-wiki",
+        "audience": "general",
+        "url": "https://github.com/microsoft/amplifier-bundle-llm-wiki",
+        "name": "microsoft/amplifier-bundle-llm-wiki",
+        "desc": "microsoft (120918 followers) — new repo",
+        "stars": 0,
+        "language": "Shell",
+        "relevance": "LLM wiki bundle for Amplifier project—Microsoft shipping enterprise prompt/context infrastructure.",
+        "topic_match": [
+          "llm",
+          "knowledge-management"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.1:huggingface/cadgenbench",
+        "audience": "general",
+        "url": "https://github.com/huggingface/cadgenbench",
+        "name": "huggingface/cadgenbench",
+        "desc": "huggingface (64027 followers) — new repo",
+        "stars": 0,
+        "language": "Python",
+        "relevance": "AI-driven CAD generation benchmark—Hugging Face expanding multimodal eval into specialized domains.",
+        "topic_match": [
+          "vlm",
+          "benchmarking"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.2:lucidrains/ds4",
+        "audience": "both",
+        "url": "https://github.com/lucidrains/ds4",
+        "name": "lucidrains/ds4",
+        "desc": "lucidrains (60075 followers) — new repo",
+        "stars": 0,
+        "language": null,
+        "relevance": "DeepSeek 4 Flash local inference—community researcher building edge-deployable inference engines.",
+        "topic_match": [
+          "inference-engine"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.3:iam-veeramalla/ai-cloud-cost-detective",
+        "audience": "general",
+        "url": "https://github.com/iam-veeramalla/AI-Cloud-Cost-Detective",
+        "name": "iam-veeramalla/AI-Cloud-Cost-Detective",
+        "desc": "iam-veeramalla (31604 followers) — new repo",
+        "stars": 4,
+        "language": null,
+        "relevance": "AI-driven cloud cost optimization—addresses the operational cost surface for agentic deployments.",
+        "topic_match": [
+          "agent-operations"
+        ]
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:continue-yn-agent",
+        "audience": "general",
+        "url": "https://llmgame.scalex.dev/",
+        "title": "Show HN: Continue? Y/N: A 60-second game about AI agent permission fatigue",
+        "score": 370,
+        "comments": 58,
+        "takeaway": "Agent permission dialogue surfaces critical UX friction builders need to solve."
+      },
+      {
+        "id": "pulse.hn.1:mistral-ai-summit",
+        "audience": "general",
+        "url": "https://koenvangilst.nl/lab/mistral-ai-now-summit",
+        "title": "Notes from the Mistral AI Now Summit in Paris",
+        "score": 286,
+        "comments": 12,
+        "takeaway": "Mistral's inference priorities and product direction revealed at developer summit."
+      }
+    ],
+    "lobsters": [],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:deepseek-funding",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/448081",
+        "title": "国家大基金领投 DeepSeek，首轮融资投前估值 450 亿美元",
+        "takeaway": "國家級資金支持標誌中國AI基礎設施成國策優先項。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:gary-marcus-tokenmaxxing",
+        "audience": "general",
+        "url": "https://garymarcus.substack.com/p/what-happens-next-after-the-decline",
+        "title": "What happens next, after the decline of tokenmaxxing?",
+        "takeaway": "Post-scaling plateau forces LLM development toward architectural innovation over raw parameters."
+      },
+      {
+        "id": "pulse.ai_bloggers.1:eugene-yan-working-ai",
+        "audience": "general",
+        "url": "https://eugeneyan.com//writing/working-with-ai/",
+        "title": "How to Work and Compound with AI",
+        "takeaway": "Systems thinking for integrating AI as infrastructure, not just tool replacement."
+      },
+      {
+        "id": "pulse.ai_bloggers.2:hamel-husain-data-scientist",
+        "audience": "both",
+        "url": "https://hamel.dev/blog/posts/revenge/",
+        "title": "The Revenge of the Data Scientist",
+        "takeaway": "Production LLM success demands evals and data engineering, not just larger models."
+      },
+      {
+        "id": "pulse.ai_bloggers.3:sebastian-raschka-kv-cache",
+        "audience": "both",
+        "url": "https://magazine.sebastianraschka.com/p/recent-developments-in-llm-architectures",
+        "title": "Recent Developments in LLM Architectures: KV Sharing, mHC, and Compressed Attention",
+        "takeaway": "KV-cache optimizations (sharing, mHC, compression) unlock cost-effective high-throughput inference."
+      },
+      {
+        "id": "pulse.ai_bloggers.4:latent-space-anthropic",
+        "audience": "general",
+        "url": "https://www.latent.space/p/ainews-anthropic-raises-965b-series",
+        "title": "[AINews] Anthropic raises $965B Series H, releases Opus 4.8 and Dynamic Workflows/ultracode",
+        "takeaway": "Anthropic's new model capabilities and funding scale redefine builder model selection criteria."
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:mediatek-lg-patents",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2454",
+        "title": "MediaTek Acquires LG Patent Portfolio for $50M",
+        "takeaway": "Strengthens MediaTek's IP position for processor & RF designs amid export restrictions.",
+        "amount": "$50M",
+        "companies": [
+          "MediaTek",
+          "LG Electronics"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.ma.1:groq-650m-raise",
+        "audience": "general",
+        "url": "https://techcrunch.com/2026/05/29/after-nvidias-20b-not-acqui-hire-ai-chip-startup-groq-reportedly-raising-650m/",
+        "title": "Groq AI Chip Startup Raising $650M",
+        "takeaway": "Signals investor appetite for dedicated AI accelerator competition outside NVIDIA.",
+        "amount": "$650M",
+        "companies": [
+          "Groq"
+        ],
+        "region": "us"
+      }
+    ],
+    "funding": [
+      {
+        "id": "market.funding.0:anthropic-series-h",
+        "audience": "both",
+        "url": "https://www.anthropic.com/news/series-h",
+        "title": "Anthropic Raises $65B in Series H at $965B Post-Money Valuation",
+        "takeaway": "Massive Series H round signals sustained venture confidence in frontier AI development.",
+        "amount": "$65B",
+        "companies": [
+          "Anthropic"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.1:deepseek-450b-valuation",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/448081",
+        "title": "DeepSeek First Funding Round at $450B Pre-Money Valuation, Led by China's National Fund",
+        "takeaway": "China's sovereign backing for DeepSeek underscores state-level commitment to LLM independence.",
+        "amount": "$450B pre-money",
+        "companies": [
+          "DeepSeek"
+        ],
+        "region": "global"
+      }
+    ],
+    "policy": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-2454-20260529",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2454",
+        "title": "MediaTek Approves $50M Patent Acquisition from LG Electronics",
+        "takeaway": "Builds IP moat in processors amid geopolitical chip tensions.",
+        "companies": [
+          "MediaTek"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-2395-20260529",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2395",
+        "title": "研華 Board Restructuring; Appoints Former NVIDIA Taiwan VP as Independent Director",
+        "takeaway": "NVIDIA executive hire signals deepening edge-AI focus for industrial PC platforms.",
+        "companies": [
+          "Advantech"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:mops-2353-20260529",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2353",
+        "title": "宏碁 Full Board Election; Appoints TSMC CFO as Independent Director",
+        "takeaway": "TSMC CFO appointment signals closer strategic alignment amid AI-driven PC demand.",
+        "companies": [
+          "Acer"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:mops-2382-20260529",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2382",
+        "title": "廣達 Shareholders Approve FY2025 Dividend of 15.6 NT$/share",
+        "takeaway": "Strong dividend reflects server ODM demand surge from LLM inference build-out.",
+        "companies": [
+          "Quanta"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:mops-2344-20260529",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2344",
+        "title": "華邦電 Shareholders Approve Long-Term Capital Raising Plan",
+        "takeaway": "Memory supplier prepares for capital intensity as AI data-center demand escalates.",
+        "companies": [
+          "Winbond"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.5:mops-3231-20260529",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3231",
+        "title": "緯創 FY2025 Dividend: 5.5 NT$k/1k shares (~17.5B NT$ total)",
+        "takeaway": "Strong dividends reflect sustained edge/server ODM margin strength.",
+        "companies": [
+          "Wistron"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.6:mops-2357-20260529",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2357",
+        "title": "華碩 FY2025 Dividend: 42 NT$/share",
+        "takeaway": "Robust PC/edge dividend signals AI PC momentum offsetting consumer softness.",
+        "companies": [
+          "ASUS"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.7:mops-2408-20260601",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2408",
+        "title": "南亞科 Hosts Goldman Sachs & HSBC Investor Briefings at Computex",
+        "takeaway": "Memory supplier showcases AI demand momentum to global institutional investors.",
+        "companies": [
+          "Nanya Technology"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:anthropic-series-h",
+        "audience": "general",
+        "url": "https://www.anthropic.com/news/series-h",
+        "source": "Anthropic News",
+        "title": "Anthropic raises $65B in Series H funding at $965B valuation",
+        "takeaway": "Capital influx continues Anthropic's frontier model development; reflects investor confidence in reasoning capabilities.",
+        "companies": [
+          "Anthropic"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:microsoft-data-formulator",
+        "audience": "general",
+        "url": "https://www.microsoft.com/en-us/research/blog/data-formulator-0-7-ai-powered-data-analytics-for-enterprise-data/",
+        "source": "Microsoft Research AI",
+        "title": "Data Formulator 0.7: AI-powered data analytics for enterprise data",
+        "takeaway": "Spreadsheet-native AI interface; LLM-guided data transformation without SQL/coding overhead.",
+        "companies": [
+          "Microsoft"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:nvidia-dynosim",
+        "audience": "work",
+        "url": "https://developer.nvidia.com/blog/dynosim-simulating-the-pareto-frontier/",
+        "source": "NVIDIA Developer Blog",
+        "title": "DynoSim: Simulating the Pareto Frontier for LLM Serving",
+        "takeaway": "Benchmarks throughput-latency tradeoffs in production LLM serving; toolkit predicts inference hardware choices.",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:aws-azerbaijani",
+        "audience": "general",
+        "url": "https://aws.amazon.com/blogs/machine-learning/training-azerbaijani-language-models-on-amazon-sagemaker-ai/",
+        "source": "AWS ML Blog",
+        "title": "Training Azerbaijani language models on Amazon SageMaker AI",
+        "takeaway": "SageMaker fine-tuning infrastructure enables low-resource language model adaptation at scale.",
+        "companies": [
+          "AWS"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:deepseek-ai-DeepSeek-V4-Pro",
+        "audience": "work",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro",
+        "source": "HuggingFace Trending",
+        "title": "DeepSeek-V4-Pro: 1.6T MoE with 8-bit quantization",
+        "takeaway": "1.6T frontier MoE with FP8 support; 5.8M downloads signal production-scale adoption.",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.1:Qwen-Qwen3.6-35B-A3B",
+        "audience": "work",
+        "url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "source": "HuggingFace Trending",
+        "title": "Qwen3.6-35B-A3B: Sparse MoE at 35B active capacity",
+        "takeaway": "2.1M GGUF downloads validate on-device inference demand for efficient sparse models.",
+        "companies": [
+          "Alibaba DAMO Academy"
+        ]
+      },
+      {
+        "id": "tech.models.2:openbmb-MiniCPM5-1B",
+        "audience": "work",
+        "url": "https://huggingface.co/openbmb/MiniCPM5-1B",
+        "source": "HuggingFace Trending",
+        "title": "MiniCPM5-1B: Long-context edge LLM with tool-calling",
+        "takeaway": "1B model + long-context + function-calling; validates on-device reasoning path.",
+        "companies": [
+          "OpenBMB"
+        ]
+      },
+      {
+        "id": "tech.models.3:nvidia-LocateAnything-3B",
+        "audience": "work",
+        "url": "https://huggingface.co/nvidia/LocateAnything-3B",
+        "source": "HuggingFace Trending",
+        "title": "NVIDIA LocateAnything-3B: Vision grounding at 3B",
+        "takeaway": "Open-vocab object grounding in 3B footprint; edge-focused multimodal breakthrough.",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.models.4:meituan-longcat-Video-Avatar-1.5",
+        "audience": "general",
+        "url": "https://huggingface.co/meituan-longcat/LongCat-Video-Avatar-1.5",
+        "source": "HuggingFace Trending",
+        "title": "LongCat Video Avatar 1.5: Audio-driven video generation",
+        "takeaway": "Diffusion-based video synthesis from audio + text; MIT-licensed open-source release.",
+        "companies": [
+          "Meituan"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:bfcl-claude-opus",
+        "audience": "general",
+        "url": "https://huggingface.co/spaces/Berkeley-Function-Calling-Leaderboard/leaderboard",
+        "source": "BFCL Leaderboard",
+        "title": "BFCL: Claude Opus 4.5 dominates function-calling leaderboard",
+        "takeaway": "Opus 4.5 extends function-calling precision edge; agent reliability benchmark for real-world deployment.",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Claude-Opus-4-5-20251101 (FC)",
+            "Claude-Sonnet-4-5-20250929 (FC)"
+          ],
+          "rank_changes": []
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:swebench-live-agent",
+        "audience": "work",
+        "url": "https://www.swebench.com/",
+        "source": "SWE-bench Leaderboard",
+        "title": "SWE-bench Verified: Live agent + Opus 4.5 exceeds 40% solve rate",
+        "takeaway": "Real-world software engineering fixes now exceed 40% on verified benchmarks; agent maturity inflection.",
+        "benchmark_changes": {
+          "new_top_5": [
+            "live-SWE-agent + Claude 4.5 Opus medium (20251101)"
+          ],
+          "rank_changes": []
+        }
+      },
+      {
+        "id": "tech.benchmarks.2:ocrbench-llama-nemotron",
+        "audience": "general",
+        "url": "https://github.com/llm-sys/OCRBench",
+        "source": "OCRBench Leaderboard",
+        "title": "OCRBench: Llama Nemotron Nano VL 8B tops vision OCR",
+        "takeaway": "8B vision model outperforms 30B+ peers on document understanding; efficiency breakthrough confirmed.",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Llama Nemotron Nano VL 8B"
+          ],
+          "rank_changes": []
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:samsung-hbm4e",
+        "audience": "both",
+        "url": "https://news.samsung.com/global/samsung-electronics-begins-shipment-of-industry-first-hbm4e-samples",
+        "source": "Samsung Semiconductors",
+        "title": "Samsung HBM4E shipment begins: industry-first 12-hi stacked memory",
+        "takeaway": "HBM4E 2.1GB/s bandwidth reduces KV-cache bottleneck; enables 120B-model inference on 32GB systems.",
+        "companies": [
+          "Samsung"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:phison-pascari",
+        "audience": "work",
+        "url": "https://phisonblog.com/driving-sustainable-ai-infrastructure-with-nand-flash-and-pascari-aidaptiv/",
+        "source": "Phison Blog",
+        "title": "Phison Pascari aiDAPTIV+: Sustainable SSD-backed LLM inference",
+        "takeaway": "NAND flash offload + memory tiering cuts HBM costs 50%; validates SSD-as-L3-memory for inference.",
+        "companies": [
+          "Phison"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:skhynix-ihbm",
+        "audience": "work",
+        "url": "https://news.skhynix.com/ihbm-solution/",
+        "source": "SK Hynix News",
+        "title": "SK hynix iHBM: Embedded cooling for next-gen HBM stacks",
+        "takeaway": "Integrated thermal solution unlocks higher HBM density without bandwidth degradation.",
+        "companies": [
+          "SK Hynix"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.3:vllm-v0-22-1",
+        "audience": "work",
+        "url": "https://github.com/vllm-project/vllm/releases/tag/v0.22.1rc0",
+        "source": "vLLM Releases",
+        "title": "vLLM v0.22.1rc0: KV-cache memory and executor optimizations",
+        "takeaway": "Continuous KV-cache eviction + reuse optimization; paged attention refinements for inference.",
+        "companies": [
+          "vLLM"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.4:lmcache-v0-4-6",
+        "audience": "work",
+        "url": "https://github.com/LMCache/LMCache/releases/tag/v0.4.6",
+        "source": "LMCache Releases",
+        "title": "LMCache v0.4.6: Cross-request KV-cache reuse framework",
+        "takeaway": "Shared prompt prefix caching across requests cuts generation latency 30-40%.",
+        "companies": [
+          "LMCache"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.5:mistral-vast-data",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/ai-ml/2026/05/29/mistral-ai-chooses-vast-data-for-its-ai-data-foundation/5248594",
+        "source": "BlocksAndFiles",
+        "title": "Mistral AI chooses VAST Data for AI data foundation",
+        "takeaway": "SSD-first architecture for training pipelines; validates NAND flash tier for AI workload economics.",
+        "companies": [
+          "Mistral",
+          "VAST Data"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-05-30",
+    "flagged": [
+      {
+        "path": "signals.focus[1].body",
+        "type": "attribution",
+        "author": "Latent Space",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      }
+    ],
+    "repaired": 1
+  }
+}
