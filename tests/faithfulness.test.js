@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCuratedIndex,
   collectProseFields,
+  detectAttributionClaims,
   detectTemporalFlags,
   extractSourceDate,
   resolveFieldItems,
@@ -153,5 +154,62 @@ describe('detectTemporalFlags', () => {
       ideation: { general: [], work: [] },
     };
     expect(detectTemporalFlags(editorial, idx, { reportDate: '2026-05-29' })).toHaveLength(0);
+  });
+});
+
+describe('detectAttributionClaims', () => {
+  const idx = buildCuratedIndex(CURATED);
+
+  it('emits a claim for the real 5/29 Raschka span and attaches the cited takeaway', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [
+          {
+            body: 'Sebastian Raschka 本週確認 GQA 在 Gemma 4 和 DeepSeek V4 Pro 中已量產。',
+            source_links: ['pulse.ai_bloggers.3:sebastianraschka-5a2d1f8c'],
+          },
+        ],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    };
+    const claims = detectAttributionClaims(editorial, idx);
+    expect(claims).toHaveLength(1);
+    expect(claims[0].author).toBe('Sebastian Raschka');
+    expect(claims[0].path).toBe('signals.focus[0].body');
+    expect(claims[0].citedItems[0].takeaway).toMatch(/KV-cache variants/);
+    expect(claims[0].span).toMatch(/本週確認/);
+  });
+
+  it('emits citedItems:[] when the named author is not in the cited sources', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [
+          {
+            body: 'Andrej Karpathy 表示新架構勝出。',
+            source_links: ['pulse.ai_bloggers.0:simonwillison-3a9f2e1b'],
+          },
+        ],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    };
+    const claims = detectAttributionClaims(editorial, idx);
+    expect(claims).toHaveLength(1);
+    expect(claims[0].citedItems).toEqual([]);
+  });
+
+  it('does not emit when an author name has no claim verb nearby', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [{ body: 'Sebastian Raschka 的文章很值得一讀。', source_links: ['pulse.ai_bloggers.3:x'] }],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    };
+    expect(detectAttributionClaims(editorial, idx)).toHaveLength(0);
   });
 });

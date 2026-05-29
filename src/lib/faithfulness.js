@@ -167,3 +167,55 @@ export function detectTemporalFlags(editorial, index, { reportDate, toleranceDay
   }
   return flags;
 }
+
+const CLAIM_VERB_RE = /確認|證實|表示|指出|宣布|認為|confirmed|stated|said|showed|claims/i;
+// Latin author name = two Capitalized tokens (Sebastian Raschka, Simon Willison…)
+const NAME_RE = /[A-Z][a-z]+ [A-Z][a-z]+/g;
+
+function extractSentence(text, needle) {
+  const clean = text.replace(/<[^>]+>/g, ' ');
+  const parts = clean.split(/(?<=[。！？!?\n])/);
+  for (const p of parts) {
+    if (p.includes(needle)) return p.trim();
+  }
+  return clean.trim();
+}
+
+function mentionsAuthor(item, author) {
+  const a = author.toLowerCase();
+  const aNoSpace = a.replace(/\s+/g, '');
+  const src = (item.source ?? '').toLowerCase();
+  const title = (item.title ?? '').toLowerCase();
+  const id = (item.id ?? '').toLowerCase().replace(/[^a-z]/g, '');
+  return src.includes(a) || title.includes(a) || id.includes(aNoSpace);
+}
+
+/**
+ * Find spans where a named author co-occurs with a claim verb. citedItems are
+ * resolved by the same two paths as detectTemporalFlags, then filtered to the
+ * named author. citedItems:[] (author not in the cited sources) is itself a
+ * flag — the repair de-names it.
+ * @returns {{path:string, author:string, span:string, citedItems:object[]}[]}
+ */
+export function detectAttributionClaims(editorial, index) {
+  const claims = [];
+  for (const field of collectProseFields(editorial)) {
+    if (!CLAIM_VERB_RE.test(field.text)) continue;
+    const names = [...new Set(field.text.match(NAME_RE) ?? [])];
+    for (const author of names) {
+      const span = extractSentence(field.text, author);
+      if (!CLAIM_VERB_RE.test(span)) continue; // verb must be in the same sentence
+      const citedItems = resolveFieldItems(field, index)
+        .filter((it) => mentionsAuthor(it, author))
+        .map((it) => ({
+          id: it.id,
+          title: it.title,
+          takeaway: it.takeaway,
+          source: it.source,
+          date: extractSourceDate(it.url),
+        }));
+      claims.push({ path: field.path, author, span, citedItems });
+    }
+  }
+  return claims;
+}
