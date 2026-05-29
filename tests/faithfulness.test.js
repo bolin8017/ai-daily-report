@@ -5,11 +5,14 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  applyRepairs,
   buildCuratedIndex,
+  buildJudgePrompt,
   collectProseFields,
   detectAttributionClaims,
   detectTemporalFlags,
   extractSourceDate,
+  parseJudgeVerdicts,
   resolveFieldItems,
 } from '../src/lib/faithfulness.js';
 
@@ -28,7 +31,8 @@ const CURATED = {
         id: 'pulse.ai_bloggers.3:sebastianraschka-5a2d1f8c',
         title: 'Recent Developments in LLM Architectures',
         source: 'Sebastian Raschka',
-        takeaway: 'KV-cache variants (sharing, compression) emerge as core inference optimizations.',
+        takeaway:
+          'KV-cache variants (sharing, compression) emerge as core inference optimizations.',
         url: 'https://magazine.sebastianraschka.com/p/recent-developments',
       },
     ],
@@ -131,7 +135,10 @@ describe('detectTemporalFlags', () => {
       signals: { predictions: [] },
       ideation: { general: [], work: [] },
     };
-    const flags = detectTemporalFlags(editorial, idx, { reportDate: '2026-05-29', toleranceDays: 1 });
+    const flags = detectTemporalFlags(editorial, idx, {
+      reportDate: '2026-05-29',
+      toleranceDays: 1,
+    });
     expect(flags).toHaveLength(1);
     expect(flags[0].path).toBe('lead.html');
     expect(flags[0].marker).toBe('同天');
@@ -143,7 +150,10 @@ describe('detectTemporalFlags', () => {
       signals: { predictions: [] },
       ideation: { general: [], work: [] },
     };
-    const flags = detectTemporalFlags(editorial, idx, { reportDate: '2026-05-27', toleranceDays: 1 });
+    const flags = detectTemporalFlags(editorial, idx, {
+      reportDate: '2026-05-27',
+      toleranceDays: 1,
+    });
     expect(flags).toHaveLength(0);
   });
 
@@ -205,11 +215,129 @@ describe('detectAttributionClaims', () => {
     const editorial = {
       lead: { html: '' },
       signals: {
-        focus: [{ body: 'Sebastian Raschka 的文章很值得一讀。', source_links: ['pulse.ai_bloggers.3:x'] }],
+        focus: [
+          { body: 'Sebastian Raschka 的文章很值得一讀。', source_links: ['pulse.ai_bloggers.3:x'] },
+        ],
         predictions: [],
       },
       ideation: { general: [], work: [] },
     };
     expect(detectAttributionClaims(editorial, idx)).toHaveLength(0);
+  });
+});
+
+describe('buildJudgePrompt / parseJudgeVerdicts', () => {
+  const claims = [
+    {
+      path: 'signals.focus[0].body',
+      author: 'Sebastian Raschka',
+      span: 'Sebastian Raschka 本週確認 GQA 在 Gemma 4 和 DeepSeek V4 Pro 中已量產。',
+      citedItems: [
+        {
+          id: 'pulse.ai_bloggers.3:x',
+          title: 'Recent Developments',
+          takeaway: 'KV-cache variants emerge as core inference optimizations.',
+          source: 'Sebastian Raschka',
+          date: '2026-05-16',
+        },
+      ],
+    },
+  ];
+
+  it('prompt names quote-first ternary + includes the takeaway as grounding', () => {
+    const p = buildJudgePrompt(claims, '2026-05-29');
+    expect(p).toMatch(/NO_SUPPORTING_QUOTE/);
+    expect(p).toMatch(/SUPPORTED|CONTRADICTED|NOT_ENOUGH_INFO/);
+    expect(p).toMatch(/KV-cache variants/);
+  });
+
+  it('parses the judge JSON back into verdicts joined to claims by index', () => {
+    const raw =
+      'noise before [{"index":0,"verdict":"CONTRADICTED","supporting_quote":"NO_SUPPORTING_QUOTE","grounded_rewrite":"Sebastian Raschka 整理了 KV-cache 變體作為推論最佳化方向。"}] noise after';
+    const verdicts = parseJudgeVerdicts(raw, claims);
+    expect(verdicts).toHaveLength(1);
+    expect(verdicts[0].verdict).toBe('CONTRADICTED');
+    expect(verdicts[0].path).toBe('signals.focus[0].body');
+    expect(verdicts[0].span).toMatch(/本週確認/);
+  });
+
+  it('returns [] on unparseable judge output (never throws)', () => {
+    expect(parseJudgeVerdicts('not json at all', claims)).toEqual([]);
+  });
+});
+
+describe('applyRepairs', () => {
+  it('softens a temporal marker in lead.html and records the audit', () => {
+    const editorial = {
+      lead: { html: '<p>X 是同天出現的訊號</p>' },
+      signals: { predictions: [] },
+      ideation: {},
+    };
+    const { audit } = applyRepairs(
+      editorial,
+      {
+        temporalFlags: [
+          {
+            path: 'lead.html',
+            type: 'temporal',
+            marker: '同天',
+            offDate: [{ id: 'a', date: '2026-05-27' }],
+          },
+        ],
+      },
+      { reportDate: '2026-05-29' },
+    );
+    expect(editorial.lead.html).toContain('近期');
+    expect(editorial.lead.html).not.toContain('同天');
+    expect(editorial.faithfulness.repaired).toBe(1);
+    expect(audit.flagged[0].type).toBe('temporal');
+  });
+
+  it('replaces a CONTRADICTED span with the grounded rewrite', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [{ body: 'Sebastian Raschka 本週確認 GQA 在 Gemma 4 中已量產。' }],
+        predictions: [],
+      },
+      ideation: {},
+    };
+    const verdicts = [
+      {
+        path: 'signals.focus[0].body',
+        author: 'Sebastian Raschka',
+        span: 'Sebastian Raschka 本週確認 GQA 在 Gemma 4 中已量產。',
+        verdict: 'CONTRADICTED',
+        supporting_quote: 'NO_SUPPORTING_QUOTE',
+        grounded_rewrite: 'Sebastian Raschka 整理了 KV-cache 變體作為推論最佳化方向。',
+      },
+    ];
+    applyRepairs(
+      editorial,
+      { attributionVerdicts: verdicts },
+      { reportDate: '2026-05-29', model: 'claude-sonnet-4-6', ranJudge: true },
+    );
+    expect(editorial.signals.focus[0].body).toMatch(/整理了/);
+    expect(editorial.signals.focus[0].body).not.toMatch(/本週確認/);
+    expect(editorial.faithfulness.ran_judge).toBe(true);
+  });
+
+  it('leaves SUPPORTED spans untouched', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: { focus: [{ body: 'keep me' }], predictions: [] },
+      ideation: {},
+    };
+    applyRepairs(
+      editorial,
+      {
+        attributionVerdicts: [
+          { path: 'signals.focus[0].body', span: 'keep me', verdict: 'SUPPORTED' },
+        ],
+      },
+      {},
+    );
+    expect(editorial.signals.focus[0].body).toBe('keep me');
+    expect(editorial.faithfulness.repaired).toBe(0);
   });
 });

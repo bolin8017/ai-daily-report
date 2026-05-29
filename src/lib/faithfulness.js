@@ -12,8 +12,18 @@
 import { idPrefix } from './merge.js';
 
 const MONTHS = {
-  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+  jan: '01',
+  feb: '02',
+  mar: '03',
+  apr: '04',
+  may: '05',
+  jun: '06',
+  jul: '07',
+  aug: '08',
+  sep: '09',
+  oct: '10',
+  nov: '11',
+  dec: '12',
 };
 
 function normalizeMonth(m) {
@@ -218,4 +228,191 @@ export function detectAttributionClaims(editorial, index) {
     }
   }
   return claims;
+}
+
+/**
+ * Build the one quote-first judge prompt for all named-author claims.
+ * @param {object[]} claims  from detectAttributionClaims
+ * @param {string} reportDate
+ * @returns {string}
+ */
+export function buildJudgePrompt(claims, reportDate) {
+  const blocks = claims
+    .map((c, i) => {
+      const sources = c.citedItems.length
+        ? c.citedItems
+            .map(
+              (s) =>
+                `  - source="${s.source ?? ''}" date=${s.date ?? '?'} takeaway="${s.takeaway ?? ''}"`,
+            )
+            .join('\n')
+        : '  - (NONE — the claim names an author not present in any cited source)';
+      return `Claim ${i} (report date ${reportDate}):\n  text: "${c.span}"\n  attributed author: ${c.author}\n  cited source(s):\n${sources}`;
+    })
+    .join('\n\n');
+
+  return `You are a strict faithfulness judge. For each claim below, decide ONLY whether the cited source(s) support the specific attribution to the named author. Use a quote-first method.
+
+For each claim, output an object:
+  - "index": the claim number
+  - "supporting_quote": a verbatim snippet from a cited takeaway that supports the claim, OR the literal string "NO_SUPPORTING_QUOTE"
+  - "verdict": "SUPPORTED" if the takeaway supports the attributed claim; "CONTRADICTED" if it says something incompatible; "NOT_ENOUGH_INFO" if the takeaway neither supports nor contradicts (incl. when there are no cited sources, or the author is not the source)
+  - "grounded_rewrite": for CONTRADICTED/NOT_ENOUGH_INFO, a Traditional-Chinese rewrite of the claim that asserts ONLY what the takeaway supports (drop unsupported specifics; if the author is not the cited source, remove the attribution). For SUPPORTED, repeat the original text.
+
+Output ONLY a JSON array, no prose.
+
+${blocks}`;
+}
+
+/**
+ * Parse the judge's JSON array back into verdicts joined to claims by index.
+ * Never throws — returns [] on any parse failure (never-abort).
+ * @returns {{path:string, author:string, span:string, verdict:string, supporting_quote:string, grounded_rewrite:string}[]}
+ */
+export function parseJudgeVerdicts(rawText, claims) {
+  if (typeof rawText !== 'string') return [];
+  const start = rawText.indexOf('[');
+  const end = rawText.lastIndexOf(']');
+  if (start === -1 || end <= start) return [];
+  let arr;
+  try {
+    arr = JSON.parse(rawText.slice(start, end + 1));
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const v of arr) {
+    const c = claims[v?.index];
+    if (!c || typeof v.verdict !== 'string') continue;
+    out.push({
+      path: c.path,
+      author: c.author,
+      span: c.span,
+      verdict: v.verdict,
+      supporting_quote:
+        typeof v.supporting_quote === 'string' ? v.supporting_quote : 'NO_SUPPORTING_QUOTE',
+      grounded_rewrite: typeof v.grounded_rewrite === 'string' ? v.grounded_rewrite : '',
+    });
+  }
+  return out;
+}
+
+function softenMarker(m) {
+  return /today|same/i.test(m) ? 'recently' : '近期';
+}
+
+function softenVerb(span) {
+  return span.replace(/確認|證實/g, '提到').replace(/confirmed/gi, 'noted');
+}
+
+// Path resolver for the prose fields collectProseFields emits.
+function locateField(editorial, path) {
+  if (path === 'lead.html') {
+    return {
+      get: () => editorial?.lead?.html,
+      set: (v) => {
+        editorial.lead.html = v;
+      },
+    };
+  }
+  const sig = path.match(/^signals\.focus\[(\d+)\]\.(body|mechanism)$/);
+  if (sig) {
+    const it = editorial?.signals?.focus?.[Number(sig[1])];
+    return it
+      ? {
+          get: () => it[sig[2]],
+          set: (v) => {
+            it[sig[2]] = v;
+          },
+        }
+      : null;
+  }
+  const single = path.match(/^signals\.(sleeper|contrarian)\.(body|mechanism)$/);
+  if (single) {
+    const it = editorial?.signals?.[single[1]];
+    return it
+      ? {
+          get: () => it[single[2]],
+          set: (v) => {
+            it[single[2]] = v;
+          },
+        }
+      : null;
+  }
+  const ide = path.match(/^ideation\.(general|work)\[(\d+)\]\.description$/);
+  if (ide) {
+    const it = editorial?.ideation?.[ide[1]]?.[Number(ide[2])];
+    return it
+      ? {
+          get: () => it.description,
+          set: (v) => {
+            it.description = v;
+          },
+        }
+      : null;
+  }
+  return null;
+}
+
+/**
+ * Apply deterministic temporal softening + attribution verdicts in place, and
+ * attach editorial.faithfulness audit. Never throws.
+ * @param {object} editorial  mutated in place
+ * @param {{temporalFlags?:object[], attributionVerdicts?:object[]}} repairs
+ * @param {{reportDate?:string, model?:string, ranJudge?:boolean}} meta
+ * @returns {{editorial:object, audit:object}}
+ */
+export function applyRepairs(
+  editorial,
+  { temporalFlags = [], attributionVerdicts = [] } = {},
+  meta = {},
+) {
+  const audit = {
+    checked: true,
+    model: meta.model ?? null,
+    ran_judge: !!meta.ranJudge,
+    report_date: meta.reportDate ?? null,
+    flagged: [],
+    repaired: 0,
+  };
+
+  for (const flag of temporalFlags) {
+    const field = locateField(editorial, flag.path);
+    const cur = field?.get();
+    if (field && typeof cur === 'string') {
+      const next = cur.replace(SAME_DAY_RE, (m) => softenMarker(m));
+      if (next !== cur) {
+        field.set(next);
+        audit.repaired++;
+      }
+    }
+    audit.flagged.push({
+      path: flag.path,
+      type: 'temporal',
+      marker: flag.marker,
+      ids: flag.offDate.map((x) => x.id),
+    });
+  }
+
+  for (const v of attributionVerdicts) {
+    audit.flagged.push({
+      path: v.path,
+      type: 'attribution',
+      author: v.author,
+      verdict: v.verdict,
+      quote: v.supporting_quote ?? null,
+    });
+    if (v.verdict === 'SUPPORTED') continue;
+    const field = locateField(editorial, v.path);
+    const cur = field?.get();
+    if (!field || typeof cur !== 'string' || !cur.includes(v.span)) continue;
+    const replacement =
+      v.verdict === 'CONTRADICTED' ? v.grounded_rewrite || softenVerb(v.span) : softenVerb(v.span);
+    field.set(cur.replace(v.span, replacement));
+    audit.repaired++;
+  }
+
+  editorial.faithfulness = audit;
+  return { editorial, audit };
 }
