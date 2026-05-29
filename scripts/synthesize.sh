@@ -149,21 +149,23 @@ if ! node -e "
   exit 2
 fi
 
-# Bound memory growth: drop resolved predictions whose resolution_date passed
-# more than HOT_DAYS ago. Pending / active bets are always kept. Stops the
-# prediction_updates echo (built from memory) from growing without limit —
-# the unbounded list is what made the synthesizer start dropping fields (see
-# src/lib/repair-editorial.js). Hygiene only — never fail the run over it.
+# Bound memory growth: (a) expire overdue, never-scored pending predictions to
+# unverifiable, (b) drop resolved predictions whose resolution_date passed more
+# than HOT_DAYS ago. The synthesizer has never resolved a prediction, so without
+# (a) the list — and the prediction_updates echo built from it — grows without
+# limit (the unbounded list caused the 2026-05-27 synthesis abort). Hygiene
+# only — never fail the run over it.
 node --input-type=module -e "
   import { readFile, writeFile } from 'node:fs/promises';
   import { pruneMemory } from './src/lib/prune-memory.js';
   try {
     const doc = JSON.parse(await readFile('data/memory.json', 'utf8'));
     const retainDays = Number(process.env.HOT_DAYS) || 60;
-    const s = pruneMemory(doc, { retainDays });
-    if (s.prunedPredictions > 0) {
+    const graceDays = Number(process.env.PREDICTION_GRACE_DAYS) || 30;
+    const s = pruneMemory(doc, { retainDays, graceDays });
+    if (s.prunedPredictions > 0 || s.expiredPending > 0) {
       await writeFile('data/memory.json', JSON.stringify(doc, null, 2));
-      console.error('[synthesize.sh] pruned memory: removed ' + s.prunedPredictions + ' resolved prediction(s) >' + retainDays + 'd past resolution; ' + s.keptPredictions + ' kept');
+      console.error('[synthesize.sh] pruned memory: expired ' + s.expiredPending + ' overdue pending; removed ' + s.prunedPredictions + ' resolved >' + retainDays + 'd past; ' + s.keptPredictions + ' kept');
     }
   } catch (e) {
     console.error('[synthesize.sh] memory prune skipped: ' + e.message);
