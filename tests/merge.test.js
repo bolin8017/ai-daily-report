@@ -2,7 +2,12 @@
 // curated section JSON into the final v2.1 report.
 
 import { describe, expect, it } from 'vitest';
-import { composeReport, extractIdSpace, findDanglingSourceLinks } from '../src/lib/merge.js';
+import {
+  composeReport,
+  extractIdSpace,
+  findDanglingSourceLinks,
+  idPrefix,
+} from '../src/lib/merge.js';
 
 // Minimal valid fixtures matching the live shape (just enough fields to pass
 // section schemas).
@@ -213,5 +218,12 @@ describe('composeReport', () => {
     });
     expect(report.ideation).toEqual(editorial.ideation);
     expect(report.signals).toEqual(editorial.signals);
+  });
+});
+
+describe('idPrefix', () => {
+  it('drops the :slug suffix, leaving the unique group.subgroup.index prefix', () => {
+    expect(idPrefix('shipped.trending.0:vllm-project/vllm')).toBe('shipped.trending.0');
+    expect(idPrefix('signals.focus.1')).toBe('signals.focus.1'); // no colon → unchanged
   });
 });
