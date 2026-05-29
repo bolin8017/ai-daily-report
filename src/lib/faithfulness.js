@@ -138,3 +138,32 @@ export function resolveFieldItems(field, { byPrefix, items }) {
     return (src.length >= 4 && text.includes(src)) || (title.length >= 6 && text.includes(title));
   });
 }
+
+const SAME_DAY_RE = /同天|同日|今日|今天|本日|same[-\s]?day|today/i;
+
+function dayDiff(a, b) {
+  const ms = Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`);
+  if (Number.isNaN(ms)) return Number.POSITIVE_INFINITY;
+  return Math.round(Math.abs(ms) / 86_400_000);
+}
+
+/**
+ * Flag prose that uses a same-day marker while citing a source whose recovered
+ * date is > toleranceDays from the report date. Conservative: the repair only
+ * softens 同天→近期 (never wrong), so over-flagging is the safe direction.
+ * @returns {{path:string, type:'temporal', marker:string, offDate:{id:string,date:string}[]}[]}
+ */
+export function detectTemporalFlags(editorial, index, { reportDate, toleranceDays = 1 } = {}) {
+  const flags = [];
+  for (const field of collectProseFields(editorial)) {
+    const marker = field.text.match(SAME_DAY_RE);
+    if (!marker) continue;
+    const offDate = resolveFieldItems(field, index)
+      .map((it) => ({ id: it.id, date: extractSourceDate(it.url) }))
+      .filter((x) => x.date && dayDiff(x.date, reportDate) > toleranceDays);
+    if (offDate.length > 0) {
+      flags.push({ path: field.path, type: 'temporal', marker: marker[0], offDate });
+    }
+  }
+  return flags;
+}

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCuratedIndex,
   collectProseFields,
+  detectTemporalFlags,
   extractSourceDate,
   resolveFieldItems,
 } from '../src/lib/faithfulness.js';
@@ -117,5 +118,40 @@ describe('resolveFieldItems', () => {
       idx,
     );
     expect(items.map((i) => i.id)).toContain('pulse.ai_bloggers.0:simonwillison-3a9f2e1b');
+  });
+});
+
+describe('detectTemporalFlags', () => {
+  const idx = buildCuratedIndex(CURATED);
+
+  it('flags the real 5/29 lead: "同天" + a source dated 2026-05-27 on a 2026-05-29 report', () => {
+    const editorial = {
+      lead: { html: '<p>Simon Willison 的 SQLite AGENTS.md 是同天出現的第三個訊號</p>' },
+      signals: { predictions: [] },
+      ideation: { general: [], work: [] },
+    };
+    const flags = detectTemporalFlags(editorial, idx, { reportDate: '2026-05-29', toleranceDays: 1 });
+    expect(flags).toHaveLength(1);
+    expect(flags[0].path).toBe('lead.html');
+    expect(flags[0].marker).toBe('同天');
+  });
+
+  it('does not flag when cited sources are within tolerance of the report date', () => {
+    const editorial = {
+      lead: { html: '<p>Simon Willison 同天</p>' },
+      signals: { predictions: [] },
+      ideation: { general: [], work: [] },
+    };
+    const flags = detectTemporalFlags(editorial, idx, { reportDate: '2026-05-27', toleranceDays: 1 });
+    expect(flags).toHaveLength(0);
+  });
+
+  it('does not flag prose with no same-day marker', () => {
+    const editorial = {
+      lead: { html: '<p>Simon Willison 近期發表</p>' },
+      signals: { predictions: [] },
+      ideation: { general: [], work: [] },
+    };
+    expect(detectTemporalFlags(editorial, idx, { reportDate: '2026-05-29' })).toHaveLength(0);
   });
 });
