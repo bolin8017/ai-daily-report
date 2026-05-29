@@ -7,7 +7,11 @@
 //
 // Retention policy is deliberately conservative — it never drops anything
 // still "live":
-//   - keep ALL `pending` predictions (active bets, regardless of age)
+//   - keep `pending` predictions that are not yet past graceDays (active bets)
+//   - expire overdue pending (resolution_date > graceDays past) to
+//     `unverifiable` + stamp `auto_expired`, then age out via the drop rule —
+//     the synthesizer has a 0% historical resolution rate, so without this
+//     pending accumulates forever and the resolved-drop never fires
 //   - keep anything without a parseable `resolution_date`
 //   - keep recently-resolved predictions (resolution_date within retainDays)
 //   - drop ONLY predictions that are resolved (resolved-yes/-no/unverifiable)
@@ -27,20 +31,36 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *                                    matching the report hot window)
  * @returns {{prunedPredictions: number, keptPredictions: number}}
  */
-export function pruneMemory(memory, { today = new Date(), retainDays = 60 } = {}) {
-  const stats = { prunedPredictions: 0, keptPredictions: 0 };
+export function pruneMemory(memory, { today = new Date(), retainDays = 60, graceDays = 30 } = {}) {
+  const stats = { prunedPredictions: 0, keptPredictions: 0, expiredPending: 0 };
 
   const preds = memory?.predictions;
   if (!Array.isArray(preds)) return stats;
 
-  const cutoffMs = today.getTime() - retainDays * DAY_MS;
+  const nowMs = today.getTime();
+  const graceCutoffMs = nowMs - graceDays * DAY_MS;
+  const retainCutoffMs = nowMs - retainDays * DAY_MS;
   const kept = [];
   for (const p of preds) {
     if (p && typeof p === 'object') {
+      // Expiry: an overdue, never-scored pending bet becomes unverifiable so it
+      // can age out — the synthesizer has never resolved one, so without this
+      // pending accumulates without bound (the bloat behind the 2026-05-27 abort).
+      if (p.status === 'pending') {
+        const rdMs =
+          typeof p.resolution_date === 'string' ? Date.parse(p.resolution_date) : Number.NaN;
+        if (!Number.isNaN(rdMs) && rdMs < graceCutoffMs) {
+          p.status = 'unverifiable';
+          p.auto_expired = true;
+          stats.expiredPending++;
+        }
+      }
+
+      // Drop: resolved (incl. just-expired) AND resolution_date > retainDays past.
       const resolved = typeof p.status === 'string' && RESOLVED.has(p.status);
       const rdMs =
         typeof p.resolution_date === 'string' ? Date.parse(p.resolution_date) : Number.NaN;
-      if (resolved && !Number.isNaN(rdMs) && rdMs < cutoffMs) {
+      if (resolved && !Number.isNaN(rdMs) && rdMs < retainCutoffMs) {
         stats.prunedPredictions++;
         continue;
       }

@@ -24,14 +24,16 @@ describe('pruneMemory', () => {
     expect(m.predictions).toHaveLength(0);
   });
 
-  it('keeps all pending predictions regardless of age', () => {
+  it('keeps pending predictions that are not yet past graceDays', () => {
     const m = mem([
       { id: 'p-future', text: 't', status: 'pending', resolution_date: '2026-12-31' },
-      { id: 'p-overdue', text: 't', status: 'pending', resolution_date: '2025-01-01' },
+      { id: 'p-recent', text: 't', status: 'pending', resolution_date: '2026-05-20' }, // 7d before TODAY, within grace 30
+      { id: 'p-undated', text: 't', status: 'pending' }, // no resolution_date → never expired
     ]);
-    const stats = pruneMemory(m, { today: TODAY, retainDays: 60 });
+    const stats = pruneMemory(m, { today: TODAY, retainDays: 60, graceDays: 30 });
     expect(stats.prunedPredictions).toBe(0);
-    expect(m.predictions).toHaveLength(2);
+    expect(stats.expiredPending).toBe(0);
+    expect(m.predictions).toHaveLength(3);
   });
 
   it('keeps recently-resolved predictions (within retainDays)', () => {
@@ -82,5 +84,47 @@ describe('pruneMemory', () => {
     const stats = pruneMemory(m, { today: TODAY });
     expect(stats.prunedPredictions).toBe(0);
     expect(m.predictions).toHaveLength(3); // junk kept, not our job to drop
+  });
+
+  it('expires overdue pending to unverifiable and keeps it (past grace, within retain)', () => {
+    // 2026-04-15 is 42 days before TODAY (2026-05-27): past grace(30) so expired,
+    // but within retain(60) so NOT yet dropped — the flip-but-keep path.
+    const m = mem([
+      { id: 'overdue', text: 't', status: 'pending', resolution_date: '2026-04-15' },
+      { id: 'future', text: 't', status: 'pending', resolution_date: '2026-12-31' },
+    ]);
+    const stats = pruneMemory(m, { today: TODAY, retainDays: 60, graceDays: 30 });
+    expect(stats.expiredPending).toBe(1);
+    expect(stats.prunedPredictions).toBe(0);
+    const overdue = m.predictions.find((p) => p.id === 'overdue');
+    expect(overdue.status).toBe('unverifiable');
+    expect(overdue.auto_expired).toBe(true);
+    const future = m.predictions.find((p) => p.id === 'future');
+    expect(future.status).toBe('pending');
+  });
+
+  it('expired-then-old pending is dropped in the same pass once past retainDays', () => {
+    // overdue (grace) AND resolution_date > retainDays past → flipped then dropped same call
+    const m = mem([{ id: 'ancient', text: 't', status: 'pending', resolution_date: '2026-01-01' }]);
+    const stats = pruneMemory(m, { today: TODAY, retainDays: 60, graceDays: 30 });
+    expect(stats.expiredPending).toBe(1);
+    expect(stats.prunedPredictions).toBe(1);
+    expect(m.predictions).toHaveLength(0);
+  });
+
+  it('does not expire pending that is overdue by less than graceDays', () => {
+    // resolution_date 2026-05-20 is 7 days before TODAY; grace=30 → still within grace
+    const m = mem([
+      { id: 'recent-overdue', text: 't', status: 'pending', resolution_date: '2026-05-20' },
+    ]);
+    const stats = pruneMemory(m, { today: TODAY, retainDays: 60, graceDays: 30 });
+    expect(stats.expiredPending).toBe(0);
+    expect(m.predictions[0].status).toBe('pending');
+  });
+
+  it('defaults graceDays to 30 when not provided', () => {
+    const m = mem([{ id: 'overdue', text: 't', status: 'pending', resolution_date: '2026-03-01' }]);
+    const stats = pruneMemory(m, { today: TODAY, retainDays: 60 });
+    expect(stats.expiredPending).toBe(1);
   });
 });
