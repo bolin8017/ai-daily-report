@@ -60,6 +60,21 @@ export function extractSourceDate(url) {
 }
 
 /**
+ * Resolve a source's publish date: the sidecar (url→date, built in collect.js
+ * from raw feed items) first — it covers URLs the path-regex can't date — then
+ * the URL-path regex fallback.
+ * @param {string} url
+ * @param {Record<string, string>} [sidecar]
+ * @returns {string|null}
+ */
+export function resolveSourceDate(url, sidecar = {}) {
+  if (typeof url === 'string' && sidecar && typeof sidecar[url] === 'string') {
+    return sidecar[url];
+  }
+  return extractSourceDate(url);
+}
+
+/**
  * Index curated items by id-prefix (same resolution as merge's dangling check)
  * and keep a flat list for the lead's entity-match path.
  * @param {object} curated  { shipped:{...}, pulse:{...}, market:{...}, tech:{...} }
@@ -163,13 +178,17 @@ function dayDiff(a, b) {
  * softens 同天→近期 (never wrong), so over-flagging is the safe direction.
  * @returns {{path:string, type:'temporal', marker:string, offDate:{id:string,date:string}[]}[]}
  */
-export function detectTemporalFlags(editorial, index, { reportDate, toleranceDays = 1 } = {}) {
+export function detectTemporalFlags(
+  editorial,
+  index,
+  { reportDate, toleranceDays = 1, sidecar = {} } = {},
+) {
   const flags = [];
   for (const field of collectProseFields(editorial)) {
     const marker = field.text.match(SAME_DAY_RE);
     if (!marker) continue;
     const offDate = resolveFieldItems(field, index)
-      .map((it) => ({ id: it.id, date: extractSourceDate(it.url) }))
+      .map((it) => ({ id: it.id, date: resolveSourceDate(it.url, sidecar) }))
       .filter((x) => x.date && dayDiff(x.date, reportDate) > toleranceDays);
     if (offDate.length > 0) {
       flags.push({ path: field.path, type: 'temporal', marker: marker[0], offDate });
@@ -207,7 +226,7 @@ function mentionsAuthor(item, author) {
  * flag — the repair de-names it.
  * @returns {{path:string, author:string, span:string, citedItems:object[]}[]}
  */
-export function detectAttributionClaims(editorial, index) {
+export function detectAttributionClaims(editorial, index, { sidecar = {} } = {}) {
   const claims = [];
   for (const field of collectProseFields(editorial)) {
     if (!CLAIM_VERB_RE.test(field.text)) continue;
@@ -222,7 +241,7 @@ export function detectAttributionClaims(editorial, index) {
           title: it.title,
           takeaway: it.takeaway,
           source: it.source,
-          date: extractSourceDate(it.url),
+          date: resolveSourceDate(it.url, sidecar),
         }));
       claims.push({ path: field.path, author, span, citedItems });
     }
