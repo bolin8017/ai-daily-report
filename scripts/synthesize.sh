@@ -43,6 +43,17 @@ for sec in shipped pulse; do
   fi
 done
 
+# Derive per-source age (days before today) from the PR1 sidecar, so the
+# synthesizer looks recency up rather than computing dates (LLMs are unreliable
+# at date arithmetic). Never fails the run.
+node --input-type=module -e "
+  import { readFile, writeFile } from 'node:fs/promises';
+  import { computeAges } from './src/lib/source-dates.js';
+  let dates = {};
+  try { dates = JSON.parse(await readFile('${STAGING_DIR}/source-dates.json', 'utf8')); } catch {}
+  await writeFile('${STAGING_DIR}/source-ages.json', JSON.stringify(computeAges(dates, '${TODAY}'), null, 2));
+" || echo '[synthesize.sh] source-ages derivation skipped (non-fatal)' >&2
+
 PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
 # Assemble synthesizer prompt + quality slop rules + explicit "Execute
 # now" imperative. The synthesizer writes only the editorial layer
@@ -90,6 +101,9 @@ EOF
 
 echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
 
+# NB: extended thinking stays OFF for this synthesis call — reasoning mode
+# raises hallucination on source-faithful summarization. (The Stage 3.5 judge
+# call may use it; synthesis must not.)
 (
   claude -p \
     --model "$MODEL" \
