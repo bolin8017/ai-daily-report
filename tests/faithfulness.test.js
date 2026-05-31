@@ -355,7 +355,10 @@ describe('applyRepairs', () => {
         focus: [{ body: 'Hamel Husain 的論文說明：沒有人能靠 benchmark 證實自己選對了模型。' }],
         predictions: [],
       },
-      ideation: { general: [{ description: '每次跑到一半要手動確認「要改這個檔案嗎」。' }], work: [] },
+      ideation: {
+        general: [{ description: '每次跑到一半要手動確認「要改這個檔案嗎」。' }],
+        work: [],
+      },
     };
     const { audit } = applyRepairs(
       editorial,
