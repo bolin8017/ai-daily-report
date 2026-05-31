@@ -343,8 +343,16 @@ function softenMarker(m) {
   return /today|same/i.test(m) ? 'recently' : '近期';
 }
 
-function softenVerb(span) {
-  return span.replace(/確認|證實/g, '提到').replace(/confirmed/gi, 'noted');
+// Cheap guard against an obviously broken grounded rewrite (judge returned a
+// stub or a fragment that ends mid-clause). Not a grammar check — it only
+// rejects deterministically-detectable failure shapes; on reject, applyRepairs
+// keeps the original span untouched.
+function isCoherentAfterEdit(replacement, original) {
+  if (typeof replacement !== 'string') return false;
+  const t = replacement.trim();
+  if (t.length < Math.min(8, original.length)) return false; // collapsed to a stub
+  if (/[，、：；「（,(:]\s*$/.test(t)) return false; // ends on a dangling connective/bracket
+  return true;
 }
 
 // Path resolver for the prose fields collectProseFields emits.
@@ -444,13 +452,21 @@ export function applyRepairs(
       verdict: v.verdict,
       quote: v.supporting_quote ?? null,
     });
-    if (v.verdict === 'SUPPORTED') continue;
+    // Confidence-gated repair: ONLY a CONTRADICTED verdict (positive
+    // contradiction evidence + a concrete grounded rewrite) may mutate published
+    // prose. NOT_ENOUGH_INFO (absence of evidence, low judge confidence) is
+    // flag-and-log only — never touch the prose. This is the safeguard against
+    // the 5/31 regressions where softening a weak flag mangled correct
+    // sentences. The judge ceiling on hard cases is ~69%, so a wrong mutation
+    // costs more than skipping a low-confidence flag.
+    if (v.verdict !== 'CONTRADICTED') continue;
+    const rewrite = typeof v.grounded_rewrite === 'string' ? v.grounded_rewrite.trim() : '';
+    if (!rewrite) continue; // CONTRADICTED but no usable rewrite → flag only
     const field = locateField(editorial, v.path);
     const cur = field?.get();
     if (!field || typeof cur !== 'string' || !cur.includes(v.span)) continue;
-    const replacement =
-      v.verdict === 'CONTRADICTED' ? v.grounded_rewrite || softenVerb(v.span) : softenVerb(v.span);
-    field.set(cur.replace(v.span, replacement));
+    if (!isCoherentAfterEdit(rewrite, v.span)) continue; // coherence gate → keep original
+    field.set(cur.replace(v.span, rewrite));
     audit.repaired++;
   }
 
