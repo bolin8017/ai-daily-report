@@ -32,3 +32,21 @@ export function buildSourceDateMap(feedSources) {
   }
   return map;
 }
+
+/**
+ * Derive url→age_days (today − publish date) so the synthesizer never does date
+ * arithmetic (LLMs are unreliable at it). Skips unparseable dates.
+ * @param {Record<string, string>} dateMap  url → 'YYYY-MM-DD'
+ * @param {string} todayIso  'YYYY-MM-DD'
+ * @returns {Record<string, number>}  url → integer age in days
+ */
+export function computeAges(dateMap = {}, todayIso) {
+  const today = Date.parse(`${todayIso}T00:00:00Z`);
+  const ages = {};
+  if (Number.isNaN(today)) return ages;
+  for (const [url, date] of Object.entries(dateMap)) {
+    const t = Date.parse(`${date}T00:00:00Z`);
+    if (!Number.isNaN(t)) ages[url] = Math.round((today - t) / 86_400_000);
+  }
+  return ages;
+}
