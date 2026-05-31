@@ -205,6 +205,21 @@ const CLAIM_VERB_RE = /確認|證實|表示|指出|宣布|認為|confirmed|state
 // Latin author name = two Capitalized tokens (Sebastian Raschka, Simon Willison…)
 const NAME_RE = /[A-Z][a-z]+ [A-Z][a-z]+/g;
 
+// Capitalized bigrams that are products / orgs / publications — they cannot
+// "say" things, so an attribution verb near one is not a personal claim. Seeded
+// from real false positives; tune from the editorial.faithfulness audit log.
+const NON_PERSON_BIGRAMS = new Set([
+  'Claude Code',
+  'VAST Data',
+  'SK Hynix',
+  'Latent Space',
+  'Hugging Face',
+  'DeepSeek V4',
+  'Compound Engineering',
+  'Agent Skills',
+  'Series B',
+]);
+
 function extractSentence(text, needle) {
   const clean = text.replace(/<[^>]+>/g, ' ');
   const parts = clean.split(/(?<=[。！？!?\n])/);
@@ -236,6 +251,7 @@ export function detectAttributionClaims(editorial, index, { sidecar = {} } = {})
     if (!CLAIM_VERB_RE.test(field.text)) continue;
     const names = [...new Set(field.text.match(NAME_RE) ?? [])];
     for (const author of names) {
+      if (NON_PERSON_BIGRAMS.has(author)) continue;
       const span = extractSentence(field.text, author);
       if (!CLAIM_VERB_RE.test(span)) continue; // verb must be in the same sentence
       const citedItems = resolveFieldItems(field, index)
