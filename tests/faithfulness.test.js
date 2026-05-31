@@ -459,3 +459,52 @@ describe('week-scale temporal markers', () => {
     expect(detectTemporalFlags(base('一個 plugin 同時支援三個編輯器'), idx, opts)).toHaveLength(0);
   });
 });
+
+describe('attribution stop-list (non-person bigrams)', () => {
+  it('does NOT flag "Claude Code" as a claim-maker despite a nearby 確認 (5/31 false positive)', () => {
+    const curated = {
+      shipped: {
+        trending: [
+          {
+            id: 'shipped.trending.1:anthropics/claude-code',
+            name: 'claude-code',
+            url: 'https://github.com/anthropics/claude-code',
+          },
+        ],
+      },
+    };
+    const idx = buildCuratedIndex(curated);
+    const editorial = {
+      lead: { html: '' },
+      signals: { focus: [], predictions: [] },
+      ideation: {
+        general: [
+          {
+            description: '你在用 Claude Code 重構，每次跑到一半要手動確認「要改這個檔案嗎」。',
+            source_links: ['shipped.trending.1:anthropics/claude-code'],
+          },
+        ],
+        work: [],
+      },
+    };
+    expect(detectAttributionClaims(editorial, idx)).toHaveLength(0);
+  });
+
+  it('still flags a real person (Sebastian Raschka) with a claim verb', () => {
+    const idx = buildCuratedIndex(CURATED);
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [
+          {
+            body: 'Sebastian Raschka 本週確認 GQA 已量產。',
+            source_links: ['pulse.ai_bloggers.3:sebastianraschka-5a2d1f8c'],
+          },
+        ],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    };
+    expect(detectAttributionClaims(editorial, idx)).toHaveLength(1);
+  });
+});
