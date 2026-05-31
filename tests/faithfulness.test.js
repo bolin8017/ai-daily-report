@@ -347,6 +347,67 @@ describe('applyRepairs', () => {
     expect(editorial.signals.focus[0].body).toBe('keep me');
     expect(editorial.faithfulness.repaired).toBe(0);
   });
+
+  it('does NOT mutate prose for NOT_ENOUGH_INFO (flag-and-log only) — 5/31 regression', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [{ body: 'Hamel Husain 的論文說明：沒有人能靠 benchmark 證實自己選對了模型。' }],
+        predictions: [],
+      },
+      ideation: { general: [{ description: '每次跑到一半要手動確認「要改這個檔案嗎」。' }], work: [] },
+    };
+    const { audit } = applyRepairs(
+      editorial,
+      {
+        attributionVerdicts: [
+          {
+            path: 'signals.focus[0].body',
+            author: 'Hamel Husain',
+            span: 'Hamel Husain 的論文說明：沒有人能靠 benchmark 證實自己選對了模型。',
+            verdict: 'NOT_ENOUGH_INFO',
+            grounded_rewrite: '',
+          },
+          {
+            path: 'ideation.general[0].description',
+            author: 'Claude Code',
+            span: '每次跑到一半要手動確認「要改這個檔案嗎」。',
+            verdict: 'NOT_ENOUGH_INFO',
+            grounded_rewrite: '',
+          },
+        ],
+      },
+      { reportDate: '2026-05-31' },
+    );
+    expect(editorial.signals.focus[0].body).toContain('證實'); // never clobbered to 提到
+    expect(editorial.ideation.general[0].description).toContain('手動確認'); // untouched
+    expect(audit.flagged[0].verdict).toBe('NOT_ENOUGH_INFO'); // still logged
+    expect(audit.repaired).toBe(0); // honest: flagged, not repaired
+  });
+
+  it('rejects an incoherent grounded_rewrite via the coherence gate and keeps the original', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: { focus: [{ body: 'Sebastian Raschka 確認 GQA 已量產。' }], predictions: [] },
+      ideation: {},
+    };
+    const { audit } = applyRepairs(
+      editorial,
+      {
+        attributionVerdicts: [
+          {
+            path: 'signals.focus[0].body',
+            span: 'Sebastian Raschka 確認 GQA 已量產。',
+            verdict: 'CONTRADICTED',
+            grounded_rewrite: 'Raschka 整理，', // dangling — ends on a comma
+          },
+        ],
+      },
+      {},
+    );
+    expect(editorial.signals.focus[0].body).toBe('Sebastian Raschka 確認 GQA 已量產。');
+    expect(audit.repaired).toBe(0);
+  });
 });
 
 describe('resolveSourceDate', () => {
