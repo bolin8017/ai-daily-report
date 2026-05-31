@@ -42,9 +42,11 @@ node --input-type=module -e "
       try { curated[sec] = JSON.parse(await readFile('$CURATED_DIR/' + f, 'utf8')); } catch {}
     }
   }
+  let sidecar = {};
+  try { sidecar = JSON.parse(await readFile('$STAGING_DIR/source-dates.json', 'utf8')); } catch {}
   const index = buildCuratedIndex(curated);
-  const temporalFlags = detectTemporalFlags(editorial, index, { reportDate: '$TODAY', toleranceDays: Number('$TOL') });
-  const claims = detectAttributionClaims(editorial, index);
+  const temporalFlags = detectTemporalFlags(editorial, index, { reportDate: '$TODAY', toleranceDays: Number('$TOL'), sidecar });
+  const claims = detectAttributionClaims(editorial, index, { sidecar });
   await writeFile('$CLAIMS_FILE', JSON.stringify({ temporalFlags, claims }, null, 2));
   if (claims.length > 0) {
     await writeFile('$PROMPT_FILE', buildJudgePrompt(claims, '$TODAY'));
