@@ -405,3 +405,57 @@ describe('detectTemporalFlags with sidecar (undateable URLs)', () => {
     expect(flags).toHaveLength(0);
   });
 });
+
+describe('week-scale temporal markers', () => {
+  const curated = {
+    pulse: {
+      ai_bloggers: [
+        {
+          id: 'pulse.ai_bloggers.0:sebastianraschka-kv',
+          source: 'Sebastian Raschka',
+          title: 'Recent Developments',
+          url: 'https://magazine.sebastianraschka.com/p/x',
+        },
+      ],
+    },
+  };
+  const idx = buildCuratedIndex(curated);
+  const sidecar = { 'https://magazine.sebastianraschka.com/p/x': '2026-05-16' };
+
+  it('flags 同一週 when a cited source is >7 days stale', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [
+          {
+            body: '三個廠商同一週對 KV cache 給出解法',
+            source_links: ['pulse.ai_bloggers.0:sebastianraschka-kv'],
+          },
+        ],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    };
+    const flags = detectTemporalFlags(editorial, idx, {
+      reportDate: '2026-05-31',
+      toleranceDays: 1,
+      sidecar,
+    });
+    expect(flags).toHaveLength(1);
+    expect(flags[0].marker).toMatch(/同一?週/);
+  });
+
+  it('flags 同時 only before a publish verb (同時發布), not 同時支援', () => {
+    const base = (body) => ({
+      lead: { html: '' },
+      signals: {
+        focus: [{ body, source_links: ['pulse.ai_bloggers.0:sebastianraschka-kv'] }],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    });
+    const opts = { reportDate: '2026-05-31', toleranceDays: 1, sidecar };
+    expect(detectTemporalFlags(base('Raschka 同時發布架構綜述'), idx, opts)).toHaveLength(1);
+    expect(detectTemporalFlags(base('一個 plugin 同時支援三個編輯器'), idx, opts)).toHaveLength(0);
+  });
+});
