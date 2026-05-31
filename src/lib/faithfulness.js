@@ -164,7 +164,11 @@ export function resolveFieldItems(field, { byPrefix, items }) {
   });
 }
 
-const SAME_DAY_RE = /同天|同日|今日|今天|本日|same[-\s]?day|today/i;
+// Same-day AND week-scale convergence markers. 同時 only counts before a
+// publish verb (發/推/宣/揭) so "同時發布" matches but "同時支援" (concurrent
+// capability, not temporal convergence) does not.
+const SAME_DAY_RE =
+  /同天|同日|今日|今天|本日|同一?週|本週|這週|同時(?=發|推|宣|揭)|same[-\s]?day|same[-\s]?week|today|this week/i;
 
 function dayDiff(a, b) {
   const ms = Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`);
@@ -201,6 +205,21 @@ const CLAIM_VERB_RE = /確認|證實|表示|指出|宣布|認為|confirmed|state
 // Latin author name = two Capitalized tokens (Sebastian Raschka, Simon Willison…)
 const NAME_RE = /[A-Z][a-z]+ [A-Z][a-z]+/g;
 
+// Capitalized bigrams that are products / orgs / publications — they cannot
+// "say" things, so an attribution verb near one is not a personal claim. Seeded
+// from real false positives; tune from the editorial.faithfulness audit log.
+const NON_PERSON_BIGRAMS = new Set([
+  'Claude Code',
+  'VAST Data',
+  'SK Hynix',
+  'Latent Space',
+  'Hugging Face',
+  'DeepSeek V4',
+  'Compound Engineering',
+  'Agent Skills',
+  'Series B',
+]);
+
 function extractSentence(text, needle) {
   const clean = text.replace(/<[^>]+>/g, ' ');
   const parts = clean.split(/(?<=[。！？!?\n])/);
@@ -232,6 +251,7 @@ export function detectAttributionClaims(editorial, index, { sidecar = {} } = {})
     if (!CLAIM_VERB_RE.test(field.text)) continue;
     const names = [...new Set(field.text.match(NAME_RE) ?? [])];
     for (const author of names) {
+      if (NON_PERSON_BIGRAMS.has(author)) continue;
       const span = extractSentence(field.text, author);
       if (!CLAIM_VERB_RE.test(span)) continue; // verb must be in the same sentence
       const citedItems = resolveFieldItems(field, index)
@@ -271,6 +291,8 @@ export function buildJudgePrompt(claims, reportDate) {
     .join('\n\n');
 
   return `You are a strict faithfulness judge. For each claim below, decide ONLY whether the cited source(s) support the specific attribution to the named author. Use a quote-first method.
+
+Treat author/source attribution strictly: when the claim says a named person or organization said / confirmed / announced something, the verdict is SUPPORTED only if a cited takeaway explicitly names that exact entity making that claim; otherwise CONTRADICTED (if the takeaway says something incompatible) or NOT_ENOUGH_INFO.
 
 For each claim, output an object:
   - "index": the claim number
@@ -321,8 +343,16 @@ function softenMarker(m) {
   return /today|same/i.test(m) ? 'recently' : '近期';
 }
 
-function softenVerb(span) {
-  return span.replace(/確認|證實/g, '提到').replace(/confirmed/gi, 'noted');
+// Cheap guard against an obviously broken grounded rewrite (judge returned a
+// stub or a fragment that ends mid-clause). Not a grammar check — it only
+// rejects deterministically-detectable failure shapes; on reject, applyRepairs
+// keeps the original span untouched.
+function isCoherentAfterEdit(replacement, original) {
+  if (typeof replacement !== 'string') return false;
+  const t = replacement.trim();
+  if (t.length < Math.min(8, original.length)) return false; // collapsed to a stub
+  if (/[，、：；「（,(:]\s*$/.test(t)) return false; // ends on a dangling connective/bracket
+  return true;
 }
 
 // Path resolver for the prose fields collectProseFields emits.
@@ -422,13 +452,21 @@ export function applyRepairs(
       verdict: v.verdict,
       quote: v.supporting_quote ?? null,
     });
-    if (v.verdict === 'SUPPORTED') continue;
+    // Confidence-gated repair: ONLY a CONTRADICTED verdict (positive
+    // contradiction evidence + a concrete grounded rewrite) may mutate published
+    // prose. NOT_ENOUGH_INFO (absence of evidence, low judge confidence) is
+    // flag-and-log only — never touch the prose. This is the safeguard against
+    // the 5/31 regressions where softening a weak flag mangled correct
+    // sentences. The judge ceiling on hard cases is ~69%, so a wrong mutation
+    // costs more than skipping a low-confidence flag.
+    if (v.verdict !== 'CONTRADICTED') continue;
+    const rewrite = typeof v.grounded_rewrite === 'string' ? v.grounded_rewrite.trim() : '';
+    if (!rewrite) continue; // CONTRADICTED but no usable rewrite → flag only
     const field = locateField(editorial, v.path);
     const cur = field?.get();
     if (!field || typeof cur !== 'string' || !cur.includes(v.span)) continue;
-    const replacement =
-      v.verdict === 'CONTRADICTED' ? v.grounded_rewrite || softenVerb(v.span) : softenVerb(v.span);
-    field.set(cur.replace(v.span, replacement));
+    if (!isCoherentAfterEdit(rewrite, v.span)) continue; // coherence gate → keep original
+    field.set(cur.replace(v.span, rewrite));
     audit.repaired++;
   }
 

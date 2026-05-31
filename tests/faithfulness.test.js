@@ -252,6 +252,12 @@ describe('buildJudgePrompt / parseJudgeVerdicts', () => {
     expect(p).toMatch(/KV-cache variants/);
   });
 
+  it('instructs the judge to treat author attribution strictly', () => {
+    const p = buildJudgePrompt(claims, '2026-05-29');
+    expect(p).toMatch(/attribut/i);
+    expect(p).toMatch(/names that exact|exact (person|entity)/i);
+  });
+
   it('parses the judge JSON back into verdicts joined to claims by index', () => {
     const raw =
       'noise before [{"index":0,"verdict":"CONTRADICTED","supporting_quote":"NO_SUPPORTING_QUOTE","grounded_rewrite":"Sebastian Raschka 整理了 KV-cache 變體作為推論最佳化方向。"}] noise after';
@@ -341,6 +347,70 @@ describe('applyRepairs', () => {
     expect(editorial.signals.focus[0].body).toBe('keep me');
     expect(editorial.faithfulness.repaired).toBe(0);
   });
+
+  it('does NOT mutate prose for NOT_ENOUGH_INFO (flag-and-log only) — 5/31 regression', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [{ body: 'Hamel Husain 的論文說明：沒有人能靠 benchmark 證實自己選對了模型。' }],
+        predictions: [],
+      },
+      ideation: {
+        general: [{ description: '每次跑到一半要手動確認「要改這個檔案嗎」。' }],
+        work: [],
+      },
+    };
+    const { audit } = applyRepairs(
+      editorial,
+      {
+        attributionVerdicts: [
+          {
+            path: 'signals.focus[0].body',
+            author: 'Hamel Husain',
+            span: 'Hamel Husain 的論文說明：沒有人能靠 benchmark 證實自己選對了模型。',
+            verdict: 'NOT_ENOUGH_INFO',
+            grounded_rewrite: '',
+          },
+          {
+            path: 'ideation.general[0].description',
+            author: 'Claude Code',
+            span: '每次跑到一半要手動確認「要改這個檔案嗎」。',
+            verdict: 'NOT_ENOUGH_INFO',
+            grounded_rewrite: '',
+          },
+        ],
+      },
+      { reportDate: '2026-05-31' },
+    );
+    expect(editorial.signals.focus[0].body).toContain('證實'); // never clobbered to 提到
+    expect(editorial.ideation.general[0].description).toContain('手動確認'); // untouched
+    expect(audit.flagged[0].verdict).toBe('NOT_ENOUGH_INFO'); // still logged
+    expect(audit.repaired).toBe(0); // honest: flagged, not repaired
+  });
+
+  it('rejects an incoherent grounded_rewrite via the coherence gate and keeps the original', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: { focus: [{ body: 'Sebastian Raschka 確認 GQA 已量產。' }], predictions: [] },
+      ideation: {},
+    };
+    const { audit } = applyRepairs(
+      editorial,
+      {
+        attributionVerdicts: [
+          {
+            path: 'signals.focus[0].body',
+            span: 'Sebastian Raschka 確認 GQA 已量產。',
+            verdict: 'CONTRADICTED',
+            grounded_rewrite: 'Raschka 整理，', // dangling — ends on a comma
+          },
+        ],
+      },
+      {},
+    );
+    expect(editorial.signals.focus[0].body).toBe('Sebastian Raschka 確認 GQA 已量產。');
+    expect(audit.repaired).toBe(0);
+  });
 });
 
 describe('resolveSourceDate', () => {
@@ -403,5 +473,108 @@ describe('detectTemporalFlags with sidecar (undateable URLs)', () => {
       toleranceDays: 1,
     });
     expect(flags).toHaveLength(0);
+  });
+});
+
+describe('week-scale temporal markers', () => {
+  const curated = {
+    pulse: {
+      ai_bloggers: [
+        {
+          id: 'pulse.ai_bloggers.0:sebastianraschka-kv',
+          source: 'Sebastian Raschka',
+          title: 'Recent Developments',
+          url: 'https://magazine.sebastianraschka.com/p/x',
+        },
+      ],
+    },
+  };
+  const idx = buildCuratedIndex(curated);
+  const sidecar = { 'https://magazine.sebastianraschka.com/p/x': '2026-05-16' };
+
+  it('flags 同一週 when a cited source is >7 days stale', () => {
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [
+          {
+            body: '三個廠商同一週對 KV cache 給出解法',
+            source_links: ['pulse.ai_bloggers.0:sebastianraschka-kv'],
+          },
+        ],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    };
+    const flags = detectTemporalFlags(editorial, idx, {
+      reportDate: '2026-05-31',
+      toleranceDays: 1,
+      sidecar,
+    });
+    expect(flags).toHaveLength(1);
+    expect(flags[0].marker).toMatch(/同一?週/);
+  });
+
+  it('flags 同時 only before a publish verb (同時發布), not 同時支援', () => {
+    const base = (body) => ({
+      lead: { html: '' },
+      signals: {
+        focus: [{ body, source_links: ['pulse.ai_bloggers.0:sebastianraschka-kv'] }],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    });
+    const opts = { reportDate: '2026-05-31', toleranceDays: 1, sidecar };
+    expect(detectTemporalFlags(base('Raschka 同時發布架構綜述'), idx, opts)).toHaveLength(1);
+    expect(detectTemporalFlags(base('一個 plugin 同時支援三個編輯器'), idx, opts)).toHaveLength(0);
+  });
+});
+
+describe('attribution stop-list (non-person bigrams)', () => {
+  it('does NOT flag "Claude Code" as a claim-maker despite a nearby 確認 (5/31 false positive)', () => {
+    const curated = {
+      shipped: {
+        trending: [
+          {
+            id: 'shipped.trending.1:anthropics/claude-code',
+            name: 'claude-code',
+            url: 'https://github.com/anthropics/claude-code',
+          },
+        ],
+      },
+    };
+    const idx = buildCuratedIndex(curated);
+    const editorial = {
+      lead: { html: '' },
+      signals: { focus: [], predictions: [] },
+      ideation: {
+        general: [
+          {
+            description: '你在用 Claude Code 重構，每次跑到一半要手動確認「要改這個檔案嗎」。',
+            source_links: ['shipped.trending.1:anthropics/claude-code'],
+          },
+        ],
+        work: [],
+      },
+    };
+    expect(detectAttributionClaims(editorial, idx)).toHaveLength(0);
+  });
+
+  it('still flags a real person (Sebastian Raschka) with a claim verb', () => {
+    const idx = buildCuratedIndex(CURATED);
+    const editorial = {
+      lead: { html: '' },
+      signals: {
+        focus: [
+          {
+            body: 'Sebastian Raschka 本週確認 GQA 已量產。',
+            source_links: ['pulse.ai_bloggers.3:sebastianraschka-5a2d1f8c'],
+          },
+        ],
+        predictions: [],
+      },
+      ideation: { general: [], work: [] },
+    };
+    expect(detectAttributionClaims(editorial, idx)).toHaveLength(1);
   });
 });
