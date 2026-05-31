@@ -21,6 +21,9 @@ Raw staging (for cross-source synthesis when curated isn't enough):
 Memory:
 - `data/memory.json` — cross-day state (predictions, narrative arcs, audience_state)
 
+Recency (computed in code — do NOT do date math yourself):
+- `data/staging/source-ages.json` — each source URL's age in days (today − publish date). Use this for recency / "this-week" judgements; NEVER compute or infer dates yourself.
+
 ## Output (write via Write tool)
 
 - `data/staging/editorial.json` — editorial layer ONLY (lead + signals + ideation). A separate mechanical merge step composes the final `data/reports/<TODAY>.json` from this editorial.json + the curated/*.json inputs.
@@ -102,6 +105,12 @@ Single events do not qualify. Each MUST:
 - include `product_opportunity` — 1 sentence what to build / watch
 - include `source_links` ≥ 2 stable ids referencing curated items (must exist in `data/staging/curated/*.json`)
 
+**Grounding rules for cross-source patterns (these prevent the recurring "same-week" fabrication):**
+- An item whose `source-ages.json` age is **> 7** MUST NOT be described as 本週 / 同週 / 同時發布 / 今天, and MUST NOT be welded into a "this-week" convergence. Look the age up; do not estimate it.
+- Two items are "same-week" only if BOTH ages are ≤ 7. If a pattern's items are not actually within ~7 days of each other, describe the **mechanism** that links them — do not frame it as temporal convergence.
+- **Abstention is first-class:** if the day's items do not actually converge, emit FEWER focus signals (or none) and say so. Do NOT manufacture convergence to fill the section. One well-supported item beats three welded ones.
+- When attributing a claim to a named person/org, assert ONLY what that source's `takeaway` literally states. Never add production status, confirmation, causation, or a numeric magnitude the takeaway does not contain. If unsure, omit the attribution.
+
 ## `signals.sleeper` (optional, 1 entry)
 
 Under-the-radar high-leverage signal. Uncrowded thesis. Recently surfaced, not yet popular.
@@ -172,3 +181,4 @@ After writing the report, update `data/memory.json`:
 - [ ] shipped / pulse / market / tech sections copied verbatim, no items dropped
 - [ ] `schema_version: 2` (number not string)
 - [ ] `date` matches metadata.json date
+- [ ] No 同週/同時/本週/今天 on any source whose `source-ages.json` age > 7; no claim / magnitude / "confirmed / 已量產" attributed to a named source beyond what its `takeaway` states

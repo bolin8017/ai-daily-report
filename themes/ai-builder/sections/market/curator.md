@@ -61,6 +61,10 @@ For each item: `id`, `title`, `url`, `audience`, `companies`, `region: "taiwan"`
 
 For MOPS items: prefer the headline (`主旨`) as title; `companies` = [`公司名稱`]; `url` can be a synthetic mops disclosure page link.
 
+### Numeric magnitude discipline
+
+Do NOT put a multiplier (`N 倍` / `Nx`) in a `takeaway` unless the source explicitly states it AND it is plausible. Prefer absolute figures ($ amounts, %, units). Treat vendor / press "up to N×" marketing as a claim, not a fact — paraphrase as "claims up to N×", never assert it. (A wrong multiplier copied into a takeaway becomes a faithfulness-invisible error downstream.)
+
 ## Validation
 
 `MarketCuratedSchema`. 4 sub-group keys.

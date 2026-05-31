@@ -3,7 +3,7 @@
 // sources whose URL has no parseable date (substack /p/, blog, vendor PR).
 
 import { describe, expect, it } from 'vitest';
-import { buildSourceDateMap } from '../src/lib/source-dates.js';
+import { buildSourceDateMap, computeAges } from '../src/lib/source-dates.js';
 
 describe('buildSourceDateMap', () => {
   it('maps a feed item url → ISO date from published / isoDate / pubDate', () => {
@@ -53,5 +53,25 @@ describe('buildSourceDateMap', () => {
   it('tolerates empty / missing input', () => {
     expect(buildSourceDateMap()).toEqual({});
     expect(buildSourceDateMap({ feeds: null })).toEqual({});
+  });
+});
+
+describe('computeAges', () => {
+  it('turns url→date into url→age_days against a report date (no LLM arithmetic)', () => {
+    const ages = computeAges(
+      {
+        'https://a': '2026-05-16',
+        'https://b': '2026-05-30',
+        'https://c': '2026-05-31',
+      },
+      '2026-05-31',
+    );
+    expect(ages['https://a']).toBe(15);
+    expect(ages['https://b']).toBe(1);
+    expect(ages['https://c']).toBe(0);
+  });
+  it('skips unparseable dates and tolerates empty input', () => {
+    expect(computeAges({ 'https://a': 'not-a-date' }, '2026-05-31')).toEqual({});
+    expect(computeAges()).toEqual({});
   });
 });

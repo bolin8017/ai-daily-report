@@ -66,6 +66,10 @@ For each item: `id`, `title`, `url`, `audience` (only `work` | `both`), `takeawa
 
 If an item from `aidaptiv` ALSO appears as a candidate in `vendor` (e.g. NVIDIA Developer Blog KV-cache post), include it ONLY in `aidaptiv` and skip in `vendor`. Use the same `id`.
 
+### Numeric magnitude discipline
+
+Do NOT put a multiplier (`N 倍` / `Nx` / "6x bandwidth") in a `takeaway` unless the source text explicitly states it AND it is plausible for the claim type. Prefer absolute figures (TB/s, GB, %, tokens/s). Treat vendor "up to N×" marketing as a claim, not a fact — paraphrase as "vendor claims up to N×", never assert it. (A wrong multiplier copied into a takeaway becomes a faithfulness-invisible error downstream — the synthesizer will faithfully repeat it.)
+
 ## Validation
 
 `TechCuratedSchema`. 4 sub-group keys.
