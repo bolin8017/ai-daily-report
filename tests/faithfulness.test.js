@@ -14,6 +14,7 @@ import {
   extractSourceDate,
   parseJudgeVerdicts,
   resolveFieldItems,
+  resolveSourceDate,
 } from '../src/lib/faithfulness.js';
 
 // Shared fixture: the two real 2026-05-29 curated items at the centre of the
@@ -339,5 +340,68 @@ describe('applyRepairs', () => {
     );
     expect(editorial.signals.focus[0].body).toBe('keep me');
     expect(editorial.faithfulness.repaired).toBe(0);
+  });
+});
+
+describe('resolveSourceDate', () => {
+  it('prefers the sidecar date for an URL the regex cannot date', () => {
+    const sidecar = { 'https://magazine.sebastianraschka.com/p/x': '2026-05-16' };
+    expect(resolveSourceDate('https://magazine.sebastianraschka.com/p/x', sidecar)).toBe(
+      '2026-05-16',
+    );
+  });
+  it('falls back to the URL-path regex when the url is not in the sidecar', () => {
+    expect(resolveSourceDate('https://simonwillison.net/2026/May/27/x/', {})).toBe('2026-05-27');
+  });
+  it('returns null when neither sidecar nor regex can date it', () => {
+    expect(resolveSourceDate('https://github.com/owner/repo', {})).toBe(null);
+  });
+});
+
+describe('detectTemporalFlags with sidecar (undateable URLs)', () => {
+  const curated = {
+    pulse: {
+      ai_bloggers: [
+        {
+          id: 'pulse.ai_bloggers.0:sebastianraschka-kv',
+          source: 'Sebastian Raschka',
+          title: 'Recent Developments',
+          url: 'https://magazine.sebastianraschka.com/p/x',
+        },
+      ],
+    },
+  };
+  const idx = buildCuratedIndex(curated);
+  const editorial = {
+    lead: { html: '' },
+    signals: {
+      focus: [
+        {
+          body: 'X 與 Raschka 的整理同天出現',
+          source_links: ['pulse.ai_bloggers.0:sebastianraschka-kv'],
+        },
+      ],
+      predictions: [],
+    },
+    ideation: { general: [], work: [] },
+  };
+
+  it('flags a substack source (no URL date) dated 15 days stale via the sidecar', () => {
+    const sidecar = { 'https://magazine.sebastianraschka.com/p/x': '2026-05-16' };
+    const flags = detectTemporalFlags(editorial, idx, {
+      reportDate: '2026-05-31',
+      toleranceDays: 1,
+      sidecar,
+    });
+    expect(flags).toHaveLength(1);
+    expect(flags[0].path).toBe('signals.focus[0].body');
+  });
+
+  it('is blind to the same source without the sidecar (proves the data gap it closes)', () => {
+    const flags = detectTemporalFlags(editorial, idx, {
+      reportDate: '2026-05-31',
+      toleranceDays: 1,
+    });
+    expect(flags).toHaveLength(0);
   });
 });

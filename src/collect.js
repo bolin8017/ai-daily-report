@@ -32,6 +32,7 @@ import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
+import { buildSourceDateMap } from './lib/source-dates.js';
 import { resolveEffectiveSources } from './lib/sources.js';
 import { getCachedTheme } from './lib/theme.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
@@ -155,6 +156,10 @@ async function main() {
     'data/staging/mops.json': raw.mops ?? { ok: false, items: [] },
     'data/staging/hf_trending.json': raw.hf_trending ?? { ok: false, items: [] },
     'data/staging/arxiv.json': raw.arxiv ?? { ok: false, items: [] },
+    // url→published map for the Stage 3.5 faithfulness guard. Built from raw
+    // FEED items (GitHub excluded — repo dates ≠ "appeared today"). Captured
+    // here because condense drops date fields before the curator/guard see them.
+    'data/staging/source-dates.json': buildSourceDateMap({ feeds: raw.feeds, arxiv: raw.arxiv }),
     'data/staging/metadata.json': {
       date,
       run_id: RUN_ID,
