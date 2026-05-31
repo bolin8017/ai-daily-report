@@ -252,6 +252,12 @@ describe('buildJudgePrompt / parseJudgeVerdicts', () => {
     expect(p).toMatch(/KV-cache variants/);
   });
 
+  it('instructs the judge to treat author attribution strictly', () => {
+    const p = buildJudgePrompt(claims, '2026-05-29');
+    expect(p).toMatch(/attribut/i);
+    expect(p).toMatch(/names that exact|exact (person|entity)/i);
+  });
+
   it('parses the judge JSON back into verdicts joined to claims by index', () => {
     const raw =
       'noise before [{"index":0,"verdict":"CONTRADICTED","supporting_quote":"NO_SUPPORTING_QUOTE","grounded_rewrite":"Sebastian Raschka 整理了 KV-cache 變體作為推論最佳化方向。"}] noise after';

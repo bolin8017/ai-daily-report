@@ -292,6 +292,8 @@ export function buildJudgePrompt(claims, reportDate) {
 
   return `You are a strict faithfulness judge. For each claim below, decide ONLY whether the cited source(s) support the specific attribution to the named author. Use a quote-first method.
 
+Treat author/source attribution strictly: when the claim says a named person or organization said / confirmed / announced something, the verdict is SUPPORTED only if a cited takeaway explicitly names that exact entity making that claim; otherwise CONTRADICTED (if the takeaway says something incompatible) or NOT_ENOUGH_INFO.
+
 For each claim, output an object:
   - "index": the claim number
   - "supporting_quote": a verbatim snippet from a cited takeaway that supports the claim, OR the literal string "NO_SUPPORTING_QUOTE"
