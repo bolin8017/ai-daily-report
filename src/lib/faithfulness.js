@@ -164,7 +164,11 @@ export function resolveFieldItems(field, { byPrefix, items }) {
   });
 }
 
-const SAME_DAY_RE = /同天|同日|今日|今天|本日|same[-\s]?day|today/i;
+// Same-day AND week-scale convergence markers. 同時 only counts before a
+// publish verb (發/推/宣/揭) so "同時發布" matches but "同時支援" (concurrent
+// capability, not temporal convergence) does not.
+const SAME_DAY_RE =
+  /同天|同日|今日|今天|本日|同一?週|本週|這週|同時(?=發|推|宣|揭)|same[-\s]?day|same[-\s]?week|today|this week/i;
 
 function dayDiff(a, b) {
   const ms = Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`);
