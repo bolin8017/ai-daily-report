@@ -126,4 +126,26 @@ docker run --rm \
   -v "${HOME}/.claude.json":/home/pipeline/.claude.json \
   "$IMAGE"
 
+# The pipeline above committed + pushed today's report to the `data`
+# branch. Fire the GitHub Pages deploy now via repository_dispatch instead
+# of waiting for a scheduled poll — pushes to the orphan `data` branch
+# can't trigger Actions, and GitHub's cron drifted by hours. Best-effort:
+# a failed dispatch only logs a warning (the deploy still happens on the
+# next successful run, a push to main, or a manual workflow_dispatch).
+# repository_dispatch needs only the Contents:write scope $GITHUB_TOKEN
+# already has for the push; `if curl` keeps set -e from aborting the run
+# on a transient API hiccup. Reaches here only when `docker run` exited 0
+# (set -e), i.e. the report was produced and pushed.
+DEPLOY_REPO_SLUG="${DEPLOY_REPO_SLUG:-bolin8017/ai-daily-report}"
+if curl -fsS -X POST \
+  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/repos/${DEPLOY_REPO_SLUG}/dispatches" \
+  -d '{"event_type":"data-committed"}'; then
+  echo "[cron-run] $(ts) Pages deploy dispatched (repository_dispatch: data-committed)"
+else
+  echo "[cron-run] $(ts) WARN: deploy dispatch failed — site will lag until the next run or a manual deploy" >&2
+fi
+
 echo "[cron-run] $(ts) === run complete ==="
