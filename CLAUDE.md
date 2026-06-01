@@ -21,7 +21,7 @@ The pipeline is split into **four stages**, all running inside a Docker containe
 
 `scripts/analyze.sh` orchestrates Stage 2 → Stage 3 → Stage 4 → validate → commit (reports + memory only). A legacy lens-based single-stage path is still gated behind `FEATURE_NEW_PIPELINE=0` (predates this redesign; preserved for rollback, produces v1.x reports rendered by templates' legacy partial).
 
-GitHub Actions picks up either push (main for code, data for daily artifacts) and deploys the 11ty site to Pages.
+GitHub Actions deploys the 11ty site to Pages on a push to `main` (code/site changes) or on a `repository_dispatch` the VM fires after committing the day's report to the `data` branch (`data`-branch pushes can't trigger workflows themselves).
 
 ## Branch layout
 
@@ -280,7 +280,7 @@ Used by `src/curators/_base.js` (curator prompt resolution), `src/lib/sources.js
 
 | Workflow | Trigger | Job |
 |---|---|---|
-| `.github/workflows/deploy.yml` | (a) push to `main` matching the deploy paths (code/site/workflow changes), OR (b) pull_request matching the wider validation paths (`src/**`, `tests/**`, `scripts/**`, configs included), OR (c) `schedule: '0 0 * * *'` (00:00 UTC = 08:00 Asia/Taipei, ~1h after VM pipeline starts), OR (d) manual `workflow_dispatch`. Note: pushes to the `data` branch **do not** fire the workflow — the orphan `data` branch has no `.github/workflows/` tree, which is why the schedule trigger exists as the primary auto-deploy path for bot reports. | `build` job runs always: checkout `main` → hydrate recent `data/` from `data` branch → **hydrate cold archive from Releases** (`scripts/hydrate-archive.sh`, best-effort) → lint + tests + schema validation + 11ty build. `deploy` job runs on every event except `pull_request`: `upload-pages-artifact` → `deploy-pages` OIDC. PR validation ends after `build`. Concurrency group is per-PR (cancel-in-progress) for PRs and shared `pages` for everything else. |
+| `.github/workflows/deploy.yml` | (a) push to `main` matching the deploy paths (code/site/workflow changes), OR (b) pull_request matching the wider validation paths (`src/**`, `tests/**`, `scripts/**`, configs included), OR (c) `repository_dispatch` (type `data-committed`) that the VM POSTs at the end of each daily run via `scripts/cron-run.sh` — right after the report is pushed to `data` — OR (d) manual `workflow_dispatch`. Note: pushes to the `data` branch **do not** fire the workflow — the orphan `data` branch has no `.github/workflows/` tree, which is why the VM's `repository_dispatch` is the primary auto-deploy path for bot reports (it replaced a `schedule: '0 0 * * *'` poll that GitHub drifted by hours, lagging the published site by most of a morning). | `build` job runs always: checkout `main` → hydrate recent `data/` from `data` branch → **hydrate cold archive from Releases** (`scripts/hydrate-archive.sh`, best-effort) → lint + tests + schema validation + 11ty build. `deploy` job runs on every event except `pull_request`: `upload-pages-artifact` → `deploy-pages` OIDC. PR validation ends after `build`. Concurrency group is per-PR (cancel-in-progress) for PRs and shared `pages` for everything else. |
 
 GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-pages` branch.
 
