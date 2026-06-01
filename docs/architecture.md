@@ -58,7 +58,7 @@ flowchart TD
   Timer --> CronRun
   CommitReport --> DataBranch[(data branch<br/>orphan, bot-only — reports + memory)]
 
-  GHACron[scheduled cron<br/>00:00 UTC daily] --> GHA[GitHub Actions: deploy.yml]
+  CronRun -->|"repository_dispatch<br/>(data-committed) after report push"| GHA[GitHub Actions: deploy.yml]
 
   subgraph GHACI["GITHUB ACTIONS — hosted, free"]
     GHA --> Hydrate[hydrate data/ from<br/>`data` branch]
@@ -138,7 +138,8 @@ sequenceDiagram
   AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema + MemorySchema
   AnalyzeSh->>Git: commit + push report & memory (x-access-token URL)
 
-  Note over GHA: GHA cron fires independently<br/>at 00:00 UTC daily (not caused<br/>by the analyze push)
+  CronRun->>GHA: POST repository_dispatch (data-committed)
+  Note over GHA: fired by cron-run.sh right after the push<br/>(replaced the old 00:00 UTC schedule poll)
   GHA->>Git: fetch + checkout origin/data -- data/
   GHA->>GHA: lint + test + validate + 11ty build
   GHA->>Pages: actions/deploy-pages OIDC
@@ -371,7 +372,7 @@ Two timers fire two services, both ultimately host-side wrappers around `docker 
 3. **Merge** (`scripts/merge-report.sh` → `src/lib/merge.js`) — mechanical, no LLM, idempotent. Composes `data/reports/YYYY-MM-DD.json` from `editorial.json` + `curated/*.json` and validates that every `source_links` id resolves to a real curated item (aborts on a dangling link).
 4. Validate outputs: composed `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
 5. Commit via `src/lib/commit.js` — stages the report + memory files, commits as `report: <date> daily creative brief`, and pushes to the `data` orphan branch (git plumbing + `x-access-token:$GITHUB_TOKEN` URL rewrite; never touches `main`'s working tree).
-6. GHA's daily 00:00 UTC cron hydrates `data/` from the `data` branch and deploys to Pages. The cron is independent of the analyze push — the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow.
+6. `scripts/cron-run.sh` POSTs a `repository_dispatch` (type `data-committed`) as soon as the run above pushes the report, firing `deploy.yml`, which hydrates `data/` from the `data` branch and deploys to Pages within seconds. The dispatch is needed because the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow — and it replaced a `schedule: 0 0 * * *` poll that GitHub drifted by hours, lagging the published site.
 
 **Why systemd timer instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing you onto `ANTHROPIC_API_KEY` (paid, defeats the Max advantage) or OAuth secret juggling. A VM with a one-time interactive `claude /login` sidesteps both — the login token persists in `~/.claude` and every subsequent timer invocation just works.
 
