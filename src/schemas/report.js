@@ -19,19 +19,40 @@ import {
   TechItem,
 } from './items.js';
 
-// Observability block injected by scripts/analyze.sh after the agent finishes.
-const ReportMetaSchema = z.object({
-  run_id: z.string().uuid(),
-  pipeline_version: z.string(),
-  model: z.string(),
-  generated_at: z.string(),
-  analyze_duration_ms: z.number().int().nonnegative(),
-  source_health: z.record(
-    z.string(),
-    z.object({ ok: z.boolean(), count: z.number().int().nonnegative() }),
-  ),
-  degraded_sources: z.array(z.string()),
-});
+// Observability block. Populated by scripts/merge-report.sh in the new
+// pipeline (and analyze.sh in the legacy lens path). All fields optional so a
+// best-effort / partial meta never aborts the composed-report validation.
+const StageUsageSchema = z
+  .object({
+    model: z.string().optional(),
+    cost_usd: z.number().nonnegative().optional(),
+    duration_ms: z.number().int().nonnegative().optional(),
+    num_turns: z.number().int().nonnegative().optional(),
+    input_tokens: z.number().int().nonnegative().optional(),
+    output_tokens: z.number().int().nonnegative().optional(),
+    cache_read_tokens: z.number().int().nonnegative().optional(),
+    cache_creation_tokens: z.number().int().nonnegative().optional(),
+    is_error: z.boolean().optional(),
+    session_id: z.string().optional(),
+  })
+  .passthrough();
+
+const ReportMetaSchema = z
+  .object({
+    run_id: z.string().uuid().optional(),
+    pipeline_version: z.string().optional(),
+    model: z.string().optional(),
+    generated_at: z.string().optional(),
+    analyze_duration_ms: z.number().int().nonnegative().optional(),
+    source_health: z
+      .record(z.string(), z.object({ ok: z.boolean(), count: z.number().int().nonnegative() }))
+      .optional(),
+    degraded_sources: z.array(z.string()).optional(),
+    stages: z.record(z.string(), StageUsageSchema).optional(),
+    total_cost_usd: z.number().nonnegative().optional(),
+    total_tokens: z.number().int().nonnegative().optional(),
+  })
+  .passthrough();
 
 const SignalsSection = z.object({
   focus: z.array(SignalItem),

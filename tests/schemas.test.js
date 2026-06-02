@@ -195,3 +195,50 @@ describe('feed item shape', () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe('ReportMetaSchema (extended observability block)', () => {
+  const baseReport = {
+    schema_version: 2.1,
+    date: '2026-06-02',
+    lead: { html: '<p>x</p>' },
+    signals: { focus: [], predictions: [] },
+    ideation: { general: [], work: [] },
+    shipped: {},
+    pulse: {},
+    market: {},
+    tech: {},
+  };
+
+  it('accepts a meta block with per-stage usage + totals', () => {
+    const r = ReportSchema.parse({
+      ...baseReport,
+      meta: {
+        run_id: 'a1b2c3d4-0000-4000-8000-000000000000',
+        pipeline_version: '0.1.0',
+        model: 'claude-sonnet-4-6',
+        generated_at: '2026-06-02T00:00:00.000Z',
+        stages: {
+          'curate.market': { cost_usd: 0.01, num_turns: 4, input_tokens: 1000, output_tokens: 50 },
+          synthesize: { cost_usd: 0.3, num_turns: 12 },
+        },
+        total_cost_usd: 0.31,
+        total_tokens: 1050,
+      },
+    });
+    expect(r.meta.stages.synthesize.num_turns).toBe(12);
+    expect(r.meta.total_cost_usd).toBeCloseTo(0.31);
+  });
+
+  it('accepts a partial meta block (all fields optional)', () => {
+    expect(() => ReportSchema.parse({ ...baseReport, meta: { stages: {} } })).not.toThrow();
+  });
+
+  it('rejects a negative cost in a stage', () => {
+    expect(() =>
+      ReportSchema.parse({
+        ...baseReport,
+        meta: { stages: { synthesize: { cost_usd: -1 } } },
+      }),
+    ).toThrow();
+  });
+});
