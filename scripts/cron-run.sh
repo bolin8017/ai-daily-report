@@ -41,6 +41,21 @@ sync_host_clone() {
     echo "[cron-run] $(ts) host clone ${local_sha:0:7} differs from origin/main ${remote_sha:0:7} — fast-forwarding"
     if ! git -C "$REPO_DIR" merge --ff-only origin/main 2>&1; then
       echo "[cron-run] $(ts) WARN: --ff-only failed (local divergence?) — continuing with current HEAD" >&2
+      return 0
+    fi
+    # The fast-forward may have rewritten this very script. bash keeps
+    # executing the file it already opened (the pre-update body), so a change
+    # to cron-run.sh itself would otherwise only take effect on the NEXT daily
+    # invocation. That one-cycle lag is exactly why the first VM run after the
+    # 2026-06-01 event-driven-deploy cutover pushed the report but never fired
+    # the Pages deploy dispatch — the dispatch step had only just landed in the
+    # freshly pulled body. Re-exec the refreshed copy once so new wrapper logic
+    # applies THIS cycle; AI_DAILY_REEXECED guards against any re-exec loop.
+    if [ "${AI_DAILY_REEXECED:-0}" != "1" ] \
+      && ! git -C "$REPO_DIR" diff --quiet "$local_sha" "$remote_sha" -- scripts/cron-run.sh; then
+      echo "[cron-run] $(ts) cron-run.sh changed in fast-forward — re-exec'ing refreshed copy"
+      export AI_DAILY_REEXECED=1
+      exec "$REPO_DIR/scripts/cron-run.sh"
     fi
   fi
 }
