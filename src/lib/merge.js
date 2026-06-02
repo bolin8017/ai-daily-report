@@ -120,10 +120,11 @@ export function findDanglingSourceLinks(editorial, idSpace) {
  * @param {object} args
  * @param {object} args.editorial
  * @param {object} args.curated
+ * @param {object} [args.meta]  optional report.meta observability block
  * @param {string} args.themeName  default "ai-builder"
  * @returns {Promise<object>}  validated v2.1 report
  */
-export async function composeReport({ editorial, curated, themeName = 'ai-builder' }) {
+export async function composeReport({ editorial, curated, meta, themeName = 'ai-builder' }) {
   // 1. Validate editorial
   const editorialParsed = EditorialSchema.parse(editorial);
 
@@ -144,6 +145,9 @@ export async function composeReport({ editorial, curated, themeName = 'ai-builde
     signals: editorialParsed.signals,
     ideation: editorialParsed.ideation,
   };
+  // Observability block (assembled by the caller from per-stage sidecars).
+  // Optional + pre-shaped; the report schema validates it as meta?.optional().
+  if (meta) composed.meta = meta;
   // Spread curated sections under their declared section ids.
   const sections = await listActiveSections(themeName);
   for (const sec of sections) {
