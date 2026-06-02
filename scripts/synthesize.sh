@@ -19,9 +19,6 @@ MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 FALLBACK_MODEL="${SYNTH_FALLBACK_MODEL:-sonnet}"
-# 2026-06-02 VM e2e: synth completed at ~30 budget-turns — too close to a 30 cap
-# for a critical stage (its failure aborts the whole pipeline). 50 gives headroom.
-MAX_TURNS="${SYNTH_MAX_TURNS:-50}"
 # Lean-context flags: see curate.sh — --bare drops auth in our env, so use
 # --strict-mcp-config (keeps auth + Read/Write/Glob/Grep).
 LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
@@ -116,7 +113,6 @@ echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
     --model "$MODEL" \
     --fallback-model "$FALLBACK_MODEL" \
     --output-format json \
-    --max-turns "$MAX_TURNS" \
     --tools "Read,Write,Glob,Grep" \
     --allowed-tools Read Write Glob Grep \
     --no-session-persistence \
