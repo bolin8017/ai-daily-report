@@ -18,7 +18,10 @@ MODEL="${CURATE_MODEL:-claude-haiku-4-5}"
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 FALLBACK_MODEL="${CURATE_FALLBACK_MODEL:-sonnet}"
-MAX_TURNS="${CURATE_MAX_TURNS:-15}"
+# 2026-06-02 VM e2e: the tech curator (largest context) needs >15 turns and hit
+# error_max_turns at 15, degrading the section every run. Observed legit usage is
+# 7-16 turns, so 40 clears it while still catching a true runaway.
+MAX_TURNS="${CURATE_MAX_TURNS:-40}"
 # Lean-context flags: strip the per-call MCP-discovery tax (curators need no MCP
 # servers). NB: --bare also strips it but DROPS AUTH in our env (probe 2026-06-02
 # returned "Not logged in"), so use --strict-mcp-config, which keeps auth + tools.
