@@ -12,9 +12,14 @@
 # .github/dependabot.yml) opens PRs to refresh the digest weekly.
 FROM node:22-slim@sha256:f3a68cf41a855d227d1b0ab832bed9749469ef38cf4f58182fb8c893bc462383
 
+# Runtime deps: git (clone/pull the repo into /workspace), curl (the monthly
+# archive job uploads report tarballs to GitHub Releases via the REST API —
+# see scripts/archive-month.sh), ca-certificates (TLS roots for both), tini
+# (PID 1 / reaps claude's SSE subprocesses), gosu (drop root in entrypoint).
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
        git \
+       curl \
        ca-certificates \
        tini \
        gosu \
