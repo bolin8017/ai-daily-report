@@ -15,7 +15,6 @@ set -uo pipefail
 MODEL="${FAITHFULNESS_MODEL:-claude-sonnet-4-6}"
 TOL="${FAITHFULNESS_TEMPORAL_TOLERANCE_DAYS:-1}"
 FALLBACK_MODEL="${FAITHFULNESS_FALLBACK_MODEL:-sonnet}"
-MAX_TURNS="${FAITHFULNESS_MAX_TURNS:-5}"
 # Lean-context flags: see curate.sh (--bare drops auth in our env). The judge
 # needs no tools, so --strict-mcp-config is purely belt-and-braces here.
 LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
@@ -67,7 +66,6 @@ if [ -f "$PROMPT_FILE" ]; then
     claude -p --model "$MODEL" \
       --fallback-model "$FALLBACK_MODEL" \
       --output-format json \
-      --max-turns "$MAX_TURNS" \
       --tools "" \
       --allowed-tools "" \
       --no-session-persistence \
