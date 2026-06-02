@@ -17,6 +17,12 @@ set -uo pipefail
 MODEL="${CURATE_MODEL:-claude-haiku-4-5}"
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
+FALLBACK_MODEL="${CURATE_FALLBACK_MODEL:-sonnet}"
+MAX_TURNS="${CURATE_MAX_TURNS:-15}"
+# Lean-context flags: strip the per-call MCP-discovery tax (curators need no MCP
+# servers). NB: --bare also strips it but DROPS AUTH in our env (probe 2026-06-02
+# returned "Not logged in"), so use --strict-mcp-config, which keeps auth + tools.
+LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
 
 mkdir -p "$CURATED_DIR"
 LOG_DIR="$CURATED_DIR/.logs"
@@ -50,8 +56,13 @@ run_curator() {
   (
     claude -p \
       --model "$MODEL" \
-      --output-format text \
+      --fallback-model "$FALLBACK_MODEL" \
+      --output-format json \
+      --max-turns "$MAX_TURNS" \
+      --tools "Read,Write,Glob,Grep" \
       --allowed-tools Read Write Glob Grep \
+      --no-session-persistence \
+      "${LEAN_FLAGS[@]}" \
       < "$prompt_file" \
       > "$raw_file" \
       2> "$err_file"
@@ -66,16 +77,20 @@ run_curator() {
 
   kill "$watchdog_pid" 2>/dev/null || true
 
+  # Observability: extract this stage's cost/usage from the json envelope.
+  node src/lib/claude-envelope.js sidecar "$raw_file" "$LOG_DIR/$section.meta.json" "curate.$section" 2>/dev/null || true
+
   if [ "$claude_rc" -ne 0 ]; then
     echo "[curate.sh] $section FAILED (claude rc=$claude_rc)"
     cat "$err_file" >&2
     return 1
   fi
 
-  # Validate: the curator may have written to $out_file directly via Write tool,
-  # or its stdout contains the JSON. Prefer the file when present, fall back to stdout.
+  # The curator writes $out_file directly via the Write tool. If it didn't,
+  # recover the model's final text from the json envelope's .result field
+  # (stdout is now the envelope, not bare JSON).
   if [ ! -f "$out_file" ]; then
-    cp "$raw_file" "$out_file"
+    node src/lib/claude-envelope.js result "$raw_file" > "$out_file"
   fi
 
   if ! node -e "

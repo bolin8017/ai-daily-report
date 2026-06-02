@@ -14,6 +14,11 @@ set -uo pipefail
 
 MODEL="${FAITHFULNESS_MODEL:-claude-sonnet-4-6}"
 TOL="${FAITHFULNESS_TEMPORAL_TOLERANCE_DAYS:-1}"
+FALLBACK_MODEL="${FAITHFULNESS_FALLBACK_MODEL:-sonnet}"
+MAX_TURNS="${FAITHFULNESS_MAX_TURNS:-5}"
+# Lean-context flags: see curate.sh (--bare drops auth in our env). The judge
+# needs no tools, so --strict-mcp-config is purely belt-and-braces here.
+LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 EDITORIAL_FILE="${STAGING_DIR}/editorial.json"
@@ -59,7 +64,14 @@ RAN_JUDGE=false
 if [ -f "$PROMPT_FILE" ]; then
   RAN_JUDGE=true
   (
-    claude -p --model "$MODEL" --output-format text --allowed-tools "" \
+    claude -p --model "$MODEL" \
+      --fallback-model "$FALLBACK_MODEL" \
+      --output-format json \
+      --max-turns "$MAX_TURNS" \
+      --tools "" \
+      --allowed-tools "" \
+      --no-session-persistence \
+      "${LEAN_FLAGS[@]}" \
       < "$PROMPT_FILE" > "$VERDICTS_FILE.raw" 2> "$LOG_DIR/faithfulness.err.txt"
   ) &
   CLAUDE_PID=$!
@@ -67,6 +79,7 @@ if [ -f "$PROMPT_FILE" ]; then
   WATCHDOG_PID=$!
   wait "$CLAUDE_PID"; RC=$?
   kill "$WATCHDOG_PID" 2>/dev/null || true
+  node src/lib/claude-envelope.js sidecar "$VERDICTS_FILE.raw" "$LOG_DIR/faithfulness.meta.json" "faithfulness" 2>/dev/null || true
   if [ "$RC" -ne 0 ]; then
     echo "[check-faithfulness.sh] judge claude -p failed rc=$RC — applying temporal-only repairs (never-abort)" >&2
     RAN_JUDGE=false
@@ -82,9 +95,12 @@ node --input-type=module -e "
   const { temporalFlags, claims } = JSON.parse(await readFile('$CLAIMS_FILE', 'utf8'));
   let attributionVerdicts = [];
   if ($RAN_JUDGE) {
-    let raw = '';
-    try { raw = await readFile('$VERDICTS_FILE.raw', 'utf8'); } catch {}
-    attributionVerdicts = parseJudgeVerdicts(raw, claims);
+    let verdictText = '';
+    try {
+      const env = JSON.parse(await readFile('$VERDICTS_FILE.raw', 'utf8'));
+      verdictText = typeof env.result === 'string' ? env.result : '';
+    } catch {}
+    attributionVerdicts = parseJudgeVerdicts(verdictText, claims);
   }
   const { audit } = applyRepairs(editorial, { temporalFlags, attributionVerdicts }, { reportDate: '$TODAY', model: '$MODEL', ranJudge: $RAN_JUDGE });
   await writeFile('$EDITORIAL_FILE', JSON.stringify(editorial, null, 2));

@@ -219,6 +219,30 @@ describe('composeReport', () => {
     expect(report.ideation).toEqual(editorial.ideation);
     expect(report.signals).toEqual(editorial.signals);
   });
+
+  it('attaches a provided meta block to the composed report', async () => {
+    const report = await composeReport({
+      editorial: fixtureEditorial(),
+      curated: fixtureCurated(),
+      themeName: 'ai-builder',
+      meta: {
+        model: 'claude-sonnet-4-6',
+        total_cost_usd: 0.42,
+        stages: { synthesize: { num_turns: 9 } },
+      },
+    });
+    expect(report.meta.total_cost_usd).toBeCloseTo(0.42);
+    expect(report.meta.stages.synthesize.num_turns).toBe(9);
+  });
+
+  it('omits meta entirely when none is provided', async () => {
+    const report = await composeReport({
+      editorial: fixtureEditorial(),
+      curated: fixtureCurated(),
+      themeName: 'ai-builder',
+    });
+    expect(report.meta).toBeUndefined();
+  });
 });
 
 describe('idPrefix', () => {

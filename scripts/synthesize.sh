@@ -18,6 +18,11 @@ set -uo pipefail
 MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
+FALLBACK_MODEL="${SYNTH_FALLBACK_MODEL:-sonnet}"
+MAX_TURNS="${SYNTH_MAX_TURNS:-30}"
+# Lean-context flags: see curate.sh — --bare drops auth in our env, so use
+# --strict-mcp-config (keeps auth + Read/Write/Glob/Grep).
+LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
 TODAY="$(TZ=Asia/Taipei date +%F)"
 REPORT_FILE="data/reports/${TODAY}.json"
 EDITORIAL_FILE="${STAGING_DIR}/editorial.json"
@@ -107,8 +112,13 @@ echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
 (
   claude -p \
     --model "$MODEL" \
-    --output-format text \
+    --fallback-model "$FALLBACK_MODEL" \
+    --output-format json \
+    --max-turns "$MAX_TURNS" \
+    --tools "Read,Write,Glob,Grep" \
     --allowed-tools Read Write Glob Grep \
+    --no-session-persistence \
+    "${LEAN_FLAGS[@]}" \
     < "$PROMPT_FILE" \
     > "$LOG_DIR/synthesizer.raw.txt" \
     2> "$LOG_DIR/synthesizer.err.txt"
@@ -121,6 +131,8 @@ WATCHDOG_PID=$!
 wait "$CLAUDE_PID"
 RC=$?
 kill "$WATCHDOG_PID" 2>/dev/null || true
+
+node src/lib/claude-envelope.js sidecar "$LOG_DIR/synthesizer.raw.txt" "$LOG_DIR/synthesize.meta.json" "synthesize" 2>/dev/null || true
 
 if [ "$RC" -ne 0 ]; then
   echo "[synthesize.sh] claude -p failed rc=$RC" >&2
