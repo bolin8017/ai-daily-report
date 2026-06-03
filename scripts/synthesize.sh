@@ -156,9 +156,9 @@ node --input-type=module -e "
   let memory = {};
   try { memory = JSON.parse(await readFile('data/memory.json', 'utf8')); } catch {}
   const r = repairEditorial(doc, memory);
-  if (r.backfilled || r.statusCoerced || r.dropped) {
+  if (r.backfilled || r.statusCoerced || r.dropped || r.ideationCoerced) {
     await writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
-    console.error('[synthesize.sh] repaired editorial: backfilled=' + r.backfilled + ' statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped);
+    console.error('[synthesize.sh] repaired editorial: backfilled=' + r.backfilled + ' statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped + ' ideationCoerced=' + r.ideationCoerced);
   }
 "
 

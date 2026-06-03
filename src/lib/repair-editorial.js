@@ -1,7 +1,7 @@
 // Repair known LLM-drift patterns in editorial.json before EditorialSchema
 // validation, so cosmetic synthesizer variance never aborts a full daily run.
 //
-// Two patterns are handled:
+// Three patterns are handled:
 //
 //   1. Terse prediction_updates. The synthesizer prompt asks it to "update the
 //      status for each prediction in memory.json", which the model sometimes
@@ -16,9 +16,19 @@
 //      "unverifiable" — preserves the prior inline safety net in
 //      synthesize.sh, now consolidated here.
 //
+//   3. Ideation field drift. The synthesizer intermittently emits each idea
+//      with the signals-vocabulary `body` instead of the required
+//      `description`, plus an invented `difficulty` instead of `dev_time`. On
+//      2026-06-03 all 7 ideas came back this way, EditorialSchema rejected
+//      every one, and the run aborted after a 42-minute / $3.92 synthesis.
+//      `description` is promoted from `body` and `difficulty` relocated to
+//      `dev_time`; an idea with no salvageable description is dropped, not
+//      fatal. (06-01 and 06-02 used `description` correctly — drift, not a
+//      deterministic prompt break, so repair beats re-prompt.)
+//
 // Pure and in-place: mutates `editorial.signals.{predictions,prediction_updates}`
-// and returns a stats object. No fs access, so it is unit-testable;
-// scripts/synthesize.sh wires in the file I/O.
+// and `editorial.ideation.{general,work}`, returning a stats object. No fs
+// access, so it is unit-testable; scripts/synthesize.sh wires in the file I/O.
 
 const VALID_STATUS = new Set(['pending', 'resolved-yes', 'resolved-no', 'unverifiable']);
 
@@ -26,10 +36,10 @@ const VALID_STATUS = new Set(['pending', 'resolved-yes', 'resolved-no', 'unverif
  * @param {object} editorial  parsed editorial.json (mutated in place)
  * @param {object} memory     parsed memory.json (read-only); memory.predictions
  *                            supplies text/resolution_date for backfill
- * @returns {{backfilled: number, statusCoerced: number, dropped: number}}
+ * @returns {{backfilled: number, statusCoerced: number, dropped: number, ideationCoerced: number}}
  */
 export function repairEditorial(editorial, memory) {
-  const stats = { backfilled: 0, statusCoerced: 0, dropped: 0 };
+  const stats = { backfilled: 0, statusCoerced: 0, dropped: 0, ideationCoerced: 0 };
 
   const memById = new Map();
   for (const p of memory?.predictions ?? []) {
@@ -78,6 +88,50 @@ export function repairEditorial(editorial, memory) {
       out.push(next);
     }
     signals[key] = out;
+  }
+
+  // Ideation field drift (2026-06-03): promote the signals-vocabulary `body`
+  // to the required `description`, relocate an invented `difficulty` to
+  // `dev_time`, and drop an idea only when no description can be salvaged —
+  // the same repair-don't-abort stance as the prediction passes above.
+  const ideation = editorial?.ideation;
+  if (ideation && typeof ideation === 'object') {
+    for (const key of ['general', 'work']) {
+      const list = ideation[key];
+      if (!Array.isArray(list)) continue;
+
+      const out = [];
+      for (const idea of list) {
+        if (!idea || typeof idea !== 'object') continue;
+        let next = idea;
+        let touched = false;
+
+        if (typeof next.description !== 'string' && typeof next.body === 'string') {
+          next = { ...idea };
+          next.description = next.body;
+          delete next.body;
+          touched = true;
+        }
+
+        if (typeof next.difficulty === 'string') {
+          if (next === idea) next = { ...idea };
+          if (typeof next.dev_time !== 'string') next.dev_time = next.difficulty;
+          delete next.difficulty;
+          touched = true;
+        }
+
+        if (touched) stats.ideationCoerced++;
+
+        // No salvageable description — drop the single idea, never abort.
+        if (typeof next.description !== 'string') {
+          stats.dropped++;
+          continue;
+        }
+
+        out.push(next);
+      }
+      ideation[key] = out;
+    }
   }
 
   return stats;
