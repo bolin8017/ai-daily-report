@@ -140,12 +140,21 @@ Set `status` per entry:
 
 If the framing of an old prediction now seems flawed but its resolution date hasn't arrived, leave it `pending` and write a NEW prediction in `signals.predictions[]` capturing the revised view. **Do not invent new status values to express "this needs updating".**
 
+## Ideation item shape (applies to BOTH `general` and `work`)
+
+Each idea is an object with these EXACT field names — do not rename them:
+- `title` (string)
+- `description` (string) — the idea's body text. The field is **`description`**, NOT `body`. `body` is a *signals* field; using it here drops the schema-required `description` and aborts the whole run.
+- `audience` (`'general'` | `'work'` | `'both'`)
+- `dev_time` (string, e.g. `"weekend"` / `"1-2 week PoC"`) — put the effort estimate HERE. Do NOT invent a `difficulty` field.
+- `source_links` (array of stable curated ids), plus the per-section required fields below.
+
 ## `ideation.general` (3-5 ideas, audience='general' or 'both')
 
 Remix-style side projects.
 - Each combines ≥2 of today's signals (via `source_links`)
 - Hardware: MacBook M1+ / RTX 3060+
-- Dev time: weekend (≤16 hrs)
+- `dev_time`: weekend (≤16 hrs)
 - ≥1 idea has a non-AI element
 - Required fields: `tech_stack`, `market_evidence` (1-sentence + source_link), `first_step`
 
@@ -155,7 +164,7 @@ Phison aiDAPTIV+ commercialization. Maps to aiDAPTIVLink 2/3, Hybrid-Router (rou
 
 - **App/demo layer only — avoid KV-cache internal algorithm** (Phison internal R&D scope)
 - Hardware: NVIDIA workstation / Phison demo lab
-- Dev time: 1-2 week PoC
+- `dev_time`: 1-2 week PoC
 - Each `source_links` connects to ≥1 today-signal
 - Connect to capability axes from product positioning, not generic AI hype.
 
