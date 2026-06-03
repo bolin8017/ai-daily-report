@@ -99,10 +99,12 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --depth=1 origin data
-          # 11ty only needs reports + memory + snapshot; staging stays
-          # internal to the pipeline (avoids 1MB+ leak into Pages artifact).
-          git checkout origin/data -- data/reports data/memory.json data/feeds-snapshot.json 2>/dev/null || \
-            git checkout origin/data -- data/reports data/memory.json 2>/dev/null || true
+          # 11ty needs public reports plus the feeds snapshot. Legacy
+          # data/memory.json is optional during/after the Hermes Wiki cutover;
+          # do not make missing legacy memory abort checkout of reports.
+          git checkout origin/data -- data/reports
+          git checkout origin/data -- data/feeds-snapshot.json 2>/dev/null || true
+          git checkout origin/data -- data/memory.json 2>/dev/null || true
           test -d data/reports || { echo "data branch missing data/reports/"; exit 1; }
 
       - name: Hydrate cold archive from Releases
@@ -140,7 +142,11 @@ jobs:
           if [ -n "$LATEST" ]; then
             node src/lib/validate.js report "$LATEST"
           fi
-          node src/lib/validate.js memory data/memory.json
+          if [ -f data/memory.json ]; then
+            node src/lib/validate.js memory data/memory.json
+          else
+            echo "legacy data/memory.json absent — skipping memory validation"
+          fi
 
       - name: Build site with 11ty
         run: npx @11ty/eleventy
