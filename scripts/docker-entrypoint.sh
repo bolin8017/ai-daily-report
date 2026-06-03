@@ -4,14 +4,15 @@
 # Modes:
 #   No args / "both" : full pipeline — Stage 1 (collect) then Stage 2 (analyze)
 #   "collect"        : Stage 1 only — fetch + condense + commit staging data
-#   "analyze"        : Stage 2 only — claude agent produces report + memory
+#   "analyze"        : Stage 2 only — claude agent produces editorial + report
 #   Other args       : exec directly (for `docker run ... bash` or `docker run ... claude /login`)
 #
 # Expected environment:
 #   GITHUB_TOKEN       — PAT with Contents:read/write scope for clone + push
 #   REPORT_TIMEZONE    — optional, defaults to Asia/Taipei
 #   CLAUDE_MODEL       — optional, defaults to claude-sonnet-4-6
-#   ~/.claude           — bind-mounted claude CLI auth state (host's ~/.claude, read-only)
+#   AI_DAILY_REPORT_WIKI_ROOT — optional in local runs; in Docker set by cron-run.sh
+#   ~/.claude           — bind-mounted claude CLI auth state (host's ~/.claude, read-write)
 #   /workspace         — Docker named volume (persistent across runs)
 
 set -euo pipefail
@@ -68,12 +69,12 @@ else
 fi
 
 # Hydrate data/ from the `data` orphan branch. It holds the archived
-# reports, memory.json, feeds-snapshot.json, and staging files. Main
-# only tracks code, so without this step Stage 2 has no memory and
-# the 11ty templates have no past reports.
+# reports, feeds-snapshot.json, and staging files. Main only tracks code,
+# so without this step Stage 2 has no staged inputs and the 11ty templates
+# have no past reports.
 #
 # Distinguish three cases so a real failure (network, auth, disk)
-# doesn't silently degrade into an empty data/ + missing memory:
+# doesn't silently degrade into an empty data/:
 #   - branch missing on remote (legitimate first run)   → log + continue
 #   - fetch fails for any other reason                   → FATAL exit
 #   - fetch ok but checkout fails                        → FATAL exit

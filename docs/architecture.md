@@ -12,18 +12,15 @@ This document explains the design decisions behind the AI Daily Report pipeline.
 4. **Cheap** — production infra costs $0/month (always-free GCP e2-micro + GitHub Pages + GitHub Actions free tier).
 5. **Schema-first** — catch shape drift between LLM output and templates at validate time, never at render time.
 
-## The VM + CI Architecture
+## Hermes + CI Architecture
 
 ```mermaid
 flowchart TD
-  Timer["systemd timer @ 07:00 Asia/Taipei<br/>Persistent=true"] --> Host
+  Timer["Hermes cron @ 07:00 Asia/Taipei<br/>delivery: Telegram on failure/notable completion"] --> Host
 
-  subgraph Host["GCP e2-micro VM"]
-    CronRun["scripts/cron-run.sh<br/>loads GITHUB_TOKEN from ~/.ai-daily-report.env"]
-    CronRun --> Docker["docker run --rm ai-daily-report:latest<br/>--memory=600m --memory-swap=1g"]
-
-    subgraph Container["Docker container (node:22-slim + claude CLI)"]
-      Entry["scripts/docker-entrypoint.sh<br/>git pull + npm ci --prefer-offline"]
+  subgraph Host["Hermes host / local repo"]
+    CronRun["Hermes job or operator wrapper<br/>loads repo env + Claude auth"]
+    CronRun --> Entry["repository working tree<br/>npm ci when needed"]
 
       subgraph Stage1["Stage 1: Collect (node src/collect.js)"]
         Fetch["runAll() — providers in parallel"]
@@ -36,27 +33,32 @@ flowchart TD
         Curate --> WriteCurated["Write data/staging/curated/<section>.json"]
       end
 
+      subgraph Stage25["Stage 2.5: Context (scripts/hermes/build-report-context.mjs)"]
+        Wiki["Hermes Wiki<br/>/home/bolin8017/Documents/Hermes/Wiki"]
+        Wiki --> Context["Write bounded data/staging/report-context.md"]
+      end
+
       subgraph Stage3["Stage 3: Synthesize (scripts/synthesize.sh)"]
         Synth["claude -p (Sonnet)"]
-        Synth --> WriteEditorial["Write data/staging/editorial.json\n+ data/memory.json"]
+        Synth --> WriteEditorial["Write data/staging/editorial.json only"]
       end
 
       subgraph Stage4["Stage 4: Merge (scripts/merge-report.sh → src/lib/merge.js)"]
         Compose["composeReport() — no LLM,<br/>idempotent; validate source_links"]
         Compose --> WriteReport["Write data/reports/YYYY-MM-DD.json"]
-        WriteReport --> Validate["Zod: ReportSchema + MemorySchema"]
-        Validate --> CommitReport["commit + push report & memory"]
+        WriteReport --> Validate["Zod: ReportSchema"]
+        Validate --> CommitReport["commit + push report + feeds snapshot"]
       end
 
       Entry --> Stage1
       Stage1 --> Stage2
-      Stage2 --> Stage3
+      Stage2 --> Stage25
+      Stage25 --> Stage3
       Stage3 --> Stage4
-    end
   end
 
   Timer --> CronRun
-  CommitReport --> DataBranch[(data branch<br/>orphan, bot-only — reports + memory)]
+  CommitReport --> DataBranch[(data branch<br/>orphan, bot-only — reports + feeds snapshot)]
 
   CronRun -->|"repository_dispatch<br/>(data-committed) after report push"| GHA[GitHub Actions: deploy.yml]
 
@@ -73,13 +75,13 @@ flowchart TD
   Deploy --> Pages[🌐 GitHub Pages CDN]
 ```
 
-### Why VM + systemd timer + Docker?
+### Why Hermes cron instead of the old VM/systemd wrapper?
 
 | Concern | Where | Why |
 |---|---|---|
-| **Scheduling** | systemd timer | Zero cost (already-running VM), reliable, full logs via `journalctl`. `Persistent=true` catches up missed runs (e.g., after a VM reboot). |
-| **LLM call** | `claude -p` inside the container | Uses Max subscription (no API billing). Runs as primary session — no nested-claude deadlock. Credentials persist in a bind-mounted `~/.claude`. |
-| **Isolation** | Docker | Caps memory to 600m so a synthesis spike can't OOM the host's other services. Rebuildable from Dockerfile. |
+| **Scheduling** | Hermes cron | Runs where Hermes already has Telegram delivery, session logs, tools, and local Wiki access. Daily target remains 07:00 Asia/Taipei. |
+| **LLM call** | `claude -p` from the repository pipeline | Uses Max subscription (no API billing). It remains the primary LLM subprocess for Stage 2/3; Hermes orchestrates, observes, and reports rather than replacing the curator/synthesizer roles. |
+| **Cross-day intelligence** | Hermes Wiki + bounded `report-context.md` | Keeps long-term tracking local-only and prevents public `data/memory.json` schema drift from constraining report quality. |
 | **Build (11ty)** | CI | Deterministic, no secrets needed, free hosted runner. |
 | **Deploy (Pages)** | CI | Official `actions/deploy-pages@v4` is the cleanest path. |
 
@@ -88,17 +90,16 @@ flowchart TD
 1. **Nested `claude -p` deadlock** — CCR sessions are themselves `claude` processes, so spawning `claude -p` as a subprocess produced 74-minute SSE keepalive hangs with zero streamed tokens. Small test prompts succeeded (response <10 bytes, streaming channel never strained) which masked the issue until real-payload runs.
 2. **10K-token Read-tool limit** — the agent design needed to Read a merged digest of 4 condensed sources (~19-30K tokens total). The Read tool refused anything over 10K per call. Splitting into multiple Reads worked, but by that point the design was hostile to CCR's constraints.
 
-A plain VM sidesteps both: `claude -p` is the primary process (no nesting), and the staging data is read by the agent via the Read tool rather than piped through the prompt body. The persona/voice/slop rules live in the theme bundle (`themes/ai-builder/lens.md`, `synthesizer.md`, `quality.md`) and are assembled into the prompt at invocation time, keeping the voice rules while shedding the agent-loop framing.
+The current Hermes-hosted/local workflow sidesteps both: `claude -p` is the primary subprocess launched from the repository pipeline (no nested cloud runtime), and staging files are read from disk rather than piped through a giant prompt body. The persona/voice/slop rules live in the theme bundle (`themes/ai-builder/lens.md`, `synthesizer.md`, `quality.md`) and are assembled into the prompt at invocation time, keeping the voice rules while shedding the agent-loop framing.
 
 ## Data flow
 
 ```mermaid
 sequenceDiagram
   autonumber
-  participant Timer as systemd timer
-  participant CronRun as scripts/cron-run.sh
-  participant Docker as Docker engine
-  participant Entry as docker-entrypoint.sh
+  participant Timer as Hermes cron
+  participant CronRun as Hermes/operator wrapper
+  participant Entry as repository working tree
   participant Collect as src/collect.js
   participant Fetchers as src/fetchers/*
   participant AnalyzeSh as scripts/analyze.sh
@@ -110,11 +111,10 @@ sequenceDiagram
   participant Pages
 
   Timer->>CronRun: trigger (07:00 Asia/Taipei)
-  CronRun->>CronRun: load ~/.ai-daily-report.env
-  CronRun->>Docker: run ai-daily-report:latest --memory=600m
-  Docker->>Entry: start (GITHUB_TOKEN injected, /home/pipeline/.claude mounted rw)
-  Entry->>Entry: git pull origin main (into /workspace volume)
-  Entry->>Entry: npm ci --omit=dev --prefer-offline
+  CronRun->>CronRun: load env / secrets and set workdir
+  CronRun->>Entry: run repository pipeline
+  Entry->>Entry: git pull origin main when needed
+  Entry->>Entry: npm ci when package-lock changed
 
   Note over Entry,Collect: Stage 1: Collect
   Entry->>Collect: exec node src/collect.js
@@ -130,13 +130,14 @@ sequenceDiagram
   Curate->>Curate: 4 parallel claude -p (Haiku), read staging slice + themes/.../sections/<id>/curator.md
   Curate->>Curate: Write data/staging/curated/<section>.json
   AnalyzeSh->>Synth: bash scripts/synthesize.sh
-  Synth->>Synth: claude -p (Sonnet), read curated/* + themes/.../synthesizer.md + quality.md
-  Synth->>Synth: Write data/staging/editorial.json + data/memory.json
+  Synth->>Synth: build report-context.md from Hermes Wiki
+  Synth->>Synth: claude -p (Sonnet), read curated/* + report-context.md + themes/.../synthesizer.md + quality.md
+  Synth->>Synth: Write data/staging/editorial.json only
   AnalyzeSh->>Merge: bash scripts/merge-report.sh <date>
   Merge->>Merge: composeReport() — editorial + curated → report; validate source_links
   Merge->>Merge: Write data/reports/YYYY-MM-DD.json
-  AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema + MemorySchema
-  AnalyzeSh->>Git: commit + push report & memory (x-access-token URL)
+  AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema
+  AnalyzeSh->>Git: commit + push report + feeds snapshot (x-access-token URL)
 
   CronRun->>GHA: POST repository_dispatch (data-committed)
   Note over GHA: fired by cron-run.sh right after the push<br/>(replaced the old 00:00 UTC schedule poll)
@@ -279,17 +280,15 @@ Fetchers are organized as **providers** under `src/fetchers/providers/`, each se
 
 ## Memory model
 
-`data/memory.json` is a simple JSON file (not a database) because the dataset is small:
+The active cross-day memory is the local Hermes Wiki at `/home/bolin8017/Documents/Hermes/Wiki`, not a repo-committed JSON file. The pipeline projects that long-term intelligence into a bounded `data/staging/report-context.md` before Stage 3.
 
-- `short_term` — 7-day rolling window of featured repos, observations, threads
-- `long_term` — items promoted from short_term after being referenced 2+ times; pruned at 30 days
-- `topics` — frequency map: `{ tag, hit_count, first_seen, last_seen }`
-- `narrative_arcs` — multi-day patterns: `{ arc_id, title, episodes: [...], status }`
-- `predictions` — falsifiable predictions with `status: pending | confirmed | failed`
+This split keeps three boundaries clean:
 
-The synthesizer (Stage 3) produces the editorial layer **and** the updated memory in its single Sonnet `claude -p` session; the report itself is composed mechanically in Stage 4. `analyze.sh` validates the merged report and the memory against their Zod schemas before committing.
+- **Public report artifacts** stay on the `data` branch (`data/reports/*.json` + `data/feeds-snapshot.json`).
+- **Private intelligence** stays local-only in Hermes Wiki, where Hermes can track arcs and themes without publishing internal notes.
+- **LLM prompt context** stays bounded and auditable through `report-context.md`, avoiding unbounded memory growth and schema coupling.
 
-We considered SQLite and a vector DB (Chroma) but the data doesn't need them. JSON is fine until it grows past ~10 MB (currently ~50 KB).
+`data/memory.json` is retired from the active pipeline. The legacy schema remains in the codebase only for old artifacts / rollback during migration.
 
 ## Quality tooling
 
@@ -312,11 +311,11 @@ The legacy `gh-pages` branch is no longer used. Build runs in CI via `actions/de
 2. Uploads as a Pages artifact (signed via OIDC)
 3. Deploys atomically (no force-push, no orphan commits)
 
-## Scheduled deployment via systemd timer
+## Scheduled deployment via Hermes cron
 
-The production pipeline runs on a Google Cloud **e2-micro** VM (always-free tier) via a systemd timer. The VM hosts other services; the report pipeline is containerized so it cannot impact those.
+Target production runs under **Hermes cron** at 07:00 Asia/Taipei, with Telegram delivery for failures or notable completion. The old Google Cloud e2-micro + systemd + Docker path remains documented here as a legacy wrapper during migration, but the active design assumes Hermes has direct access to the repository and Hermes Wiki.
 
-**One-time setup** (handled by `scripts/setup-vm.sh`, idempotent):
+**Legacy VM one-time setup** (handled by `scripts/setup-vm.sh`, idempotent; retained until Hermes cutover is complete):
 
 | Step | Why |
 |---|---|
@@ -328,7 +327,7 @@ The production pipeline runs on a Google Cloud **e2-micro** VM (always-free tier
 | Write `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh` at invocation time; `chmod 600` to protect the PAT |
 | Install systemd timer units | `ai-daily-report.timer` (daily `OnCalendar=*-*-* 07:00:00` Asia/Taipei) **and** `ai-daily-report-archive.timer` (monthly). Both `Persistent=true` so missed runs (e.g., after a VM reboot) are caught up automatically |
 
-**systemd timers:**
+**Legacy systemd timers:**
 
 Two timers fire two services, both ultimately host-side wrappers around `docker run`:
 
@@ -349,7 +348,7 @@ Two timers fire two services, both ultimately host-side wrappers around `docker 
 1. If `/workspace` is empty, `git clone https://x-access-token:$GITHUB_TOKEN@github.com/bolin8017/ai-daily-report.git .`
 2. Otherwise `git fetch origin main && git reset --hard origin/main` (fresh state every run)
 3. Run `npm ci --omit=dev --prefer-offline` only if `package-lock.json` changed since last install (marker file in `node_modules/.package-lock.json`)
-4. Hydrate `data/` from the `data` orphan branch (reports + memory)
+4. Hydrate `data/` from the `data` orphan branch (reports + feeds snapshot; legacy memory only if still present during migration)
 5. Dispatch on the entrypoint mode (`both` is the default daily run; `archive` is the monthly job; `collect` / `analyze` run a single stage):
    - **Stage 1** (`node src/collect.js`) — collect and stage data
    - **Stages 2-4** (`scripts/analyze.sh`) — curate → synthesize → merge → validate → commit
@@ -363,31 +362,32 @@ Two timers fire two services, both ultimately host-side wrappers around `docker 
 3. `buildSnapshot(raw.feeds)` — writes `data/feeds-snapshot.json` for 11ty
 4. `condenseAll(raw)` — ≤8500-token objects for prompt-size control
 5. Write condensed data + metadata to `data/staging/`
-6. **No commit here** — Stage 1 only writes the volume; commits happen in Stage 4. Staging stays Docker-volume-only, but the `feeds-snapshot.json` it builds is committed by Stage 4 (the 11ty footer needs it at build time). The `data` branch otherwise stays trimmed to reports + `memory.json`.
+6. **No commit here** — Stage 1 only writes staging; commits happen in Stage 4. Staging stays ephemeral, but the `feeds-snapshot.json` it builds is committed by Stage 4 (the 11ty footer needs it at build time). The `data` branch otherwise stays trimmed to reports + `feeds-snapshot.json`.
 
 **Stages 2-4 — Analyze** (`scripts/analyze.sh` orchestrates three sub-stages):
 
 1. **Curate** (`scripts/curate.sh`) — 4 parallel `claude -p` Haiku subprocesses, one per section (shipped / pulse / market / tech). Each reads its staging slice + `themes/<theme>/sections/<id>/curator.md` and writes validated JSON to `data/staging/curated/<section>.json`. Critical-section (shipped, pulse) failure aborts; non-critical (market, tech) failure logs degraded.
-2. **Synthesize** (`scripts/synthesize.sh`) — one `claude -p` Sonnet call. Reads `curated/*` + raw staging + memory + `themes/<theme>/synthesizer.md` + `quality.md`, writes **only** the editorial layer to `data/staging/editorial.json` plus updated `data/memory.json`.
-3. **Merge** (`scripts/merge-report.sh` → `src/lib/merge.js`) — mechanical, no LLM, idempotent. Composes `data/reports/YYYY-MM-DD.json` from `editorial.json` + `curated/*.json` and validates that every `source_links` id resolves to a real curated item (aborts on a dangling link).
-4. Validate outputs: composed `ReportSchema.parse(report)`, `MemorySchema.parse(memory)`
-5. Commit via `src/lib/commit.js` — stages the report + memory files, commits as `report: <date> daily creative brief`, and pushes to the `data` orphan branch (git plumbing + `x-access-token:$GITHUB_TOKEN` URL rewrite; never touches `main`'s working tree).
+2. **Context** (`scripts/hermes/build-report-context.mjs`) — projects local Hermes Wiki intelligence into bounded `data/staging/report-context.md`.
+3. **Synthesize** (`scripts/synthesize.sh`) — one `claude -p` Sonnet call. Reads `curated/*` + raw staging + `report-context.md` + `themes/<theme>/synthesizer.md` + `quality.md`, writes **only** the editorial layer to `data/staging/editorial.json`.
+4. **Merge** (`scripts/merge-report.sh` → `src/lib/merge.js`) — mechanical, no LLM, idempotent. Composes `data/reports/YYYY-MM-DD.json` from `editorial.json` + `curated/*.json` and validates that every `source_links` id resolves to a real curated item (aborts on a dangling link).
+5. Validate outputs: composed `ReportSchema.parse(report)`.
+6. Commit via `src/lib/commit.js` — stages the report + feeds snapshot files, commits as `report: <date> daily creative brief`, and pushes to the `data` orphan branch (git plumbing + `x-access-token:$GITHUB_TOKEN` URL rewrite; never touches `main`'s working tree).
 6. `scripts/cron-run.sh` POSTs a `repository_dispatch` (type `data-committed`) as soon as the run above pushes the report, firing `deploy.yml`, which hydrates `data/` from the `data` branch and deploys to Pages within seconds. The dispatch is needed because the `data` orphan has no `.github/workflows/` tree, so pushes there cannot themselves fire the workflow — and it replaced a `schedule: 0 0 * * *` poll that GitHub drifted by hours, lagging the published site.
 
-**Why systemd timer instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing you onto `ANTHROPIC_API_KEY` (paid, defeats the Max advantage) or OAuth secret juggling. A VM with a one-time interactive `claude /login` sidesteps both — the login token persists in `~/.claude` and every subsequent timer invocation just works.
+**Why Hermes cron instead of GitHub Actions `schedule:`:** GHA schedules run on hosted runners without Claude Code subscription auth, forcing `ANTHROPIC_API_KEY` billing or OAuth secret juggling. Hermes cron runs on the host that already has Claude Code auth, repo access, Telegram delivery, and the local Hermes Wiki.
 
-**Memory budget**: e2-micro has limited RAM shared with other services. Synthesis peaks (~500-700MB for fetchers + claude CLI context) pushed into the 2GB swapfile absorb the burst without OOM. `docker run --memory=600m --memory-swap=1g` caps the container so a runaway can never hurt the host.
+**Resource budget**: the legacy e2-micro path used swap plus Docker memory caps to protect colocated services. Under Hermes cron, keep the same principle: bounded subprocesses, explicit timeouts, and failure reporting rather than silent runaway jobs.
 
 ## Storage: hot/cold split
 
 Reports accumulate forever, but the `data` orphan branch is cloned on every container run and every CI build — an unbounded archive there would slow both. So the report store is split:
 
-- **Hot** — the most recent `HOT_DAYS` (default 60) of `data/reports/*.json` plus `memory.json` live on the `data` branch, always present after a clone.
+- **Hot** — the most recent `HOT_DAYS` (default 60) of `data/reports/*.json` plus `data/feeds-snapshot.json` live on the `data` branch, always present after a clone.
 - **Cold** — older reports are packed monthly into `reports-YYYY-MM.tar.gz` (+ a `.sha256`) and uploaded to **GitHub Releases** under `archive-YYYY-MM` tags. `scripts/archive-month.sh` runs from the monthly timer, removes the now-archived files from the `data` branch, and is idempotent (skips a month whose Release already exists).
 
 At CI build time `scripts/hydrate-archive.sh` pulls the last `HYDRATE_MONTHS` (default 12) months of cold tarballs back into `data/reports/` so 11ty can paginate them into archive pages. Both scripts talk to the GitHub REST API directly with **curl**, not the `gh` CLI — the production VM doesn't have `gh` installed, and adding it just for an upload wasn't worth the dependency.
 
-This is why Stage 1's bulky staging (condensed source dumps, ~hundreds of KB) stays off the `data` branch: keeping the branch lean is the whole point, so only durable artifacts (reports + memory) — plus the small, overwritten `feeds-snapshot.json` the 11ty footer reads at build time — belong there.
+This is why Stage 1's bulky staging (condensed source dumps, ~hundreds of KB) and Hermes-derived `report-context.md` stay off the `data` branch: keeping the branch lean and public-only is the point, so only durable public artifacts (reports plus the small, overwritten `feeds-snapshot.json` the 11ty footer reads at build time) belong there.
 
 ## Trade-offs and known issues
 
@@ -397,7 +397,7 @@ This is why Stage 1's bulky staging (condensed source dumps, ~hundreds of KB) st
 | **External RSSHub dependency** (list in the theme's `sources.yaml`) | Multiple feeds can time out together if a shared instance is slow | `rsshub.js` tries each instance per request, falling through on `5xx` / timeout / network error — so when one instance is down, the next request gets the same route from the backup. `4xx` is treated as a route-level error (no retry, since a bad route will fail on every instance). `runAll` additionally tolerates source-level failure at the outer level. Self-hosting RSSHub was rejected as VM maintenance burden for a once-a-day read. |
 | **HN Algolia API is undocumented** | Score enrichment may break | Wrapped in try/catch; missing scores degrade report quality but don't break the pipeline |
 | **LLM synthesis is the quality single point of failure** | Schema-invalid output blocks the day | The synthesizer writes only the small editorial layer (no 32K-cap exposure); the merge step composes and validates the report deterministically; Zod validation in `analyze.sh` aborts the run before commit. Yesterday's report stays live. |
-| **VM / Docker / systemd timer failure** | Report missed for the day | systemd timer's `Persistent=true` catches up missed runs after a reboot. `OnFailure=` unit can trigger alerting. `journalctl -u ai-daily-report` is the first place to look; `bash scripts/cron-run.sh` can be re-invoked manually. Host uptime is responsibility of the VM operator. |
+| **Hermes cron / host failure** | Report missed for the day | Hermes cron should deliver failures back to Telegram. Manual recovery remains `bash scripts/run.sh --skip-push` or the legacy `bash scripts/cron-run.sh` path, followed by validation before enabling publish. |
 | **Claude subscription token expires** | `claude -p` calls start failing | `~/.claude` needs to be re-authed; pipeline fails loudly rather than silently degrading. Re-run `claude /login` in a throwaway container. |
 
 ## Future work

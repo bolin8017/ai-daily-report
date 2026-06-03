@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Stage 3: Synthesize — single claude -p Sonnet call.
-# Reads curated/* + raw staging + memory, writes ONLY the editorial layer
-# (lead/signals/ideation) to data/staging/editorial.json + updated memory.
+# Reads curated/* + raw staging + bounded Hermes report-context, writes ONLY
+# the editorial layer (lead/signals/ideation) to data/staging/editorial.json.
 # Stage 4 (merge-report.sh) composes the final report from editorial +
-# curated/*; the synthesizer never re-emits curated content.
+# curated/*; the synthesizer never re-emits curated content or writes legacy memory.
 #
 # Env:
 #   CLAUDE_MODEL — model (default: claude-sonnet-4-6)
@@ -25,6 +25,7 @@ LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
 TODAY="$(TZ=Asia/Taipei date +%F)"
 REPORT_FILE="data/reports/${TODAY}.json"
 EDITORIAL_FILE="${STAGING_DIR}/editorial.json"
+REPORT_CONTEXT_FILE="${STAGING_DIR}/report-context.md"
 
 # CLI default output cap is 32K. The editorial-only output rarely exceeds
 # ~6K tokens (curated bundles are no longer in the synth output — that's
@@ -59,49 +60,28 @@ node --input-type=module -e "
 " || echo '[synthesize.sh] source-ages derivation skipped (non-fatal)' >&2
 
 PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
-# Assemble synthesizer prompt + quality slop rules + explicit "Execute
-# now" imperative. The synthesizer writes only the editorial layer
-# (lead/signals/ideation) to data/staging/editorial.json; a downstream
-# merge step composes the final report from editorial + curated/*.json.
-# Without the imperative the model ack-chats; with it, the synthesizer
-# immediately reads inputs and writes the output.
-{
-  cat "$SYNTH_PROMPT_FILE_PATH"
-  if [ -f "$QUALITY_FILE_PATH" ]; then
-    printf '\n\n---\n\n'
-    cat "$QUALITY_FILE_PATH"
-  fi
-  # Use a heredoc rather than per-line printf — printf treats argument
-  # starting with "-" as a flag, which silently dropped the OUTPUT
-  # CONTRACT bullets in a prior version of this script.
-  cat <<EOF
 
+# Build bounded report context from Hermes Wiki + today's curated evidence,
+# then assemble the synthesizer prompt. This replaces legacy public-branch
+# memory as the cross-day context surface.
+if ! node scripts/hermes/build-report-context.mjs \
+  --date "$TODAY" \
+  --staging-dir "$STAGING_DIR"; then
+  echo "[synthesize.sh] report-context generation failed" >&2
+  exit 3
+fi
 
----
-
-## Execute now
-
-Today is ${TODAY}. Use the Read tool on the inputs listed above (curated/*.json + staging files + memory).
-
-**OUTPUT CONTRACT:**
-
-- Write to \`${EDITORIAL_FILE}\` ONLY the editorial layer:
-  - \`schema_version: "2.1-editorial"\` (string literal)
-  - \`date: "${TODAY}"\` (string)
-  - \`theme: "${ACTIVE_THEME}"\` (string)
-  - \`lead: {html: "..."}\`
-  - \`signals: {focus, sleeper, contrarian, predictions, prediction_updates}\`
-  - \`ideation: {general, work}\`
-
-- Do NOT include \`shipped\`, \`pulse\`, \`market\`, \`tech\` sections in editorial.json. These are merged in by a separate step that runs after this one.
-
-- Reference items in \`source_links\` by their **stable ids** (e.g., \`shipped.trending.0:vllm-project/vllm\`) — read the ids from \`data/staging/curated/*.json\`. The merge step validates every source_link id; dangling links abort the pipeline.
-
-- Also write updated memory to \`data/memory.json\`.
-
-Final actions are two Write calls (editorial, then memory). Do not output prose, acknowledgement, or explanation. Begin with Read calls immediately.
-EOF
-} > "$PROMPT_FILE"
+if ! node scripts/hermes/build-synthesizer-prompt.mjs \
+  --date "$TODAY" \
+  --theme "$ACTIVE_THEME" \
+  --editorial-file "$EDITORIAL_FILE" \
+  --report-context-file "$REPORT_CONTEXT_FILE" \
+  --synth-prompt "$SYNTH_PROMPT_FILE_PATH" \
+  --quality "$QUALITY_FILE_PATH" \
+  --output "$PROMPT_FILE"; then
+  echo "[synthesize.sh] prompt generation failed" >&2
+  exit 3
+fi
 
 echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
 
@@ -144,18 +124,14 @@ if [ ! -f "$EDITORIAL_FILE" ]; then
 fi
 
 # Safety net: repair known synthesizer drift before schema validation rather
-# than throwing away an expensive synthesis. repairEditorial() backfills any
-# prediction_updates emitted as a terse {id, status} delta with the
-# text/resolution_date from memory.json (the 2026-05-27 abort, where 43/43
-# updates lacked those required fields), and coerces any out-of-enum status to
-# "unverifiable". Logic + unit tests live in src/lib/repair-editorial.js.
+# than throwing away an expensive synthesis. With Hermes Wiki migration, legacy
+# memory is no longer an input; terse/unknown prediction updates are dropped
+# unless report-context supplied complete prediction details.
 node --input-type=module -e "
   import { readFile, writeFile } from 'node:fs/promises';
   import { repairEditorial } from './src/lib/repair-editorial.js';
   const doc = JSON.parse(await readFile('$EDITORIAL_FILE', 'utf8'));
-  let memory = {};
-  try { memory = JSON.parse(await readFile('data/memory.json', 'utf8')); } catch {}
-  const r = repairEditorial(doc, memory);
+  const r = repairEditorial(doc, {});
   if (r.backfilled || r.statusCoerced || r.dropped || r.ideationCoerced) {
     await writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
     console.error('[synthesize.sh] repaired editorial: backfilled=' + r.backfilled + ' statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped + ' ideationCoerced=' + r.ideationCoerced);
@@ -179,29 +155,6 @@ fi
 # guarantees a guard failure can never block publish. See
 # src/lib/faithfulness.js + docs/superpowers/specs/2026-05-29-faithfulness-guardrail-design.md
 bash scripts/check-faithfulness.sh || true
-
-# Bound memory growth: (a) expire overdue, never-scored pending predictions to
-# unverifiable, (b) drop resolved predictions whose resolution_date passed more
-# than HOT_DAYS ago. The synthesizer has never resolved a prediction, so without
-# (a) the list — and the prediction_updates echo built from it — grows without
-# limit (the unbounded list caused the 2026-05-27 synthesis abort). Hygiene
-# only — never fail the run over it.
-node --input-type=module -e "
-  import { readFile, writeFile } from 'node:fs/promises';
-  import { pruneMemory } from './src/lib/prune-memory.js';
-  try {
-    const doc = JSON.parse(await readFile('data/memory.json', 'utf8'));
-    const retainDays = Number(process.env.HOT_DAYS) || 60;
-    const graceDays = Number(process.env.PREDICTION_GRACE_DAYS) || 30;
-    const s = pruneMemory(doc, { retainDays, graceDays });
-    if (s.prunedPredictions > 0 || s.expiredPending > 0) {
-      await writeFile('data/memory.json', JSON.stringify(doc, null, 2));
-      console.error('[synthesize.sh] pruned memory: expired ' + s.expiredPending + ' overdue pending; removed ' + s.prunedPredictions + ' resolved >' + retainDays + 'd past; ' + s.keptPredictions + ' kept');
-    }
-  } catch (e) {
-    console.error('[synthesize.sh] memory prune skipped: ' + e.message);
-  }
-"
 
 echo "[synthesize.sh] done. editorial: $EDITORIAL_FILE"
 exit 0

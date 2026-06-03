@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Orchestrates the LLM + merge stages: Stage 2 (curate) → Stage 3
 # (synthesize → editorial.json) → Stage 4 (merge → report.json) →
-# validate → commit (reports + memory to the data branch).
+# validate → commit report outputs to the data branch.
 #
 # Reads condensed data from data/staging/ (written by Stage 1). The active
 # theme (themes/$ACTIVE_THEME/) supplies all prompts + section definitions.
@@ -61,7 +61,6 @@ if [ "$FEATURE_NEW_PIPELINE" = "1" ]; then
   else
     COMMIT_PATHS=()
     [ -f "$REPORT_FILE" ] && COMMIT_PATHS+=("$REPORT_FILE")
-    [ -f "data/memory.json" ] && COMMIT_PATHS+=("data/memory.json")
     # feeds-snapshot.json drives the footer source-status pills + community
     # feed lists at 11ty build time. Stage 1 rebuilds it every run; it's
     # otherwise volume-only, but CI builds from the data branch, so commit it

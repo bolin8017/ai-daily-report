@@ -12,14 +12,15 @@ For the public-facing overview and quick start, see [README.md](./README.md). Fo
 
 ## Deployment mode
 
-The pipeline is split into **four stages**, all running inside a Docker container on the VM:
+The pipeline is split into **four stages**. During the Hermes migration it can run either through the legacy Docker/systemd wrapper or directly under Hermes/local operator control; the active data contract is repo-local staging plus Hermes Wiki context, not repo-local memory.
 
 - **Stage 1 — collect** (`src/collect.js`): pure Node.js — fetches 8 sources in parallel (feeds, github-trending, github-search with topic rotation, github-developers, leaderboards, mops, hf-trending, arxiv), condenses each to ≤8500 tokens, builds the feeds snapshot, writes condensed data to `data/staging/`. **Does not commit** — staging is Docker-volume-only; the feeds snapshot it builds is committed later by Stage 4 for the 11ty footer (see "Storage" below).
 - **Stage 2 — curate** (`scripts/curate.sh`): 4 parallel `claude -p --model claude-haiku-4-5` subprocesses (one per section: shipped / pulse / market / tech). Each reads its staging slice, applies its prompt at `themes/<ACTIVE_THEME>/sections/<section>/curator.md`, writes validated JSON to `data/staging/curated/<section>.json`. Critical sections (shipped, pulse) failure aborts; non-critical (market, tech) failure logs degraded.
-- **Stage 3 — synthesize** (`scripts/synthesize.sh`): single `claude -p --model claude-sonnet-4-6` invocation. Reads curated/* + raw staging + memory, applies `themes/<ACTIVE_THEME>/synthesizer.md` + `quality.md`, writes **only the editorial layer** to `data/staging/editorial.json` (lead / signals / ideation, `EditorialSchema 2.1-editorial`) + updated `data/memory.json`. It does **not** emit curated sub-groups — that's what blew the 32K output-token cap on 2026-05-24.
+- **Stage 2.5 — context** (`scripts/hermes/build-report-context.mjs`): builds a bounded `data/staging/report-context.md` from the local Hermes Wiki (`/home/bolin8017/Documents/Hermes/Wiki`) plus current run metadata. This is the only cross-day intelligence input for Stage 3.
+- **Stage 3 — synthesize** (`scripts/synthesize.sh`): single `claude -p --model claude-sonnet-4-6` invocation. Reads curated/* + raw staging + `data/staging/report-context.md`, applies `themes/<ACTIVE_THEME>/synthesizer.md` + `quality.md`, and writes **only the editorial layer** to `data/staging/editorial.json` (lead / signals / ideation, `EditorialSchema 2.1-editorial`). It does **not** emit curated sub-groups and no longer reads or writes `data/memory.json` — the editorial/merge split is what fixed the 32K output-token cap on 2026-05-24.
 - **Stage 4 — merge** (`scripts/merge-report.sh` → `src/lib/merge.js`): pure Node, no LLM, idempotent. Composes the final `data/reports/<date>.json` (ReportSchema 2.1) from `editorial.json` + `curated/*.json`, validating that every `source_links` id exists in the curated outputs (aborts on dangling references).
 
-`scripts/analyze.sh` orchestrates Stage 2 → Stage 3 → Stage 4 → validate → commit (reports + memory only). A legacy lens-based single-stage path is still gated behind `FEATURE_NEW_PIPELINE=0` (predates this redesign; preserved for rollback, produces v1.x reports rendered by templates' legacy partial).
+`scripts/analyze.sh` orchestrates Stage 2 → Stage 2.5 → Stage 3 → Stage 4 → validate → commit (reports + feeds snapshot; no memory commit). A legacy lens-based single-stage path is still gated behind `FEATURE_NEW_PIPELINE=0` (predates this redesign; preserved for rollback, produces v1.x reports rendered by templates' legacy partial).
 
 GitHub Actions deploys the 11ty site to Pages on a push to `main` (code/site changes) or on a `repository_dispatch` the VM fires after committing the day's report to the `data` branch (`data`-branch pushes can't trigger workflows themselves).
 
@@ -28,15 +29,15 @@ GitHub Actions deploys the 11ty site to Pages on a push to `main` (code/site cha
 Two long-lived branches with distinct roles:
 
 - **`main`**: human-authored source — code, templates, CI, scripts, config. Bot never pushes here.
-- **`data`** (orphan branch, no shared history with `main`): bot-produced artifacts — `data/reports/` (rolling 60-day hot window), `data/memory.json`, and `data/feeds-snapshot.json` (small, overwritten each run — the 11ty footer reads it at build time). Only the merge + commit step (Stage 4 / `analyze.sh`) lands here. Staging is not committed (Docker-volume-only); older reports archive to GitHub Releases (see "Storage").
+- **`data`** (orphan branch, no shared history with `main`): bot-produced public artifacts — `data/reports/` (rolling 60-day hot window) and `data/feeds-snapshot.json` (small, overwritten each run — the 11ty footer reads it at build time). `data/memory.json` is retired from the active pipeline; cross-day intelligence lives in the local Hermes Wiki and is projected into `data/staging/report-context.md` per run. Only the merge + commit step (Stage 4 / `analyze.sh`) lands public artifacts here. Staging is not committed; older reports archive to GitHub Releases (see "Storage").
 
 `src/lib/commit.js` builds commits using git plumbing (`read-tree` into an isolated `GIT_INDEX_FILE`, `write-tree`, `commit-tree`, then `push commit:refs/heads/data`) — never checks out the data branch, never touches main's working tree or index. It also has a `--remove` mode (used by the monthly archive job to delete archived reports from the data branch). In CI the build job checks out `main` for code, then `git fetch` + `git checkout refs/remotes/origin/data -- data/` to pull in the recent reports, then hydrates older months from Releases before running 11ty.
 
-**Production runtime**: a Google Cloud e2-micro VM (always-free tier, us-west1) runs the pipeline daily at 07:00 Asia/Taipei via **systemd timer** → `scripts/cron-run.sh` → `docker run ai-daily-report:latest`. A second timer (`ai-daily-report-archive.timer`) runs the monthly archive job. The Docker image contains Node 22, git, and the Claude Code CLI; the repo is cloned into a persistent Docker volume at `/workspace` and refreshed via `git pull` on each run.
+**Production runtime**: target production is Hermes cron at 07:00 Asia/Taipei, delivered back to Telegram on failure or notable completion. The previous Google Cloud e2-micro VM + systemd timer + Docker wrapper remains in the repo as a legacy migration path until Hermes dry-run and first successful no-memory report are verified. A monthly archive job is still required for hot/cold report storage.
 
 **Why stages split from one process**: the original `pipeline.js` called `claude -p` as a subprocess from Node.js, which hung indefinitely due to FD table / SSE keepalive interactions. Splitting the LLM stages into bash-invoked `claude -p` calls (no Node parent) avoids the hang and gives the agent native tool access (Read/Write) instead of piping 50KB+ through the prompt body. The later editorial/merge split (Stage 3 → Stage 4) additionally keeps LLM output small (~3-5K tokens) so it never hits the output-token cap.
 
-**VM environment requirements** (managed by `scripts/setup-vm.sh`):
+**Legacy VM environment requirements** (managed by `scripts/setup-vm.sh`; retained only for migration / rollback):
 
 | Setting | Value | Why |
 |---|---|---|
@@ -46,7 +47,7 @@ Two long-lived branches with distinct roles:
 | **Claude auth** | Bind mount `~/.claude` from host → `/home/pipeline/.claude` in container (read-write) | One-time interactive `claude /login` inside the container creates credentials that persist across timer invocations. Mount must be writable so the CLI can refresh the OAuth token before expiry — a read-only mount deadlocks the pipeline (see commit `faea48e` "fix(docker): let claude cli refresh oauth token" for the failure mode). |
 | **Secrets** | `~/.ai-daily-report.env` with `GITHUB_TOKEN=ghp_...` | Loaded by `scripts/cron-run.sh`, injected into container via `-e GITHUB_TOKEN`. |
 | **Memory limits** | `docker run --memory=600m --memory-swap=1g` | Caps the pipeline so an OOM never kills the host's other services. |
-| **Scheduling** | systemd timer (`systemd/ai-daily-report.timer`) | `Persistent=true` catches up after VM reboots; `OnFailure=` triggers alert on crash; logs go to `journalctl -u ai-daily-report`. |
+| **Scheduling** | legacy systemd timer (`systemd/ai-daily-report.timer`) | Legacy rollback path. Target production scheduling is Hermes cron at 07:00 Asia/Taipei. |
 
 ## How to Run
 
@@ -69,7 +70,7 @@ Two long-lived branches with distinct roles:
 | `npm run check:sources` | Verify `docs/data-sources.md` is in sync with `themes/<ACTIVE_THEME>/sources.yaml`. |
 | `npm run validate:report` | Validate the newest report in `data/reports/` against the composed `ReportSchema`. |
 
-**VM operations** (on the production VM):
+**Legacy VM operations** (only if using the rollback VM path):
 - `bash scripts/setup-vm.sh` — one-time install (swap + Docker + both systemd timers + image build). Idempotent.
 - `sudo systemctl start ai-daily-report.service` — one-off manual daily run.
 - `sudo systemctl start ai-daily-report-archive.service` — one-off manual monthly archive run.
@@ -91,7 +92,7 @@ Two long-lived branches with distinct roles:
 │   │   ├── config.js             # Minimal post-cutover config (providers + report only)
 │   │   ├── editorial.js          # EditorialSchema (Stage 3 output: lead/signals/ideation)
 │   │   ├── report.js             # ReportSchema + buildReportSchema() dynamic composer
-│   │   ├── memory.js
+│   │   ├── memory.js             # legacy schema retained for old data / rollback; not active cross-day state
 │   │   └── staging.js            # Stage 1 → Stage 2 contract (metadata shape)
 │   └── lib/
 │       ├── config.js             # Validated config singleton + ACTIVE_THEME / HOT_DAYS / HYDRATE_MONTHS
@@ -107,9 +108,9 @@ Two long-lived branches with distinct roles:
 │   └── ai-builder/               # Default theme — theme.yaml, sources.yaml, ui-strings.yaml,
 │                                 #   lens.md, synthesizer.md, quality.md, sections/<id>/{manifest,curator,schema,partial}
 ├── scripts/
-│   ├── analyze.sh                # Stage 2→3→4 orchestrator: curate → synthesize → merge → validate → commit
+│   ├── analyze.sh                # Stage 2→2.5→3→4 orchestrator: curate → context → synthesize → merge → validate → commit
 │   ├── curate.sh                 # Stage 2 — 4 parallel claude -p (Haiku) + watchdog
-│   ├── synthesize.sh             # Stage 3 — single claude -p (Sonnet) → editorial.json
+│   ├── synthesize.sh             # Stage 2.5/3 — build report-context, then single claude -p (Sonnet) → editorial.json
 │   ├── merge-report.sh           # Stage 4 — mechanical compose editorial + curated → report.json
 │   ├── run.sh                    # Local dev wrapper (default: Stage 1 only, --full for all stages)
 │   ├── cron-run.sh               # Daily Docker invocation — host git pull + image rebuild + docker run
@@ -132,10 +133,9 @@ Two long-lived branches with distinct roles:
 │   ├── index.njk                 # Main page (schema-version dispatcher → v2/unified.njk)
 │   └── archive.njk               # Archive pages via 11ty pagination
 ├── tests/                        # Vitest (schemas, condense, theme loader, merge, scope, chain integration)
-├── data/                         # .gitignored on main; reports + memory live on the `data` branch
+├── data/                         # .gitignored on main; public artifacts are committed to the `data` branch
 │   ├── reports/                  # Daily reports (YYYY-MM-DD.json), rolling 60-day hot window
-│   ├── staging/                  # Stage 1→2→3 working files (Docker-volume-only, not committed)
-│   ├── memory.json               # v2 cross-day state
+│   ├── staging/                  # Stage 1→2→2.5→3 working files (not committed; includes report-context.md)
 │   └── feeds-snapshot.json       # Condensed snapshot for 11ty templates (rebuilt each run, committed for the footer/feed lists)
 ├── docs/                         # Project documentation (architecture, data-sources, firewall, specs)
 ├── _site/                        # 11ty build output (gitignored — built in CI)
@@ -171,7 +171,7 @@ All data shapes are validated against Zod schemas in `src/schemas/`:
 | section `schema.js` (per theme section) | each `data/staging/curated/<section>.json` | Stage 2 curators after writing |
 | `EditorialSchema` | `data/staging/editorial.json` | `scripts/synthesize.sh` after Stage 3 |
 | `ReportSchema` / `buildReportSchema()` | `data/reports/YYYY-MM-DD.json` | Stage 4 merge + `scripts/analyze.sh` validate |
-| `MemorySchema` | `data/memory.json` | `scripts/analyze.sh` after Stage 3 |
+| `MemorySchema` | legacy `data/memory.json` only | retained for old artifacts / rollback; not active validation |
 
 `buildReportSchema(theme)` composes the report schema at runtime from the active theme's section `schema.js` modules + the static editorial blocks (lead / signals / ideation), so adding a section never requires editing `report.js`. `resolveReportSchema()` returns it.
 
@@ -188,13 +188,16 @@ Note: `ReportSchema` uses `.passthrough()` at the top level and makes most sub-f
 
 ## State Management
 
-Hydrated into the working tree by `scripts/docker-entrypoint.sh` on each container run, and by `.github/workflows/deploy.yml` on each CI build.
+Public artifacts are hydrated into the working tree by the legacy Docker entrypoint and by `.github/workflows/deploy.yml` on each CI build. Cross-day intelligence is intentionally local-only in Hermes Wiki.
 
-- `data/memory.json` (on `data` branch) — v2 schema: `short_term` (7-day) + `long_term` (30-day promotion), `topics` (frequency tracking), `narrative_arcs` (multi-day patterns), `predictions` (with status tracking). Written by Stage 3.
+- `/home/bolin8017/Documents/Hermes/Wiki` — local Hermes Wiki intelligence store. It is not committed to GitHub and is the durable home for themes, arcs, and monitoring notes.
+- `data/staging/report-context.md` — bounded per-run context generated from Hermes Wiki for Stage 3. It is staging-only and not committed.
 - `data/reports/YYYY-MM-DD.json` (on `data` branch, 60-day hot window) — daily reports composed by Stage 4. 11ty reads this directory to generate archive pages.
-- `data/staging/` — **ephemeral, Docker-volume-only** (not committed). Holds Stage 1 condensed files + `metadata.json` + Stage 2 `curated/*` + Stage 3 `editorial.json`.
+- `data/staging/` — **ephemeral** (not committed). Holds Stage 1 condensed files + `metadata.json` + Stage 2 `curated/*` + Stage 2.5 `report-context.md` + Stage 3 `editorial.json`.
 - `data/feeds-snapshot.json` — rebuilt each Stage 1 run and **committed by Stage 4** (small, overwritten daily). The 11ty footer source-status pills + community feed lists read it at build time, and CI builds from the `data` branch, so it must be committed or the footer renders a stale snapshot.
 - **Cold archive** — reports older than `HOT_DAYS` (60) live in GitHub Releases as `archive-YYYY-MM` tags (`reports-YYYY-MM.tar.gz` + sha256), produced by the monthly archive job.
+
+`data/memory.json` is retired from the active pipeline. If it still exists on the `data` branch during migration, remove it after the first successful no-memory report.
 
 ## Environment
 
@@ -288,7 +291,7 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Notes
 
-- **Scheduling**: production runs on the VM via two systemd timers — `ai-daily-report.timer` (daily 07:00 Asia/Taipei) and `ai-daily-report-archive.timer` (monthly). Both have `Persistent=true` (catch up after reboot) and `OnFailure=` (trigger alert). Logs: `journalctl -u ai-daily-report` / `journalctl -u ai-daily-report-archive`.
+- **Scheduling**: target production runs under Hermes cron at 07:00 Asia/Taipei, with Telegram reporting for failures/notable completion. The VM systemd timers (`ai-daily-report.timer`, `ai-daily-report-archive.timer`) remain a legacy rollback path during migration.
 - **Schema-first**: when changing report sections, update the section's `themes/<theme>/sections/<id>/schema.js` first (the dynamic composer picks it up), then the curator prompt, then the section `partial.njk`. This catches mismatches at validate time.
 - **Git push auth** — `src/lib/commit.js` injects `$GITHUB_TOKEN` as an `http.extraheader` via `GIT_CONFIG_COUNT` env vars (Git 2.31+). The token never touches `.git/config` or the remote URL, so a mid-pipeline container crash cannot leave the token persisted in the Docker volume. This is the same mechanism GitHub's own `actions/checkout` uses. `scripts/docker-entrypoint.sh` uses the same pattern for clone/fetch. The archive job's Releases uploads use plain `curl` with the same token (no gh CLI on the VM).
 - **External RSSHub dependency** — `themes/<theme>/sources.yaml → rsshub_urls` lists public instances tried in order. The rsshub provider falls through automatically on any per-request error (timeout, 5xx, network), so a single instance going slow or down degrades one request, not the whole run. `run-all.js` additionally tolerates a fraction of sources failing at the chain level. To add a new instance, append its URL to the list; to force one instance for debugging, set `RSSHUB_URL=...` (which bypasses the list).
@@ -298,7 +301,7 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Quality bar
 
-- All `data/*.json` validate against Zod schemas — staging metadata in `src/collect.js`, editorial in `scripts/synthesize.sh`, report + memory in the merge + `scripts/analyze.sh` steps. Schema drift aborts the run before any commit.
+- All active `data/*.json` artifacts validate against Zod schemas — staging metadata in `src/collect.js`, editorial in `scripts/synthesize.sh`, and the composed report in the merge + `scripts/analyze.sh` steps. Legacy `data/memory.json` validation remains only for rollback/old artifacts. Schema drift aborts the run before any commit.
 - All JS/JSON formatted with Biome (`npm run lint` on every CI run).
 - Vitest tests (schemas, condense, theme loader, merge, scope) run on `npm test` and in CI.
 - Conventional commits encouraged.
