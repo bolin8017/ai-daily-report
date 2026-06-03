@@ -6,7 +6,7 @@
 #
 # Two-stage pipeline:
 #   Stage 1 (collect): fetch + condense + snapshot → commit staging data
-#   Stage 2 (analyze): claude agent reads staging data → writes report + memory → commit
+#   Stage 2 (analyze): claude agent reads staging data → writes editorial/report → commit
 #
 # Both stages run inside the same Docker container invocation.
 
@@ -16,6 +16,8 @@ SECRETS_FILE="${HOME}/.ai-daily-report.env"
 IMAGE="ai-daily-report:latest"
 VOLUME="ai-daily-report-workspace"
 CLAUDE_HOST_DIR="${HOME}/.claude"
+HERMES_WIKI_HOST_ROOT="${HOME}/Documents/Hermes/Wiki/ai-daily-report"
+HERMES_WIKI_CONTAINER_ROOT="/home/pipeline/Hermes/Wiki/ai-daily-report"
 MEMORY_LIMIT="${PIPELINE_MEMORY_LIMIT:-600m}"
 MEMORY_SWAP="${PIPELINE_MEMORY_SWAP:-1g}"
 REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -105,6 +107,11 @@ fi
 # shellcheck source=/dev/null
 set -a; source "$SECRETS_FILE"; set +a
 
+# The host-side AI_DAILY_REPORT_WIKI_ROOT variable is an optional host path
+# override. Inside Docker we intentionally pass the fixed container mount path
+# under the same variable name so build-report-context.mjs can find the Wiki.
+HERMES_WIKI_HOST_ROOT="${AI_DAILY_REPORT_WIKI_ROOT:-$HERMES_WIKI_HOST_ROOT}"
+
 if [ -z "${GITHUB_TOKEN:-}" ]; then
   echo "[cron-run] FATAL: GITHUB_TOKEN not set in ${SECRETS_FILE}"
   exit 1
@@ -115,8 +122,9 @@ if [ ! -d "$CLAUDE_HOST_DIR" ]; then
   exit 1
 fi
 
-# Create the workspace volume if it doesn't exist (idempotent)
+# Create the workspace volume and Hermes Wiki root if they don't exist (idempotent)
 docker volume inspect "$VOLUME" >/dev/null 2>&1 || docker volume create "$VOLUME" >/dev/null
+mkdir -p "$HERMES_WIKI_HOST_ROOT"
 
 # Pull latest main into the host clone, then rebuild image if
 # Dockerfile/package-lock changed since last build
@@ -136,7 +144,9 @@ docker run --rm \
   -e FIRECRAWL_DISABLED \
   -e REPORT_TIMEZONE="${REPORT_TIMEZONE:-Asia/Taipei}" \
   -e CLAUDE_MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}" \
+  -e AI_DAILY_REPORT_WIKI_ROOT="$HERMES_WIKI_CONTAINER_ROOT" \
   -v "$VOLUME":/workspace \
+  -v "$HERMES_WIKI_HOST_ROOT":"$HERMES_WIKI_CONTAINER_ROOT" \
   -v "$CLAUDE_HOST_DIR":/home/pipeline/.claude \
   -v "${HOME}/.claude.json":/home/pipeline/.claude.json \
   "$IMAGE"

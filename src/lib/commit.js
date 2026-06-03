@@ -1,6 +1,6 @@
 // Git commit + push for the daily report pipeline.
 //
-// Bot-produced artifacts (reports, memory, feeds snapshot, staging)
+// Bot-produced artifacts (reports, feeds snapshot, staging)
 // live on the `data` orphan branch so `main` stays a record of
 // human-authored code changes. Commits are built with git plumbing
 // (read-tree into an isolated GIT_INDEX_FILE, write-tree, commit-tree)
@@ -109,14 +109,14 @@ function sanitizeToken(str) {
  * @param {object} opts
  * @param {string} opts.date - YYYY-MM-DD (for logging only)
  * @param {string} [opts.message] - commit message (default: "report: {date} daily creative brief")
- * @param {string[]} [opts.paths] - paths to include (default: reports + memory + snapshot)
+ * @param {string[]} [opts.paths] - paths to include (default: reports + feeds snapshot)
  * @param {string[]} [opts.removePaths] - paths to remove from data branch (Phase 3 archive job)
  * @returns {Promise<{ pushed: boolean, sha: string | null }>}
  */
 export async function commitAndPush({ date, message, paths, removePaths }) {
   await ensureGitAuthor();
 
-  const addPaths = paths ?? ['data/reports', 'data/memory.json', 'data/feeds-snapshot.json'];
+  const addPaths = paths ?? ['data/reports', 'data/feeds-snapshot.json'];
   const removeList = removePaths ?? [];
   const commitMsg = message ?? `report: ${date} daily creative brief`;
   const explicitPaths = Array.isArray(paths);

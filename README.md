@@ -10,24 +10,25 @@ An automated daily tech brief for **AI engineers who build** — RAG, VLM, fine-
 ## How it works
 
 ```
-systemd timer → Docker container (GCP e2-micro)
+Hermes cron / operator trigger → repository pipeline
   ├── Stage 1 (collect):    Node.js fetchers → condense → snapshot (staging)
   ├── Stage 2 (curate):     4× claude -p (Haiku 4.5) → curated/<section>.json
-  ├── Stage 3 (synthesize): claude -p (Sonnet 4.6) → editorial.json + memory
+  ├── Stage 2.5 (context):  Hermes Wiki → bounded report-context.md
+  ├── Stage 3 (synthesize): claude -p (Sonnet 4.6) → editorial.json only
   └── Stage 4 (merge):      mechanical compose → report.json → validate → commit
 
-GitHub Actions cron (daily 00:00 UTC) → pull from `data` branch → 11ty → Pages
+repository_dispatch after data push → GitHub Actions → 11ty → Pages
 ```
 
 **Stage 1 (collect)** fetches GitHub Trending, GitHub topic search, Hacker News, Lobsters, Dev.to, HuggingFace Daily Papers, and ~10 RSS sources in parallel, then condenses each to fit the LLM context budget. Output stays in the Docker volume (`data/staging/`) — no longer committed to the `data` branch.
 
 **Stage 2 (curate)** runs four parallel `claude -p` subprocesses (one per section: shipped / pulse / market / tech), each on Haiku 4.5. Each applies its section curator prompt and writes validated `data/staging/curated/<section>.json`.
 
-**Stage 3 (synthesize)** runs a single `claude -p` on Sonnet 4.6. It reads the curated sections plus raw staging and memory, applies the editorial prompt, and writes **only** the editorial layer (`data/staging/editorial.json`: lead, signals, ideation) plus updated `data/memory.json`.
+**Stage 3 (synthesize)** runs a single `claude -p` on Sonnet 4.6. It reads the curated sections plus a bounded `data/staging/report-context.md` generated from the local Hermes Wiki, applies the editorial prompt, and writes **only** the editorial layer (`data/staging/editorial.json`: lead, signals, ideation). It no longer reads or writes `data/memory.json`.
 
 **Stage 4 (merge)** is mechanical (no LLM): it composes `data/reports/<date>.json` from `editorial.json` + `curated/*.json`, checks for dangling `source_links`, validates against Zod schemas, then commits to the `data` branch.
 
-See [docs/architecture.md](./docs/architecture.md) for design decisions and trade-offs.
+See [docs/architecture.md](./docs/architecture.md) for design decisions and trade-offs. The Hermes takeover plan is tracked in [docs/redesign/hermes-cron-migration.md](./docs/redesign/hermes-cron-migration.md).
 
 ## Report sections
 
@@ -76,7 +77,7 @@ Full per-source breakdown (with URLs and categories): [docs/data-sources.md](./d
 
 | Layer | Tool |
 |---|---|
-| Runtime | GCP e2-micro (free tier), Docker, systemd timer |
+| Runtime | Hermes cron / local operator workflow; legacy VM Docker/systemd wrappers are retained during migration |
 | LLM | Claude Haiku 4.5 (curators) + Sonnet 4.6 (synthesizer) via `claude -p` (Max subscription) |
 | Data | [Octokit](https://github.com/octokit/octokit.js), [cheerio](https://github.com/cheeriojs/cheerio), [rss-parser](https://github.com/rbren/rss-parser), [RSSHub](https://github.com/DIYgod/RSSHub) |
 | Validation | [Zod](https://github.com/colinhacks/zod) |

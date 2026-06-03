@@ -194,9 +194,10 @@ async function main() {
     console.error(`  ✓ ${path}`);
   }
 
-  // Phase 6 — staging + feeds-snapshot are Docker-volume-only ephemeral
-  // artifacts. The data branch stays trimmed to reports + memory.json
-  // (Stage 4 / analyze.sh commits those once synthesis succeeds).
+  // Phase 6 — staging + feeds-snapshot are ephemeral collect outputs.
+  // The data branch stays trimmed to public artifacts: reports plus the
+  // feeds snapshot that 11ty needs. Stage 4 / analyze.sh commits those once
+  // synthesis succeeds; cross-day intelligence lives in Hermes Wiki, not here.
   if (SKIP_PUSH) {
     banner('SKIP_PUSH — stopping before exit');
     return;
