@@ -50,16 +50,6 @@ done
 
 PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
 
-# Build bounded report context from Hermes Wiki + today's curated evidence,
-# then assemble the synthesizer prompt. This replaces legacy public-branch
-# memory as the cross-day context surface.
-if ! node scripts/hermes/build-report-context.mjs \
-  --date "$TODAY" \
-  --staging-dir "$STAGING_DIR"; then
-  echo "[synthesize.sh] report-context generation failed" >&2
-  exit 3
-fi
-
 if ! node scripts/hermes/build-synthesizer-prompt.mjs \
   --date "$TODAY" \
   --theme "$ACTIVE_THEME" \
