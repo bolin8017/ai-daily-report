@@ -90,7 +90,7 @@ flowchart TD
 1. **Nested `claude -p` deadlock** — CCR sessions are themselves `claude` processes, so spawning `claude -p` as a subprocess produced 74-minute SSE keepalive hangs with zero streamed tokens. Small test prompts succeeded (response <10 bytes, streaming channel never strained) which masked the issue until real-payload runs.
 2. **10K-token Read-tool limit** — the agent design needed to Read a merged digest of 4 condensed sources (~19-30K tokens total). The Read tool refused anything over 10K per call. Splitting into multiple Reads worked, but by that point the design was hostile to CCR's constraints.
 
-The current Hermes-hosted/local workflow sidesteps both: `claude -p` is the primary subprocess launched from the repository pipeline (no nested cloud runtime), and staging files are read from disk rather than piped through a giant prompt body. The persona/voice/slop rules live in the theme bundle (`themes/ai-builder/lens.md`, `synthesizer.md`, `quality.md`) and are assembled into the prompt at invocation time, keeping the voice rules while shedding the agent-loop framing.
+The current Hermes-hosted/local workflow sidesteps both: `claude -p` is the primary subprocess launched from the repository pipeline (no nested cloud runtime), and staging files are read from disk rather than piped through a giant prompt body. The persona/voice/slop rules live in the theme bundle (`themes/ai-builder/synthesizer.md` + `quality.md`) and are assembled into the prompt at invocation time, keeping the voice rules while shedding the agent-loop framing.
 
 ## Data flow
 
@@ -175,11 +175,11 @@ flowchart LR
 
 **Schema versioning**: post-cutover reports are `schema_version: 2.1`; legacy `2.0` reports (pre-2026-05-24) still validate and render through the same v2 unified partial. `buildReportSchema()` accepts both via a `z.union([z.literal(2), z.literal(2.1)])`, so the archive stays renderable without a migration pass.
 
-**The passthrough trade-off**: `ReportSchema` and `MemorySchema` use `.passthrough()` at their top level and make most sub-fields optional. This is deliberate — an LLM's output shape naturally drifts with prompt iteration, and a strict schema would reject valid-looking reports for cosmetic reasons. The templates handle missing fields as empty renders rather than crashes.
+**The passthrough trade-off**: `ReportSchema` uses `.passthrough()` at its top level and makes most sub-fields optional. This is deliberate — an LLM's output shape naturally drifts with prompt iteration, and a strict schema would reject valid-looking reports for cosmetic reasons. The templates handle missing fields as empty renders rather than crashes.
 
 ## Agent prompt as the design surface
 
-The persona / voice prompt at `themes/ai-builder/lens.md` (the synthesizer draws on it plus `themes/ai-builder/synthesizer.md` and `themes/ai-builder/quality.md`) is the single biggest lever for output quality on this project, and it's designed around a specific philosophy: **outcome-oriented prompting**, not mechanism-prescriptive rule-listing. (Before the 2026-05-24 theme-bundle move these files lived under `.claude/lenses/`, `.claude/synthesizer.md`, and `.claude/daily-report-quality.md`; relocating them into `themes/<theme>/` is what makes swapping the brief's whole focus a single-directory edit — see "Theme bundle" below.)
+The persona / voice prompt at `themes/ai-builder/synthesizer.md` (with `themes/ai-builder/quality.md`) is the single biggest lever for output quality on this project, and it's designed around a specific philosophy: **outcome-oriented prompting**, not mechanism-prescriptive rule-listing. (Before the 2026-05-24 theme-bundle move these files lived under `.claude/synthesizer.md` and `.claude/daily-report-quality.md`; relocating them into `themes/<theme>/` is what makes swapping the brief's whole focus a single-directory edit — see "Theme bundle" below.)
 
 ### Why outcome-oriented
 
@@ -233,7 +233,7 @@ Prompt iteration happens locally via two complementary paths:
 - `bash scripts/run.sh --skip-push` — runs Stage 1 + the analyze stages (curate → synthesize → merge) without pushing, useful for end-to-end validation of a prompt change.
 - `bash scripts/run.sh --analyze` — runs the analyze stages only (reuses existing staging data), useful for rapid prompt iteration without re-fetching sources. The inner loop is ~2-3 minutes per prompt tweak.
 
-The theme prompts (`themes/ai-builder/lens.md`, `synthesizer.md`, `quality.md`, and the per-section `curator.md` files) are read fresh on every invocation, so editing a prompt doesn't require a rebuild.
+The theme prompts (`themes/ai-builder/synthesizer.md`, `quality.md`, and the per-section `curator.md` files) are read fresh on every invocation, so editing a prompt doesn't require a rebuild.
 
 **The convergence bar**: "would I personally want to read this report if I wasn't the one writing it?" Three iteration rounds (v1-initial → v2-audience-lock → v3-slug-precision) were needed to reach convergence on the current prompt. That bar survived two later structural refactors — the VM migration's move from a 10-step agent workflow to a direct `claude -p` call, and the 2026-05-24 split that pushed item-classification down to the Haiku curators so the Sonnet synthesizer writes only the editorial voice layer.
 
@@ -248,8 +248,7 @@ themes/ai-builder/
 ├── theme.yaml        # manifest: persona, model assignment, section list + order
 ├── sources.yaml      # GitHub topics + RSS/API feed config (moved out of config.json)
 ├── ui-strings.yaml   # tab labels, site title, archive strings
-├── lens.md           # persona / voice (was .claude/lenses/ai-builder.md)
-├── synthesizer.md    # editorial prompt (was .claude/synthesizer.md)
+├── synthesizer.md    # editorial prompt — persona / voice (was .claude/synthesizer.md)
 ├── quality.md        # anti-slop rules (was .claude/daily-report-quality.md)
 └── sections/<id>/    # one per report section (shipped, pulse, market, tech)
     ├── manifest.yaml # id, tab label, critical flag, groups
@@ -288,7 +287,7 @@ This split keeps three boundaries clean:
 - **Private intelligence** stays local-only in Hermes Wiki, where Hermes can track arcs and themes without publishing internal notes.
 - **LLM prompt context** stays bounded and auditable through `report-context.md`, avoiding unbounded memory growth and schema coupling.
 
-`data/memory.json` is retired from the active pipeline. The legacy schema remains in the codebase only for old artifacts / rollback during migration.
+`data/memory.json` and its `MemorySchema` have been removed from the codebase entirely; cross-day state lives only in the local Hermes Wiki.
 
 ## Quality tooling
 
