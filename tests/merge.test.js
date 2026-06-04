@@ -7,6 +7,7 @@ import {
   extractIdSpace,
   findDanglingSourceLinks,
   idPrefix,
+  stripDanglingSourceLinks,
 } from '../src/lib/merge.js';
 
 // Minimal valid fixtures matching the live shape (just enough fields to pass
@@ -145,6 +146,72 @@ describe('findDanglingSourceLinks', () => {
   });
 });
 
+describe('stripDanglingSourceLinks', () => {
+  it('returns the editorial unchanged with no drops when all links resolve', () => {
+    const editorial = fixtureEditorial();
+    const idSpace = extractIdSpace(fixtureCurated());
+    const { editorial: out, dropped } = stripDanglingSourceLinks(editorial, idSpace);
+    expect(dropped).toEqual([]);
+    expect(out.signals.focus[0].source_links).toEqual(['shipped.trending.0:foo/bar']);
+  });
+
+  it('removes only the unresolvable ids and reports their paths, keeping resolvable ones', () => {
+    const editorial = fixtureEditorial({
+      signals: {
+        focus: [
+          {
+            id: 'sig.focus.0',
+            title: 's',
+            body: 'b',
+            audience: 'general',
+            source_links: ['shipped.trending.0', 'shipped.trending.9', 'ghost.id'],
+          },
+        ],
+        predictions: [],
+      },
+    });
+    const idSpace = extractIdSpace(fixtureCurated());
+    const { editorial: out, dropped } = stripDanglingSourceLinks(editorial, idSpace);
+    expect(out.signals.focus[0].source_links).toEqual(['shipped.trending.0']);
+    expect(dropped).toHaveLength(2);
+    expect(dropped.join('\n')).toMatch(/shipped\.trending\.9/);
+    expect(dropped.join('\n')).toMatch(/ghost\.id/);
+  });
+
+  it('does not mutate the input editorial', () => {
+    const editorial = fixtureEditorial({
+      signals: {
+        focus: [{ id: 'sig.focus.0', title: 's', audience: 'general', source_links: ['ghost.id'] }],
+        predictions: [],
+      },
+    });
+    const snapshot = JSON.stringify(editorial);
+    stripDanglingSourceLinks(editorial, extractIdSpace(fixtureCurated()));
+    expect(JSON.stringify(editorial)).toBe(snapshot);
+  });
+
+  it('strips dangling links inside an optional sleeper signal', () => {
+    const editorial = fixtureEditorial({
+      signals: {
+        focus: [],
+        predictions: [],
+        sleeper: {
+          id: 'sig.sleeper',
+          title: 's',
+          audience: 'general',
+          source_links: ['ghost.id', 'pulse.hn.0:hn-1'],
+        },
+      },
+    });
+    const { editorial: out, dropped } = stripDanglingSourceLinks(
+      editorial,
+      extractIdSpace(fixtureCurated()),
+    );
+    expect(out.signals.sleeper.source_links).toEqual(['pulse.hn.0:hn-1']);
+    expect(dropped).toHaveLength(1);
+  });
+});
+
 describe('composeReport', () => {
   it('merges editorial + curated into a valid 2.1 report', async () => {
     const report = await composeReport({
@@ -160,27 +227,30 @@ describe('composeReport', () => {
     expect(report.pulse.hn[0].id).toBe('pulse.hn.0:hn-1');
   });
 
-  it('throws on dangling source_link with explicit id list', async () => {
-    await expect(
-      composeReport({
-        editorial: fixtureEditorial({
-          signals: {
-            focus: [
-              {
-                id: 'sig.focus.0',
-                title: 's',
-                body: 'b',
-                audience: 'general',
-                source_links: ['ghost.id'],
-              },
-            ],
-            predictions: [],
-          },
-        }),
-        curated: fixtureCurated(),
-        themeName: 'ai-builder',
+  // Path Y: a dangling source_link no longer aborts the report. The dead
+  // reference is dropped, the citing item still renders, and the run continues.
+  it('drops a dangling source_link and still composes the report', async () => {
+    const report = await composeReport({
+      editorial: fixtureEditorial({
+        signals: {
+          focus: [
+            {
+              id: 'sig.focus.0',
+              title: 's',
+              body: 'b',
+              audience: 'general',
+              // one real id + one ghost — the ghost is dropped, the real one kept
+              source_links: ['shipped.trending.0:foo/bar', 'ghost.id'],
+            },
+          ],
+          predictions: [],
+        },
       }),
-    ).rejects.toThrow(/dangling source_link/);
+      curated: fixtureCurated(),
+      themeName: 'ai-builder',
+    });
+    expect(report.schema_version).toBe(2.1);
+    expect(report.signals.focus[0].source_links).toEqual(['shipped.trending.0:foo/bar']);
   });
 
   // The 2026-05-28 run aborted here: every source_link was a bare prefix

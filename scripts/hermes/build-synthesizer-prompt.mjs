@@ -42,28 +42,62 @@ export async function buildSynthesizerPrompt({
 
 ## Execute now
 
-Today is ${date}. Use the Read tool on the inputs listed above plus the bounded report context file below.
+Today is ${date}. First use the Read tool on every input listed above, plus the bounded report context:
+- \`${reportContextFile}\` — local-only Hermes Wiki context selected for today's evidence. This is your ONLY cross-day context; do not read the full Wiki, and do not read or write any legacy memory file.
 
-Bounded report context:
-- \`${reportContextFile}\` — Hermes Wiki-derived local-only context selected for today's evidence. Use this as the only cross-day context; do not read the full Wiki and do not read or write legacy memory files.
+<output_contract>
+Produce exactly ONE artifact: the editorial layer, written with the Write tool to
+\`${editorialFile}\`. Nothing else you say is an output.
 
-**OUTPUT CONTRACT:**
+<shape>
+{
+  "schema_version": "2.1-editorial",        // exact string literal
+  "date": "${date}",
+  "theme": "${activeTheme}",
+  "lead": { "html": "..." },
+  "signals": {
+    "focus": [ /* SignalItem */ ],
+    "sleeper": { /* SignalItem */ },         // optional
+    "contrarian": { /* SignalItem */ },      // optional
+    "predictions": [ /* PredictionItem */ ],
+    "prediction_updates": [ /* PredictionItem */ ]  // optional
+  },
+  "ideation": { "general": [ /* IdeaItem */ ], "work": [ /* IdeaItem */ ] }
+}
+</shape>
+Keys marked optional (\`sleeper\`, \`contrarian\`, \`prediction_updates\`) appear only when the
+day's evidence genuinely supports them — never an empty placeholder to fill a slot. Field
+names are exact: ideation items use \`description\` (not \`body\`) and \`dev_time\` (not
+\`difficulty\`); \`status\` is one of the four allowed enum values. See the per-section specs above.
 
-- Write to \`${editorialFile}\` ONLY the editorial layer:
-  - \`schema_version: "2.1-editorial"\` (string literal)
-  - \`date: "${date}"\` (string)
-  - \`theme: "${activeTheme}"\` (string)
-  - \`lead: {html: "..."}\`
-  - \`signals: {focus, sleeper, contrarian, predictions}\`; \`prediction_updates\` is optional and should only be used when report context gives explicit evidence for an existing prediction update.
-  - \`ideation: {general, work}\`
+<exclude>
+Do NOT put \`shipped\`, \`pulse\`, \`market\`, or \`tech\` in this file — a later mechanical step
+merges those from \`data/staging/curated/*.json\`. Re-emitting them is what blew the 32K
+output-token cap on 2026-05-24.
+</exclude>
 
-- Do NOT include \`shipped\`, \`pulse\`, \`market\`, \`tech\` sections in editorial.json. These are merged in by a separate step that runs after this one.
+<source_links>
+Every id in a \`source_links\` array must be COPIED VERBATIM from a curated file you read this
+run — \`data/staging/curated/{shipped,pulse,market,tech}.json\`. The format is
+\`<section>.<subgroup>.<index>:<slug>\`, e.g. \`shipped.trending.0:vllm-project/vllm\`.
+- Never reconstruct, renumber, abbreviate, or guess an id. If you did not read it from a
+  file this run, you do not have it.
+- No grounded curated source for a claim? Use \`[]\`. An empty array is always valid; an
+  invented id never is — it becomes a dead cross-tab link the reader clicks into nowhere.
+- This is abstention, not laziness: fewer-but-real citations beat more-but-fabricated. The
+  merge step silently drops any id it cannot resolve, so a wrong id will not crash the run —
+  it just costs the reader that link, with no warning. The discipline is on you.
+</source_links>
 
-- Reference items in \`source_links\` by their **stable ids** (e.g., \`shipped.trending.0:vllm-project/vllm\`) — read the ids from \`data/staging/curated/*.json\`. The merge step validates every source_link id; dangling links abort the pipeline.
+<no_memory>
+Do not write or update any legacy memory file. Cross-day state lives in Hermes Wiki, already
+distilled into the report context above.
+</no_memory>
+</output_contract>
 
-- Do not write legacy memory files. Cross-day state is maintained outside the public data branch via Hermes Wiki and the bounded report context.
-
-Final action is one Write call to \`${editorialFile}\`. Do not output prose, acknowledgement, or explanation. Begin with Read calls immediately.
+Begin now: Read the inputs, then make exactly ONE Write call to \`${editorialFile}\`. Do not
+print the JSON to stdout, and do not output prose, acknowledgement, or explanation — the
+written file is your entire response.
 `,
   ];
 

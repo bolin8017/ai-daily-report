@@ -14,28 +14,39 @@ import { buildReportSchema } from '../schemas/report.js';
 import { listActiveSections } from './theme.js';
 
 /**
- * Walk every signals/ideation item in editorial.json and yield each
- * source_links entry. Used both for id-space validation and for
- * generating helpful error messages when a link is dangling.
+ * Enumerate the editorial blocks that may carry `source_links`, as
+ * `[pathBase, itemsArray]` pairs. sleeper/contrarian are single objects, wrapped
+ * in a one-element array so callers iterate uniformly. The wrapper array holds
+ * the SAME object reference as `editorial.signals.{sleeper,contrarian}`, so a
+ * caller that mutates `item.source_links` mutates the editorial in place.
  *
  * @param {object} editorial
- * @returns {Generator<{path: string, id: string}>}
+ * @returns {Array<[string, object[]]>}
  */
-function* iterSourceLinks(editorial) {
+function sourceLinkBlocks(editorial) {
   const blocks = [
     ['signals.focus', editorial.signals?.focus ?? []],
     ['signals.predictions', editorial.signals?.predictions ?? []],
     ['ideation.general', editorial.ideation?.general ?? []],
     ['ideation.work', editorial.ideation?.work ?? []],
   ];
-  // sleeper/contrarian are single objects when present
-  if (editorial.signals?.sleeper) {
-    blocks.push(['signals.sleeper', [editorial.signals.sleeper]]);
-  }
+  if (editorial.signals?.sleeper) blocks.push(['signals.sleeper', [editorial.signals.sleeper]]);
   if (editorial.signals?.contrarian) {
     blocks.push(['signals.contrarian', [editorial.signals.contrarian]]);
   }
-  for (const [pathBase, items] of blocks) {
+  return blocks;
+}
+
+/**
+ * Walk every signals/ideation item in editorial.json and yield each
+ * source_links entry. Used both for dangling detection and for generating
+ * helpful warning messages.
+ *
+ * @param {object} editorial
+ * @returns {Generator<{path: string, id: string}>}
+ */
+function* iterSourceLinks(editorial) {
+  for (const [pathBase, items] of sourceLinkBlocks(editorial)) {
     for (let idx = 0; idx < items.length; idx++) {
       const item = items[idx];
       const links = item.source_links ?? [];
@@ -107,6 +118,40 @@ export function findDanglingSourceLinks(editorial, idSpace) {
 }
 
 /**
+ * Return a deep copy of `editorial` with every unresolvable `source_links` id
+ * removed, plus the list of what was dropped. This is the Path-Y referential-
+ * integrity cure: a dangling reference (an id whose `group.subgroup.index`
+ * prefix matches no curated item) degrades to a dropped link — the citing item
+ * still renders, just without that dead cross-tab anchor — instead of aborting
+ * the whole report. Slug-only drift is already tolerated by idPrefix, so only
+ * genuinely wrong coordinates are dropped. Resolvable ids (incl. bare-prefix
+ * references) are preserved verbatim.
+ *
+ * @param {object} editorial
+ * @param {Set<string>} idSpace
+ * @returns {{editorial: object, dropped: string[]}}
+ */
+export function stripDanglingSourceLinks(editorial, idSpace) {
+  const prefixSpace = new Set();
+  for (const id of idSpace) prefixSpace.add(idPrefix(id));
+  const cleaned = structuredClone(editorial);
+  const dropped = [];
+  for (const [pathBase, items] of sourceLinkBlocks(cleaned)) {
+    for (let idx = 0; idx < items.length; idx++) {
+      const links = items[idx]?.source_links;
+      if (!Array.isArray(links)) continue;
+      const kept = [];
+      for (const id of links) {
+        if (prefixSpace.has(idPrefix(id))) kept.push(id);
+        else dropped.push(`${pathBase}[${idx}].source_links: ${id}`);
+      }
+      if (kept.length !== links.length) items[idx].source_links = kept;
+    }
+  }
+  return { editorial: cleaned, dropped };
+}
+
+/**
  * Compose the final v2.1 report from validated editorial + curated inputs.
  *
  * Steps:
@@ -128,22 +173,25 @@ export async function composeReport({ editorial, curated, meta, themeName = 'ai-
   // 1. Validate editorial
   const editorialParsed = EditorialSchema.parse(editorial);
 
-  // 2 + 3. Dangling source_link guard
+  // 2 + 3. Referential-integrity cure (Path Y): drop unresolvable source_links
+  // and warn, rather than aborting the whole report on a single dead anchor.
+  // The synthesizer prompt is the primary defense (cite-or-empty, never invent);
+  // this is the deterministic backstop for whatever still slips through.
   const idSpace = extractIdSpace(curated);
-  const dangling = findDanglingSourceLinks(editorialParsed, idSpace);
-  if (dangling.length > 0) {
-    throw new Error(
-      `dangling source_link references (${dangling.length}):\n  ${dangling.join('\n  ')}`,
+  const { editorial: cured, dropped } = stripDanglingSourceLinks(editorialParsed, idSpace);
+  if (dropped.length > 0) {
+    console.warn(
+      `[merge] dropped ${dropped.length} dangling source_link reference(s) — report still composed:\n  ${dropped.join('\n  ')}`,
     );
   }
 
   // 4. Compose
   const composed = {
     schema_version: 2.1,
-    date: editorialParsed.date,
-    lead: editorialParsed.lead,
-    signals: editorialParsed.signals,
-    ideation: editorialParsed.ideation,
+    date: cured.date,
+    lead: cured.lead,
+    signals: cured.signals,
+    ideation: cured.ideation,
   };
   // Observability block (assembled by the caller from per-stage sidecars).
   // Optional + pre-shaped; the report schema validates it as meta?.optional().
@@ -154,7 +202,7 @@ export async function composeReport({ editorial, curated, meta, themeName = 'ai-
     composed[sec.id] = curated[sec.id] ?? {};
   }
   // Preserve any extra editorial fields (passthrough)
-  for (const [k, v] of Object.entries(editorialParsed)) {
+  for (const [k, v] of Object.entries(cured)) {
     if (!(k in composed) && k !== 'schema_version' && k !== 'theme') {
       composed[k] = v;
     }

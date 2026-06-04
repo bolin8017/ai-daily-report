@@ -36,8 +36,13 @@ describe('build-synthesizer-prompt', () => {
 
     expect(prompt).toContain('data/staging/report-context.md');
     expect(prompt).toContain('bounded report context');
-    expect(prompt).toContain('Final action is one Write call');
-    expect(prompt).toContain('schema_version: "2.1-editorial"');
+    // Output contract: exactly one Write call, written file is the sole output.
+    expect(prompt).toContain('exactly ONE Write call');
+    expect(prompt).toContain('written file is your entire response');
+    expect(prompt).toContain('"2.1-editorial"');
+    // Path Y source_links discipline: cite-or-empty, never invent.
+    expect(prompt).toContain('An empty array is always valid');
+    expect(prompt).not.toContain('abort the pipeline');
     expect(prompt).not.toContain('data/memory.json');
     expect(prompt).not.toContain('Write updated memory');
     expect(prompt).not.toContain('updated memory');
