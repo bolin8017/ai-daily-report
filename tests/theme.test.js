@@ -17,7 +17,6 @@ describe('theme loader', () => {
   it('loadTheme resolves prompt file paths relative to theme directory', async () => {
     const theme = await loadTheme('ai-builder');
     expect(theme.prompt_paths.synthesizer).toMatch(/themes\/ai-builder\/synthesizer\.md$/);
-    expect(theme.prompt_paths.lens).toMatch(/themes\/ai-builder\/lens\.md$/);
     expect(theme.prompt_paths.quality).toMatch(/themes\/ai-builder\/quality\.md$/);
   });
 

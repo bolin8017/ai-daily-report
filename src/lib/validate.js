@@ -2,27 +2,25 @@
 // Validates a JSON file against a Zod schema. Used as a quality gate in run.sh.
 //
 // Usage: node src/lib/validate.js <kind> <path>
-//   kind: config | report | memory | feed-output
+//   kind: config | report | feed-output
 //
 // Exits 0 on success, 1 on failure (prints error details to stderr).
 
 import { readFileSync } from 'node:fs';
 import { ConfigSchema } from '../schemas/config.js';
 import { FetchOutputSchema } from '../schemas/feed-item.js';
-import { MemorySchema } from '../schemas/memory.js';
 import { ReportSchema } from '../schemas/report.js';
 
 const SCHEMAS = {
   config: ConfigSchema,
   report: ReportSchema,
-  memory: MemorySchema,
   'feed-output': FetchOutputSchema,
 };
 
 const [, , kind, path] = process.argv;
 
 if (!kind || !path) {
-  console.error('Usage: node src/lib/validate.js <config|report|memory|feed-output> <path>');
+  console.error('Usage: node src/lib/validate.js <config|report|feed-output> <path>');
   process.exit(1);
 }
 
