@@ -1,11 +1,11 @@
 # Daily Report Quality Rules
 
-This file is the quality-control companion to `.claude/lenses/ai-builder.md`.
-Read that file first for the workflow (Steps 1–6 section descriptions), then apply these rules.
+This file is the writing-quality / anti-slop companion to `themes/ai-builder/synthesizer.md`.
+Read the synthesizer prompt first (job, reader, grounding contract, per-section specs); these rules govern how the prose must read on top of it.
 
 ---
 
-### Step 7: Self-check
+### Writing-quality self-check (anti-slop pass)
 
 #### Why this step exists
 
