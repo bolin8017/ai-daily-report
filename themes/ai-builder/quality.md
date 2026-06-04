@@ -32,7 +32,7 @@ Read that file first for the workflow (Steps 1–6 section descriptions), then a
 
 **結構性錯誤（4 位外審 reviewer 獨立 flag 的 v1 問題）：**
 
-6. **Kebab-case identifier 洩漏到 prose**。如果你的 prose 出現 `arc-something-something` / `topic-xxx-xxx` / `thread-xxx` / `pred-xxx-N` 這種 kebab-case slug，代表你把 memory 系統的 internal id 直接貼到讀者眼前——這是讀者 1 秒認出「這是 LLM 產出」的 red flag。
+6. **Kebab-case identifier 洩漏到 prose**。如果你的 prose 出現 `arc-something-something` / `topic-xxx-xxx` / `thread-xxx` / `pred-xxx-N` 這種 kebab-case slug，代表你把內部 id 系統的 slug 直接貼到讀者眼前——這是讀者 1 秒認出「這是 LLM 產出」的 red flag。
 
 **哪些欄位算 "prose"（禁止 kebab-case slug）**：任何 template 會 render 成人類可讀文字的欄位，包括但不限於：
 - `.lead.html`（整段 HTML prose）
@@ -45,14 +45,13 @@ Read that file first for the workflow (Steps 1–6 section descriptions), then a
 - `.predictions[].text`
 
 **哪些欄位算 "metadata"（允許 kebab-case slug）**：
-- `.signals[].arc_ref` — 這個欄位就是用 memory arc id 做 cross-reference 的
 - `.predictions[].id` — 預測自己的 id
-- `data/memory.json` 的所有內部 id 欄位
+- `source_links` 裡引用 curated 項目用的 stable id（如 `shipped.trending.0:...`）— 只在 source_links 用，不進 prose
 
 **具體 v2 失敗案例**：上一版 iteration v2 的某個 signal body 寫了：
 > 「昨天 arc-platform-deplatforming 剛 emerging，今天升到 episode 2...」
 
-這是錯的。正確寫法是用該 arc 在 `memory.narrative_arcs[].title` 裡的人類可讀描述替代：
+這是錯的。正確寫法是用該 arc 在 report context 裡的人類可讀描述替代：
 > 「昨天『OSS 供應鏈風險：從程式碼擴張到平台撤權』這條 pattern 剛 emerging，今天升到 episode 2...」
 
 **檢查紀律**：寫完每個 prose 欄位，mentally grep 一遍 `arc-` / `topic-` / `thread-` / `pred-` prefix。任何命中 = 用對應 arc / topic / prediction 的人類可讀 title 替換。不要偷懶用 `<arc title here>` 這類 placeholder——必須是讀者能直接讀懂的中文短語。
