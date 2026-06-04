@@ -2,7 +2,7 @@
 # Stage 2: Curate — 4 parallel claude -p subprocesses, one per section.
 # Each gets its own watchdog. Output validated against per-section schema.
 #
-# Usage: scripts/curate.sh
+# Usage: scripts/curate.sh [section ...]   # no args = all four; e.g. `market` re-runs one
 # Env:
 #   CURATE_MODEL — model (default: claude-haiku-4-5)
 #   STAGING_DIR  — input dir (default: data/staging)
@@ -11,6 +11,7 @@
 # Exit codes:
 #   0  — all critical (shipped, pulse) succeeded
 #   1  — a critical section failed (abort pipeline)
+#   2  — unknown section argument
 
 set -uo pipefail
 
@@ -27,8 +28,22 @@ mkdir -p "$CURATED_DIR"
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR"
 
-SECTIONS=(shipped pulse market tech)
+ALL_SECTIONS=(shipped pulse market tech)
 CRITICAL=(shipped pulse)
+
+# Optional positional args restrict the run to specific sections, e.g.
+#   bash scripts/curate.sh market        # re-run only the market curator
+# No args = run all four (production default; unchanged behavior).
+SECTIONS=("${ALL_SECTIONS[@]}")
+if [ "$#" -gt 0 ]; then
+  SECTIONS=()
+  for arg in "$@"; do
+    case " ${ALL_SECTIONS[*]} " in
+      *" ${arg} "*) SECTIONS+=("${arg}") ;;
+      *) echo "[curate.sh] unknown section: ${arg} (valid: ${ALL_SECTIONS[*]})" >&2; exit 2 ;;
+    esac
+  done
+fi
 
 run_curator() {
   local section="$1"
