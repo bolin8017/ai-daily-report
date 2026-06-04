@@ -266,7 +266,7 @@ npm run check:sources
 
 ## 鑑識備忘
 
-- **抓取頻率**：所有來源每天 07:00 Asia/Taipei 抓一次（systemd timer + Docker）。
+- **抓取頻率**：所有來源每天 07:00 Asia/Taipei 抓一次（Hermes cron）。
 - **失敗容忍度**：4 個 fetcher 同層級 parallel，允許 1 個失敗（`src/fetchers/all.js`）；feeds.js 內部對 RSSHub 走 instance fallback，對單一 RSS/JSON 失敗則跳過該來源不中斷整個 fetcher。
 - **GitHub API quota**：所有 GitHub fetcher 共用同一 `GITHUB_TOKEN`；`github-search` 走 search API 限制（已驗證 30 req/min），`github-developers` 對 README enrichment 用 5-batch 控速以避開 secondary rate limit。
 - **數量**：抓取後經 `src/lib/condense.js` 壓到每來源 ≤8500 tokens，再交給 Stage 2 的 `claude -p` 分析。
