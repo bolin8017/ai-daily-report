@@ -9,6 +9,9 @@
 // criticality is DECLARED here but enforced by nobody yet — the sequencer
 // (Phase 2) will read it. Declaring all four curators 'required' now is a pure
 // no-op until then, matching the spec's all-required decision.
+//
+// `command` is the argv the sequencer (src/pipeline/run.js) spawns to produce a
+// stage's outputs. It is declarative data only — nothing here executes it.
 
 export const CURATE_SECTIONS = ['shipped', 'pulse', 'market', 'tech'];
 
@@ -20,6 +23,7 @@ export const STAGES = [
     criticality: 'required',
     outputs: ['metadata.json'],
     satisfiedCheck: 'today-metadata',
+    command: ['node', 'src/collect.js', '--skip-push'],
   },
   ...CURATE_SECTIONS.map((s) => ({
     id: `curate.${s}`,
@@ -28,6 +32,7 @@ export const STAGES = [
     criticality: 'required',
     outputs: [`curated/${s}.json`],
     satisfiedCheck: 'fresh-outputs',
+    command: ['bash', 'scripts/curate.sh', s],
   })),
   {
     id: 'context',
@@ -36,6 +41,7 @@ export const STAGES = [
     criticality: 'required',
     outputs: ['report-context.md'],
     satisfiedCheck: 'fresh-outputs',
+    command: ['bash', 'scripts/context.sh'],
   },
   {
     id: 'synthesize',
@@ -46,6 +52,7 @@ export const STAGES = [
     criticality: 'required',
     outputs: ['editorial.json'],
     satisfiedCheck: 'fresh-outputs',
+    command: ['bash', 'scripts/synthesize.sh'],
   },
   {
     id: 'faithfulness',
@@ -54,6 +61,7 @@ export const STAGES = [
     criticality: 'optional', // never-abort guard
     outputs: ['editorial.json'], // intent annotation only; 'editorial-audited' reads editorial.json directly, not this list
     satisfiedCheck: 'editorial-audited',
+    command: ['bash', 'scripts/check-faithfulness.sh'],
   },
   {
     id: 'merge',
@@ -62,6 +70,7 @@ export const STAGES = [
     criticality: 'required',
     outputs: [], // report lands outside staging; see 'report-for-day'
     satisfiedCheck: 'report-for-day',
+    command: ['bash', 'scripts/merge-report.sh'],
   },
 ];
 

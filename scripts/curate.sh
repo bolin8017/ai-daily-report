@@ -57,7 +57,7 @@ run_curator() {
   # Assemble the curator prompt and append an explicit "Execute now"
   # imperative at the end. Without the imperative Haiku ack-chats; with it,
   # the model treats the prompt as an immediate task. Mirrors the pattern
-  # used by legacy analyze.sh for the lens prompts.
+  # used by the legacy lens prompts.
   {
     node -e "
       import('./src/curators/${section}.js').then(m => m.getPrompt()).then(p => process.stdout.write(p));

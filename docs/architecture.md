@@ -102,9 +102,11 @@ sequenceDiagram
   participant Entry as repository working tree
   participant Collect as src/collect.js
   participant Fetchers as src/fetchers/*
-  participant AnalyzeSh as scripts/analyze.sh
+  participant Seq as src/pipeline/run.js
   participant Curate as scripts/curate.sh (Haiku × 4)
+  participant Context as scripts/context.sh
   participant Synth as scripts/synthesize.sh (Sonnet)
+  participant Faith as scripts/check-faithfulness.sh
   participant Merge as scripts/merge-report.sh
   participant Git
   participant GHA as GitHub Actions
@@ -125,19 +127,22 @@ sequenceDiagram
   Collect->>Collect: write data/staging/* (local staging, not committed)
 
   Note over Entry,Merge: Stage 2-4: Analyze (curate → synthesize → merge)
-  Entry->>AnalyzeSh: exec scripts/analyze.sh
-  AnalyzeSh->>Curate: bash scripts/curate.sh
-  Curate->>Curate: 4 parallel claude -p (Haiku), read staging slice + themes/.../sections/<id>/curator.md
+  Entry->>Seq: node src/pipeline/run.js --resume
+  Seq->>Curate: bash scripts/curate.sh <section> (×4 — parallel batch)
+  Curate->>Curate: claude -p (Haiku), read staging slice + themes/.../sections/<id>/curator.md
   Curate->>Curate: Write data/staging/curated/<section>.json
-  AnalyzeSh->>Synth: bash scripts/synthesize.sh
-  Synth->>Synth: build report-context.md from Hermes Wiki
+  Seq->>Context: bash scripts/context.sh
+  Context->>Context: build report-context.md from Hermes Wiki + run metadata
+  Seq->>Synth: bash scripts/synthesize.sh
   Synth->>Synth: claude -p (Sonnet), read curated/* + report-context.md + themes/.../synthesizer.md + quality.md
   Synth->>Synth: Write data/staging/editorial.json only
-  AnalyzeSh->>Merge: bash scripts/merge-report.sh <date>
+  Seq->>Faith: bash scripts/check-faithfulness.sh
+  Faith->>Faith: temporal + attribution audit, soft-repair editorial.json (never-abort)
+  Seq->>Merge: bash scripts/merge-report.sh
   Merge->>Merge: composeReport() — editorial + curated → report; validate source_links
+  Merge->>Merge: Zod validate ReportSchema
   Merge->>Merge: Write data/reports/YYYY-MM-DD.json
-  AnalyzeSh->>AnalyzeSh: Zod validate ReportSchema
-  AnalyzeSh->>Git: commit + push report + feeds snapshot (x-access-token URL)
+  Seq->>Git: commit + push report + feeds snapshot (x-access-token URL)
 
   CronRun->>GHA: POST repository_dispatch (data-committed)
   Note over GHA: fired by the Hermes cron production pipeline<br/>right after the push (replaced the old schedule poll)
@@ -325,7 +330,7 @@ Production runs under **Hermes cron** at 07:00 Asia/Taipei, with Telegram delive
 5. Write condensed data + metadata to `data/staging/`
 6. **No commit here** — Stage 1 only writes staging; commits happen in Stage 4. Staging stays ephemeral, but the `feeds-snapshot.json` it builds is committed by Stage 4 (the 11ty footer needs it at build time). The `data` branch otherwise stays trimmed to reports + `feeds-snapshot.json`.
 
-**Stages 2-4 — Analyze** (`scripts/analyze.sh` orchestrates three sub-stages):
+**Stages 2-4 — Analyze** (`scripts/run.sh` drives the `src/pipeline/run.js` sequencer over three sub-stages):
 
 1. **Curate** (`scripts/curate.sh`) — 4 parallel `claude -p` Haiku subprocesses, one per section (shipped / pulse / market / tech). Each reads its staging slice + `themes/<theme>/sections/<id>/curator.md` and writes validated JSON to `data/staging/curated/<section>.json`. Critical-section (shipped, pulse) failure aborts; non-critical (market, tech) failure logs degraded.
 2. **Context** (`scripts/hermes/build-report-context.mjs`) — projects local Hermes Wiki intelligence into bounded `data/staging/report-context.md`.
@@ -357,7 +362,7 @@ This is why Stage 1's bulky staging (condensed source dumps, ~hundreds of KB) an
 | **GitHub Trending HTML can change** | github-trending provider returns 0 repos | cheerio is more resilient than regex; `runAll` tolerates degraded sources; schema validator catches empty report and aborts the deploy |
 | **External RSSHub dependency** (list in the theme's `sources.yaml`) | Multiple feeds can time out together if a shared instance is slow | `rsshub.js` tries each instance per request, falling through on `5xx` / timeout / network error — so when one instance is down, the next request gets the same route from the backup. `4xx` is treated as a route-level error (no retry, since a bad route will fail on every instance). `runAll` additionally tolerates source-level failure at the outer level. Self-hosting RSSHub was rejected as a maintenance burden for a once-a-day read. |
 | **HN Algolia API is undocumented** | Score enrichment may break | Wrapped in try/catch; missing scores degrade report quality but don't break the pipeline |
-| **LLM synthesis is the quality single point of failure** | Schema-invalid output blocks the day | The synthesizer writes only the small editorial layer (no 32K-cap exposure); the merge step composes and validates the report deterministically; Zod validation in `analyze.sh` aborts the run before commit. Yesterday's report stays live. |
+| **LLM synthesis is the quality single point of failure** | Schema-invalid output blocks the day | The synthesizer writes only the small editorial layer (no 32K-cap exposure); the merge step composes and validates the report deterministically; Zod validation in the merge stage aborts the run before commit. Yesterday's report stays live. |
 | **Hermes cron / host failure** | Report missed for the day | Hermes cron should deliver failures back to Telegram. Manual recovery remains `bash scripts/run.sh --skip-push`, followed by validation before enabling publish. |
 | **Claude subscription token expires** | `claude -p` calls start failing | `~/.claude` needs to be re-authed; pipeline fails loudly rather than silently degrading. Re-run `claude /login` to re-auth. |
 

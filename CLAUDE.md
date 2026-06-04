@@ -20,7 +20,7 @@ The pipeline is split into **four stages**, run under Hermes cron (07:00 Asia/Ta
 - **Stage 3 — synthesize** (`scripts/synthesize.sh`): single `claude -p --model claude-sonnet-4-6` invocation. Reads curated/* + raw staging + `data/staging/report-context.md`, applies `themes/<ACTIVE_THEME>/synthesizer.md` + `quality.md`, and writes **only the editorial layer** to `data/staging/editorial.json` (lead / signals / ideation, `EditorialSchema 2.1-editorial`). It does **not** emit curated sub-groups and no longer reads or writes `data/memory.json` — the editorial/merge split is what fixed the 32K output-token cap on 2026-05-24.
 - **Stage 4 — merge** (`scripts/merge-report.sh` → `src/lib/merge.js`): pure Node, no LLM, idempotent. Composes the final `data/reports/<date>.json` (ReportSchema 2.1) from `editorial.json` + `curated/*.json`, validating that every `source_links` id exists in the curated outputs (aborts on dangling references).
 
-`scripts/analyze.sh` orchestrates Stage 2 → Stage 2.5 → Stage 3 → Stage 4 → validate → commit (reports + feeds snapshot; no memory commit). The earlier `FEATURE_NEW_PIPELINE=0` lens-based single-stage path has been removed; the v1.x reports it produced before 2026-05-22 still live on the `data` branch and render through the templates' legacy lens partial.
+`scripts/run.sh` drives the `src/pipeline` DAG sequencer (`src/pipeline/run.js`, which reads `stages.js` + `satisfied()`): Stage 2 → 2.5 → 3 → 3.5 → Stage 4, skipping already-satisfied stages on resume, then commits (reports + feeds snapshot; no memory commit). The earlier `FEATURE_NEW_PIPELINE=0` lens-based single-stage path has been removed; the v1.x reports it produced before 2026-05-22 still live on the `data` branch and render through the templates' legacy lens partial.
 
 GitHub Actions deploys the 11ty site to Pages on a push to `main` (code/site changes) or on a `repository_dispatch` (type `data-committed`) the Hermes cron production pipeline fires after committing the day's report to the `data` branch (`data`-branch pushes can't trigger workflows themselves).
 
@@ -29,7 +29,7 @@ GitHub Actions deploys the 11ty site to Pages on a push to `main` (code/site cha
 Two long-lived branches with distinct roles:
 
 - **`main`**: human-authored source — code, templates, CI, scripts, config. Bot never pushes here.
-- **`data`** (orphan branch, no shared history with `main`): bot-produced public artifacts — `data/reports/` (rolling 60-day hot window) and `data/feeds-snapshot.json` (small, overwritten each run — the 11ty footer reads it at build time). `data/memory.json` is retired from the active pipeline; cross-day intelligence lives in the local Hermes Wiki and is projected into `data/staging/report-context.md` per run. Only the merge + commit step (Stage 4 / `analyze.sh`) lands public artifacts here. Staging is not committed; older reports archive to GitHub Releases (see "Storage").
+- **`data`** (orphan branch, no shared history with `main`): bot-produced public artifacts — `data/reports/` (rolling 60-day hot window) and `data/feeds-snapshot.json` (small, overwritten each run — the 11ty footer reads it at build time). `data/memory.json` is retired from the active pipeline; cross-day intelligence lives in the local Hermes Wiki and is projected into `data/staging/report-context.md` per run. Only the merge + commit step (Stage 4 / `run.sh`'s commit tail) lands public artifacts here. Staging is not committed; older reports archive to GitHub Releases (see "Storage").
 
 `src/lib/commit.js` builds commits using git plumbing (`read-tree` into an isolated `GIT_INDEX_FILE`, `write-tree`, `commit-tree`, then `push commit:refs/heads/data`) — never checks out the data branch, never touches main's working tree or index. It also has a `--remove` mode (used by the monthly archive job to delete archived reports from the data branch). In CI the build job checks out `main` for code, then `git fetch` + `git checkout refs/remotes/origin/data -- data/` to pull in the recent reports, then hydrates older months from Releases before running 11ty.
 
@@ -46,7 +46,7 @@ Two long-lived branches with distinct roles:
 | `bash scripts/run.sh --skip-push` | Stages 1–4; writes outputs to local `data/` but skips commit/push. Inspect the result by reading the files directly (e.g. `jq . data/reports/$(date +%F).json`). |
 | `bash scripts/run.sh --analyze` | Stages 2–4 only (assumes `data/staging/` is populated — run Stage 1 first, or hydrate from `data` branch: `git fetch origin data && git checkout origin/data -- data/`). |
 | `npm run collect` / `npm run collect:dry` | Direct invocation of `node src/collect.js` with or without `--skip-push`. |
-| `npm run analyze` | Direct invocation of `bash scripts/analyze.sh` (curate → synthesize → merge → commit). |
+| `npm run analyze` | Alias for `bash scripts/run.sh --analyze` (Stages 2–4 via the sequencer; **no push** by default — use `--full` or clear `SKIP_PUSH` to publish). |
 | `node src/fetchers/feeds.js` | Any single fetcher can still be run standalone; all fetchers are dual-mode (importable + CLI). |
 | `node src/lib/condense.js` | Standalone mode reads `tmp/*.json`, writes `tmp/*-condensed.json` — useful for debugging the condense budget. |
 | `bash scripts/merge-report.sh [DATE]` | Re-run Stage 4 alone against existing `editorial.json` + `curated/*` (debug the merge / dangling-link check without re-invoking the LLM). |
@@ -69,6 +69,8 @@ Two long-lived branches with distinct roles:
 │   │   ├── run-all.js            # Parallel chain runner — used by collect.js
 │   │   └── _dispatch.js          # Shared helper that detects CLI mode and emits JSON
 │   ├── curators/                 # Stage 2 curator orchestrators (_base.js resolves theme curator paths)
+│   ├── pipeline/                 # Orchestration: stages.js (DAG registry), satisfied.js
+│   │                             #   (resume check), run.js (sequencer: resume/barrier/batches)
 │   ├── schemas/                  # Zod schemas (single source of truth)
 │   │   ├── config.js             # Minimal post-cutover config (providers + report only)
 │   │   ├── editorial.js          # EditorialSchema (Stage 3 output: lead/signals/ideation)
@@ -88,11 +90,10 @@ Two long-lived branches with distinct roles:
 │   └── ai-builder/               # Default theme — theme.yaml, sources.yaml, ui-strings.yaml,
 │                                 #   synthesizer.md, quality.md, sections/<id>/{manifest,curator,schema,partial}
 ├── scripts/
-│   ├── analyze.sh                # Stage 2→2.5→3→4 orchestrator: curate → context → synthesize → merge → validate → commit
-│   ├── curate.sh                 # Stage 2 — 4 parallel claude -p (Haiku) + watchdog
+│   ├── run.sh                    # Pipeline entry: Stage 1 then drives the sequencer; --full publishes
+│   ├── curate.sh                 # Stage 2 — 4 parallel claude -p (Haiku); accepts a section arg to re-run one
 │   ├── synthesize.sh             # Stage 2.5/3 — build report-context, then single claude -p (Sonnet) → editorial.json
 │   ├── merge-report.sh           # Stage 4 — mechanical compose editorial + curated → report.json
-│   ├── run.sh                    # Local dev wrapper (default: Stage 1 only, --full for all stages)
 │   ├── archive-month.sh          # Package reports >HOT_DAYS → GitHub Releases (curl + REST API)
 │   ├── hydrate-archive.sh        # CI build helper — pull last HYDRATE_MONTHS from Releases
 │   └── watchdog.sh               # /proc/$PID/io + CPU liveness monitor for claude -p
@@ -140,7 +141,7 @@ All data shapes are validated against Zod schemas in `src/schemas/`:
 | `StagingMetadataSchema` | `data/staging/metadata.json` | `src/collect.js` before writing (Stage 1 → Stage 2 contract) |
 | section `schema.js` (per theme section) | each `data/staging/curated/<section>.json` | Stage 2 curators after writing |
 | `EditorialSchema` | `data/staging/editorial.json` | `scripts/synthesize.sh` after Stage 3 |
-| `ReportSchema` / `buildReportSchema()` | `data/reports/YYYY-MM-DD.json` | Stage 4 merge + `scripts/analyze.sh` validate |
+| `ReportSchema` / `buildReportSchema()` | `data/reports/YYYY-MM-DD.json` | Stage 4 merge + `scripts/run.sh` validate |
 
 `buildReportSchema(theme)` composes the report schema at runtime from the active theme's section `schema.js` modules + the static editorial blocks (lead / signals / ideation), so adding a section never requires editing `report.js`. `resolveReportSchema()` returns it.
 
@@ -269,7 +270,7 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Quality bar
 
-- All active `data/*.json` artifacts validate against Zod schemas — staging metadata in `src/collect.js`, editorial in `scripts/synthesize.sh`, and the composed report in the merge + `scripts/analyze.sh` steps. Schema drift aborts the run before any commit.
+- All active `data/*.json` artifacts validate against Zod schemas — staging metadata in `src/collect.js`, editorial in `scripts/synthesize.sh`, and the composed report in the merge step. Schema drift aborts the run before any commit.
 - All JS/JSON formatted with Biome (`npm run lint` on every CI run).
 - Vitest tests (schemas, condense, theme loader, merge, scope) run on `npm test` and in CI.
 - Conventional commits encouraged.

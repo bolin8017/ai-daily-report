@@ -23,6 +23,30 @@ if [ -f .env ]; then
   set -a; source .env; set +a
 fi
 
+DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%F)
+
+# Commit the day's report + feeds snapshot to the data branch (the publish tail,
+# previously part of the analyze orchestrator). Gated by SKIP_PUSH so dev modes
+# never publish. The sequencer runs to merge first; with set -e a sequencer
+# failure aborts run.sh before this is reached, so a failed run never publishes.
+commit_outputs() {
+  local date="$1"
+  if [ "${SKIP_PUSH:-0}" = "1" ]; then
+    echo "[run] SKIP_PUSH — skipping commit and push"
+    return 0
+  fi
+  local report_file="data/reports/${date}.json"
+  local commit_paths=()
+  [ -f "$report_file" ] && commit_paths+=("$report_file")
+  [ -f "data/feeds-snapshot.json" ] && commit_paths+=("data/feeds-snapshot.json")
+  if [ "${#commit_paths[@]}" -eq 0 ]; then
+    echo "[run] no outputs to commit — exiting nonzero" >&2
+    return 1
+  fi
+  echo "[run] committing ${#commit_paths[@]} files to data branch..."
+  node src/lib/commit.js "$date" "report: ${date} daily creative brief" "${commit_paths[@]}"
+}
+
 MODE="collect-only"
 export SKIP_PUSH=1
 
@@ -63,13 +87,15 @@ case "$MODE" in
     node src/collect.js --skip-push
     ;;
   full)
-    echo "[run] Stage 1 + Stage 2 + Stage 3"
+    echo "[run] Stage 1 (collect) + sequencer (curate → context → synthesize → faithfulness → merge)"
     node src/collect.js
-    bash scripts/analyze.sh
+    node src/pipeline/run.js --resume
+    commit_outputs "$DATE"
     ;;
   analyze-only)
-    echo "[run] Stage 2 + Stage 3 (analyze orchestrator)"
-    bash scripts/analyze.sh
+    echo "[run] sequencer --resume (Stages 2-4; assumes data/staging/ is populated)"
+    node src/pipeline/run.js --resume
+    # No commit_outputs here — --analyze is no-push by design; use --full to publish.
     ;;
   curate-only)
     echo "[run] Stage 2 only (curate)"

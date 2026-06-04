@@ -20,5 +20,5 @@ paths:
 
 - Keep scripts idempotent (safe to re-run)
 - The pipeline stages (collect → curate → synthesize → merge) are invoked in
-  sequence by `scripts/analyze.sh`; keep stage/mode names in sync with
+  sequence by the `src/pipeline/run.js` sequencer (invoked from `scripts/run.sh`); keep stage/mode names in sync with
   `scripts/run.sh`

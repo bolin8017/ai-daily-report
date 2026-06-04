@@ -16,6 +16,15 @@ describe('stage registry', () => {
       expect(['required', 'optional']).toContain(s.criticality);
       expect(typeof s.satisfiedCheck).toBe('string');
       expect(Array.isArray(s.outputs)).toBe(true);
+      expect(Array.isArray(s.command)).toBe(true);
+      expect(s.command.length).toBeGreaterThan(0);
+      expect(typeof s.command[0]).toBe('string');
+    }
+  });
+
+  it('each curate.<section> command passes its section to curate.sh', () => {
+    for (const sec of CURATE_SECTIONS) {
+      expect(getStage(`curate.${sec}`).command).toEqual(['bash', 'scripts/curate.sh', sec]);
     }
   });
 

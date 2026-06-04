@@ -20,7 +20,7 @@ import {
 } from './items.js';
 
 // Observability block. Populated by scripts/merge-report.sh in the new
-// pipeline (and analyze.sh in the legacy lens path). All fields optional so a
+// pipeline (and the legacy lens path). All fields optional so a
 // best-effort / partial meta never aborts the composed-report validation.
 const StageUsageSchema = z
   .object({
