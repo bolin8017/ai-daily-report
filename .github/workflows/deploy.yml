@@ -99,13 +99,22 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --depth=1 origin data
-          # 11ty needs public reports plus the feeds snapshot. Legacy
-          # data/memory.json is optional during/after the Hermes Wiki cutover;
-          # do not make missing legacy memory abort checkout of reports.
+          # Required: 11ty cannot build the archive without the reports. Each
+          # path is checked out separately so a missing optional file can never
+          # poison the required reports checkout — bundling them into one atomic
+          # `git checkout` pathspec is what broke the data-committed deploy when
+          # data/memory.json was retired (the missing pathspec failed the whole
+          # checkout, taking reports down with it; see #70).
           git checkout origin/data -- data/reports
-          git checkout origin/data -- data/feeds-snapshot.json 2>/dev/null || true
-          git checkout origin/data -- data/memory.json 2>/dev/null || true
           test -d data/reports || { echo "data branch missing data/reports/"; exit 1; }
+          # Expected every run (Stage 4 overwrites it; the footer reads it at
+          # build time). Non-fatal if absent so a snapshot hiccup never blocks a
+          # deploy, but surface it so a silently stale/empty footer is visible.
+          if git checkout origin/data -- data/feeds-snapshot.json 2>/dev/null; then
+            echo "feeds-snapshot.json hydrated"
+          else
+            echo "::warning::data/feeds-snapshot.json absent on data branch — footer will render stale/empty"
+          fi
 
       - name: Hydrate cold archive from Releases
         # Phase 3 pipeline redesign — once FEATURE_ARCHIVE_HOT_COLD=1 is in
@@ -141,11 +150,6 @@ jobs:
           LATEST=$(ls -1 data/reports/*.json 2>/dev/null | sort -r | head -1 || true)
           if [ -n "$LATEST" ]; then
             node src/lib/validate.js report "$LATEST"
-          fi
-          if [ -f data/memory.json ]; then
-            node src/lib/validate.js memory data/memory.json
-          else
-            echo "legacy data/memory.json absent — skipping memory validation"
           fi
 
       - name: Build site with 11ty
