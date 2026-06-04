@@ -48,17 +48,6 @@ for sec in shipped pulse; do
   fi
 done
 
-# Derive per-source age (days before today) from the PR1 sidecar, so the
-# synthesizer looks recency up rather than computing dates (LLMs are unreliable
-# at date arithmetic). Never fails the run.
-node --input-type=module -e "
-  import { readFile, writeFile } from 'node:fs/promises';
-  import { computeAges } from './src/lib/source-dates.js';
-  let dates = {};
-  try { dates = JSON.parse(await readFile('${STAGING_DIR}/source-dates.json', 'utf8')); } catch {}
-  await writeFile('${STAGING_DIR}/source-ages.json', JSON.stringify(computeAges(dates, '${TODAY}'), null, 2));
-" || echo '[synthesize.sh] source-ages derivation skipped (non-fatal)' >&2
-
 PROMPT_FILE="$LOG_DIR/synthesizer.prompt.txt"
 
 # Build bounded report context from Hermes Wiki + today's curated evidence,

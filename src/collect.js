@@ -32,7 +32,7 @@ import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
 import { buildSnapshot } from './lib/snapshot.js';
-import { buildSourceDateMap } from './lib/source-dates.js';
+import { buildSourceDateMap, computeAges } from './lib/source-dates.js';
 import { resolveEffectiveSources } from './lib/sources.js';
 import { getCachedTheme } from './lib/theme.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
@@ -144,6 +144,10 @@ async function main() {
   banner('writing staging data');
   mkdirSync('data/staging', { recursive: true });
 
+  // source-dates → source-ages (today − published) is derived here in Stage 1 so the
+  // synthesize stage no longer has to; computeAges is pure (see lib/source-dates.js).
+  const sourceDates = buildSourceDateMap({ feeds: raw.feeds, arxiv: raw.arxiv });
+
   // New IA-redesign fetchers are written raw (no condense step) since their
   // payloads are small + structured (leaderboards: 5 snapshots; mops: tracked
   // tickers only; hf_trending: 20 models; arxiv: ~50 papers).
@@ -159,7 +163,8 @@ async function main() {
     // url→published map for the Stage 3.5 faithfulness guard. Built from raw
     // FEED items (GitHub excluded — repo dates ≠ "appeared today"). Captured
     // here because condense drops date fields before the curator/guard see them.
-    'data/staging/source-dates.json': buildSourceDateMap({ feeds: raw.feeds, arxiv: raw.arxiv }),
+    'data/staging/source-dates.json': sourceDates,
+    'data/staging/source-ages.json': computeAges(sourceDates, date),
     'data/staging/metadata.json': {
       date,
       run_id: RUN_ID,
