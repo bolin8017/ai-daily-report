@@ -128,12 +128,5 @@ if ! node -e "
   exit 2
 fi
 
-# Stage 3.5: faithfulness guard (never-abort). Detects + softens temporal
-# fabrication ("同天" vs the cited source's real date) and named-author
-# misattribution, recording an editorial.faithfulness audit block. `|| true`
-# guarantees a guard failure can never block publish. See
-# src/lib/faithfulness.js + docs/superpowers/specs/2026-05-29-faithfulness-guardrail-design.md
-bash scripts/check-faithfulness.sh || true
-
 echo "[synthesize.sh] done. editorial: $EDITORIAL_FILE"
 exit 0

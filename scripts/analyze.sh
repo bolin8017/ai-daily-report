@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Orchestrates the LLM + merge stages: Stage 2 (curate) → Stage 3
-# (synthesize → editorial.json) → Stage 4 (merge → report.json) →
-# validate → commit report outputs to the data branch.
+# Orchestrates the LLM + merge stages: Stage 2 (curate) → Stage 2.5 (context)
+# → Stage 3 (synthesize → editorial.json) → Stage 3.5 (faithfulness guard) →
+# Stage 4 (merge → report.json) → validate → commit report outputs to the data branch.
 #
 # Reads condensed data from data/staging/ (written by Stage 1). The active
 # theme (themes/$ACTIVE_THEME/) supplies all prompts + section definitions.
@@ -22,10 +22,15 @@ fi
 DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%Y-%m-%d)
 SKIP_PUSH="${SKIP_PUSH:-0}"
 
-echo "[analyze] $(date -Iseconds) — pipeline: curate → synthesize → merge (date=${DATE})"
+echo "[analyze] $(date -Iseconds) — pipeline: curate → context → synthesize → faithfulness → merge (date=${DATE})"
 
 if ! bash scripts/curate.sh; then
   echo "[analyze] FATAL: curate failed — aborting" >&2
+  exit 1
+fi
+
+if ! bash scripts/context.sh; then
+  echo "[analyze] FATAL: context failed — aborting" >&2
   exit 1
 fi
 
@@ -33,6 +38,10 @@ if ! bash scripts/synthesize.sh; then
   echo "[analyze] FATAL: synthesize failed — aborting" >&2
   exit 1
 fi
+
+# Stage 3.5: faithfulness guard (never-abort) — softens temporal/attribution
+# drift in editorial.json before merge. A guard failure must never block publish.
+bash scripts/check-faithfulness.sh || true
 
 # Synthesizer wrote editorial.json only. Compose the final report.json
 # mechanically from editorial + curated/*.json.
