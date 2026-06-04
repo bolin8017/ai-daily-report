@@ -149,7 +149,7 @@ export async function commitAndPush({ date, message, paths, removePaths }) {
     }
 
     // Stage paths. -f bypasses main's .gitignore which excludes data/.
-    // If the caller passed explicit paths (analyze.sh for a specific
+    // If the caller passed explicit paths (run.sh for a specific
     // report file) a missing file is a real bug, not a benign skip.
     // Only stage additions if removeList is empty OR addPaths was explicitly
     // provided — Phase 3 archive jobs pass remove-only and shouldn't add.

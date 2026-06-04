@@ -12,7 +12,7 @@ paths:
 
 ## How they are consumed
 
-`scripts/analyze.sh` concatenates them at runtime:
+The curator and synthesizer stages concatenate them at runtime:
 1. `.claude/lenses/ai-builder.md` (workflow steps, section definitions, schema references)
 2. `.claude/daily-report-quality.md` (voice rules, slop test, anti-patterns, Chinese translation-smell checklist)
 3. Today's date injected at the end

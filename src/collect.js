@@ -201,7 +201,7 @@ async function main() {
 
   // Phase 6 — staging + feeds-snapshot are ephemeral collect outputs.
   // The data branch stays trimmed to public artifacts: reports plus the
-  // feeds snapshot that 11ty needs. Stage 4 / analyze.sh commits those once
+  // feeds snapshot that 11ty needs. Stage 4 / run.sh commits those once
   // synthesis succeeds; cross-day intelligence lives in Hermes Wiki, not here.
   if (SKIP_PUSH) {
     banner('SKIP_PUSH — stopping before exit');

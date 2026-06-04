@@ -7,7 +7,7 @@
 // idempotent — same inputs produce the same output, safe to re-run.
 //
 // Activated under FEATURE_MERGE_STEP=1 via scripts/merge-report.sh which
-// is called by scripts/analyze.sh after the synthesizer succeeds.
+// is called by the sequencer (src/pipeline/run.js) after the synthesizer succeeds.
 
 import { EditorialSchema } from '../schemas/editorial.js';
 import { buildReportSchema } from '../schemas/report.js';

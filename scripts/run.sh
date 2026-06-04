@@ -25,10 +25,10 @@ fi
 
 DATE=$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%F)
 
-# Commit the day's report + feeds snapshot to the data branch (relocated from the
-# retired analyze.sh tail). Gated by SKIP_PUSH so dev modes never publish. The
-# sequencer runs to merge first; with set -e a sequencer failure aborts run.sh
-# before this is reached, so a failed run never publishes.
+# Commit the day's report + feeds snapshot to the data branch (the publish tail,
+# previously part of the analyze orchestrator). Gated by SKIP_PUSH so dev modes
+# never publish. The sequencer runs to merge first; with set -e a sequencer
+# failure aborts run.sh before this is reached, so a failed run never publishes.
 commit_outputs() {
   local date="$1"
   if [ "${SKIP_PUSH:-0}" = "1" ]; then

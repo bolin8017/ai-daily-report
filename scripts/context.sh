@@ -2,7 +2,7 @@
 # Stage 2.5: Context — build the bounded report-context.md from the local Hermes
 # Wiki + today's curated evidence. No LLM. Extracted from synthesize.sh so the
 # pipeline runs/observes it as its own stage. Inherits AI_DAILY_REPORT_WIKI_ROOT
-# from the caller (analyze.sh / prod-start) when set; otherwise build-report-context.mjs
+# from the caller (run.sh / prod-start) when set; otherwise build-report-context.mjs
 # falls back to its default Wiki path.
 #
 # Exit: 0 ok | 3 context generation failed
