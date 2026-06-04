@@ -9,6 +9,7 @@
 #   bash scripts/run.sh --full           # Stage 1 + Stage 2 (requires `claude` logged in)
 #   bash scripts/run.sh --skip-push      # Stage 1 + Stage 2 but no git push
 #   bash scripts/run.sh --analyze        # Stage 2 only (assumes staging data exists)
+#   bash scripts/run.sh --recover-from <stage>  # re-run <stage> + downstream, then publish
 #   bash scripts/run.sh --curate-only    # Stage 2 only (curate)
 #   bash scripts/run.sh --context-only   # Stage 2.5 only (build report-context)
 #   bash scripts/run.sh --synthesize-only # Stage 2.5 + Stage 3 (context + synthesize)
@@ -47,11 +48,21 @@ commit_outputs() {
   node src/lib/commit.js "$date" "report: ${date} daily creative brief" "${commit_paths[@]}"
 }
 
+# Capture any caller-supplied SKIP_PUSH intent BEFORE we set the script default,
+# so a publish-capable mode (--recover-from) can honor a deliberate
+# `SKIP_PUSH=1 bash run.sh ...` rehearsal instead of always publishing.
+ORIG_SKIP_PUSH="${SKIP_PUSH:-}"
 MODE="collect-only"
+RECOVER_STAGE=""
 export SKIP_PUSH=1
 
-for arg in "$@"; do
-  case "$arg" in
+# Publish unless the caller explicitly asked to skip (SKIP_PUSH=1 in the env).
+publish_unless_skip() {
+  if [ "$ORIG_SKIP_PUSH" = "1" ]; then export SKIP_PUSH=1; else unset SKIP_PUSH; fi
+}
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --full)
       MODE="full"
       unset SKIP_PUSH
@@ -64,6 +75,18 @@ for arg in "$@"; do
       MODE="analyze-only"
       # Keep SKIP_PUSH=1 default; use --full for push
       ;;
+    --recover-from)
+      # Operator escape hatch: re-run one stage + its downstream, then publish.
+      # Auto-recovery is the sequencer's job; this is the manual equivalent.
+      MODE="recover-from"
+      shift
+      RECOVER_STAGE="${1:-}"
+      if [ -z "$RECOVER_STAGE" ]; then
+        echo "[run] --recover-from requires a <stage> argument" >&2
+        exit 1
+      fi
+      publish_unless_skip
+      ;;
     --curate-only)
       MODE="curate-only"
       ;;
@@ -74,11 +97,12 @@ for arg in "$@"; do
       MODE="context-only"
       ;;
     *)
-      echo "unknown flag: $arg" >&2
-      echo "usage: run.sh [--full | --skip-push | --analyze | --curate-only | --context-only | --synthesize-only]" >&2
+      echo "unknown flag: $1" >&2
+      echo "usage: run.sh [--full | --skip-push | --analyze | --recover-from <stage> | --curate-only | --context-only | --synthesize-only]" >&2
       exit 1
       ;;
   esac
+  shift
 done
 
 case "$MODE" in
@@ -89,7 +113,12 @@ case "$MODE" in
   full)
     echo "[run] Stage 1 (collect) + sequencer (curate → context → synthesize → faithfulness → merge)"
     node src/collect.js
-    node src/pipeline/run.js --resume
+    node src/pipeline/run.js --resume --auto-recover
+    commit_outputs "$DATE"
+    ;;
+  recover-from)
+    echo "[run] recover: sequencer --from $RECOVER_STAGE (+ downstream), then publish"
+    node src/pipeline/run.js --from "$RECOVER_STAGE"
     commit_outputs "$DATE"
     ;;
   analyze-only)

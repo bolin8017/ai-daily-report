@@ -50,6 +50,8 @@ Two long-lived branches with distinct roles:
 | `node src/fetchers/feeds.js` | Any single fetcher can still be run standalone; all fetchers are dual-mode (importable + CLI). |
 | `node src/lib/condense.js` | Standalone mode reads `tmp/*.json`, writes `tmp/*-condensed.json` — useful for debugging the condense budget. |
 | `bash scripts/merge-report.sh [DATE]` | Re-run Stage 4 alone against existing `editorial.json` + `curated/*` (debug the merge / dangling-link check without re-invoking the LLM). |
+| `bash scripts/run.sh --recover-from <stage>` | Operator escape hatch: re-run `<stage>` + everything downstream, then publish (honors `SKIP_PUSH=1` for a no-push rehearsal). Auto-recovery for transient failures is automatic inside `--full` via the sequencer's `--auto-recover`; this is the manual equivalent. |
+| `node src/ops/production-run.js run --state-dir D [--wiki-root W] [--skip-push]` | Production runner (Hermes-facing): drives `run.sh --full` with auto-recovery, then validates / verifies the remote report / dispatches the Pages build, and writes structured state (`latest.json`) under `D`. `status --json` / `monitor` read that state. The Hermes cron wrapper supplies flock + detach + git sync around it. |
 | `ACTIVE_THEME=<name> bash scripts/run.sh --full` | Run the pipeline against an alternate theme directory. |
 | `npm run build` | Rebuild the static site. Requires `data/` populated locally — either run Stage 1 first, or `git fetch origin data && git checkout origin/data -- data/`. |
 | `npm run serve` | 11ty dev server with live reload. |
@@ -69,8 +71,11 @@ Two long-lived branches with distinct roles:
 │   │   ├── run-all.js            # Parallel chain runner — used by collect.js
 │   │   └── _dispatch.js          # Shared helper that detects CLI mode and emits JSON
 │   ├── curators/                 # Stage 2 curator orchestrators (_base.js resolves theme curator paths)
-│   ├── pipeline/                 # Orchestration: stages.js (DAG registry), satisfied.js
-│   │                             #   (resume check), run.js (sequencer: resume/barrier/batches)
+│   ├── pipeline/                 # Orchestration: stages.js (DAG registry + recovery policy),
+│   │                             #   satisfied.js (resume check), run.js (sequencer:
+│   │                             #   resume/barrier/batches + bounded --auto-recover)
+│   ├── ops/                      # Production runner: production-run.js (run/status/monitor —
+│   │                             #   synchronous Node the Hermes bash wrapper calls), stage-results.js
 │   ├── schemas/                  # Zod schemas (single source of truth)
 │   │   ├── config.js             # Minimal post-cutover config (providers + report only)
 │   │   ├── editorial.js          # EditorialSchema (Stage 3 output: lead/signals/ideation)
