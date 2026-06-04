@@ -1,9 +1,9 @@
 // Schema for data/staging/editorial.json — the LLM-written subset of the
-// daily report produced by Stage 3 (synthesize) under FEATURE_MERGE_STEP=1.
+// daily report produced by Stage 3 (synthesize).
 //
-// The synthesizer writes ONLY editorial.json + memory.json. A subsequent
-// merge step (src/lib/merge.js) composes the final data/reports/<date>.json
-// by combining editorial with the curated/*.json outputs from Stage 2.
+// The synthesizer writes ONLY editorial.json. A subsequent merge step
+// (src/lib/merge.js) composes the final data/reports/<date>.json by
+// combining editorial with the curated/*.json outputs from Stage 2.
 //
 // schema_version is the string "2.1-editorial" (not the numeric 2.1 used
 // in the composed report) to make file-level type checks unambiguous.

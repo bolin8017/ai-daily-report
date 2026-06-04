@@ -131,10 +131,10 @@ node --input-type=module -e "
   import { readFile, writeFile } from 'node:fs/promises';
   import { repairEditorial } from './src/lib/repair-editorial.js';
   const doc = JSON.parse(await readFile('$EDITORIAL_FILE', 'utf8'));
-  const r = repairEditorial(doc, {});
-  if (r.backfilled || r.statusCoerced || r.dropped || r.ideationCoerced) {
+  const r = repairEditorial(doc);
+  if (r.statusCoerced || r.dropped || r.ideationCoerced) {
     await writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
-    console.error('[synthesize.sh] repaired editorial: backfilled=' + r.backfilled + ' statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped + ' ideationCoerced=' + r.ideationCoerced);
+    console.error('[synthesize.sh] repaired editorial: statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped + ' ideationCoerced=' + r.ideationCoerced);
   }
 "
 
