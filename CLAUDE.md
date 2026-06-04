@@ -33,7 +33,7 @@ Two long-lived branches with distinct roles:
 
 `src/lib/commit.js` builds commits using git plumbing (`read-tree` into an isolated `GIT_INDEX_FILE`, `write-tree`, `commit-tree`, then `push commit:refs/heads/data`) — never checks out the data branch, never touches main's working tree or index. It also has a `--remove` mode (used by the monthly archive job to delete archived reports from the data branch). In CI the build job checks out `main` for code, then `git fetch` + `git checkout refs/remotes/origin/data -- data/` to pull in the recent reports, then hydrates older months from Releases before running 11ty.
 
-**Production runtime**: production is Hermes cron at 07:00 Asia/Taipei, delivered back to Telegram on failure or notable completion. A monthly archive job (`scripts/archive-month.sh`) is still required for hot/cold report storage.
+**Production runtime**: production is Hermes cron at 07:00 Asia/Taipei, delivered back to Telegram on failure or notable completion. A second monthly Hermes cron job (1st of month, 05:00 Asia/Taipei) runs `scripts/archive-month.sh` for hot/cold report storage.
 
 **Why stages split from one process**: the original `pipeline.js` called `claude -p` as a subprocess from Node.js, which hung indefinitely due to FD table / SSE keepalive interactions. Splitting the LLM stages into bash-invoked `claude -p` calls (no Node parent) avoids the hang and gives the agent native tool access (Read/Write) instead of piping 50KB+ through the prompt body. The later editorial/merge split (Stage 3 → Stage 4) additionally keeps LLM output small (~3-5K tokens) so it never hits the output-token cap.
 
@@ -164,7 +164,7 @@ Public artifacts are hydrated into the working tree by `.github/workflows/deploy
 - `data/reports/YYYY-MM-DD.json` (on `data` branch, 60-day hot window) — daily reports composed by Stage 4. 11ty reads this directory to generate archive pages.
 - `data/staging/` — **ephemeral** (not committed). Holds Stage 1 condensed files + `metadata.json` + Stage 2 `curated/*` + Stage 2.5 `report-context.md` + Stage 3 `editorial.json`.
 - `data/feeds-snapshot.json` — rebuilt each Stage 1 run and **committed by Stage 4** (small, overwritten daily). The 11ty footer source-status pills + community feed lists read it at build time, and CI builds from the `data` branch, so it must be committed or the footer renders a stale snapshot.
-- **Cold archive** — reports older than `HOT_DAYS` (60) live in GitHub Releases as `archive-YYYY-MM` tags (`reports-YYYY-MM.tar.gz` + sha256), produced by the monthly archive job.
+- **Cold archive** — reports older than `HOT_DAYS` (60) live in GitHub Releases as `archive-YYYY-MM` tags (`reports-YYYY-MM.tar.gz` + sha256), produced by a monthly Hermes cron job (1st of month, 05:00 Asia/Taipei) that runs `scripts/archive-month.sh`.
 
 `data/memory.json` and its `MemorySchema` have been removed from the codebase; cross-day intelligence now lives only in the local Hermes Wiki, projected per run into `data/staging/report-context.md`. The file is already absent from the `data` branch.
 
@@ -259,7 +259,7 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Notes
 
-- **Scheduling**: production runs under Hermes cron at 07:00 Asia/Taipei, with Telegram reporting for failures/notable completion. The monthly hot/cold archive job (`scripts/archive-month.sh`) runs on the same cron infrastructure.
+- **Scheduling**: production runs under Hermes cron at 07:00 Asia/Taipei, with Telegram reporting for failures/notable completion. A separate monthly Hermes cron job (1st of month, 05:00 Asia/Taipei) runs `scripts/archive-month.sh` for hot/cold storage.
 - **Schema-first**: when changing report sections, update the section's `themes/<theme>/sections/<id>/schema.js` first (the dynamic composer picks it up), then the curator prompt, then the section `partial.njk`. This catches mismatches at validate time.
 - **Git push auth** — `src/lib/commit.js` injects `$GITHUB_TOKEN` as an `http.extraheader` via `GIT_CONFIG_COUNT` env vars (Git 2.31+). The token never touches `.git/config` or the remote URL, so a mid-pipeline crash can't leave the token persisted on disk. This is the same mechanism GitHub's own `actions/checkout` uses. The archive job's Releases uploads use plain `curl` with the same token.
 - **External RSSHub dependency** — `themes/<theme>/sources.yaml → rsshub_urls` lists public instances tried in order. The rsshub provider falls through automatically on any per-request error (timeout, 5xx, network), so a single instance going slow or down degrades one request, not the whole run. `run-all.js` additionally tolerates a fraction of sources failing at the chain level. To add a new instance, append its URL to the list; to force one instance for debugging, set `RSSHUB_URL=...` (which bypasses the list).
