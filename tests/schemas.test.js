@@ -5,7 +5,6 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ConfigSchema } from '../src/schemas/config.js';
 import { FeedItemSchema } from '../src/schemas/feed-item.js';
-import { MemorySchema } from '../src/schemas/memory.js';
 import { ReportSchema } from '../src/schemas/report.js';
 import { StagingMetadataSchema } from '../src/schemas/staging.js';
 
@@ -67,29 +66,6 @@ describe('schemas', () => {
     expect(result.success).toBe(true);
   });
 
-  it('MemorySchema accepts audience_state with general and work tracks', () => {
-    const result = MemorySchema.safeParse({
-      schema_version: 2,
-      last_updated: '2026-05-22T04:00:00Z',
-      audience_state: {
-        general: { topics: { rag: 5 }, narrative_arcs: [] },
-        work: { topics: { kv_cache: 7 }, narrative_arcs: [] },
-      },
-    });
-    if (!result.success) console.error(result.error.issues);
-    expect(result.success).toBe(true);
-    expect(result.data.audience_state.general.topics.rag).toBe(5);
-  });
-
-  it('MemorySchema accepts memory without audience_state (backward compat)', () => {
-    const result = MemorySchema.safeParse({
-      schema_version: 2,
-      last_updated: null,
-    });
-    expect(result.success).toBe(true);
-    expect(result.data.audience_state).toBeUndefined();
-  });
-
   it('ReportSchema v2 rejects missing schema_version', () => {
     const minimalV2 = {
       date: '2026-05-22',
@@ -104,12 +80,6 @@ describe('schemas', () => {
     expect(ReportSchema.safeParse(minimalV2).success).toBe(false);
   });
 
-  it.skipIf(!existsSync('data/memory.json'))('data/memory.json passes MemorySchema', () => {
-    const result = MemorySchema.safeParse(json('data/memory.json'));
-    if (!result.success) console.error(result.error.issues);
-    expect(result.success).toBe(true);
-  });
-
   it.skipIf(!existsSync('data/staging/metadata.json'))(
     'data/staging/metadata.json passes StagingMetadataSchema',
     () => {
@@ -118,38 +88,6 @@ describe('schemas', () => {
       expect(result.success).toBe(true);
     },
   );
-
-  it('ConfigSchema accepts lenses[] with ai-builder default', () => {
-    const minimal = {
-      sources: {
-        rsshub_urls: ['https://rsshub.example.com'],
-        feeds: [],
-        github_topics: { enabled: true, topics: [], limit_per_topic: 10 },
-        github_developers: {
-          enabled: true,
-          global_limit: 10,
-          global_min_followers: 100,
-          regions: [],
-          new_repo_window_hours: 24,
-        },
-      },
-      lenses: [
-        {
-          id: 'ai-builder',
-          name: '今日 AI',
-          prompt_file: '.claude/lenses/ai-builder.md',
-          output_paths: {
-            report: 'data/reports/{date}.json',
-            memory: 'data/memory.json',
-          },
-        },
-      ],
-      report: { language: 'zh-TW', max_featured_items: 12, style: 'creative' },
-    };
-    const result = ConfigSchema.safeParse(minimal);
-    if (!result.success) console.error(result.error.issues);
-    expect(result.success).toBe(true);
-  });
 
   it('ConfigSchema accepts the minimal post-cutover shape (report + providers)', () => {
     const minimal = {

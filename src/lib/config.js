@@ -2,10 +2,10 @@
 // directly — validation runs once at module load so every consumer gets the
 // same parsed + frozen object and malformed config fails loudly at startup.
 //
-// Source descriptors live in src/sources/registry.js (the data layer).
-// Lens overlay merging happens in src/lib/sources.js → getEffectiveSources().
-// config.json now only holds environment/tuning knobs (rsshub_urls, github
-// topics + developers config, lens definitions, provider tuning, report).
+// Source descriptors live in src/sources/registry.js (the data layer);
+// per-theme source/topic config lives in themes/<theme>/sources.yaml.
+// config.json now only holds cloud-fallback provider tuning + report
+// rendering settings.
 
 import fs from 'node:fs';
 import path from 'node:path';

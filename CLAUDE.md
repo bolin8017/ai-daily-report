@@ -20,7 +20,7 @@ The pipeline is split into **four stages**. During the Hermes migration it can r
 - **Stage 3 — synthesize** (`scripts/synthesize.sh`): single `claude -p --model claude-sonnet-4-6` invocation. Reads curated/* + raw staging + `data/staging/report-context.md`, applies `themes/<ACTIVE_THEME>/synthesizer.md` + `quality.md`, and writes **only the editorial layer** to `data/staging/editorial.json` (lead / signals / ideation, `EditorialSchema 2.1-editorial`). It does **not** emit curated sub-groups and no longer reads or writes `data/memory.json` — the editorial/merge split is what fixed the 32K output-token cap on 2026-05-24.
 - **Stage 4 — merge** (`scripts/merge-report.sh` → `src/lib/merge.js`): pure Node, no LLM, idempotent. Composes the final `data/reports/<date>.json` (ReportSchema 2.1) from `editorial.json` + `curated/*.json`, validating that every `source_links` id exists in the curated outputs (aborts on dangling references).
 
-`scripts/analyze.sh` orchestrates Stage 2 → Stage 2.5 → Stage 3 → Stage 4 → validate → commit (reports + feeds snapshot; no memory commit). A legacy lens-based single-stage path is still gated behind `FEATURE_NEW_PIPELINE=0` (predates this redesign; preserved for rollback, produces v1.x reports rendered by templates' legacy partial).
+`scripts/analyze.sh` orchestrates Stage 2 → Stage 2.5 → Stage 3 → Stage 4 → validate → commit (reports + feeds snapshot; no memory commit). The earlier `FEATURE_NEW_PIPELINE=0` lens-based single-stage path has been removed; the v1.x reports it produced before 2026-05-22 still live on the `data` branch and render through the templates' legacy lens partial.
 
 GitHub Actions deploys the 11ty site to Pages on a push to `main` (code/site changes) or on a `repository_dispatch` the VM fires after committing the day's report to the `data` branch (`data`-branch pushes can't trigger workflows themselves).
 
@@ -92,7 +92,6 @@ Two long-lived branches with distinct roles:
 │   │   ├── config.js             # Minimal post-cutover config (providers + report only)
 │   │   ├── editorial.js          # EditorialSchema (Stage 3 output: lead/signals/ideation)
 │   │   ├── report.js             # ReportSchema + buildReportSchema() dynamic composer
-│   │   ├── memory.js             # legacy schema retained for old data / rollback; not active cross-day state
 │   │   └── staging.js            # Stage 1 → Stage 2 contract (metadata shape)
 │   └── lib/
 │       ├── config.js             # Validated config singleton + ACTIVE_THEME / HOT_DAYS / HYDRATE_MONTHS
@@ -106,7 +105,7 @@ Two long-lived branches with distinct roles:
 │       └── validate.js           # CLI schema validator
 ├── themes/                       # Swappable persona/voice/source/section bundles (see "Themes")
 │   └── ai-builder/               # Default theme — theme.yaml, sources.yaml, ui-strings.yaml,
-│                                 #   lens.md, synthesizer.md, quality.md, sections/<id>/{manifest,curator,schema,partial}
+│                                 #   synthesizer.md, quality.md, sections/<id>/{manifest,curator,schema,partial}
 ├── scripts/
 │   ├── analyze.sh                # Stage 2→2.5→3→4 orchestrator: curate → context → synthesize → merge → validate → commit
 │   ├── curate.sh                 # Stage 2 — 4 parallel claude -p (Haiku) + watchdog
@@ -145,7 +144,7 @@ Two long-lived branches with distinct roles:
 └── eleventy.config.js            # 11ty build config (ESM) — loads active theme ui-strings + manifest
 ```
 
-> The `.claude/` directory still holds machine settings + the legacy lens prompts (`.claude/lenses/phison-aidaptiv.md`) referenced only by the `FEATURE_NEW_PIPELINE=0` rollback path. The active pipeline's prompts now live under `themes/<ACTIVE_THEME>/`.
+> The `.claude/` directory holds machine settings + rules only. The active pipeline's prompts live under `themes/<ACTIVE_THEME>/`.
 
 ## Data Sources
 
@@ -171,7 +170,6 @@ All data shapes are validated against Zod schemas in `src/schemas/`:
 | section `schema.js` (per theme section) | each `data/staging/curated/<section>.json` | Stage 2 curators after writing |
 | `EditorialSchema` | `data/staging/editorial.json` | `scripts/synthesize.sh` after Stage 3 |
 | `ReportSchema` / `buildReportSchema()` | `data/reports/YYYY-MM-DD.json` | Stage 4 merge + `scripts/analyze.sh` validate |
-| `MemorySchema` | legacy `data/memory.json` only | retained for old artifacts / rollback; not active validation |
 
 `buildReportSchema(theme)` composes the report schema at runtime from the active theme's section `schema.js` modules + the static editorial blocks (lead / signals / ideation), so adding a section never requires editing `report.js`. `resolveReportSchema()` returns it.
 
@@ -197,7 +195,7 @@ Public artifacts are hydrated into the working tree by the legacy Docker entrypo
 - `data/feeds-snapshot.json` — rebuilt each Stage 1 run and **committed by Stage 4** (small, overwritten daily). The 11ty footer source-status pills + community feed lists read it at build time, and CI builds from the `data` branch, so it must be committed or the footer renders a stale snapshot.
 - **Cold archive** — reports older than `HOT_DAYS` (60) live in GitHub Releases as `archive-YYYY-MM` tags (`reports-YYYY-MM.tar.gz` + sha256), produced by the monthly archive job.
 
-`data/memory.json` is retired from the active pipeline. If it still exists on the `data` branch during migration, remove it after the first successful no-memory report.
+`data/memory.json` and its `MemorySchema` have been removed from the codebase; cross-day intelligence now lives only in the local Hermes Wiki, projected per run into `data/staging/report-context.md`. The file is already absent from the `data` branch.
 
 ## Environment
 
@@ -228,8 +226,7 @@ themes/<name>/
 ├── theme.yaml              # manifest: persona, model assignment, sections list
 ├── sources.yaml            # GitHub topics + RSS feed config (ported from config.json)
 ├── ui-strings.yaml         # tab labels, site title, archive strings
-├── lens.md                 # persona / voice description (was .claude/lenses/<name>.md)
-├── synthesizer.md          # editorial prompt (was .claude/synthesizer.md)
+├── synthesizer.md          # editorial prompt — persona / voice (was .claude/synthesizer.md)
 ├── quality.md              # anti-slop rules (was .claude/daily-report-quality.md)
 └── sections/
     ├── _shared.md          # shared curator prompt fragment
@@ -248,7 +245,7 @@ cp -r themes/ai-builder themes/ml-researcher
 
 # 2. Edit (everything in one directory)
 #    themes/ml-researcher/theme.yaml          — display name, persona, focus
-#    themes/ml-researcher/lens.md             — voice / audience
+#    themes/ml-researcher/synthesizer.md      — voice / audience / editorial prompt
 #    themes/ml-researcher/sources.yaml        — relevant feeds, GitHub topics
 #    themes/ml-researcher/sections/*/curator.md
 #    themes/ml-researcher/ui-strings.yaml     — tab labels
@@ -301,8 +298,8 @@ GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-
 
 ## Quality bar
 
-- All active `data/*.json` artifacts validate against Zod schemas — staging metadata in `src/collect.js`, editorial in `scripts/synthesize.sh`, and the composed report in the merge + `scripts/analyze.sh` steps. Legacy `data/memory.json` validation remains only for rollback/old artifacts. Schema drift aborts the run before any commit.
+- All active `data/*.json` artifacts validate against Zod schemas — staging metadata in `src/collect.js`, editorial in `scripts/synthesize.sh`, and the composed report in the merge + `scripts/analyze.sh` steps. Schema drift aborts the run before any commit.
 - All JS/JSON formatted with Biome (`npm run lint` on every CI run).
 - Vitest tests (schemas, condense, theme loader, merge, scope) run on `npm test` and in CI.
 - Conventional commits encouraged.
-- **The theme's lens + synthesizer prompts are the quality lever** (`themes/ai-builder/lens.md` ~485 lines + `themes/ai-builder/synthesizer.md` + `themes/ai-builder/quality.md`). They're **outcome-oriented, not mechanism-prescriptive**: instead of hard count/length rules, they describe the reader persona (AI engineer who builds), give positive paragraph examples of good vs slop voice, enumerate ~12 Chinese translation-smell patterns for structural anti-slop, and apply a "single slop test" (delete every sentence that, if removed, wouldn't make the reader lose a specific number / name / version / concrete claim). The prompt was calibrated against 4 external reviewers (tech editor / Chinese-language editor / strategy analyst / non-AI product manager) who independently flagged issues invisible to in-domain review (kebab-case slug leaks, unverifiable "first-ever" superlatives, internal contradictions, pattern-matching to overconfidence, audience split-personality). See [docs/architecture.md](./docs/architecture.md) for the design philosophy.
+- **The theme's synthesizer + quality prompts are the quality lever** (`themes/ai-builder/synthesizer.md` + `themes/ai-builder/quality.md`). They're **outcome-oriented, not mechanism-prescriptive**: instead of hard count/length rules, they describe the reader persona (AI engineer who builds), give positive paragraph examples of good vs slop voice, enumerate ~12 Chinese translation-smell patterns for structural anti-slop, and apply a "single slop test" (delete every sentence that, if removed, wouldn't make the reader lose a specific number / name / version / concrete claim). The prompt was calibrated against 4 external reviewers (tech editor / Chinese-language editor / strategy analyst / non-AI product manager) who independently flagged issues invisible to in-domain review (kebab-case slug leaks, unverifiable "first-ever" superlatives, internal contradictions, pattern-matching to overconfidence, audience split-personality). See [docs/architecture.md](./docs/architecture.md) for the design philosophy.
