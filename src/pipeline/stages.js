@@ -52,7 +52,7 @@ export const STAGES = [
     deps: ['synthesize'],
     cost: 'llm', // conditional Sonnet judge today; becomes token-free after the Phase 4 verifier swap
     criticality: 'optional', // never-abort guard
-    outputs: ['editorial.json'],
+    outputs: ['editorial.json'], // intent annotation only; 'editorial-audited' reads editorial.json directly, not this list
     satisfiedCheck: 'editorial-audited',
   },
   {

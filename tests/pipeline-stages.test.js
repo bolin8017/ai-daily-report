@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { CURATE_SECTIONS, getStage, STAGES, topoOrder } from '../src/pipeline/stages.js';
+import {
+  allStageIds,
+  CURATE_SECTIONS,
+  getStage,
+  STAGES,
+  topoOrder,
+} from '../src/pipeline/stages.js';
 
 describe('stage registry', () => {
   it('every stage has required fields with known cost/criticality', () => {
@@ -46,5 +52,9 @@ describe('stage registry', () => {
 
   it('getStage throws on an unknown id', () => {
     expect(() => getStage('nope')).toThrow(/unknown stage/);
+  });
+
+  it('allStageIds returns every declared stage id', () => {
+    expect(allStageIds()).toEqual(STAGES.map((s) => s.id));
   });
 });

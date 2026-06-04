@@ -121,6 +121,19 @@ describe('satisfied — merge (report-for-day)', () => {
   });
 });
 
+describe('satisfied — context (fresh-outputs, .md output)', () => {
+  it('ok when report-context.md exists and is newer than metadata', () => {
+    meta(1000);
+    writeAt(path.join(staging, 'report-context.md'), '# ctx', 2000);
+    expect(satisfied('context', opts())).toEqual({ satisfied: true, reason: 'ok' });
+  });
+  it('stale when report-context.md predates the run', () => {
+    meta(2000);
+    writeAt(path.join(staging, 'report-context.md'), '# ctx', 1000);
+    expect(satisfied('context', opts())).toEqual({ satisfied: false, reason: 'stale' });
+  });
+});
+
 describe('satisfied — guards', () => {
   it('throws when today is not provided', () => {
     expect(() => satisfied('collect', { stagingDir: staging })).toThrow(/today/);
