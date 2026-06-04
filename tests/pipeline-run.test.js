@@ -193,6 +193,81 @@ describe('runPipeline — modes', () => {
   });
 });
 
+// Auto-recover harness: runStage result depends on call COUNT, so a stage can
+// fail once then succeed on retry. `failTimes[id] = n` fails the first n calls;
+// `alwaysFail` fails every call.
+function recoverHarness({ failTimes = {}, alwaysFail = [] } = {}) {
+  const sat = new Set();
+  const calls = [];
+  const counts = {};
+  const emitted = [];
+  const runStage = async (stage) => {
+    calls.push(stage.id);
+    counts[stage.id] = (counts[stage.id] ?? 0) + 1;
+    await Promise.resolve();
+    const fails = alwaysFail.includes(stage.id) || counts[stage.id] <= (failTimes[stage.id] ?? 0);
+    if (fails) sat.delete(stage.id);
+    else sat.add(stage.id);
+    return { exitCode: fails ? 1 : 0, duration_ms: 1, cost_usd: 0, tokens: 0 };
+  };
+  return {
+    calls,
+    counts,
+    emitted,
+    run: (opts = {}) =>
+      runPipeline({
+        today: TODAY,
+        stagingDir: staging,
+        reportsDir: reports,
+        runStage,
+        satisfiedFn: (id) => ({ satisfied: sat.has(id) }),
+        emit: (r) => emitted.push(r),
+        ...opts,
+      }),
+  };
+}
+
+describe('runPipeline — auto-recover', () => {
+  it('retries a retryable stage that failed once, then completes downstream', async () => {
+    const h = recoverHarness({ failTimes: { 'curate.market': 1 } });
+    const { ok, recovery } = await h.run({ autoRecover: true });
+    expect(ok).toBe(true);
+    expect(h.counts['curate.market']).toBe(2); // failed once, retried, succeeded
+    expect(recovery.attempted).toBe(true);
+    expect(recovery.targets).toEqual(['curate.market']);
+    // downstream that the failure had blocked now runs on the recovery pass
+    expect(h.calls).toContain('synthesize');
+    expect(h.calls).toContain('merge');
+    // sibling curators that already succeeded are NOT re-run
+    expect(h.counts['curate.shipped']).toBe(1);
+  });
+
+  it('retries at most once — a persistently failing stage still fails', async () => {
+    const h = recoverHarness({ alwaysFail: ['curate.market'] });
+    const { ok, recovery } = await h.run({ autoRecover: true });
+    expect(ok).toBe(false);
+    expect(h.counts['curate.market']).toBe(2); // exactly one retry, then give up
+    expect(recovery.attempted).toBe(true);
+    expect(h.calls).not.toContain('merge');
+  });
+
+  it('never retries a deterministic stage (recovery: none) even on failure', async () => {
+    const h = recoverHarness({ alwaysFail: ['merge'] });
+    const { ok, recovery } = await h.run({ autoRecover: true });
+    expect(ok).toBe(false);
+    expect(h.counts.merge).toBe(1); // merge is recovery:'none' — not retried
+    expect(recovery.attempted).toBe(false);
+  });
+
+  it('does not retry when --auto-recover is off (default)', async () => {
+    const h = recoverHarness({ failTimes: { 'curate.market': 1 } });
+    const { ok, recovery } = await h.run();
+    expect(ok).toBe(false);
+    expect(h.counts['curate.market']).toBe(1);
+    expect(recovery.attempted).toBe(false);
+  });
+});
+
 describe('runPipeline — dry run + emission', () => {
   it('dry-run spawns nothing and reports skip vs would-run', async () => {
     const h = harness({ satisfied: ['collect'] });
