@@ -77,7 +77,7 @@ Full per-source breakdown (with URLs and categories): [docs/data-sources.md](./d
 
 | Layer | Tool |
 |---|---|
-| Runtime | Hermes cron / local operator workflow; legacy VM Docker/systemd wrappers are retained during migration |
+| Runtime | Hermes cron (07:00 Asia/Taipei) / local operator workflow |
 | LLM | Claude Haiku 4.5 (curators) + Sonnet 4.6 (synthesizer) via `claude -p` (Max subscription) |
 | Data | [Octokit](https://github.com/octokit/octokit.js), [cheerio](https://github.com/cheeriojs/cheerio), [rss-parser](https://github.com/rbren/rss-parser), [RSSHub](https://github.com/DIYgod/RSSHub) |
 | Validation | [Zod](https://github.com/colinhacks/zod) |

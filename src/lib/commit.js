@@ -13,7 +13,7 @@
 // Auth: if `GITHUB_TOKEN` is set, injects it as a per-invocation
 // `http.extraheader` via `GIT_CONFIG_COUNT` env (Git 2.31+). Token
 // never touches `.git/config` or the remote URL, so a mid-pipeline
-// crash cannot leave the token persisted in the Docker volume. This
+// crash can't leave the token persisted on disk. This
 // mirrors the mechanism used by GitHub's own actions/checkout.
 // If `GITHUB_TOKEN` is unset, falls back to the host's credential
 // helper or SSH keys.

@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 # Local development wrapper for the two-stage pipeline.
 #
-# Production runs inside the Docker image on the VM (invoked by cron via
-# scripts/cron-run.sh). This script is for local iteration on fetchers,
-# prompts, or templates.
+# Production runs under Hermes cron (07:00 Asia/Taipei). This script is
+# for local iteration on fetchers, prompts, or templates.
 #
 # Usage:
 #   bash scripts/run.sh               # Stage 1 only (collect, no push)
