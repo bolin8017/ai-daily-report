@@ -3,13 +3,14 @@ name: CI / Deploy to Pages
 # Two responsibilities in one workflow:
 #   - on pull_request: validate the change (lint + test + schema + 11ty
 #     build) before merge so we don't find out at deploy time
-#   - on push to main, repository_dispatch (data-committed) from the VM
-#     pipeline, or manual workflow_dispatch: validate, then deploy to
-#     Pages. The VM's repository_dispatch is the primary auto-deploy path
-#     — pushes to the `data` orphan branch cannot themselves fire this
-#     workflow (no .github/workflows/ tree on that branch), so the VM
-#     POSTs a dispatch at the end of its daily run instead (see
-#     scripts/cron-run.sh). See the `repository_dispatch:` block below.
+#   - on push to main, repository_dispatch (data-committed) from the
+#     Hermes cron production pipeline, or manual workflow_dispatch:
+#     validate, then deploy to Pages. The production pipeline's
+#     repository_dispatch is the primary auto-deploy path — pushes to the
+#     `data` orphan branch cannot themselves fire this workflow (no
+#     .github/workflows/ tree on that branch), so the pipeline POSTs a
+#     dispatch at the end of its daily run instead. See the
+#     `repository_dispatch:` block below.
 #
 # This workflow only consumes trusted inputs:
 # - actions/checkout (no untrusted code execution)
@@ -31,7 +32,7 @@ on:
     # `data` is intentionally omitted: the orphan branch has no
     # .github/workflows/ tree, so pushes there never reach Actions.
     # The `repository_dispatch:` trigger below is how `data`-branch
-    # artifacts get picked up instead (POSTed by the VM after each run).
+    # artifacts get picked up instead (POSTed by the production pipeline after each run).
     branches: [main]
     paths:
       - 'data/**'
@@ -57,16 +58,17 @@ on:
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
   repository_dispatch:
-    # Primary auto-deploy path. The VM pipeline POSTs this event at the
-    # end of its daily run, right after the new report is committed and
-    # pushed to the `data` branch (see scripts/cron-run.sh). This replaces
-    # the old `schedule: 0 0 * * *` poll: pushes to the orphan `data`
-    # branch can't fire workflows, and GitHub's cron drifted by hours
-    # (schedule jitter) so the published site lagged the report by most of
-    # a morning. An explicit dispatch fires the deploy within seconds of
-    # the data landing. repository_dispatch always runs against the default
-    # branch (main) and needs only the Contents:write token scope the VM
-    # already uses to push — no extra scope, no workflow file on `data`.
+    # Primary auto-deploy path. The Hermes cron production pipeline (07:00
+    # Asia/Taipei) POSTs this event at the end of its daily run, right
+    # after the new report is committed and pushed to the `data` branch.
+    # This replaces the old `schedule: 0 0 * * *` poll: pushes to the
+    # orphan `data` branch can't fire workflows, and GitHub's cron drifted
+    # by hours (schedule jitter) so the published site lagged the report by
+    # most of a morning. An explicit dispatch fires the deploy within
+    # seconds of the data landing. repository_dispatch always runs against
+    # the default branch (main) and needs only the Contents:write token
+    # scope the pipeline already uses to push — no extra scope, no workflow
+    # file on `data`.
     types: [data-committed]
 
 permissions:
@@ -181,8 +183,8 @@ jobs:
     needs: build
     # Deploy on everything except PRs. PR validation ends after build
     # (no Pages publish from a feature branch); all other events —
-    # push to main, the VM's daily repository_dispatch, and manual
-    # workflow_dispatch recovery — should actually publish.
+    # push to main, the production pipeline's daily repository_dispatch,
+    # and manual workflow_dispatch recovery — should actually publish.
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
