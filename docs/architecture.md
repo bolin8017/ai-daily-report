@@ -9,7 +9,7 @@ This document explains the design decisions behind the AI Daily Report pipeline.
 1. **Highest-quality AI analysis** — use the Claude Max subscription via `claude -p` without API billing.
 2. **Minimum self-maintained code** — outsource everything else to well-maintained open source.
 3. **Fully automated end-to-end** — from scheduled trigger to live site, no manual steps in the steady state.
-4. **Cheap** — production infra costs $0/month (always-free GCP e2-micro + GitHub Pages + GitHub Actions free tier).
+4. **Cheap** — hosting costs $0/month (GitHub Pages + GitHub Actions free tier; the legacy VM path additionally used an always-free GCP e2-micro).
 5. **Schema-first** — catch shape drift between LLM output and templates at validate time, never at render time.
 
 ## Hermes + CI Architecture
@@ -140,7 +140,7 @@ sequenceDiagram
   AnalyzeSh->>Git: commit + push report + feeds snapshot (x-access-token URL)
 
   CronRun->>GHA: POST repository_dispatch (data-committed)
-  Note over GHA: fired by cron-run.sh right after the push<br/>(replaced the old 00:00 UTC schedule poll)
+  Note over GHA: fired by the Hermes cron production pipeline<br/>right after the push (replaced the old schedule poll)
   GHA->>Git: fetch + checkout origin/data -- data/
   GHA->>GHA: lint + test + validate + 11ty build
   GHA->>Pages: actions/deploy-pages OIDC
@@ -384,7 +384,7 @@ Reports accumulate forever, but the `data` orphan branch is cloned on every cont
 - **Hot** — the most recent `HOT_DAYS` (default 60) of `data/reports/*.json` plus `data/feeds-snapshot.json` live on the `data` branch, always present after a clone.
 - **Cold** — older reports are packed monthly into `reports-YYYY-MM.tar.gz` (+ a `.sha256`) and uploaded to **GitHub Releases** under `archive-YYYY-MM` tags. `scripts/archive-month.sh` runs from the monthly timer, removes the now-archived files from the `data` branch, and is idempotent (skips a month whose Release already exists).
 
-At CI build time `scripts/hydrate-archive.sh` pulls the last `HYDRATE_MONTHS` (default 12) months of cold tarballs back into `data/reports/` so 11ty can paginate them into archive pages. Both scripts talk to the GitHub REST API directly with **curl**, not the `gh` CLI — the production VM doesn't have `gh` installed, and adding it just for an upload wasn't worth the dependency.
+At CI build time `scripts/hydrate-archive.sh` pulls the last `HYDRATE_MONTHS` (default 12) months of cold tarballs back into `data/reports/` so 11ty can paginate them into archive pages. Both scripts talk to the GitHub REST API directly with **curl**, not the `gh` CLI — the production runtime isn't guaranteed to have `gh` installed, and adding it just for an upload wasn't worth the dependency.
 
 This is why Stage 1's bulky staging (condensed source dumps, ~hundreds of KB) and Hermes-derived `report-context.md` stay off the `data` branch: keeping the branch lean and public-only is the point, so only durable public artifacts (reports plus the small, overwritten `feeds-snapshot.json` the 11ty footer reads at build time) belong there.
 

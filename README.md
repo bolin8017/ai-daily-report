@@ -20,7 +20,7 @@ Hermes cron / operator trigger → repository pipeline
 repository_dispatch after data push → GitHub Actions → 11ty → Pages
 ```
 
-**Stage 1 (collect)** fetches GitHub Trending, GitHub topic search, Hacker News, Lobsters, Dev.to, HuggingFace Daily Papers, and ~10 RSS sources in parallel, then condenses each to fit the LLM context budget. Output stays in the Docker volume (`data/staging/`) — no longer committed to the `data` branch.
+**Stage 1 (collect)** fetches GitHub Trending, GitHub topic search, Hacker News, Lobsters, Dev.to, HuggingFace Daily Papers, and ~10 RSS sources in parallel, then condenses each to fit the LLM context budget. Output stays in local staging (`data/staging/`) — not committed to the `data` branch.
 
 **Stage 2 (curate)** runs four parallel `claude -p` subprocesses (one per section: shipped / pulse / market / tech), each on Haiku 4.5. Each applies its section curator prompt and writes validated `data/staging/curated/<section>.json`.
 
