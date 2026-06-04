@@ -26,7 +26,7 @@ repository_dispatch after data push → GitHub Actions → 11ty → Pages
 
 **Stage 3 (synthesize)** runs a single `claude -p` on Sonnet 4.6. It reads the curated sections plus a bounded `data/staging/report-context.md` generated from the local Hermes Wiki, applies the editorial prompt, and writes **only** the editorial layer (`data/staging/editorial.json`: lead, signals, ideation). It no longer reads or writes `data/memory.json`.
 
-**Stage 4 (merge)** is mechanical (no LLM): it composes `data/reports/<date>.json` from `editorial.json` + `curated/*.json`, checks for dangling `source_links`, validates against Zod schemas, then commits to the `data` branch.
+**Stage 4 (merge)** is mechanical (no LLM): it composes `data/reports/<date>.json` from `editorial.json` + `curated/*.json`, drops any dangling `source_links` (degrading the citing item rather than aborting the report), validates against Zod schemas, then commits to the `data` branch.
 
 See [docs/architecture.md](./docs/architecture.md) for design decisions and trade-offs. The Hermes takeover plan is tracked in [docs/redesign/hermes-cron-migration.md](./docs/redesign/hermes-cron-migration.md).
 
