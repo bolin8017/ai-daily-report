@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideNotice, renderFailure, renderOrphan } from '../src/ops/production-run.js';
+import { decideNotice, renderFailure, renderOrphan, renderSuccess } from '../src/ops/production-run.js';
 
 const START = '2026-06-05T07:00:00.000Z';
 const startMs = Date.parse(START);
@@ -17,8 +17,19 @@ function running(extra = {}) {
 }
 
 describe('decideNotice', () => {
-  it('stays silent on a succeeded run (success is silent policy)', () => {
-    expect(decideNotice({ status: 'succeeded', started_at: START }, { nowMs: min(90) })).toBeNull();
+  it('prints a success notice once, then suppresses it', () => {
+    const succeeded = {
+      status: 'succeeded',
+      run_id: 'r',
+      repo_run_id: 'repo1',
+      report_date: '2026-06-05',
+      started_at: START,
+      duration_ms: 1_500_000,
+    };
+    const first = decideNotice(succeeded, { nowMs: min(90), delivered: {} });
+    expect(first).toEqual({ marker: 'success', text: expect.stringContaining('completed successfully') });
+    expect(first.text).toMatch(/report: https:\/\/bolin8017\.github\.io\/ai-daily-report\//);
+    expect(decideNotice(succeeded, { nowMs: min(90), delivered: { success: true } })).toBeNull();
   });
 
   it('prints a failure notice once, then suppresses it', () => {
@@ -110,5 +121,24 @@ describe('renderFailure', () => {
     expect(text).toMatch(/auto-recovered: curate\.market/);
     expect(text).toMatch(/✗ curate\.market: failed — boom/);
     expect(text).toMatch(/· collect: ok/);
+  });
+});
+
+describe('renderSuccess', () => {
+  it('includes date, run ids, duration, recovery note, and report URL', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      repo_run_id: 'repo1',
+      report_date: '2026-06-05',
+      duration_ms: 1_520_000,
+      recovery: { retried: ['curate.market'] },
+    });
+    expect(text).toMatch(/completed successfully/);
+    expect(text).toMatch(/report_date: 2026-06-05/);
+    expect(text).toMatch(/run_id: r1/);
+    expect(text).toMatch(/repo_run_id: repo1/);
+    expect(text).toMatch(/duration: 25 min/);
+    expect(text).toMatch(/auto-recovered: curate\.market/);
+    expect(text).toMatch(/report: https:\/\/bolin8017\.github\.io\/ai-daily-report\//);
   });
 });

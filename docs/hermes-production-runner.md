@@ -16,7 +16,7 @@
 | **Auto-recover a transient stage failure** | sequencer `--auto-recover` (baked into `run.sh --full`); one bounded retry of a `failed` retryable stage + its downstream. Deterministic stages (context/merge/faithfulness) are never retried, so no wasted tokens. |
 | Publish tail: validate report → verify `origin/data` has today's report → dispatch the Pages build | `node src/ops/production-run.js run` |
 | Structured run state (`latest.json` / `runs/<id>.json`) | written by `production-run.js run` under `--state-dir` |
-| Monitor rendering (silent on success; 30m/60m/failure/orphan notices, once each) | `node src/ops/production-run.js monitor --state-dir <D>` |
+| Monitor rendering (success/30m/60m/failure/orphan notices, once each) | `node src/ops/production-run.js monitor --state-dir <D>` |
 | Manual operator recovery (re-run a stage + downstream, then publish) | `bash scripts/run.sh --recover-from <stage>` |
 
 The runner is **synchronous**: `production-run.js run` blocks for the whole
@@ -122,11 +122,12 @@ then the terminal state at the end:
 
 Per-run copies are kept at `$STATE_DIR/runs/<run_id>.json`; logs at
 `$STATE_DIR/logs/<run_id>.log`. Notice de-dup markers live in
-`$STATE_DIR/notices/<run_id>-{30m,60m,failed,orphan}`.
+`$STATE_DIR/notices/<run_id>-{success,30m,60m,failed,orphan}`.
 
 ## What the monitor prints (every 15 min, side-effect-light)
 
-- **succeeded** → nothing (production success is silent, owner policy).
+- **succeeded** → one concise completion notice with the report date, run IDs,
+  duration, any `auto-recovered:` stages, and the live report URL.
 - **running** and pid alive, < 30 min → nothing.
 - **running** and pid alive, ≥ 30 min / ≥ 60 min → one "still running" notice at
   each threshold.

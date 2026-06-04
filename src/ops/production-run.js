@@ -39,17 +39,20 @@ const REPO_SLUG = 'bolin8017/ai-daily-report';
 /**
  * Decide what the monitor should print given the latest run state, the clock,
  * and which notices were already delivered. Returns `{marker, text}` to print +
- * record, or null to stay silent. Production success is silent by policy.
+ * record, or null to stay silent. Production success is announced once so the
+ * owner knows when the report is ready to read.
  *
  * @param {object|null} latest  parsed latest.json
  * @param {object} ctx
  * @param {number} ctx.nowMs
- * @param {{['30m']?:boolean,['60m']?:boolean,failed?:boolean}} [ctx.delivered]
+ * @param {{['30m']?:boolean,['60m']?:boolean,failed?:boolean,orphan?:boolean,success?:boolean}} [ctx.delivered]
  * @returns {{marker: string, text: string}|null}
  */
 export function decideNotice(latest, { nowMs, delivered = {}, pidAlive = true }) {
   if (!latest || typeof latest !== 'object') return null;
-  if (latest.status === 'succeeded') return null; // success is silent
+  if (latest.status === 'succeeded') {
+    return delivered.success ? null : { marker: 'success', text: renderSuccess(latest) };
+  }
   if (latest.status === 'failed') {
     return delivered.failed ? null : { marker: 'failed', text: renderFailure(latest) };
   }
@@ -99,6 +102,25 @@ export function renderFailure(latest) {
     `log: ${latest.log_file ?? '?'}`,
     '--- stage summary ---',
     renderStages(latest.stages),
+  ]
+    .filter((l) => l != null)
+    .join('\n');
+}
+
+export function renderSuccess(latest) {
+  const durationMin = Number.isFinite(latest.duration_ms)
+    ? Math.max(1, Math.round(latest.duration_ms / 60000))
+    : null;
+  return [
+    '[ai-daily-report production] completed successfully',
+    `report_date: ${latest.report_date ?? '?'}`,
+    latest.run_id ? `run_id: ${latest.run_id}` : null,
+    latest.repo_run_id ? `repo_run_id: ${latest.repo_run_id}` : null,
+    durationMin ? `duration: ${durationMin} min` : null,
+    latest.recovery?.retried?.length
+      ? `auto-recovered: ${latest.recovery.retried.join(', ')}`
+      : null,
+    'report: https://bolin8017.github.io/ai-daily-report/',
   ]
     .filter((l) => l != null)
     .join('\n');
@@ -345,6 +367,7 @@ function cmdMonitor({ stateDir }) {
     '60m': existsSync(markerFor('60m')),
     failed: existsSync(markerFor('failed')),
     orphan: existsSync(markerFor('orphan')),
+    success: existsSync(markerFor('success')),
   };
   const notice = decideNotice(latest, {
     nowMs: Date.now(),
