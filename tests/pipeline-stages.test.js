@@ -3,6 +3,7 @@ import {
   allStageIds,
   CURATE_SECTIONS,
   getStage,
+  isRetryable,
   STAGES,
   topoOrder,
 } from '../src/pipeline/stages.js';
@@ -19,7 +20,19 @@ describe('stage registry', () => {
       expect(Array.isArray(s.command)).toBe(true);
       expect(s.command.length).toBeGreaterThan(0);
       expect(typeof s.command[0]).toBe('string');
+      expect(['retry-self', 'none']).toContain(s.recovery);
     }
+  });
+
+  it('declares the expected auto-recovery policy per stage', () => {
+    // retry-self only where a re-run can plausibly fix a transient failure
+    // (network / LLM flake); 'none' for deterministic stages.
+    expect(isRetryable('collect')).toBe(true);
+    for (const sec of CURATE_SECTIONS) expect(isRetryable(`curate.${sec}`)).toBe(true);
+    expect(isRetryable('synthesize')).toBe(true);
+    expect(isRetryable('context')).toBe(false);
+    expect(isRetryable('faithfulness')).toBe(false);
+    expect(isRetryable('merge')).toBe(false);
   });
 
   it('each curate.<section> command passes its section to curate.sh', () => {

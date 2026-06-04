@@ -24,6 +24,10 @@ export const STAGES = [
     outputs: ['metadata.json'],
     satisfiedCheck: 'today-metadata',
     command: ['node', 'src/collect.js', '--skip-push'],
+    // Auto-recovery policy (read by the sequencer's --auto-recover pass):
+    // 'retry-self' = a transient failure here is worth one re-run (network/LLM
+    // flake); 'none' = deterministic, so a re-run on identical inputs can't help.
+    recovery: 'retry-self',
   },
   ...CURATE_SECTIONS.map((s) => ({
     id: `curate.${s}`,
@@ -33,6 +37,7 @@ export const STAGES = [
     outputs: [`curated/${s}.json`],
     satisfiedCheck: 'fresh-outputs',
     command: ['bash', 'scripts/curate.sh', s],
+    recovery: 'retry-self',
   })),
   {
     id: 'context',
@@ -42,6 +47,7 @@ export const STAGES = [
     outputs: ['report-context.md'],
     satisfiedCheck: 'fresh-outputs',
     command: ['bash', 'scripts/context.sh'],
+    recovery: 'none', // deterministic context build; a re-run can't fix a real failure
   },
   {
     id: 'synthesize',
@@ -53,6 +59,7 @@ export const STAGES = [
     outputs: ['editorial.json'],
     satisfiedCheck: 'fresh-outputs',
     command: ['bash', 'scripts/synthesize.sh'],
+    recovery: 'retry-self', // one bounded Sonnet re-run (editorial is ~3-5K tokens)
   },
   {
     id: 'faithfulness',
@@ -62,6 +69,7 @@ export const STAGES = [
     outputs: ['editorial.json'], // intent annotation only; 'editorial-audited' reads editorial.json directly, not this list
     satisfiedCheck: 'editorial-audited',
     command: ['bash', 'scripts/check-faithfulness.sh'],
+    recovery: 'none', // optional guard; never blocks, so never needs recovery
   },
   {
     id: 'merge',
@@ -71,6 +79,7 @@ export const STAGES = [
     outputs: [], // report lands outside staging; see 'report-for-day'
     satisfiedCheck: 'report-for-day',
     command: ['bash', 'scripts/merge-report.sh'],
+    recovery: 'none', // pure-Node deterministic compose; a re-run yields the same result
   },
 ];
 
@@ -80,6 +89,13 @@ export function getStage(id) {
   const stage = BY_ID.get(id);
   if (!stage) throw new Error(`unknown stage: ${id}`);
   return stage;
+}
+
+// Whether a failed stage is worth one automatic re-run (transient flake) vs a
+// deterministic failure a re-run can't fix. Consumed by the sequencer's
+// --auto-recover pass (src/pipeline/run.js).
+export function isRetryable(id) {
+  return getStage(id).recovery === 'retry-self';
 }
 
 export function allStageIds() {

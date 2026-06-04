@@ -3,16 +3,17 @@
 // order as parallel batches, halts at a barrier when a required dependency can't
 // be satisfied, and emits one structured JSON result line per stage for Hermes
 // (spec §8). The orchestration core runPipeline() is pure: runStage, satisfiedFn,
-// and emit are injectable, so resume/skip/barrier logic is unit-tested with mocks
-// — no claude -p, no child processes. The bottom isMain CLI shim wires the real
-// spawner and parses --resume/--only/--from/--force/--accept-missing/--dry-run.
+// and emit are injectable, so resume/skip/barrier/auto-recover logic is unit-tested
+// with mocks — no claude -p, no child processes. The bottom isMain CLI shim wires the
+// real spawner and parses --resume/--only/--from/--force/--accept-missing/--dry-run/
+// --auto-recover.
 
 import { spawn } from 'node:child_process';
 import { readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { satisfied as defaultSatisfied } from './satisfied.js';
-import { getStage, STAGES, topoOrder } from './stages.js';
+import { getStage, isRetryable, STAGES, topoOrder } from './stages.js';
 
 // A dependency in one of these states is "available" — a dependent may proceed.
 const AVAILABLE = new Set(['satisfied', 'ok', 'degraded', 'suspicious-empty', 'skipped']);
@@ -131,6 +132,7 @@ export async function runPipeline({
   targets = [],
   acceptMissing = [],
   dryRun = false,
+  autoRecover = false,
   runStage = spawnStage,
   satisfiedFn = defaultSatisfied,
   emit = emitLine,
@@ -193,50 +195,80 @@ export async function runPipeline({
         getStage(d).criticality !== 'required' || accepted.has(d) || AVAILABLE.has(state.get(d)),
     );
 
-  let progressed = true;
-  while (progressed) {
-    progressed = false;
+  // One settle pass: cascade blocks, then run each newly-ready batch until no
+  // stage can progress. Mutates `state` and emits one result line per stage.
+  const settle = async () => {
+    let progressed = true;
+    while (progressed) {
+      progressed = false;
 
-    // 1. Cascade blocks: a pending stage whose deps are all terminal but has an
-    //    unavailable required dep is blocked (propagates to its dependents next pass).
-    for (const id of order) {
-      if (state.get(id) !== 'pending' || !depsTerminal(id)) continue;
-      const dep = blockingDep(id);
-      if (dep) {
-        state.set(id, 'blocked');
-        emit(
-          buildResult(getStage(id), 'blocked', {
-            runId,
-            error: `required dep ${dep} is ${state.get(dep)}`,
-          }),
-        );
-        progressed = true;
-      }
-    }
-
-    // 2. Collect every pending stage whose required deps are now available.
-    const ready = order.filter(
-      (id) => state.get(id) === 'pending' && depsTerminal(id) && requiredReady(id),
-    );
-    if (ready.length === 0) continue;
-    progressed = true;
-
-    // 3. Run the batch concurrently; classify + emit each result.
-    await Promise.all(
-      ready.map(async (id) => {
-        const stage = getStage(id);
-        let res;
-        if (dryRun) {
-          dryDone.add(id);
-          res = { exitCode: 0 };
-        } else {
-          res = await runStage(stage, { stagingDir, reportsDir, today, repoRoot });
+      // 1. Cascade blocks: a pending stage whose deps are all terminal but has an
+      //    unavailable required dep is blocked (propagates to its dependents next pass).
+      for (const id of order) {
+        if (state.get(id) !== 'pending' || !depsTerminal(id)) continue;
+        const dep = blockingDep(id);
+        if (dep) {
+          state.set(id, 'blocked');
+          emit(
+            buildResult(getStage(id), 'blocked', {
+              runId,
+              error: `required dep ${dep} is ${state.get(dep)}`,
+            }),
+          );
+          progressed = true;
         }
-        const status = classify(stage, res, { rawSatisfied, stagingDir, dryRun });
-        state.set(id, status);
-        emit(buildResult(stage, status, { runId, ...res }));
-      }),
-    );
+      }
+
+      // 2. Collect every pending stage whose required deps are now available.
+      const ready = order.filter(
+        (id) => state.get(id) === 'pending' && depsTerminal(id) && requiredReady(id),
+      );
+      if (ready.length === 0) continue;
+      progressed = true;
+
+      // 3. Run the batch concurrently; classify + emit each result.
+      await Promise.all(
+        ready.map(async (id) => {
+          const stage = getStage(id);
+          let res;
+          if (dryRun) {
+            dryDone.add(id);
+            res = { exitCode: 0 };
+          } else {
+            res = await runStage(stage, { stagingDir, reportsDir, today, repoRoot });
+          }
+          const status = classify(stage, res, { rawSatisfied, stagingDir, dryRun });
+          state.set(id, status);
+          emit(buildResult(stage, status, { runId, ...res }));
+        }),
+      );
+    }
+  };
+
+  await settle();
+
+  // Bounded auto-recovery (at most one extra pass): re-run any retryable stage
+  // that failed, plus its downstream (which the failure left blocked), then
+  // settle again. Deterministic stages (recovery: 'none' — context/merge/
+  // faithfulness) are never retried, since a re-run on identical inputs can't
+  // fix them, so this pass never wastes LLM tokens on a doomed retry.
+  const recovery = { attempted: false, targets: [] };
+  if (autoRecover) {
+    const targets = order.filter((id) => state.get(id) === 'failed' && isRetryable(id));
+    if (targets.length > 0) {
+      recovery.attempted = true;
+      recovery.targets = targets;
+      const toReset = new Set();
+      for (const t of targets) {
+        toReset.add(t);
+        for (const d of downstreamOf(t)) if (scope.has(d)) toReset.add(d);
+      }
+      for (const id of toReset) {
+        if (UNAVAILABLE.has(state.get(id))) state.set(id, 'pending');
+      }
+      console.error(`[run.js] auto-recover: retrying ${targets.join(', ')} (+ downstream)`);
+      await settle();
+    }
   }
 
   // The run is ok unless a required, non-accepted stage ended failed/blocked.
@@ -246,7 +278,7 @@ export async function runPipeline({
       accepted.has(id) ||
       !UNAVAILABLE.has(state.get(id)),
   );
-  return { ok, state: Object.fromEntries(state) };
+  return { ok, state: Object.fromEntries(state), recovery };
 }
 
 // ---- CLI shim -------------------------------------------------------------
@@ -261,11 +293,18 @@ const isMain = (() => {
 
 if (isMain) {
   const args = process.argv.slice(2);
-  const opts = { mode: 'resume', targets: [], acceptMissing: [], dryRun: false };
+  const opts = {
+    mode: 'resume',
+    targets: [],
+    acceptMissing: [],
+    dryRun: false,
+    autoRecover: false,
+  };
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a === '--resume') opts.mode = 'resume';
     else if (a === '--dry-run') opts.dryRun = true;
+    else if (a === '--auto-recover') opts.autoRecover = true;
     else if (a === '--only' || a === '--from' || a === '--force') {
       opts.mode = a.slice(2);
       while (i + 1 < args.length && !args[i + 1].startsWith('--')) {
