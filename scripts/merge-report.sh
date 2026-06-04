@@ -6,7 +6,7 @@
 # Usage:
 #   bash scripts/merge-report.sh [DATE]
 #
-#   DATE defaults to today in Asia/Taipei (matches Stage 1 convention).
+#   DATE defaults to today in REPORT_TIMEZONE (default Asia/Taipei; matches Stage 1).
 #
 # Exits:
 #   0  — report written and validated
@@ -18,7 +18,7 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-DATE="${1:-$(TZ=Asia/Taipei date +%F)}"
+DATE="${1:-$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%F)}"
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 EDITORIAL_FILE="${EDITORIAL_FILE:-${STAGING_DIR}/editorial.json}"
