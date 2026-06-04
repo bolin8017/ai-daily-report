@@ -47,13 +47,19 @@ const REPO_SLUG = 'bolin8017/ai-daily-report';
  * @param {{['30m']?:boolean,['60m']?:boolean,failed?:boolean}} [ctx.delivered]
  * @returns {{marker: string, text: string}|null}
  */
-export function decideNotice(latest, { nowMs, delivered = {} }) {
+export function decideNotice(latest, { nowMs, delivered = {}, pidAlive = true }) {
   if (!latest || typeof latest !== 'object') return null;
   if (latest.status === 'succeeded') return null; // success is silent
   if (latest.status === 'failed') {
     return delivered.failed ? null : { marker: 'failed', text: renderFailure(latest) };
   }
   if (latest.status === 'running') {
+    // The runner died without writing a final state — report the orphan once.
+    // Takes priority over the long-running notices: a dead process isn't "still
+    // running", and final-state would have flipped status away from 'running'.
+    if (!pidAlive) {
+      return delivered.orphan ? null : { marker: 'orphan', text: renderOrphan(latest) };
+    }
     const startMs = Date.parse(latest.started_at ?? '');
     if (!Number.isFinite(startMs)) return null;
     const elapsedMin = Math.floor((nowMs - startMs) / 60000);
@@ -108,6 +114,17 @@ export function renderRunning(latest, elapsedMin) {
   ].join('\n');
 }
 
+export function renderOrphan(latest) {
+  return [
+    '[ai-daily-report production] orphaned run — process ended without writing a final state',
+    `run_id: ${latest.run_id ?? '?'}`,
+    `pid: ${latest.pid ?? '?'}`,
+    `log: ${latest.log_file ?? '?'}`,
+    '--- last known stage status ---',
+    renderStages(latest.stages),
+  ].join('\n');
+}
+
 // ---- IO helpers -----------------------------------------------------------
 
 function atomicWriteJson(file, obj) {
@@ -121,6 +138,19 @@ function readJson(file) {
     return JSON.parse(readFileSync(file, 'utf8'));
   } catch {
     return null;
+  }
+}
+
+// Is a pid still alive? Signal 0 probes without delivering a signal. ESRCH =
+// gone (orphan); EPERM = exists but owned by another user (alive). An unknown
+// pid is treated as alive so we never falsely declare an orphan.
+function isProcessAlive(pid) {
+  if (!Number.isInteger(pid)) return true;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err) {
+    return err.code === 'EPERM';
   }
 }
 
@@ -314,8 +344,13 @@ function cmdMonitor({ stateDir }) {
     '30m': existsSync(markerFor('30m')),
     '60m': existsSync(markerFor('60m')),
     failed: existsSync(markerFor('failed')),
+    orphan: existsSync(markerFor('orphan')),
   };
-  const notice = decideNotice(latest, { nowMs: Date.now(), delivered });
+  const notice = decideNotice(latest, {
+    nowMs: Date.now(),
+    delivered,
+    pidAlive: isProcessAlive(latest.pid),
+  });
   if (!notice) return 0;
   mkdirSync(noticesDir, { recursive: true });
   writeFileSync(markerFor(notice.marker), '');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { decideNotice, renderFailure } from '../src/ops/production-run.js';
+import { decideNotice, renderFailure, renderOrphan } from '../src/ops/production-run.js';
 
 const START = '2026-06-05T07:00:00.000Z';
 const startMs = Date.parse(START);
@@ -57,6 +57,41 @@ describe('decideNotice', () => {
   it('returns null for missing state or unparseable start time', () => {
     expect(decideNotice(null, { nowMs: min(90) })).toBeNull();
     expect(decideNotice(running({ started_at: 'not-a-date' }), { nowMs: min(90) })).toBeNull();
+  });
+
+  it('reports an orphan once when the runner pid is dead mid-run', () => {
+    const n = decideNotice(running(), { nowMs: min(10), delivered: {}, pidAlive: false });
+    expect(n.marker).toBe('orphan');
+    expect(n.text).toMatch(/orphaned run/);
+    // already delivered → silent
+    expect(
+      decideNotice(running(), { nowMs: min(10), delivered: { orphan: true }, pidAlive: false }),
+    ).toBeNull();
+  });
+
+  it('orphan takes priority over the long-running notice', () => {
+    // 90 min elapsed but the process is dead → orphan, not a 30m/60m notice
+    const n = decideNotice(running(), { nowMs: min(90), delivered: {}, pidAlive: false });
+    expect(n.marker).toBe('orphan');
+  });
+
+  it('a live long-running process still gets the time notice, not an orphan', () => {
+    const n = decideNotice(running(), { nowMs: min(61), delivered: {}, pidAlive: true });
+    expect(n.marker).toBe('60m');
+  });
+});
+
+describe('renderOrphan', () => {
+  it('names the run, pid, and last known stages', () => {
+    const text = renderOrphan({
+      run_id: 'r1',
+      pid: 4242,
+      log_file: '/x.log',
+      stages: { synthesize: { status: 'ok' }, merge: { status: 'blocked' } },
+    });
+    expect(text).toMatch(/orphaned run/);
+    expect(text).toMatch(/pid: 4242/);
+    expect(text).toMatch(/✗ merge: blocked/);
   });
 });
 
