@@ -1,10 +1,9 @@
 // Debug: replay a captured data/staging into the section engine and print
 // per-section item counts + token sizes. Usage: node scripts/sim-section-condense.mjs
 //
-// NOTE: this reads the condensed unified.json, which has had `published` dropped
-// by the legacy condense — so the recency window is INERT here (every item looks
-// undated and is kept). Counts/tokens are therefore an upper bound, not a true
-// replay. For an accurate replay, point this at raw feed items (with published).
+// NOTE: reads from feeds-pulse.json (the post-Plan5-cutover sole feed staging).
+// Items here were built from raw feeds so published/score/_scope are present —
+// the recency window is active and counts reflect a true replay.
 import { readFileSync } from 'node:fs';
 import { buildSectionFeedSlices, FEED_SECTIONS } from '../src/lib/section-condense.js';
 import { loadSectionMap } from '../src/lib/section-map.js';
@@ -12,9 +11,9 @@ import { loadSectionMap } from '../src/lib/section-map.js';
 const date = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
 let feed = [];
 try {
-  feed = JSON.parse(readFileSync('data/staging/unified.json', 'utf8')).items ?? [];
+  feed = JSON.parse(readFileSync('data/staging/feeds-pulse.json', 'utf8')).items ?? [];
 } catch {
-  console.error('no data/staging/unified.json — run Stage 1 first');
+  console.error('no data/staging/feeds-pulse.json — run Stage 1 first');
   process.exit(1);
 }
 const map = await loadSectionMap();

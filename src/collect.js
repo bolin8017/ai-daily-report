@@ -146,9 +146,8 @@ async function main() {
   banner('condensing');
   const condensed = condenseAll(raw);
 
-  // Phase 4b — section-aware feed slices (Plan 2, double-write alongside
-  // unified.json; curators switch to these in the Plan 5 cutover). Built from
-  // RAW feed items, which still carry published/score/_scope.
+  // Phase 4b — section-aware feed slices (sole feed staging after Plan 5 cutover).
+  // Built from RAW feed items, which still carry published/score/_scope.
   const sectionMap = await loadSectionMap();
   const sectionSlices = buildSectionFeedSlices(raw.feeds.items, { sectionMap, date });
   const shippedSlice = buildShippedSlice(condensed);
@@ -163,18 +162,17 @@ async function main() {
 
   // New IA-redesign fetchers are written raw (no condense step) since their
   // payloads are small + structured (leaderboards: 5 snapshots; mops: tracked
-  // tickers only; hf_trending: 20 models; arxiv: ~50 papers).
+  // tickers only; hf_trending: capped to 15; arxiv: topic-locked (≤30 on-theme)).
   const files = {
-    'data/staging/unified.json': condensed.unified,
-    'data/staging/trending.json': condensed.trending,
-    'data/staging/search.json': condensed.search,
-    'data/staging/developers.json': condensed.developers,
     'data/staging/leaderboards.json': raw.leaderboards ?? { ok: false, items: [] },
     'data/staging/mops.json': raw.mops ?? { ok: false, items: [] },
-    'data/staging/hf_trending.json': raw.hf_trending ?? { ok: false, items: [] },
+    'data/staging/hf_trending.json': {
+      ...(raw.hf_trending ?? { ok: false, items: [] }),
+      items: (raw.hf_trending?.items ?? []).slice(0, 15),
+    },
     'data/staging/arxiv.json': raw.arxiv ?? { ok: false, items: [] },
-    // Section slices — double-write alongside unified.json (Plan 2). Curators
-    // continue reading unified.json until the Plan 5 cutover.
+    // Section slices are the sole feed staging (Plan 5 cutover — unified.json
+    // and the per-GitHub condensed files are no longer written).
     'data/staging/feeds-pulse.json': sectionSlices.pulse,
     'data/staging/feeds-market.json': sectionSlices.market,
     'data/staging/feeds-tech.json': sectionSlices.tech,

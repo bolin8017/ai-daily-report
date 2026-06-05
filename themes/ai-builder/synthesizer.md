@@ -48,8 +48,8 @@ Curated outputs from Stage 2:
 - `data/staging/curated/tech.json`
 
 Raw staging (for cross-source synthesis when curated isn't enough):
-- `data/staging/unified.json` — condensed RSS / JSON / RSSHub feeds
-- `data/staging/trending.json` / `search.json` / `developers.json` — GitHub
+- `data/staging/feeds-pulse.json` / `feeds-market.json` / `feeds-tech.json` — per-section condensed feeds
+- `data/staging/feeds-shipped.json` — GitHub trending / topic-search / developers (one object with trending/search/developers arrays)
 - `data/staging/leaderboards.json` — benchmark snapshots + diffs
 - `data/staging/mops.json` — Taiwan 重大訊息 (tracked tickers)
 - `data/staging/hf_trending.json` — HF trending models
