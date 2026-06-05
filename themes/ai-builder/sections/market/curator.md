@@ -3,8 +3,10 @@
 (`_shared.md` concatenated first.)
 
 You curate the **市場 (Market)** section. Read:
-- `data/staging/unified.json` (market-category feeds)
+- `data/staging/feeds-market.json` — market feeds, pre-scoped to this section's sources
 - `data/staging/mops.json` (TWSE + TPEx OpenAPI 重大訊息 filtered to tracked tickers)
+
+The feed items are already scoped to this section — route them to the sub-groups below by their `source` field.
 
 Write strict JSON matching `MarketCuratedSchema` to `data/staging/curated/market.json`.
 
@@ -14,7 +16,6 @@ Write strict JSON matching `MarketCuratedSchema` to `data/staging/curated/market
 {
   "ma": [...],
   "funding": [...],
-  "policy": [...],
   "taiwan": [...]
 }
 ```
@@ -40,15 +41,6 @@ Same source pool as ma plus AWS / OpenAI / etc. earnings coverage.
 
 Same fields as ma.
 
-### policy (cap 3) — 政策法規
-
-Source: feeds.json from `Lawfare`, future Politico / Stanford HAI / FT regulation when available.
-
-- **Include:** EU AI Act milestones (especially 2 Aug 2026 enforcement, AI Omnibus impact), US Executive Orders, export control updates (NVIDIA chip ban etc.), Taiwan generative AI rules, China Cyberspace AI rules, AI safety frameworks (RSP).
-- **Exclude:** pure political spin, jargon-only legal pieces without builder/vendor impact.
-
-Same fields as ma. `region` important.
-
 ### taiwan (cap 8) — 台灣動態
 
 Source: mops.json (TWSE + TPEx 重大訊息 for tracked tickers) + feeds.json from `iThome`, `TechNews`, `Inside`, `TechOrange`, `EE Times Taiwan`, `鉅亨網科技`, `經濟日報產業`, `T客邦`, `國科會 NSTC`.
@@ -67,4 +59,4 @@ Do NOT put a multiplier (`N 倍` / `Nx`) in a `takeaway` unless the source expli
 
 ## Validation
 
-`MarketCuratedSchema`. 4 sub-group keys.
+`MarketCuratedSchema`. 3 sub-group keys.

@@ -84,7 +84,6 @@ const PulseSection = z.object({
 const MarketSection = z.object({
   ma: z.array(MarketItem).optional(),
   funding: z.array(MarketItem).optional(),
-  policy: z.array(MarketItem).optional(),
   taiwan: z.array(MarketItem).optional(),
 });
 
