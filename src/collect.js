@@ -31,7 +31,8 @@ import { fetchMinifluxEntries } from './fetchers/miniflux.js';
 import { runAll } from './fetchers/run-all.js';
 import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
-import { compareFeedCounts } from './lib/miniflux-shadow.js';
+import { loadFeedList } from './lib/feeds-opml.js';
+import { minifluxConfigured } from './lib/miniflux-client.js';
 import { tagItemScope } from './lib/scope.js';
 import {
   buildSectionFeedSlices,
@@ -116,7 +117,15 @@ async function main() {
   // Each source has its own ordered chain (e.g. RSSHub → HN Firebase → Jina →
   // Firecrawl for HN), so one tool failure doesn't lose the content.
   banner('fetching sources');
-  const sources = await resolveEffectiveSources();
+  // Miniflux owns the native-RSS feeds listed in feeds.opml; the chain fetches
+  // everything else (HN/Lobsters, RSSHub-only dev-to/anthropic, slow sk-hynix,
+  // and all structured sources). If Miniflux isn't configured (e.g. local dev
+  // without the stack), fall back to chain-fetching everything so the pipeline
+  // still runs.
+  const minifluxOn = minifluxConfigured();
+  const minifluxIds = minifluxOn ? new Set(loadFeedList().map((f) => f.id)) : new Set();
+  const allSources = await resolveEffectiveSources();
+  const sources = allSources.filter((s) => !minifluxIds.has(s.id));
   const { results, degraded } = await runAll(sources, {
     date,
     minHealthy: Math.ceil(sources.length / 3),
@@ -124,22 +133,20 @@ async function main() {
   const raw = mapResultsToLegacyShape(results, sources);
   if (degraded.length) raw._degraded = degraded;
 
-  // SHADOW (pre-cutover): pull the native-RSS feed half from Miniflux and write a
-  // comparison artifact. The old chains remain the authoritative feed input until
-  // cutover (Task 7). Never throws — a Miniflux miss just logs and is skipped.
-  let minifluxShadow = null;
-  try {
+  // Pull the native-RSS feed half from Miniflux and merge into the feeds bucket.
+  // No chain fallback for these by design (graceful degrade): if Miniflux is down
+  // the feed half is thinner that day, but HN/Lobsters/shipped/structured still
+  // produce a report (runAll's minHealthy already tolerates degraded sources).
+  if (minifluxOn) {
     const mf = await fetchMinifluxEntries();
     if (mf.ok) {
-      minifluxShadow = compareFeedCounts(raw.feeds.items ?? [], mf.items);
-      banner(
-        `miniflux shadow: chain=${minifluxShadow.totals.chain} miniflux=${minifluxShadow.totals.miniflux}`,
-      );
+      raw.feeds.items = [...mf.items, ...(raw.feeds.items ?? [])];
+      raw.feeds.ok = raw.feeds.items.length > 0;
+      banner(`miniflux: +${mf.items.length} native-RSS feed items`);
     } else {
-      banner(`miniflux shadow skipped: ${mf.error}`);
+      banner(`miniflux feed pull FAILED (feed half degraded): ${mf.error}`);
+      (raw._degraded ??= []).push('miniflux-feeds');
     }
-  } catch (err) {
-    banner(`miniflux shadow error: ${err.message}`);
   }
 
   // Phase 2 — build feeds snapshot (committed to data/feeds-snapshot.json for 11ty)
@@ -191,8 +198,6 @@ async function main() {
       items: (raw.hf_trending?.items ?? []).slice(0, 15),
     },
     'data/staging/arxiv.json': raw.arxiv ?? { ok: false, items: [] },
-    // Shadow comparison: chain-vs-Miniflux feed counts (pre-cutover validation).
-    'data/staging/miniflux-shadow.json': minifluxShadow ?? { skipped: true },
     // Section slices are the sole feed staging (Plan 5 cutover — unified.json
     // and the per-GitHub condensed files are no longer written).
     'data/staging/feeds-pulse.json': sectionSlices.pulse,
