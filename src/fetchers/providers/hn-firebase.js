@@ -20,7 +20,7 @@ export async function hnFirebaseProvider(cfg, _ctx) {
     const stories = await Promise.all(top.map((id) => fetchJson(`${BASE}/item/${id}.json`)));
     const items = stories
       .map((s, i) => {
-        if (!s || !s.id) return null;
+        if (!s?.id) return null;
         const hnUrl = `https://news.ycombinator.com/item?id=${s.id}`;
         return {
           source: 'hackernews',

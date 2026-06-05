@@ -51,9 +51,7 @@ function curateItemCount(stagingDir, stage) {
   if (!stage.id.startsWith('curate.')) return null;
   try {
     const json = JSON.parse(readFileSync(path.join(stagingDir, stage.outputs[0]), 'utf8'));
-    return Object.values(json)
-      .filter(Array.isArray)
-      .flatMap((a) => a).length;
+    return Object.values(json).filter(Array.isArray).flat().length;
   } catch {
     return null;
   }
