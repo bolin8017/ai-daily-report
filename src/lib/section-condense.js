@@ -162,3 +162,16 @@ export function buildSectionFeedSlices(feedItems, opts) {
   }
   return slices;
 }
+
+// Package the already-condensed github inputs (condenseAll outputs — stars-
+// ranked + LENS_QUOTA-reserved) into one shipped slice. shipped is github-only
+// (no feed/Plan-X treatment); artifact-level unification so all four sections
+// emit a feeds-<section>.json. The shipped curator reads this at the Plan 5
+// cutover instead of three separate files.
+export function buildShippedSlice(condensed) {
+  const trending = condensed?.trending?.items ?? [];
+  const search = condensed?.search?.items ?? [];
+  const developers = condensed?.developers?.items ?? [];
+  const ok = trending.length > 0 || search.length > 0 || developers.length > 0;
+  return { ok, trending, search, developers };
+}

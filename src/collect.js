@@ -31,7 +31,11 @@ import { runAll } from './fetchers/run-all.js';
 import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
 import { tagItemScope } from './lib/scope.js';
-import { buildSectionFeedSlices, FEED_SECTIONS } from './lib/section-condense.js';
+import {
+  buildSectionFeedSlices,
+  buildShippedSlice,
+  FEED_SECTIONS,
+} from './lib/section-condense.js';
 import { loadSectionMap } from './lib/section-map.js';
 import { buildSnapshot } from './lib/snapshot.js';
 import { buildSourceDateMap, computeAges } from './lib/source-dates.js';
@@ -147,6 +151,7 @@ async function main() {
   // RAW feed items, which still carry published/score/_scope.
   const sectionMap = await loadSectionMap();
   const sectionSlices = buildSectionFeedSlices(raw.feeds.items, { sectionMap, date });
+  const shippedSlice = buildShippedSlice(condensed);
 
   // Phase 5 — write staging files for Stage 2 (agent analysis)
   banner('writing staging data');
@@ -173,6 +178,7 @@ async function main() {
     'data/staging/feeds-pulse.json': sectionSlices.pulse,
     'data/staging/feeds-market.json': sectionSlices.market,
     'data/staging/feeds-tech.json': sectionSlices.tech,
+    'data/staging/feeds-shipped.json': shippedSlice,
     // url→published map for the Stage 3.5 faithfulness guard. Built from raw
     // FEED items (GitHub excluded — repo dates ≠ "appeared today"). Captured
     // here because condense drops date fields before the curator/guard see them.
@@ -199,9 +205,13 @@ async function main() {
           count: raw.hf_trending?.items?.length ?? 0,
         },
         arxiv: { ok: raw.arxiv?.ok ?? false, count: raw.arxiv?.items?.length ?? 0 },
-        feeds_sections: Object.fromEntries(
-          FEED_SECTIONS.map((s) => [s, sectionSlices[s].items.length]),
-        ),
+        feeds_sections: {
+          ...Object.fromEntries(FEED_SECTIONS.map((s) => [s, sectionSlices[s].items.length])),
+          shipped:
+            shippedSlice.trending.length +
+            shippedSlice.search.length +
+            shippedSlice.developers.length,
+        },
       },
       degraded: raw._degraded ?? [],
     },
