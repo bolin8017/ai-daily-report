@@ -40,9 +40,7 @@ async function main() {
 
   const moved = registry.filter(
     (s) =>
-      s.itemType === 'rss-post' &&
-      s.id !== 'lobsters' &&
-      s.chain?.[0]?.provider === 'native-rss',
+      s.itemType === 'rss-post' && s.id !== 'lobsters' && s.chain?.[0]?.provider === 'native-rss',
   );
   const outlines = moved.map((s) => {
     const url = feedUrlFor(s);

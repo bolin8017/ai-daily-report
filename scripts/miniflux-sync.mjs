@@ -1,14 +1,19 @@
 #!/usr/bin/env node
 // Apply the OPML feed list to Miniflux (idempotent). Auth via miniflux-client
 // (MINIFLUX_TOKEN, or MINIFLUX_USERNAME/MINIFLUX_PASSWORD basic auth).
-// Miniflux validates each feed at creation, so an unreachable/invalid feed
-// fails that one POST (reported) without aborting the rest.
+//
+// Each created feed's Miniflux *title* is set to its registry source id. That id
+// is the stable, redirect-proof join key the fetcher reads back from every
+// entry's feed.title — Miniflux rewrites feed_url when a feed redirects, so the
+// url is not a reliable key. Pass --reset to delete all existing feeds first
+// (used once to re-tag feeds created before titling, or to rebuild clean).
 import { loadFeedList } from '../src/lib/feeds-opml.js';
 import { minifluxAuthHeaders, minifluxBaseUrl } from '../src/lib/miniflux-client.js';
 import { planMinifluxSync } from '../src/lib/miniflux-sync.js';
 
 const URL_BASE = minifluxBaseUrl();
 const AUTH = minifluxAuthHeaders();
+const RESET = process.argv.includes('--reset');
 if (!URL_BASE || !AUTH) {
   console.error('MINIFLUX_URL + (MINIFLUX_TOKEN or MINIFLUX_USERNAME/MINIFLUX_PASSWORD) required');
   process.exit(1);
@@ -28,6 +33,15 @@ async function api(path, init = {}) {
 
 async function main() {
   const opmlFeeds = loadFeedList();
+
+  if (RESET) {
+    const feeds = await api('/v1/feeds');
+    for (const f of feeds) {
+      await api(`/v1/feeds/${f.id}`, { method: 'DELETE' });
+    }
+    console.error(`reset: removed ${feeds.length} existing feeds`);
+  }
+
   const existingCategories = await api('/v1/categories');
   const existingFeeds = await api('/v1/feeds');
   const plan = planMinifluxSync({ opmlFeeds, existingFeeds, existingCategories });
@@ -43,16 +57,21 @@ async function main() {
   const failures = [];
   for (const f of plan.createFeeds) {
     try {
-      await api('/v1/feeds', {
+      const res = await api('/v1/feeds', {
         method: 'POST',
         body: JSON.stringify({ feed_url: f.feed_url, category_id: catId.get(f.category) }),
       });
+      // Tag with the registry source id (the fetcher reads it back via feed.title).
+      await api(`/v1/feeds/${res.feed_id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ title: f.source }),
+      });
       created++;
-      console.error(`+ feed ${f.feed_url}`);
+      console.error(`+ feed ${f.source} <- ${f.feed_url}`);
     } catch (e) {
-      // Feeds that redirect get stored under their final url, so a re-sync sees
-      // the OPML url as "missing" and re-adds it — Miniflux then reports it
-      // already exists. Treat that as idempotent success, not a failure.
+      // Redirecting feeds get stored under their final url, so a re-sync sees the
+      // OPML url as "missing" and re-adds it — Miniflux reports it already exists.
+      // Treat that as idempotent success, not a failure.
       if (/duplicat|already exist/i.test(e.message)) {
         console.error(`= exists ${f.feed_url} (already in Miniflux, via redirect)`);
       } else {

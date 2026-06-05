@@ -29,12 +29,10 @@ export function parseOpml(xml) {
   return feeds;
 }
 
+// Shared url normalization (used by the sync planner to compare OPML urls
+// against Miniflux's stored feed urls).
 export function normUrl(u) {
   return (u || '').replace(/\/+$/, '').toLowerCase();
-}
-
-export function buildFeedUrlToSource(feeds) {
-  return Object.fromEntries(feeds.map((f) => [normUrl(f.url), f.id]));
 }
 
 export function feedsOpmlPath(theme = ACTIVE_THEME) {

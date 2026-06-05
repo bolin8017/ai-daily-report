@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildFeedUrlToSource, parseOpml } from '../src/lib/feeds-opml.js';
+import { parseOpml } from '../src/lib/feeds-opml.js';
 
 const SAMPLE = `<?xml version="1.0"?>
 <opml version="2.0"><body>
@@ -23,12 +23,5 @@ describe('parseOpml', () => {
   it('decodes XML entities in attributes', () => {
     const feeds = parseOpml('<outline text="x" xmlUrl="https://e.com/feed?a=1&amp;b=2"/>');
     expect(feeds[0].url).toBe('https://e.com/feed?a=1&b=2');
-  });
-});
-
-describe('buildFeedUrlToSource', () => {
-  it('maps normalized url -> source id (trailing slash + case insensitive)', () => {
-    const map = buildFeedUrlToSource([{ id: 'a', url: 'https://E.com/Feed/' }]);
-    expect(map['https://e.com/feed']).toBe('a');
   });
 });

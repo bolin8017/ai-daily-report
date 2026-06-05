@@ -14,7 +14,9 @@ describe('planMinifluxSync', () => {
       existingCategories: [{ id: 1, title: 'pulse' }],
     });
     expect(plan.createCategories).toEqual(['market']);
-    expect(plan.createFeeds).toEqual([{ feed_url: 'https://b.com/feed', category: 'market' }]);
+    expect(plan.createFeeds).toEqual([
+      { feed_url: 'https://b.com/feed', category: 'market', source: 'b' },
+    ]);
   });
 
   it('is a no-op when everything already exists (idempotent)', () => {
