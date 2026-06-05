@@ -25,7 +25,6 @@ export const PulseCuratedSchema = z.object({
 export const MarketCuratedSchema = z.object({
   ma: z.array(MarketItem),
   funding: z.array(MarketItem),
-  policy: z.array(MarketItem),
   taiwan: z.array(MarketItem),
 });
 
