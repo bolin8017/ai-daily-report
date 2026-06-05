@@ -29,28 +29,45 @@ schedule, env var, or state-contract change is required.** Concretely:
 If the migration in this doc has not been applied on the Hermes side yet, it
 remains valid exactly as written below.
 
-## Aggregator dependency — Miniflux + RSSHub (2026-06-06, REQUIRES operator setup)
+## Aggregator dependency — Miniflux + RSSHub (deployed 2026-06-06, PR #96)
 
-Unlike the condense change above, the aggregator cutover **does** add a runtime
-dependency. Stage 1 now ingests the native-RSS feed half from a **self-hosted
-Miniflux** (fed by self-hosted RSSHub) instead of per-source RSS chains.
+**Did the operator-facing contract change? No.** Cron schedules, the two wrapper
+scripts, the `latest.json` state contract, monitor output, flock/detach, and
+Telegram delivery are all unchanged. What changed is internal to Stage 1 plus one
+new standing infrastructure dependency — **already deployed and boot-persistent**,
+so there is nothing for the wrappers to do differently.
 
-**What the operator must ensure on the production host:**
+**What changed:** Stage 1 now ingests the native-RSS feed half (~37 blog/media
+feeds) from a **self-hosted Miniflux** (fed by a self-hosted RSSHub) instead of
+per-source RSS chains. `collect.js` partitions sources by
+`themes/<theme>/feeds.opml`: those feeds come from one Miniflux pull, everything
+else (HN/Lobsters, the RSSHub-only `dev-to-top`/`anthropic-news`, slow
+`sk-hynix-news`, and all structured sources) still fetches via its chain.
 
-- The aggregator stack is running: `docker compose -f docker/aggregator/docker-compose.yml up -d`
-  (RSSHub + Miniflux + Postgres, host networking, all bound to `127.0.0.1`). Feeds
-  are provisioned from `themes/<theme>/feeds.opml` via `node scripts/miniflux-sync.mjs`.
-- `MINIFLUX_URL` + `MINIFLUX_USERNAME` + `MINIFLUX_PASSWORD` (or `MINIFLUX_TOKEN`)
-  are present in the environment the start wrapper sources (the repo `.env`, same
-  place as `GITHUB_TOKEN`). See `.env.example`.
+**Current steady state on the production host (server14) — already in place, no setup pending:**
 
-**Failure behavior (no new alerting needed):** if Miniflux is down/unreachable at
-collect time, the native-RSS feed half is empty for that run and listed in
+- The stack runs via `docker/aggregator/docker-compose.yml` (RSSHub + Miniflux +
+  Postgres, host networking, all bound to `127.0.0.1` — not publicly exposed). All
+  three containers use `restart: unless-stopped` and the docker daemon is enabled
+  at boot, so **the stack returns automatically after a reboot** — no operator
+  action required.
+- `MINIFLUX_URL` + `MINIFLUX_USERNAME`/`MINIFLUX_PASSWORD` (or `MINIFLUX_TOKEN`)
+  live in the repo `.env` — same checkout and same file as `GITHUB_TOKEN`, which the
+  start wrapper already sources. See `.env.example`.
+
+**The only operator touchpoints (rare, manual — not part of the daily cron):**
+
+- Changed the feed list (edited `feeds.opml`): re-run `node scripts/miniflux-sync.mjs`
+  (idempotent). To rebuild/retag every feed from scratch: add `--reset`.
+- Stack somehow not running: `docker compose -f docker/aggregator/docker-compose.yml up -d`.
+
+**Failure behavior (no new alerting needed):** if Miniflux is unreachable at collect
+time, the native-RSS feed half is empty for that run and listed in
 `metadata.json → degraded` (`miniflux-feeds`); HN/Lobsters, shipped, and all
-structured sources still produce a report. `run.sh --full` still exits 0, so the
-monitor's success/failure logic is unchanged. There is **no Hermes wrapper or
-state-contract change** — only the host-side stack + env above. If Miniflux is not
-configured at all, collect falls back to chain-fetching everything.
+structured sources still produce a report and `run.sh --full` still exits 0, so the
+monitor's success/failure logic is unchanged. If Miniflux is not configured at all
+(e.g. a dev checkout without the stack), collect falls back to chain-fetching
+everything.
 
 ## What changed in the repo (so the wrappers can shrink)
 
