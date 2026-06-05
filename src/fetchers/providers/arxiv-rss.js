@@ -8,6 +8,25 @@ const parser = new RSSParser({
 
 const PER_CATEGORY_CAP = 50;
 const ABSTRACT_MAX_CHARS = 400;
+const ARXIV_CATEGORIES = ['cs.AI', 'cs.CL', 'cs.LG', 'cs.IR'];
+const MAX_KEYWORDS = 40;
+
+// Build an arxiv-API search_query (URL-encoded) from interest keywords:
+//   (abs:"kw1" OR abs:kw2 OR ...) AND (cat:cs.AI OR cat:cs.CL OR ...)
+// Multi-word phrases are quoted. Returns null when there are no keywords.
+export function buildArxivSearchQuery(keywords, opts = {}) {
+  const max = opts.maxKeywords ?? MAX_KEYWORDS;
+  const cats = opts.categories ?? ARXIV_CATEGORIES;
+  const kws = (keywords ?? []).filter(Boolean).slice(0, max);
+  if (kws.length === 0) return null;
+  const enc = (kw) => {
+    const term = kw.includes(' ') ? `"${kw}"` : kw;
+    return `abs:${encodeURIComponent(term).replace(/%20/g, '+')}`;
+  };
+  const kwClause = `(${kws.map(enc).join('+OR+')})`;
+  const catClause = `(${cats.map((c) => `cat:${c}`).join('+OR+')})`;
+  return `${kwClause}+AND+${catClause}`;
+}
 
 function parseEntry(entry, category) {
   const url = entry.link ?? (typeof entry.id === 'string' ? entry.id : (entry.id?.[''] ?? null));
