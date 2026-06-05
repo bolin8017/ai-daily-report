@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sanitizeHtml from 'sanitize-html';
 import YAML from 'yaml';
-import SOURCE_REGISTRY from './src/sources/registry.js';
+import { loadSectionMap } from './src/lib/section-map.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reportsDir = path.join(__dirname, 'data', 'reports');
@@ -211,47 +211,11 @@ export default function (eleventyConfig) {
   // gives users discriminating info per tab instead of the same dense list
   // everywhere.
   //
-  // Category → tab mapping derived from the source registry. GitHub-derived
-  // sources (Trending, Topic Discovery, Dev Watch …) aren't in by_source —
-  // they're synthesized from report.shipped.<key> at render time and tagged
-  // ['shipped']. Sources missing from the registry fall through to
-  // OVERRIDE_TABS; unmatched ones default to [] which means "show only on the
-  // synthesis tabs" (訊號 / 動手做).
-  //
-  // NOTE: feeds-snapshot.json keys by_source on the source *id* (e.g.
-  // "technews-tw"), so the category map must also be keyed by id. The 2026-05-24
-  // cutover emptied config.json's sources.feeds (sources moved to the registry),
-  // which silently turned every pill's tabs into [] — the footer showed
-  // "來源 · 0" on every non-synthesis tab. Reading the registry restores it.
-  const CATEGORY_TO_TABS = {
-    community: ['pulse'],
-    中文社群: ['pulse'],
-    'AI 部落格': ['pulse'],
-    '系統/底層': ['pulse'],
-    'AI 公司': ['tech'],
-    論文: ['tech'],
-    大廠技術: ['tech'],
-    aidaptiv: ['tech'],
-    market: ['market'],
-    policy: ['market'],
-    台灣媒體: ['market'],
-  };
-  // Keyed by source *id* (matching feeds-snapshot.json by_source keys), for
-  // theme-overlay-only sources that aren't in the base registry, so
-  // loadSourceCategoryMap() can't resolve their category. Without these they'd
-  // render with empty data-tabs and show only on the synthesis tabs.
-  const OVERRIDE_TABS = {
-    'phison-blog': ['tech', 'market'],
-    'sk-hynix-news': ['tech'],
-  };
-
-  function loadSourceCategoryMap() {
-    const map = {};
-    for (const s of SOURCE_REGISTRY) {
-      if (s?.id && s?.category) map[s.id] = s.category;
-    }
-    return map;
-  }
+  // GitHub-derived sources (Trending, Topic Discovery, Dev Watch …) aren't in
+  // by_source — they're synthesized from report.shipped.<key> at render time
+  // and tagged ['shipped']. Tab assignment for feed sources is resolved via the
+  // shared loadSectionMap() (same map the condense engine uses), so the footer
+  // and condense engine are always in sync with the registry + theme overlay.
 
   function shippedSyntheticSources(latestReport) {
     // `>= 2` (not `=== 2`): v2.1 reports (post-2026-05-24 split) must still
@@ -276,7 +240,7 @@ export default function (eleventyConfig) {
       }));
   }
 
-  eleventyConfig.addGlobalData('sourcesStatus', () => {
+  eleventyConfig.addGlobalData('sourcesStatus', async () => {
     const snapshotPath = path.join(__dirname, 'data', 'feeds-snapshot.json');
     if (!fs.existsSync(snapshotPath)) return [];
     let snapshot;
@@ -287,17 +251,13 @@ export default function (eleventyConfig) {
     }
     if (!snapshot.by_source) return [];
 
-    const categoryMap = loadSourceCategoryMap();
-    const feedSources = Object.entries(snapshot.by_source).map(([name, items]) => {
-      const category = categoryMap[name];
-      const tabs = category ? (CATEGORY_TO_TABS[category] ?? []) : (OVERRIDE_TABS[name] ?? []);
-      return {
-        name,
-        ok: Array.isArray(items) && items.length > 0,
-        count: Array.isArray(items) ? items.length : 0,
-        tabs,
-      };
-    });
+    const map = await loadSectionMap();
+    const feedSources = Object.entries(snapshot.by_source).map(([name, items]) => ({
+      name,
+      ok: Array.isArray(items) && items.length > 0,
+      count: Array.isArray(items) ? items.length : 0,
+      tabs: map.sectionsForSource(name),
+    }));
 
     // Synthesize shipped-tab entries from the latest report so the 上線 tab
     // footer actually shows GitHub Trending / Topic Discovery / Dev Watch.
