@@ -270,6 +270,16 @@ The loader is `src/lib/theme.js` (`loadTheme` / `loadSection` / `listActiveSecti
 
 Fetchers are organized as **providers** under `src/fetchers/providers/`, each self-registering with `_registry.js` and run in parallel by `run-all.js`. Sources (RSS routes, GitHub topics, developer lists) come from the active theme's `sources.yaml` via `getThemeSources()`, not from `config.json`.
 
+### Native-RSS ingestion via self-hosted Miniflux (2026-06-06 cutover)
+
+The native-RSS feed half (~37 sources: blogs, vendor blogs, Taiwan/Chinese media) is no longer fetched per-source through provider chains. A self-hosted **Miniflux** — fed by a self-hosted **RSSHub**, both in `docker/aggregator/` under host networking and bound to `127.0.0.1` — polls every feed 24/7; Stage 1 does one windowed `GET /v1/entries` pull (`src/fetchers/miniflux.js`) and merges the result into the feeds bucket. The feed list of record is `themes/<theme>/feeds.opml` (generated from the registry by `scripts/gen-feeds-opml.mjs`, provisioned into Miniflux by `scripts/miniflux-sync.mjs`); `collect.js` partitions sources by it — feeds in the OPML come from Miniflux, the rest from chains.
+
+Three motivations: (1) continuous polling removes the per-day-snapshot sparsity (a heavy fetch day no longer collapses a source to one item — the problem [docs/superpowers condense redesign] also targeted); (2) it centralizes feed management + dead-feed visibility instead of hand-maintained chains + a public RSSHub instance list; (3) self-hosting RSSHub removes public-instance drift.
+
+**Carve-outs stay on chains:** HN/Lobsters (Plan X ranks them by native score, which plain RSS/Miniflux cannot carry), the RSSHub-only `dev-to-top` / `anthropic-news`, the very slow `sk-hynix-news` (21–43 s, exceeds Miniflux's fetch timeout), and all structured sources.
+
+**Two design wrinkles worth noting:** (a) Miniflux refuses to fetch loopback addresses (SSRF guard) and rewrites a feed's stored url when it redirects — so RSSHub stays loopback-only for the chain's use, and source identity is carried by tagging each Miniflux feed's *title* with the registry source id and reading it back from `entry.feed.title` (redirect-proof) rather than matching on url. (b) The Miniflux pull window (16 d) must exceed section-condense's widest per-source recency window (14 d), else long-window blogs get pre-starved; precise per-source windowing stays in section-condense. There is no chain fallback for Miniflux-handled feeds — an outage degrades the feed half gracefully; if Miniflux is unconfigured (local dev), collect falls back to chains.
+
 | Provider | Source | Method | Why |
 |---|---|---|---|
 | `providers/rsshub.js` + `native-rss.js` / `native-json.js` | RSSHub + native JSON/RSS | fetch + parse | Theme-driven feed list; RSSHub instances tried in order, native routes bypass RSSHub |

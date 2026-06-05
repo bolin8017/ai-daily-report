@@ -8,6 +8,50 @@
 >
 > **Cron schedules do not change.** Only the two script bodies change.
 
+## Compatibility note — condense redesign (2026-06-05, PRs #90–#95)
+
+The section-aware condense rework — an `interests.yaml` subscription registry,
+per-section staging slices replacing the single unified condensed feed,
+topic-locked arXiv via the search API, and curators reading those slices — is
+**entirely internal to Stage 1 (collect/condense) and Stage 2 (curate)**, both of
+which run inside `run.sh --full` behind `production-run.js`. **No wrapper,
+schedule, env var, or state-contract change is required.** Concretely:
+
+- The new config lives at `themes/<ACTIVE_THEME>/interests.yaml`, committed on
+  `main` — it arrives through the existing `git pull --ff-only origin main` in the
+  start wrapper. Nothing to provision on the Hermes side.
+- Staging gained per-section slices plus a `feeds_sections` item-count map in
+  `metadata.json`. Hermes never reads staging, so this is invisible to the wrappers.
+- The pipeline stage list (`collect → curate → context → synthesize →
+  faithfulness → merge`), the `latest.json` shape, monitor output, flock, detach,
+  and Telegram delivery are all unchanged.
+
+If the migration in this doc has not been applied on the Hermes side yet, it
+remains valid exactly as written below.
+
+## Aggregator dependency — Miniflux + RSSHub (2026-06-06, REQUIRES operator setup)
+
+Unlike the condense change above, the aggregator cutover **does** add a runtime
+dependency. Stage 1 now ingests the native-RSS feed half from a **self-hosted
+Miniflux** (fed by self-hosted RSSHub) instead of per-source RSS chains.
+
+**What the operator must ensure on the production host:**
+
+- The aggregator stack is running: `docker compose -f docker/aggregator/docker-compose.yml up -d`
+  (RSSHub + Miniflux + Postgres, host networking, all bound to `127.0.0.1`). Feeds
+  are provisioned from `themes/<theme>/feeds.opml` via `node scripts/miniflux-sync.mjs`.
+- `MINIFLUX_URL` + `MINIFLUX_USERNAME` + `MINIFLUX_PASSWORD` (or `MINIFLUX_TOKEN`)
+  are present in the environment the start wrapper sources (the repo `.env`, same
+  place as `GITHUB_TOKEN`). See `.env.example`.
+
+**Failure behavior (no new alerting needed):** if Miniflux is down/unreachable at
+collect time, the native-RSS feed half is empty for that run and listed in
+`metadata.json → degraded` (`miniflux-feeds`); HN/Lobsters, shipped, and all
+structured sources still produce a report. `run.sh --full` still exits 0, so the
+monitor's success/failure logic is unchanged. There is **no Hermes wrapper or
+state-contract change** — only the host-side stack + env above. If Miniflux is not
+configured at all, collect falls back to chain-fetching everything.
+
 ## What changed in the repo (so the wrappers can shrink)
 
 | Capability | Where it lives now |

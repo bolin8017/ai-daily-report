@@ -32,7 +32,9 @@ describe('theme sources (post-cutover authoritative source)', () => {
     expect(Array.isArray(sources.rsshub_urls)).toBe(true);
     expect(sources.rsshub_urls.length).toBeGreaterThan(0);
     for (const url of sources.rsshub_urls) {
-      expect(url).toMatch(/^https:\/\//);
+      // Post-cutover this is the self-hosted RSSHub (http://localhost:1200); the
+      // public https instances were retired, so accept http(s).
+      expect(url).toMatch(/^https?:\/\//);
     }
   });
 });
