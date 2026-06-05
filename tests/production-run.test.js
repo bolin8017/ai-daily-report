@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { decideNotice, renderFailure, renderOrphan, renderSuccess } from '../src/ops/production-run.js';
+import {
+  decideNotice,
+  renderFailure,
+  renderOrphan,
+  renderSuccess,
+} from '../src/ops/production-run.js';
 
 const START = '2026-06-05T07:00:00.000Z';
 const startMs = Date.parse(START);
@@ -27,7 +32,10 @@ describe('decideNotice', () => {
       duration_ms: 1_500_000,
     };
     const first = decideNotice(succeeded, { nowMs: min(90), delivered: {} });
-    expect(first).toEqual({ marker: 'success', text: expect.stringContaining('completed successfully') });
+    expect(first).toEqual({
+      marker: 'success',
+      text: expect.stringContaining('completed successfully'),
+    });
     expect(first.text).toMatch(/report: https:\/\/bolin8017\.github\.io\/ai-daily-report\//);
     expect(decideNotice(succeeded, { nowMs: min(90), delivered: { success: true } })).toBeNull();
   });
