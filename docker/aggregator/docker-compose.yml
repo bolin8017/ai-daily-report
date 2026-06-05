@@ -1,0 +1,53 @@
+# This host's Docker daemon runs with {"bridge":"none","iptables":false} — Docker
+# does NOT manage iptables, so user-defined bridge networks get no packet
+# forwarding (container<->container TCP times out). We therefore use host
+# networking: each service shares the host network namespace directly and they
+# reach each other over 127.0.0.1:<port>. This needs no sudo and does not touch
+# the shared daemon config. Ports bound on the host: rsshub 1200, miniflux 8080
+# (loopback), postgres 5432 (loopback).
+services:
+  rsshub:
+    image: diygod/rsshub:latest
+    container_name: adr-rsshub
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: memory
+
+  db:
+    image: postgres:17-alpine
+    container_name: adr-miniflux-db
+    restart: unless-stopped
+    network_mode: host
+    command: ["postgres", "-c", "listen_addresses=127.0.0.1"]
+    environment:
+      POSTGRES_USER: miniflux
+      POSTGRES_PASSWORD: ${MINIFLUX_DB_PASSWORD}
+      POSTGRES_DB: miniflux
+    volumes:
+      - miniflux-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "miniflux", "-h", "127.0.0.1"]
+      interval: 10s
+      start_period: 30s
+
+  miniflux:
+    image: miniflux/miniflux:latest
+    container_name: adr-miniflux
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://miniflux:${MINIFLUX_DB_PASSWORD}@127.0.0.1:5432/miniflux?sslmode=disable
+      LISTEN_ADDR: "127.0.0.1:8080"
+      RUN_MIGRATIONS: "1"
+      CREATE_ADMIN: "1"
+      ADMIN_USERNAME: ${MINIFLUX_ADMIN_USER}
+      ADMIN_PASSWORD: ${MINIFLUX_ADMIN_PASSWORD}
+      POLLING_FREQUENCY: "60"
+
+volumes:
+  miniflux-db:
