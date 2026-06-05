@@ -33,13 +33,29 @@ on:
     # .github/workflows/ tree, so pushes there never reach Actions.
     # The `repository_dispatch:` trigger below is how `data`-branch
     # artifacts get picked up instead (POSTed by the production pipeline after each run).
+    #
+    # Paths mirror the `pull_request` set (src/tests/scripts/biome/config
+    # included), not just deploy-relevant ones. A narrower push filter let a
+    # code/test commit touching only src/**, tests/**, or scripts/** land on
+    # main WITHOUT firing this workflow, so a lint/test regression could sit on
+    # main untested until the next data-committed dispatch surfaced it as a
+    # *deploy* failure (see the broken Pages build from the 13af6b7 direct push).
+    # Validating the same paths on push as on PR closes that gap. Such pushes
+    # also redeploy Pages (the deploy job runs on every non-PR event), which is
+    # harmless and idempotent: the build always hydrates the latest reports from
+    # the data branch, so a code-only push republishes the current data.
     branches: [main]
     paths:
       - 'data/**'
       - 'site/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'scripts/**'
       - 'eleventy.config.js'
       - 'package.json'
       - 'package-lock.json'
+      - 'biome.json'
+      - 'config.json'
       - '.github/workflows/deploy.yml'
   pull_request:
     # Wider net than `push`: also include source/test/script paths so
