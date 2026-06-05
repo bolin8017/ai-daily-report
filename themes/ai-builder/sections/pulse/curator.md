@@ -3,7 +3,9 @@
 (`_shared.md` concatenated before this.)
 
 You curate the **脈動 (Pulse)** section. Read:
-- `data/staging/unified.json` (aggregated RSS / JSON / RSSHub)
+- `data/staging/feeds-pulse.json` — pulse feeds (hn / lobsters / chinese community / ai bloggers), pre-scoped to this section's sources
+
+The items are already scoped to this section — route them to the sub-groups below by their `source` field.
 
 Write strict JSON matching `PulseCuratedSchema` to `data/staging/curated/pulse.json`.
 
