@@ -28,7 +28,7 @@ repository_dispatch after data push → GitHub Actions → 11ty → Pages
 
 **Stage 4 (merge)** is mechanical (no LLM): it composes `data/reports/<date>.json` from `editorial.json` + `curated/*.json`, drops any dangling `source_links` (degrading the citing item rather than aborting the report), validates against Zod schemas, then commits to the `data` branch.
 
-See [docs/architecture.md](./docs/architecture.md) for design decisions and trade-offs. The Hermes takeover plan is tracked in [docs/redesign/hermes-cron-migration.md](./docs/redesign/hermes-cron-migration.md).
+See [docs/architecture.md](./docs/architecture.md) for design decisions, system diagrams, and end-to-end flow. Historical and superseded design/migration docs are in [docs/archive/](./docs/archive/).
 
 ## Report sections
 
@@ -87,10 +87,10 @@ Full per-source breakdown (with URLs and categories): [docs/data-sources.md](./d
 
 ## Documentation
 
-- [docs/architecture.md](./docs/architecture.md) — design decisions, trade-offs, failure modes
+- [docs/architecture.md](./docs/architecture.md) — **canonical system architecture**: design, diagrams, end-to-end flow, trade-offs
 - [docs/data-sources.md](./docs/data-sources.md) — full catalogue of fetched sources, URLs, and lens overlays
-- [docs/firewall-allowlist.md](./docs/firewall-allowlist.md) — hostnames to whitelist when running behind a corporate firewall
 - [CLAUDE.md](./CLAUDE.md) — project structure, commands, schemas, environment setup
+- [docs/archive/](./docs/archive/) — historical/superseded docs (Hermes migration guide, firewall allowlist, the cron-migration design)
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — contribution guidelines
 
 ## License
