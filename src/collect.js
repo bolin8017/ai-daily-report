@@ -145,7 +145,8 @@ async function main() {
       banner(`miniflux: +${mf.items.length} native-RSS feed items`);
     } else {
       banner(`miniflux feed pull FAILED (feed half degraded): ${mf.error}`);
-      (raw._degraded ??= []).push('miniflux-feeds');
+      raw._degraded ??= [];
+      raw._degraded.push('miniflux-feeds');
     }
   }
 
