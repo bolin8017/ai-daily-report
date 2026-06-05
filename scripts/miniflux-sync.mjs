@@ -50,8 +50,15 @@ async function main() {
       created++;
       console.error(`+ feed ${f.feed_url}`);
     } catch (e) {
-      failures.push({ url: f.feed_url, error: e.message });
-      console.error(`! FAILED ${f.feed_url}: ${e.message}`);
+      // Feeds that redirect get stored under their final url, so a re-sync sees
+      // the OPML url as "missing" and re-adds it — Miniflux then reports it
+      // already exists. Treat that as idempotent success, not a failure.
+      if (/duplicat|already exist/i.test(e.message)) {
+        console.error(`= exists ${f.feed_url} (already in Miniflux, via redirect)`);
+      } else {
+        failures.push({ url: f.feed_url, error: e.message });
+        console.error(`! FAILED ${f.feed_url}: ${e.message}`);
+      }
     }
   }
 

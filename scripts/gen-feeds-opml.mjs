@@ -5,16 +5,17 @@
 // section map; condense routes by source id, so category is only used by
 // Miniflux to organize feeds.
 //
-// Feed URL per source is chosen by the chain's FIRST provider:
-//  - native-rss  -> use its config.url (Miniflux fetches the native feed direct)
-//  - rsshub      -> use the local RSSHub instance + route (no native feed exists)
+// Only NATIVE-RSS sources go to Miniflux (chain step 0 = native-rss): Miniflux
+// fetches their feed url directly. RSSHub-dependent sources (step 0 = rsshub:
+// dev-to-top, anthropic-news) are intentionally EXCLUDED — they stay on the
+// in-repo chain pointing at the self-hosted RSSHub, which is bound loopback-only
+// (127.0.0.1) for security, and Miniflux's SSRF guard refuses to fetch loopback.
 import { writeFileSync } from 'node:fs';
 import { ACTIVE_THEME } from '../src/lib/config.js';
 import { loadSectionMap } from '../src/lib/section-map.js';
 import registry from '../src/sources/registry.js';
 
 const FEED_SECTIONS = ['pulse', 'market', 'tech'];
-const RSSHUB_BASE = process.env.RSSHUB_LOCAL_URL ?? 'http://localhost:1200';
 
 function esc(s) {
   return String(s ?? '')
@@ -24,14 +25,10 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+// All exported sources have a native-rss step 0 (see the filter in main()), so
+// the feed url is simply that step's config.url.
 function feedUrlFor(source) {
-  const step0 = source.chain?.[0];
-  if (step0?.provider === 'native-rss' && step0.config?.url) return step0.config.url;
-  if (step0?.provider === 'rsshub' && step0.config?.route) {
-    return `${RSSHUB_BASE}${step0.config.route}`;
-  }
-  // Fallback: first chain step that carries a url (should not happen for feeds).
-  return source.chain?.find((c) => c.config?.url)?.config?.url ?? '';
+  return source.chain?.[0]?.config?.url ?? '';
 }
 
 async function main() {
@@ -41,7 +38,12 @@ async function main() {
     for (const id of sectionMap.sourcesForSection(section)) sourceToSection[id] = section;
   }
 
-  const moved = registry.filter((s) => s.itemType === 'rss-post' && s.id !== 'lobsters');
+  const moved = registry.filter(
+    (s) =>
+      s.itemType === 'rss-post' &&
+      s.id !== 'lobsters' &&
+      s.chain?.[0]?.provider === 'native-rss',
+  );
   const outlines = moved.map((s) => {
     const url = feedUrlFor(s);
     const category = sourceToSection[s.id] ?? '';
