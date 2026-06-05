@@ -1,5 +1,5 @@
 import { getReadmeExcerpt, makeOctokit } from '../../lib/github.js';
-import { getThemeSources } from '../../lib/theme.js';
+import { githubTopicsForDate, loadInterests } from '../../lib/interests.js';
 import { defineProvider } from './_registry.js';
 
 const LOG_PREFIX = 'github-search';
@@ -7,38 +7,9 @@ const MIN_STARS = 100;
 const CREATED_WINDOW_DAYS = 30;
 const README_BATCH_SIZE = 5;
 
-export function selectTopicsForDate(topicsConfig, dateString) {
-  if (Array.isArray(topicsConfig.topics)) {
-    return [...topicsConfig.topics];
-  }
-  const { tier, rotation } = topicsConfig;
-  const seed = hashDate(dateString);
-  const picks = pickRotating(tier.rotating, rotation.rotating_per_day, seed);
-  return [...tier.core, ...picks];
-}
-
-function hashDate(dateString) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < dateString.length; i++) {
-    h = Math.imul(h ^ dateString.charCodeAt(i), 16777619);
-  }
-  return h >>> 0;
-}
-
-function pickRotating(pool, n, seed) {
-  const out = [];
-  const seen = new Set();
-  const len = pool.length;
-  let s = seed;
-  while (seen.size < Math.min(n, len)) {
-    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
-    const idx = s % len;
-    if (!seen.has(idx)) {
-      seen.add(idx);
-      out.push(pool[idx]);
-    }
-  }
-  return out;
+export async function resolveSearchTopics(dateString, theme) {
+  const reg = await loadInterests(theme);
+  return githubTopicsForDate(reg, dateString);
 }
 
 function todayInTz() {
@@ -99,19 +70,16 @@ async function searchTopic(octokit, topic, since, limit) {
 }
 
 export async function githubSearchApiProvider(_cfg, _ctx) {
-  const themeSources = await getThemeSources();
-  const TOPICS_CONFIG = themeSources.github_topics;
-  if (!TOPICS_CONFIG.enabled) {
+  const topics = await resolveSearchTopics(todayInTz());
+  if (topics.length === 0) {
     return { ok: true, items: [] };
   }
-
-  const topics = selectTopicsForDate(TOPICS_CONFIG, todayInTz());
   const octokit = makeOctokit();
   const since = createdSinceISO();
   const allItems = [];
   let topicsOk = 0;
   let topicsTotal = 0;
-  const limit = TOPICS_CONFIG.limit_per_topic ?? 10;
+  const limit = 10;
 
   for (const topic of topics) {
     if (!topic) continue;
@@ -122,11 +90,6 @@ export async function githubSearchApiProvider(_cfg, _ctx) {
       allItems.push(...items);
     }
   }
-
-  if (topicsTotal === 0) {
-    return { ok: true, items: [] };
-  }
-
   const okThreshold = Math.max(1, Math.ceil(topicsTotal / 2));
   return {
     ok: topicsOk >= okThreshold,

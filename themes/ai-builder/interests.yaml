@@ -1,0 +1,101 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Interest subscription registry  ·  ai-builder theme
+# ─────────────────────────────────────────────────────────────────────────
+# This file is the single place to manage "what the brief pays attention to".
+# WIRED: it drives the GitHub topic search (src/lib/interests.js →
+# github-search-api.js). NOT YET WIRED: the arxiv topic-lock (arxivKeywords()
+# is built here but consumed by a later condense-redesign plan).
+#
+# To subscribe/unsubscribe a topic, edit its `level:`
+#   core     = every day (always fetched / searched / keyword-locked)
+#   rotating = sampled — `rotation.rotating_per_day` of them per day
+#   off      = ignored entirely
+#
+# Each topic may drive:
+#   github: [...]  → GitHub topic search terms
+#   arxiv:  [...]  → arxiv search-query keywords (topic-lock)
+#   note:          → source-backed interests (driven by feeds, not search)
+#
+# Curated 2026-06-05 with the operator. Core = AI agents (current main work)
+# + foundations (RAG/LLM). Phison aiDAPTIV+ memory/KV-cache and everything
+# else rotate. Closed: robotics/embodied/VLA, AI-safety/policy, consumer
+# media (voice/image).
+
+rotation:
+  rotating_per_day: 3
+  seed_field: date
+
+interests:
+  # ── Agents  (PRIMARY focus — current main work) → CORE ────────────────
+  agent:              { level: core,     label: "AI Agent",                github: [agent, ai-agent],            arxiv: ["LLM agent", agentic] }
+  agent-memory:       { level: core,     label: "Agent 記憶體/記憶管理",    github: [agent-memory, llm-memory],   arxiv: ["agent memory", "long-term memory", "memory-augmented", "episodic memory"] }
+  agent-applications: { level: core,     label: "Agent 應用 / agentic 工作流", github: [autonomous-agents, ai-agent], arxiv: ["agentic workflow", "LLM agents", "autonomous agent", "tool use"] }
+  multi-agent:        { level: core,     label: "多 Agent 協作",            github: [multi-agent],                arxiv: ["multi-agent", "multi agent"] }
+  mcp:                { level: core,     label: "MCP (Model Context Protocol)", github: [mcp, model-context-protocol], arxiv: ["model context protocol"] }
+  ai-coding:          { level: core,     label: "AI 寫程式 / coding agents", github: [ai-coding, code-generation], arxiv: ["code generation", "coding agent", "code LLM"] }
+
+  # ── Foundational for agents → CORE ────────────────────────────────────
+  rag:                { level: core,     label: "RAG / 檢索增強",           github: [rag],                        arxiv: [retrieval, RAG, "retrieval-augmented"] }
+  llm:                { level: core,     label: "LLM (通用)",              github: [llm],                        arxiv: ["large language model"] }
+
+  # ── Phison aiDAPTIV+ memory/KV-cache  (job) → ROTATING ────────────────
+  aidaptiv-offload:   { level: rotating, label: "aiDAPTIV+ / KV-cache 卸載", note: "source-backed: vllm-releases, lmcache-releases, aidaptiv-phison-releases", arxiv: ["kv cache offload", "memory-augmented LLM", "CPU offload", "SSD LLM"] }
+  kv-cache:           { level: rotating, label: "KV-cache",                github: [kv-cache],                   arxiv: ["kv cache", "kv-cache", "paged attention"] }
+  memory-storage-vendors: { level: rotating, label: "記憶體/SSD 廠商",       note: "source-backed: phison-blog, sk-hynix-news, blocksandfiles", github: [], arxiv: [] }
+
+  # ── Web data & scraping  (incl. anti-detection / bypass) → ROTATING ───
+  web-scraping:       { level: rotating, label: "網路爬蟲 / 抓取",          github: [web-scraping, scraping, crawler, crawling], arxiv: [] }
+  scraping-evasion:   { level: rotating, label: "爬蟲反偵測 / 繞過檢測",     github: [anti-bot, bot-detection, cloudflare-bypass, captcha-solver, stealth], arxiv: [] }
+  browser-automation: { level: rotating, label: "瀏覽器自動化 / web agent",  github: [browser-automation],         arxiv: ["web agent", "GUI agent"] }
+  computer-use:       { level: rotating, label: "Computer use",             github: [computer-use],               arxiv: ["computer use", "GUI agent"] }
+
+  # ── Retrieval & context → ROTATING ────────────────────────────────────
+  long-context:       { level: rotating, label: "長上下文",                 github: [long-context],               arxiv: ["long context", "context window", "long-context"] }
+  context-engineering: { level: rotating, label: "Context engineering",      github: [],                           arxiv: ["context engineering", "in-context"] }
+  vector-database:    { level: rotating, label: "向量資料庫",               github: [vector-database],            arxiv: ["vector search", "approximate nearest neighbor"] }
+  embedding:          { level: rotating, label: "Embedding",                github: [embedding],                  arxiv: [embedding, "representation learning"] }
+  reranking:          { level: rotating, label: "Reranking",               github: [reranking],                  arxiv: [reranking, "re-ranking"] }
+
+  # ── Inference & serving → ROTATING (kv-cache stays core above) ────────
+  inference-engine:   { level: rotating, label: "推論引擎 / serving (vLLM/SGLang)", github: [inference-engine],   arxiv: [inference, serving, throughput] }
+  quantization:       { level: rotating, label: "量化",                    github: [quantization],               arxiv: [quantization, "low-bit", FP8, INT8] }
+  local-llm:          { level: rotating, label: "本地 LLM",                github: [local-llm],                  arxiv: [] }
+  on-device-ai:       { level: rotating, label: "裝置端 AI",               github: [on-device-ai, edge-ai],      arxiv: ["on-device", "edge inference"] }
+  attention-opt:      { level: rotating, label: "Attention 優化 (flash/paged/sparse)", github: [],               arxiv: ["flash attention", "paged attention", "sparse attention"] }
+  speculative-decoding: { level: rotating, label: "Speculative decoding",   github: [],                           arxiv: ["speculative decoding", "speculative sampling"] }
+  inference-economics: { level: rotating, label: "推論成本 / serving 經濟學", github: [],                          arxiv: ["inference cost", "serving cost"] }
+  cxl-memory-tiering: { level: rotating, label: "CXL / 記憶體分層",         github: [],                           arxiv: [CXL, "memory tiering"] }
+  hbm:                { level: rotating, label: "HBM 高頻寬記憶體",         github: [],                           arxiv: [HBM, "high bandwidth memory"] }
+
+  # ── Models & training → ROTATING ──────────────────────────────────────
+  fine-tuning:        { level: rotating, label: "Fine-tuning (LoRA/PEFT)", github: [fine-tuning],                arxiv: ["fine-tuning", LoRA, PEFT, "instruction tuning"] }
+  open-weight-releases: { level: rotating, label: "開源模型發布",            note: "source-backed: vendor blogs + HF; curator's model list", arxiv: [] }
+  reasoning:          { level: rotating, label: "推理 / test-time compute", github: [],                           arxiv: [reasoning, "chain of thought", "test-time compute"] }
+  small-language-models: { level: rotating, label: "小模型 (SLM)",          github: [],                           arxiv: ["small language model", "efficient LLM"] }
+  moe:                { level: rotating, label: "MoE 混合專家",            github: [],                           arxiv: ["mixture of experts", MoE] }
+  distillation:       { level: rotating, label: "知識蒸餾",                github: [],                           arxiv: ["knowledge distillation"] }
+  post-training:      { level: rotating, label: "後訓練 (RLHF/DPO)",       github: [],                           arxiv: [RLHF, DPO, "preference optimization"] }
+  synthetic-data:     { level: rotating, label: "合成資料",                github: [synthetic-data],             arxiv: ["synthetic data"] }
+
+  # ── Multimodal → ROTATING ─────────────────────────────────────────────
+  vlm:                { level: rotating, label: "VLM 視覺語言模型",        github: [vlm],                        arxiv: [VLM, "vision-language", "vision language model"] }
+  multimodal:         { level: rotating, label: "多模態",                  github: [multimodal],                 arxiv: [multimodal] }
+  ocr:                { level: rotating, label: "OCR",                     github: [ocr],                        arxiv: [OCR] }
+  document-ai:        { level: rotating, label: "Document AI",            github: [document-ai],                arxiv: ["document understanding"] }
+
+  # ── Evals & observability → ROTATING ──────────────────────────────────
+  evaluation:         { level: rotating, label: "評測 / LLM eval",         github: [evaluation, llm-eval],       arxiv: [evaluation, benchmark] }
+  benchmarks:         { level: rotating, label: "Benchmark 排行",          note: "source-backed: leaderboards", arxiv: [benchmark] }
+  observability:      { level: rotating, label: "可觀測性 / tracing",      github: [],                           arxiv: ["LLM observability"] }
+
+  # ── Closed (off) ──────────────────────────────────────────────────────
+  diffusion:          { level: off,      label: "擴散 / 影像生成",         github: [],                           arxiv: [diffusion, "image generation"] }
+  tts:                { level: off,      label: "語音合成 TTS",            github: [text-to-speech],             arxiv: [TTS] }
+  stt:                { level: off,      label: "語音辨識 STT",            github: [speech-to-text],             arxiv: ["speech recognition", ASR] }
+  voice-cloning:      { level: off,      label: "語音克隆",                github: [voice-cloning],              arxiv: [] }
+  vla:                { level: off,      label: "VLA (視覺-語言-動作)",     github: [vla],                        arxiv: ["vision-language-action"] }
+  embodied-ai:        { level: off,      label: "具身 AI",                 github: [embodied-ai],                arxiv: ["embodied AI"] }
+  world-models:       { level: off,      label: "World models",           github: [],                           arxiv: ["world model"] }
+  robotics:           { level: off,      label: "機器人",                  github: [robotics],                   arxiv: [robot] }
+  ai-safety:          { level: off,      label: "AI 安全 / 對齊",          github: [],                           arxiv: ["AI safety", alignment] }
+  policy-regulation:  { level: off,      label: "政策 / 法規",             note: "source-backed: lawfare", arxiv: [] }
