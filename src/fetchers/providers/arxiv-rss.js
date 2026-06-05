@@ -1,15 +1,13 @@
 import RSSParser from 'rss-parser';
+import { arxivKeywords, loadInterests } from '../../lib/interests.js';
 import { defineProvider } from './_registry.js';
 
-const parser = new RSSParser({
-  timeout: 20_000,
-  headers: { 'User-Agent': 'ai-daily-report/1.0' },
-});
-
-const PER_CATEGORY_CAP = 50;
+const parser = new RSSParser({ timeout: 20_000, headers: { 'User-Agent': 'ai-daily-report/1.0' } });
 const ABSTRACT_MAX_CHARS = 400;
+const MAX_RESULTS = 30;
 const ARXIV_CATEGORIES = ['cs.AI', 'cs.CL', 'cs.LG', 'cs.IR'];
 const MAX_KEYWORDS = 40;
+const API_BASE = 'https://export.arxiv.org/api/query';
 
 // Build an arxiv-API search_query (URL-encoded) from interest keywords:
 //   (abs:"kw1" OR abs:kw2 OR ...) AND (cat:cs.AI OR cat:cs.CL OR ...)
@@ -28,7 +26,7 @@ export function buildArxivSearchQuery(keywords, opts = {}) {
   return `${kwClause}+AND+${catClause}`;
 }
 
-function parseEntry(entry, category) {
+function parseEntry(entry) {
   const url = entry.link ?? (typeof entry.id === 'string' ? entry.id : (entry.id?.[''] ?? null));
   const paper_id = url?.match(/abs\/([^v]+)/)?.[1] ?? null;
   let authors = [];
@@ -37,14 +35,10 @@ function parseEntry(entry, category) {
     const a = entry.author;
     authors = Array.isArray(a) ? a.map((x) => x.name ?? x) : [a.name ?? a];
   } else if (entry['dc:creator']) authors = String(entry['dc:creator']).split(/,\s*/);
-  else if (entry.creator) authors = String(entry.creator).split(/,\s*/);
-
   let cats = [];
   if (Array.isArray(entry.categories)) {
     cats = entry.categories.flatMap((c) => (typeof c === 'string' ? [c] : c?._ ? [c._] : []));
   }
-  if (cats.length === 0 && category) cats = [category];
-
   const abstract = (entry.summary ?? entry.contentSnippet ?? entry.content ?? '').trim();
   return {
     paper_id,
@@ -60,21 +54,32 @@ function parseEntry(entry, category) {
   };
 }
 
-export async function arxivRssProvider(cfg, _ctx) {
-  const feeds = cfg.feeds ?? [
-    { category: 'cs.LG', url: 'https://export.arxiv.org/rss/cs.LG' },
-    { category: 'cs.CL', url: 'https://export.arxiv.org/rss/cs.CL' },
-  ];
-  try {
-    const all = [];
-    for (const feed of feeds) {
-      const parsed = await parser.parseURL(feed.url);
-      const items = (parsed.items ?? []).slice(0, PER_CATEGORY_CAP);
-      for (const entry of items) {
-        all.push(parseEntry(entry, feed.category));
-      }
+export function parseArxivEntries(parsed) {
+  return (parsed.items ?? []).map(parseEntry);
+}
+
+export async function arxivRssProvider(cfg = {}, ctx = {}) {
+  let keywords = cfg.keywords;
+  if (!keywords) {
+    try {
+      keywords = arxivKeywords(await loadInterests());
+    } catch (err) {
+      return { ok: false, items: [], error: `interests load failed: ${err.message}` };
     }
-    return { ok: all.length > 0, items: all };
+  }
+  const query = buildArxivSearchQuery(keywords, {
+    maxKeywords: cfg.maxKeywords ?? MAX_KEYWORDS,
+    categories: cfg.categories ?? ARXIV_CATEGORIES,
+  });
+  if (!query) return { ok: false, items: [], error: 'no arxiv keywords (all interests off?)' };
+
+  const max = cfg.maxResults ?? MAX_RESULTS;
+  const url = `${API_BASE}?search_query=${query}&start=0&max_results=${max}&sortBy=submittedDate&sortOrder=descending`;
+  const fetchFeed = ctx._fetchFeed ?? ((u) => parser.parseURL(u));
+  try {
+    const parsed = await fetchFeed(url);
+    const items = parseArxivEntries(parsed).slice(0, max); // defensive cap (max_results already bounds the API)
+    return { ok: items.length > 0, items };
   } catch (err) {
     return { ok: false, items: [], error: err.message };
   }
