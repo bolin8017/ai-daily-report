@@ -3,8 +3,8 @@ import { z } from 'zod';
 const TopicSchema = z.object({
   level: z.enum(['core', 'rotating', 'off']),
   label: z.string(),
-  github: z.array(z.string()).default([]),
-  arxiv: z.array(z.string()).default([]),
+  github: z.array(z.string().min(1)).default([]),
+  arxiv: z.array(z.string().min(1)).default([]),
   note: z.string().optional(),
 });
 
