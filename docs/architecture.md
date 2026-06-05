@@ -1,6 +1,8 @@
 # Architecture
 
-This document explains the design decisions behind the AI Daily Report pipeline. For day-to-day usage and commands, see [README.md](./README.md). For the agent-facing operational context, see [CLAUDE.md](./CLAUDE.md).
+This is the **canonical system architecture reference** for the AI Daily Report pipeline — the design, components, and end-to-end flow, with diagrams. Read it to see how the system is built and how data moves through it. For day-to-day commands see [README.md](./README.md); for agent-facing operational context and environment setup see [CLAUDE.md](./CLAUDE.md); for the per-source fetch catalogue see [data-sources.md](./data-sources.md). Historical and superseded design/migration docs (including the old Hermes production-runner migration guide) live in [docs/archive/](./archive/).
+
+**Contents:** [Goals](#goals) · [System overview](#hermes--ci-architecture) · [Ingestion](#fetcher-strategy) · [Data flow](#data-flow) · [Four-stage pipeline](#why-four-stages-instead-of-one-analyze-call) · [Schemas](#schema-first-design) · [Prompt design](#agent-prompt-as-the-design-surface) · [Themes](#theme-bundle) · [Storage](#storage-hotcold-split) · [Deploy](#scheduled-deployment-via-hermes-cron) · [Trade-offs](#trade-offs-and-known-issues)
 
 ---
 
@@ -23,8 +25,8 @@ flowchart TD
     CronRun --> Entry["repository working tree<br/>npm ci when needed"]
 
       subgraph Stage1["Stage 1: Collect (node src/collect.js)"]
-        Fetch["runAll() — providers in parallel"]
-        Fetch --> Condense["condenseAll() + buildSnapshot()"]
+        Fetch["fetchMinifluxEntries() — native-RSS half<br/>+ runAll() chains — HN/Lobsters, RSSHub-only, structured"]
+        Fetch --> Condense["section-aware condense + buildSnapshot()"]
         Condense --> WriteStaging["write data/staging/* (local staging, not committed)"]
       end
 
@@ -56,6 +58,12 @@ flowchart TD
       Stage25 --> Stage3
       Stage3 --> Stage4
   end
+
+  subgraph Agg["docker/aggregator (self-hosted on host, 127.0.0.1, boot-persistent)"]
+    direction LR
+    RSSHubBox["RSSHub :1200"] --> MinifluxBox["Miniflux :8080<br/>polls native-RSS feeds 24/7"]
+  end
+  MinifluxBox -.->|"GET /v1/entries (16d window)"| Fetch
 
   Timer --> CronRun
   CommitReport --> DataBranch[(data branch<br/>orphan, bot-only — reports + feeds snapshot)]
@@ -102,6 +110,7 @@ sequenceDiagram
   participant Entry as repository working tree
   participant Collect as src/collect.js
   participant Fetchers as src/fetchers/*
+  participant Miniflux as Miniflux (docker/aggregator)
   participant Seq as src/pipeline/run.js
   participant Curate as scripts/curate.sh (Haiku × 4)
   participant Context as scripts/context.sh
@@ -120,10 +129,12 @@ sequenceDiagram
 
   Note over Entry,Collect: Stage 1: Collect
   Entry->>Collect: exec node src/collect.js
-  Collect->>Fetchers: runAll() — providers in parallel
-  Fetchers->>Collect: raw objects (feeds, trending, search, developers, leaderboards, mops, hf, arxiv)
-  Collect->>Collect: condenseAll(raw) → ≤8500-token objects
-  Collect->>Collect: buildSnapshot(raw.feeds) → data/feeds-snapshot.json
+  Collect->>Fetchers: runAll() — chains only (Miniflux-handled feeds filtered out)
+  Fetchers->>Collect: chain items (HN/Lobsters, RSSHub-only) + structured (trending, search, developers, leaderboards, mops, hf, arxiv)
+  Collect->>Miniflux: fetchMinifluxEntries() — native-RSS half (16d window)
+  Miniflux->>Collect: native-RSS items (mapped by feed.title → source id)
+  Collect->>Collect: merge Miniflux + chain items into the feeds bucket
+  Collect->>Collect: section-aware condense + buildSnapshot(raw.feeds) → data/feeds-snapshot.json
   Collect->>Collect: write data/staging/* (local staging, not committed)
 
   Note over Entry,Merge: Stage 2-4: Analyze (curate → synthesize → merge)
@@ -280,9 +291,27 @@ Three motivations: (1) continuous polling removes the per-day-snapshot sparsity 
 
 **Two design wrinkles worth noting:** (a) Miniflux refuses to fetch loopback addresses (SSRF guard) and rewrites a feed's stored url when it redirects — so RSSHub stays loopback-only for the chain's use, and source identity is carried by tagging each Miniflux feed's *title* with the registry source id and reading it back from `entry.feed.title` (redirect-proof) rather than matching on url. (b) The Miniflux pull window (16 d) must exceed section-condense's widest per-source recency window (14 d), else long-window blogs get pre-starved; precise per-source windowing stays in section-condense. There is no chain fallback for Miniflux-handled feeds — an outage degrades the feed half gracefully; if Miniflux is unconfigured (local dev), collect falls back to chains.
 
+```mermaid
+flowchart TD
+  OPML["themes/&lt;theme&gt;/feeds.opml<br/>= the feed list of record"]
+  OPML -->|"scripts/miniflux-sync.mjs provisions + tags title=source id"| MF["Miniflux :8080<br/>polls 24/7"]
+  RH["self-hosted RSSHub :1200<br/>(loopback-only)"] -. "feeds lacking native RSS" .-> MF
+
+  subgraph collect["collect.js — partitions every source by feeds.opml"]
+    A["in OPML → fetchMinifluxEntries()"]
+    B["not in OPML → runAll() chains"]
+    A --> Bucket["feeds bucket"]
+    B --> Bucket
+  end
+  MF -->|"GET /v1/entries (16d window)"| A
+  Carve["carve-outs on chains: HN/Lobsters (native score) ·<br/>dev-to-top / anthropic-news (RSSHub-only) · sk-hynix (too slow) ·<br/>github / arxiv / leaderboards / mops (structured)"] --> B
+  Bucket --> Cond["section-aware condense → feeds-{pulse,market,tech} slices"]
+```
+
 | Provider | Source | Method | Why |
 |---|---|---|---|
-| `providers/rsshub.js` + `native-rss.js` / `native-json.js` | RSSHub + native JSON/RSS | fetch + parse | Theme-driven feed list; RSSHub instances tried in order, native routes bypass RSSHub |
+| `fetchers/miniflux.js` | self-hosted Miniflux REST API | one `GET /v1/entries` pull, mapped by `feed.title` → source id | Native-RSS feeds (~37) — 24/7 polling removes per-day-snapshot sparsity; replaces per-source RSS chains |
+| `providers/rsshub.js` + `native-rss.js` / `native-json.js` | self-hosted RSSHub + native JSON/RSS | fetch + parse | Only the RSSHub-dependent carve-outs (`dev-to-top`, `anthropic-news`, `hackernews`, `hf-daily-papers`); `rsshub_urls` now points at the self-hosted instance |
 | `providers/github-trending-html.js` | github.com/trending | cheerio + Octokit enrichment (README excerpts) | HTML scraping is unavoidable, but cheerio is far more robust than regex |
 | `providers/github-search-api.js` | GitHub Search API | Octokit + `created:>30daysAgo` freshness-first query + README enrichment per result (batched 5 at a time) | Returns genuinely fresh topic-matched repos for the shipped section's **discovery picks** — not "popular-with-CI-activity" heavyweights |
 | `providers/github-developers-api.js` | GitHub Search Users + Repos APIs | Octokit (batches of 5) + README enrichment | Used to be 273 lines of bash + curl + jq; rewritten to reuse Octokit's built-in throttling and retry |
@@ -334,9 +363,9 @@ Production runs under **Hermes cron** at 07:00 Asia/Taipei, with Telegram delive
 **Stage 1 — Collect** (deterministic Node process, `src/collect.js`):
 
 1. Compute today's date in `Asia/Taipei`
-2. `runAll()` — providers run in parallel; tolerate degraded sources
+2. Partition sources by `feeds.opml`: `runAll()` fetches the chain half in parallel; `fetchMinifluxEntries()` pulls the native-RSS half from Miniflux and merges it into the feeds bucket; degraded sources are tolerated
 3. `buildSnapshot(raw.feeds)` — writes `data/feeds-snapshot.json` for 11ty
-4. `condenseAll(raw)` — ≤8500-token objects for prompt-size control
+4. section-aware condense — per-section slices for prompt-size control
 5. Write condensed data + metadata to `data/staging/`
 6. **No commit here** — Stage 1 only writes staging; commits happen in Stage 4. Staging stays ephemeral, but the `feeds-snapshot.json` it builds is committed by Stage 4 (the 11ty footer needs it at build time). The `data` branch otherwise stays trimmed to reports + `feeds-snapshot.json`.
 
@@ -370,7 +399,7 @@ This is why Stage 1's bulky staging (condensed source dumps, ~hundreds of KB) an
 | Issue | Impact | Mitigation |
 |---|---|---|
 | **GitHub Trending HTML can change** | github-trending provider returns 0 repos | cheerio is more resilient than regex; `runAll` tolerates degraded sources; schema validator catches empty report and aborts the deploy |
-| **External RSSHub dependency** (list in the theme's `sources.yaml`) | Multiple feeds can time out together if a shared instance is slow | `rsshub.js` tries each instance per request, falling through on `5xx` / timeout / network error — so when one instance is down, the next request gets the same route from the backup. `4xx` is treated as a route-level error (no retry, since a bad route will fail on every instance). `runAll` additionally tolerates source-level failure at the outer level. Self-hosting RSSHub was rejected as a maintenance burden for a once-a-day read. |
+| **Self-hosted aggregator dependency** (Miniflux + RSSHub, `docker/aggregator`) | If the stack is down at collect time, the native-RSS feed half is thin that day | Stage 1 degrades gracefully — the half is listed in `metadata.json → degraded` while HN/Lobsters/shipped/structured still produce a report; `collect.js` falls back to chain-fetching everything if Miniflux is unconfigured. The stack is `restart: unless-stopped` + docker enabled at boot, bound to `127.0.0.1` (not publicly exposed). (Self-hosting was previously rejected as overkill for a once-a-day read; the per-day-snapshot sparsity + public-instance drift changed that calculus on 2026-06-06.) |
 | **HN Algolia API is undocumented** | Score enrichment may break | Wrapped in try/catch; missing scores degrade report quality but don't break the pipeline |
 | **LLM synthesis is the quality single point of failure** | Schema-invalid output blocks the day | The synthesizer writes only the small editorial layer (no 32K-cap exposure); the merge step composes and validates the report deterministically; Zod validation in the merge stage aborts the run before commit. Yesterday's report stays live. |
 | **Hermes cron / host failure** | Report missed for the day | Hermes cron should deliver failures back to Telegram. Manual recovery remains `bash scripts/run.sh --skip-push`, followed by validation before enabling publish. |
