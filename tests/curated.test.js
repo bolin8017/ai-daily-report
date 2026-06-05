@@ -27,11 +27,10 @@ describe('Curated sub-schemas', () => {
     expect(parsed.hn).toHaveLength(1);
   });
 
-  it('MarketCuratedSchema parses 4 sub-groups', () => {
+  it('MarketCuratedSchema parses 3 sub-groups', () => {
     const parsed = MarketCuratedSchema.parse({
       ma: [{ id: 'market.ma.0:reuters-abc', title: 'M&A' }],
       funding: [],
-      policy: [],
       taiwan: [],
     });
     expect(parsed.ma).toHaveLength(1);

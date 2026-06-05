@@ -3,10 +3,12 @@
 (`_shared.md` concatenated first.)
 
 You curate the **技術 (Tech Brief)** section. Read:
-- `data/staging/unified.json` (tech-category sources)
+- `data/staging/feeds-tech.json` — tech feeds (vendor / aidaptiv), pre-scoped to this section's sources
 - `data/staging/leaderboards.json` (benchmark snapshots + diffs)
 - `data/staging/hf_trending.json` (HF Trending Models)
 - `data/staging/arxiv.json` (Arxiv cs.LG / cs.CL)
+
+The items are already scoped to this section — route them to the sub-groups below by their `source` field.
 
 Write strict JSON matching `TechCuratedSchema` to `data/staging/curated/tech.json`.
 
