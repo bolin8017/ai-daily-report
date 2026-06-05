@@ -1,12 +1,17 @@
-// Section-aware feed condensation (Plan X retention strategy; Plan 2 implementation). Pure: operates on raw feed items
-// (which still carry published/score/stars/_scope before the legacy condense
-// drops them). One slice per feed section. Retention-first: keep the full
-// in-window pool up to a soft target; only trim above a hard ceiling.
+// Section-aware feed condensation (Plan X retention strategy; Plan 2
+// implementation). Pure: operates on raw feed items (which still carry
+// published/score/stars/_scope before the legacy condense drops them). One
+// slice per feed section. Retention-first: keep the full in-window pool and
+// only trim once it exceeds the hard ceiling — there is intentionally NO
+// soft-target truncation inside the engine.
 import { estimateTokens } from './condense.js';
 
 export const FEED_SECTIONS = ['pulse', 'market', 'tech'];
 
-export const SOFT_TARGET = 30_000; // caller's per-section budget target (public tunable)
+// SOFT_TARGET is NOT enforced here (the engine retains up to HARD_CEILING). It
+// is exported as the curator's per-section prompt-budget target for the Plan 5
+// cutover; the engine only trims above HARD_CEILING.
+export const SOFT_TARGET = 30_000;
 const HARD_CEILING = 50_000; // internal trim guard; override via opts.hardCeiling
 const DESC_MAX = 200;
 

@@ -1,5 +1,10 @@
 // Debug: replay a captured data/staging into the section engine and print
 // per-section item counts + token sizes. Usage: node scripts/sim-section-condense.mjs
+//
+// NOTE: this reads the condensed unified.json, which has had `published` dropped
+// by the legacy condense — so the recency window is INERT here (every item looks
+// undated and is kept). Counts/tokens are therefore an upper bound, not a true
+// replay. For an accurate replay, point this at raw feed items (with published).
 import { readFileSync } from 'node:fs';
 import { buildSectionFeedSlices, FEED_SECTIONS } from '../src/lib/section-condense.js';
 import { loadSectionMap } from '../src/lib/section-map.js';
