@@ -10,7 +10,7 @@ function wrap(name, fn) {
     } catch (err) {
       return { ok: false, items: [], error: err.message };
     }
-    if (!result || !result.ok) return result ?? { ok: false, items: [], error: 'no result' };
+    if (!result?.ok) return result ?? { ok: false, items: [], error: 'no result' };
 
     const schema = ItemSchemas[ctx.itemType];
     if (!schema) {
