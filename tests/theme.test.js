@@ -22,7 +22,6 @@ describe('theme loader', () => {
 
   it('loadTheme exposes the parsed sources.yaml as theme.sources', async () => {
     const theme = await loadTheme('ai-builder');
-    expect(theme.sources.github_topics.tier.core).toContain('rag');
     expect(theme.sources.phison_overlay.enabled).toBe(true);
     expect(theme.sources.phison_overlay.sources).toHaveLength(5);
   });

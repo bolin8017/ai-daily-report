@@ -35,17 +35,4 @@ describe('theme sources (post-cutover authoritative source)', () => {
       expect(url).toMatch(/^https:\/\//);
     }
   });
-
-  it('github_topics resolves to non-empty strings (tier or legacy)', async () => {
-    const sources = await getThemeSources('ai-builder');
-    const gt = sources.github_topics;
-    const allTopics = Array.isArray(gt.topics)
-      ? gt.topics
-      : [...(gt.tier?.core ?? []), ...(gt.tier?.rotating ?? [])];
-    expect(allTopics.length).toBeGreaterThan(0);
-    for (const topic of allTopics) {
-      expect(typeof topic).toBe('string');
-      expect(topic.length).toBeGreaterThan(0);
-    }
-  });
 });

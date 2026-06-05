@@ -25,13 +25,6 @@ const doc = readFileSync(resolve(root, 'docs/data-sources.md'), 'utf8');
 
 const expected = [];
 
-// Core topics (the github-search-api topic list)
-const coreTopics = sources.github_topics?.tier?.core ?? sources.github_topics?.topics ?? [];
-const rotatingTopics = sources.github_topics?.tier?.rotating ?? [];
-for (const topic of [...coreTopics, ...rotatingTopics]) {
-  expected.push({ kind: 'topic', name: topic });
-}
-
 // Dev-watch regions
 for (const region of sources.github_developers?.regions ?? []) {
   expected.push({ kind: 'dev-region', name: region.name });
