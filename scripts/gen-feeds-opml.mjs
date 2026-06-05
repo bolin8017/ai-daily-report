@@ -13,9 +13,16 @@
 import { writeFileSync } from 'node:fs';
 import { ACTIVE_THEME } from '../src/lib/config.js';
 import { loadSectionMap } from '../src/lib/section-map.js';
-import registry from '../src/sources/registry.js';
+import { resolveEffectiveSources } from '../src/lib/sources.js';
 
 const FEED_SECTIONS = ['pulse', 'market', 'tech'];
+
+// Native-RSS sources kept OFF Miniflux (they stay on the in-repo chain):
+//  - lobsters: score-bearing, ranked by Plan X via its lobsters-json fetcher.
+//  - sk-hynix-news: responds in ~21-43s (highly variable), exceeds Miniflux's
+//    fetch timeout and would stall the poller each cycle; a deprioritized
+//    phison-overlay source, not worth the stall.
+const MINIFLUX_EXCLUDE = new Set(['lobsters', 'sk-hynix-news']);
 
 function esc(s) {
   return String(s ?? '')
@@ -38,16 +45,21 @@ async function main() {
     for (const id of sectionMap.sourcesForSection(section)) sourceToSection[id] = section;
   }
 
-  const moved = registry.filter(
+  // resolveEffectiveSources = base registry + theme phison_overlay, so overlay
+  // feeds (phison-blog, sk-hynix-news) are included, not just the base registry.
+  const sources = await resolveEffectiveSources();
+  const moved = sources.filter(
     (s) =>
-      s.itemType === 'rss-post' && s.id !== 'lobsters' && s.chain?.[0]?.provider === 'native-rss',
+      s.itemType === 'rss-post' &&
+      !MINIFLUX_EXCLUDE.has(s.id) &&
+      s.chain?.[0]?.provider === 'native-rss',
   );
   const outlines = moved.map((s) => {
     const url = feedUrlFor(s);
     const category = sourceToSection[s.id] ?? '';
     if (!url) throw new Error(`no feed url derivable for ${s.id}`);
     if (!category) console.error(`[gen-feeds-opml] WARN: ${s.id} not in any section map`);
-    return `    <outline text="${esc(s.id)}" title="${esc(s.label)}" type="rss" xmlUrl="${esc(url)}" category="${esc(category)}"/>`;
+    return `    <outline text="${esc(s.id)}" title="${esc(s.label ?? s.id)}" type="rss" xmlUrl="${esc(url)}" category="${esc(category)}"/>`;
   });
 
   const opml = `<?xml version="1.0" encoding="UTF-8"?>

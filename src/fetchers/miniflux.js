@@ -11,7 +11,11 @@ import { loadFeedList } from '../lib/feeds-opml.js';
 import { minifluxAuthHeaders, minifluxBaseUrl } from '../lib/miniflux-client.js';
 
 const TIMEOUT = 30_000;
-const DEFAULT_WINDOW_HOURS = 30;
+// Coarse upper bound on how far back to pull. Must be >= section-condense's
+// widest per-source recency window (14 days) so it never pre-starves a long-
+// window source (e.g. lilian-weng/eugene-yan at 14d); the precise per-source
+// windowing happens downstream in section-condense, not here.
+const DEFAULT_WINDOW_HOURS = 16 * 24; // 16 days
 const DESC_MAX = 500;
 const PAGE = 100;
 
