@@ -19,6 +19,7 @@ export async function lobstersJSONProvider(cfg, _ctx) {
     author: item.submitter_user?.username ?? '',
     tags: item.tags ?? [],
     published: item.created_at ?? null,
+    score: typeof item.score === 'number' ? item.score : undefined,
     rank: i + 1,
   }));
   return { ok: true, items };

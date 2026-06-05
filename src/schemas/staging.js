@@ -27,6 +27,9 @@ export const StagingMetadataSchema = z.object({
     mops: SourceHealthSchema.optional(),
     hf_trending: SourceHealthSchema.optional(),
     arxiv: SourceHealthSchema.optional(),
+    // Per-section feed item counts; written by Stage 1 once section slices are
+    // enabled (Plan 2, Task 4). Optional so legacy staging files still validate.
+    feeds_sections: z.record(z.string(), z.number().int().nonnegative()).optional(),
   }),
   degraded: z.array(z.string()).default([]),
 });

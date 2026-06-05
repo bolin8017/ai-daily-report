@@ -2,7 +2,7 @@
 // API that src/collect.js depends on.
 
 import { describe, expect, it } from 'vitest';
-import { condenseAll } from '../src/lib/condense.js';
+import { condenseAll, condenseItem, estimateTokens } from '../src/lib/condense.js';
 
 function mockFeeds(itemCount) {
   return {
@@ -181,5 +181,19 @@ describe('condenseFlat scope-quota reservation', () => {
     // Sorted by stars desc — first item must be the highest-star one
     expect(out.search.items[0].stars).toBe(500);
     expect(out.search.items.length).toBeLessThanOrEqual(25);
+  });
+});
+
+describe('condense exports (for section-condense reuse)', () => {
+  it('estimateTokens approximates chars/1.7', () => {
+    expect(estimateTokens('x'.repeat(17))).toBe(10);
+  });
+  it('condenseItem truncates description to descMax and drops noisy fields', () => {
+    const o = condenseItem(
+      { title: 'T', url: 'u', readme_excerpt: 'noise', description: 'abcdef' },
+      3,
+    );
+    expect(o.description).toBe('abc...');
+    expect(o.readme_excerpt).toBeUndefined();
   });
 });

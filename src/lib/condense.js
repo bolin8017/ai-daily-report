@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 
 const BUDGET_TOKENS = 8500;
 const CHARS_PER_TOKEN = 1.7;
-const estimateTokens = (s) => Math.ceil(s.length / CHARS_PER_TOKEN);
+export const estimateTokens = (s) => Math.ceil(s.length / CHARS_PER_TOKEN);
 
 // Fields dropped from every item in condensed output.
 const DROP = new Set([
@@ -51,7 +51,7 @@ const DROP = new Set([
   'has_pages',
 ]);
 
-function condenseItem(item, descMax) {
+export function condenseItem(item, descMax) {
   const o = {};
   for (const [k, v] of Object.entries(item)) {
     if (DROP.has(k)) continue;
