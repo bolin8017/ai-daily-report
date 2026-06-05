@@ -89,6 +89,27 @@ describe('schemas', () => {
     },
   );
 
+  it('StagingMetadataSchema accepts feeds_sections in sources', () => {
+    const metadata = {
+      date: '2026-06-05',
+      run_id: '00000000-0000-4000-8000-000000000000',
+      pipeline_version: 'abc1234',
+      collected_at: '2026-06-05T00:00:00.000Z',
+      timezone: 'Asia/Taipei',
+      sources: {
+        feeds: { ok: true, count: 120 },
+        trending: { ok: true, count: 25 },
+        search: { ok: true, count: 30 },
+        developers: { ok: true, count: 10 },
+        feeds_sections: { pulse: 12, market: 9, tech: 7 },
+      },
+      degraded: [],
+    };
+    const result = StagingMetadataSchema.safeParse(metadata);
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
+  });
+
   it('ConfigSchema accepts the minimal post-cutover shape (report + providers)', () => {
     const minimal = {
       report: { language: 'zh-TW', max_featured_items: 12, style: 'creative' },

@@ -1,4 +1,4 @@
-// Section-aware feed condensation (Plan X). Pure: operates on raw feed items
+// Section-aware feed condensation (Plan X retention strategy; Plan 2 implementation). Pure: operates on raw feed items
 // (which still carry published/score/stars/_scope before the legacy condense
 // drops them). One slice per feed section. Retention-first: keep the full
 // in-window pool up to a soft target; only trim above a hard ceiling.
