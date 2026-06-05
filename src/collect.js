@@ -27,9 +27,11 @@ import './fetchers/providers/native-json.js';
 import './fetchers/providers/native-rss.js';
 import './fetchers/providers/rsshub.js';
 
+import { fetchMinifluxEntries } from './fetchers/miniflux.js';
 import { runAll } from './fetchers/run-all.js';
 import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
+import { compareFeedCounts } from './lib/miniflux-shadow.js';
 import { tagItemScope } from './lib/scope.js';
 import {
   buildSectionFeedSlices,
@@ -122,6 +124,24 @@ async function main() {
   const raw = mapResultsToLegacyShape(results, sources);
   if (degraded.length) raw._degraded = degraded;
 
+  // SHADOW (pre-cutover): pull the native-RSS feed half from Miniflux and write a
+  // comparison artifact. The old chains remain the authoritative feed input until
+  // cutover (Task 7). Never throws — a Miniflux miss just logs and is skipped.
+  let minifluxShadow = null;
+  try {
+    const mf = await fetchMinifluxEntries();
+    if (mf.ok) {
+      minifluxShadow = compareFeedCounts(raw.feeds.items ?? [], mf.items);
+      banner(
+        `miniflux shadow: chain=${minifluxShadow.totals.chain} miniflux=${minifluxShadow.totals.miniflux}`,
+      );
+    } else {
+      banner(`miniflux shadow skipped: ${mf.error}`);
+    }
+  } catch (err) {
+    banner(`miniflux shadow error: ${err.message}`);
+  }
+
   // Phase 2 — build feeds snapshot (committed to data/feeds-snapshot.json for 11ty)
   banner('building snapshot');
   buildSnapshot(raw.feeds);
@@ -171,6 +191,8 @@ async function main() {
       items: (raw.hf_trending?.items ?? []).slice(0, 15),
     },
     'data/staging/arxiv.json': raw.arxiv ?? { ok: false, items: [] },
+    // Shadow comparison: chain-vs-Miniflux feed counts (pre-cutover validation).
+    'data/staging/miniflux-shadow.json': minifluxShadow ?? { skipped: true },
     // Section slices are the sole feed staging (Plan 5 cutover — unified.json
     // and the per-GitHub condensed files are no longer written).
     'data/staging/feeds-pulse.json': sectionSlices.pulse,
