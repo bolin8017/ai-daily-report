@@ -1,0 +1,1485 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-06-06",
+  "meta": {
+    "run_id": "f2d663ea-ddb1-46f9-b613-96195d48dcfd",
+    "pipeline_version": "48347c9",
+    "generated_at": "2026-06-06T04:57:56.451Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 690
+      },
+      "trending": {
+        "ok": true,
+        "count": 17
+      },
+      "search": {
+        "ok": true,
+        "count": 75
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 3
+      },
+      "mops": {
+        "ok": true,
+        "count": 1
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 243,
+      "market": 216,
+      "tech": 54,
+      "shipped": 52
+    },
+    "degraded_sources": [
+      "hf-daily-papers"
+    ],
+    "stages": {
+      "faithfulness": {
+        "cost_usd": 0.13970205,
+        "duration_ms": 54335,
+        "num_turns": 1,
+        "input_tokens": 3,
+        "output_tokens": 4448,
+        "cache_read_tokens": 2131,
+        "cache_creation_tokens": 19289,
+        "is_error": false,
+        "session_id": "4869c381-a58b-4f92-92c4-e648ad9770f6"
+      },
+      "curate.market": {
+        "cost_usd": 0.34616650000000004,
+        "duration_ms": 153761,
+        "num_turns": 20,
+        "input_tokens": 101,
+        "output_tokens": 17225,
+        "cache_read_tokens": 1156280,
+        "cache_creation_tokens": 115450,
+        "is_error": false,
+        "session_id": "d7edc079-6f1b-4de3-90c0-356a73ccf9d6"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.22503754999999998,
+        "duration_ms": 65861,
+        "num_turns": 11,
+        "input_tokens": 108,
+        "output_tokens": 6939,
+        "cache_read_tokens": 539133,
+        "cache_creation_tokens": 109057,
+        "is_error": false,
+        "session_id": "61e7d703-26e2-4eb8-a891-39eb431e3b1f"
+      },
+      "curate.shipped": {
+        "cost_usd": 0.22406270000000003,
+        "duration_ms": 119457,
+        "num_turns": 12,
+        "input_tokens": 67,
+        "output_tokens": 15477,
+        "cache_read_tokens": 445682,
+        "cache_creation_tokens": 81634,
+        "is_error": false,
+        "session_id": "423b192c-609f-4bae-bd76-f438c17e7cc5"
+      },
+      "synthesize": {
+        "cost_usd": 1.4142325500000001,
+        "duration_ms": 1002272,
+        "num_turns": 11,
+        "input_tokens": 7,
+        "output_tokens": 51412,
+        "cache_read_tokens": 449726,
+        "cache_creation_tokens": 135497,
+        "is_error": false,
+        "session_id": "e831c2a4-5208-4d4b-9e93-b780b150abc7"
+      },
+      "curate.tech": {
+        "cost_usd": 0.17656405,
+        "duration_ms": 70102,
+        "num_turns": 12,
+        "input_tokens": 143,
+        "output_tokens": 7826,
+        "cache_read_tokens": 321748,
+        "cache_creation_tokens": 84093,
+        "is_error": false,
+        "session_id": "3a1a6d39-2515-4909-893c-cb3e40b41868"
+      }
+    },
+    "total_cost_usd": 2.5257654000000005,
+    "total_tokens": 103756
+  },
+  "lead": {
+    "html": "<h3>2026-06-06 — SSD 成為推論記憶體、agent plumbing 硬化、代碼品質的真實代價</h3><h4>120B 模型走進 AI PC：Phison+Intel 讓 SSD 做 DRAM 的事</h4><p>Phison 與 Intel 在 COMPUTEX 2026 聯合發布，官方數字是 120B 以上的模型可以在 AI PC 本地執行，靠的是 SSD-as-memory 架構——NVMe SSD 充當 DRAM 的溢出層。同一週 Phison Pascari 企業線宣稱支援 100B+ 模型的 on-device 部署；NVIDIA JetPack 7.2 針對 Jetson edge 的 agent 工作負載推出記憶體效率優化；Google Gemma 4 QAT 讓量化推論在手機和筆電達到可實用的規格。四個向量同時移動，共同機制是 memory budget 的利用效率正在逼近臨界點——不需要更大的晶片，需要更聰明的記憶體管理。</p><h4>Agent 基礎設施轉向可靠性：plumbing 開始標準化</h4><p>Microsoft 開源 pg_durable（PostgreSQL 原生持久化執行擴展），HN 358 分——這不是新 framework，是讓 agent 任務在 PostgreSQL 內原生跨越失敗點繼續執行的 low-level primitive。同一週 LMCache 發布 CUDA 13.0 輪子，KV-cache 卸載到 SSD 的路徑從實驗原型走向可打包狀態；vLLM v0.22.1 穩定性修補跟進；Latent Space 的 GitHub 工程師訪談確認 generate→verify→fix 循環已是 GitHub 平台核心。這是 agent 從 demo 走向 production 的典型前兆：不再是新 API，是 plumbing 標準化。</p><h4>LLM 生成代碼的品質斷層：兩個昨天同時出現的互相打臉數字</h4><p>昨天 HN 排在 349 分的是〈Did Claude increase bugs in rsync?〉，研究者分析 LLM 輔助的 patch 引入了回歸錯誤。同一天 iThome 報導 Anthropic 宣稱內部逾 80% 正式程式碼由 Claude 撰寫。阿里開源 Open Code Review，背書是兩年內部使用、日均審查百萬缺陷規模的生產驗證。三件事並排，結論不是「AI 代碼好不好」，而是：代碼生成速率已超出現有 review 基礎設施的消化能力，下一個 bottleneck 是 review 本身的自動化品質。</p><h4>Benchmark $2B：20 年紀律的終結，讀法決定你的判斷</h4><p>Benchmark 放棄維持 20 年的約 $425M 基金規模上限，首次引入成長基金，總規模 $2B。標準解讀是 AI 熱錢持續湧入。反向讀法更值得思考：當最自律的早期 VC 之一需要成長資本，可能是因為被投公司在傳統 Series C / IPO 退出路徑上碰壁——不是公司不好，是估值的中間層被壓縮了。對 early-stage builder 的實際意涵：seed 資金比以前充裕，Series B 之後的路正在變窄。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "title": "SSD-as-Memory 讓 120B 模型的 edge 推論翻越 DRAM 天花板",
+        "body": "Phison+Intel 聯合發布，官方宣稱 SSD-as-memory 架構讓 AI PC 可以執行 120B 以上模型；Phison Pascari 企業線定位 100B+ on-device 部署；NVIDIA JetPack 7.2 針對 Jetson 的 agent 工作負載做了記憶體效率優化；Gemma 4 QAT 讓量化推論在手機規格可實用。四個廠商在近期各自推進同一個方向，共同機制是 NVMe bandwidth 和 memory controller 技術同時越過了一個閾值。",
+        "mechanism": "NVMe SSD 的 sequential read bandwidth 已足夠做 KV-cache 的 slow tier：weight loading 和 KV-cache 的 access pattern 允許 SSD 充當 DRAM 溢出層。Phison Pascari 的控制器針對 AI workload 的 access pattern 做了優化，讓 SSD-as-memory 的延遲分布更可控。這不是靠壓縮或量化，是靠 memory hierarchy 的重新設計。",
+        "product_opportunity": "在 Phison AI PC 平台上建 120B 模型的本地 RAG demo，用 SSD-backed context store 替代雲端推論——這是 aiDAPTIV+ 最直接的 go-to-market 開口，也是企業客戶在 Computex 之後 6 個月會問到的第一個問題。",
+        "source_links": [
+          "tech.vendor.0:phison-pascari-computex",
+          "tech.vendor.1:phison-intel-local-ai",
+          "tech.vendor.2:nvidia-jetpack-memory",
+          "pulse.hn.1:hn-39827324"
+        ]
+      },
+      {
+        "title": "COMPUTEX 2026：台灣 AI 供應鏈的製造、存儲、電源節點同步宣告生產就緒",
+        "body": "Foxconn+Intel+TSMC 宣布 CoPoS（chiplet-on-substrate）合作製造，two-year scale timeline；Delta Electronics 展示模組化 AI 資料中心，號稱縮短 60% 建設時間；SK Hynix 與 TSMC 對齊 AI 晶片路線圖。COMPUTEX 2026 的故事不在任何單一產品，在於台灣製造生態的各節點——ODM、存儲、電源、散熱——在同一個窗口集體宣告為 edge AI 規模部署做好準備。",
+        "mechanism": "過去 AI infra 成本高、交期長，根本原因之一是 ODM、晶片、晶圓、封裝四個供應層協調成本極高。Foxconn+Intel+TSMC 的 CoPoS 嘗試把最後一公里封裝拉進同一個設計循環；Delta 的模組化 DC 把現場建設壓縮成插卡組裝。如果 two-year timeline 成立，這會直接壓縮 edge AI 每 token 的資本成本。",
+        "product_opportunity": "台灣供應鏈這輪整合的終端市場是企業邊緣部署。在 CoPoS 量產之前，SSD-as-memory 是現成的橋接方案；demo 越早建、與 Phison／Delta／SK Hynix 的合作門檻越低。",
+        "source_links": [
+          "market.ma.2:phison-intel-collaboration",
+          "market.ma.3:foxconn-intel-tsmc",
+          "market.funding.1:delta-electronics-ai-infra",
+          "tech.aidaptiv.1:sk-hynix-computex-ai",
+          "market.taiwan.2:phison-computex-ai-storage"
+        ]
+      },
+      {
+        "title": "Agent Plumbing 標準化：持久化執行、KV-cache 卸載、驗證循環同步到位",
+        "body": "Microsoft 開源 pg_durable（HN 358 分，18 則留言），讓 agent 任務在 PostgreSQL 原生跨越失敗點繼續執行，不需要外部訊息隊列。近期 LMCache 推出 CUDA 13.0 輪子，KV-cache 卸載到 SSD 的路徑從 patch 走向可打包狀態；LWN 的〈BPF in the agentic era〉探討 BPF 觀測作為 agent policy layer；Latent Space 的 GitHub 工程師訪談確認 generate→verify→fix 循環已是 GitHub 平台核心。這是 agent 工程走向成熟的前兆：plumbing primitive 一個個到位。",
+        "mechanism": "過去 18 個月 agent demo 氾濫但 production 部署稀少，根本原因是缺少 reliable execution primitives：任務失敗後無 recovery 路徑、context 超出 DRAM 就截斷、code generation 的 verify loop 需要手工接入。pg_durable 填了 recovery、LMCache 填了 memory scalability、GitHub platform 填了 verify loop。當三個洞同時被填，剩下的是工程執行，不是研究突破。",
+        "product_opportunity": "用 pg_durable 重構一個你已有的、因為長時執行失敗而被放棄的 agent workflow——找回那個廢棄的 PoC 比新建一個快得多，而 pg_durable 的 at-least-once 語義讓恢復點設計變得直接。",
+        "source_links": [
+          "pulse.hn.0:hn-39827361",
+          "pulse.lobsters.0:lwn-bpf-agents",
+          "pulse.ai_bloggers.1:latent-space-github",
+          "shipped.dev_watch_taiwan.1:appleboy/mcp-oauth"
+        ]
+      },
+      {
+        "title": "代碼生成速率超出 review 基礎設施的消化能力",
+        "body": "昨天三件互相映照的事同時出現：rsync patch 研究（HN 349 分）確認 LLM 輔助的 patch 引入了回歸錯誤；Anthropic 宣稱內部逾 80% 正式程式碼由 Claude 撰寫；阿里開源 Open Code Review，兩年內部使用、日均百萬缺陷審查規模已驗證。三件事的共同指向：代碼生成速率在加速，而 review 工具的覆蓋率追不上，中間的 gap 是真實的工程風險。",
+        "mechanism": "LLM 生成代碼的錯誤模式和人工代碼不同——傾向於通過單元測試但在邊緣條件和跨模組互動失敗。現有 code review 工具（靜態分析、lint、diff review）主要為人工撰寫的 diff 設計，對 LLM 特定錯誤模式的偵測率更低。Anthropic 開源的代碼漏洞發現 agent 和阿里的混合架構（確定性 pipeline + LLM agent）都是對這個機制的直接回應。",
+        "product_opportunity": "在 CI pipeline 插入一個專門找「通過 lint 但邏輯有問題」的 agent review layer，特別針對跨模組副作用和邊緣條件——這個工具的自然客戶是已大量採用 LLM coding 的 team，而不是 LLM 懷疑者。",
+        "source_links": [
+          "pulse.hn.2:hn-39827249",
+          "pulse.chinese_community.4:ithome-anthropic-recursive",
+          "pulse.chinese_community.3:oschina-alibaba-review",
+          "pulse.chinese_community.2:oschina-anthropic-agent"
+        ]
+      }
+    ],
+    "sleeper": {
+      "title": "vLLM + LMCache + KVarN：KV-cache 卸載堆疊的最後幾塊拼圖正在就位",
+      "body": "LMCache 推出 CUDA 13.0 輪子，KV-cache 卸載到 SSD 的路徑從 patch 走向可打包的發布格式；Huawei CSL 開源 KVarN，一個 native vLLM KV-cache 量化後端，標稱 3-5x context 同時維持 FP16 throughput。兩件事沒有人連線，但它們是同一條路線圖的相鄰節點。",
+      "mechanism": "Weight quantization 已是主流，但 KV-cache quantization 的工具鏈落後約 12 個月。KV-cache 隨 context 線性增長、weights 固定大小——量化 KV-cache 在長 context serving 的效益比量化 weights 更大。KVarN 填了 vLLM 的 native quantization 後端、LMCache CUDA 13.0 填了 SSD offload 的打包問題、vLLM v0.22.0 的 DeepSeek V4 KV-cache kernel 改進填了底層穩定性。當三個節點都到位，不需要等下一代硬件，就能系統性降低 128K context serving 的 GPU VRAM 需求。",
+      "source_links": [
+        "tech.aidaptiv.3:lmcache-cuda-support",
+        "shipped.topic_discovery.0:huawei-csl/KVarN",
+        "tech.aidaptiv.0:vllm-0.22.0-deepseek"
+      ],
+      "why_asymmetric": "主流討論集中在 weight quantization，很少人在追 KV-cache quantization。KVarN 的 289 stars 反映這個領域還沒被廣泛發現。如果它的性能宣稱在量產環境成立，這是 aiDAPTIV+ KV-cache offload 能力的最佳技術背書之一，但現在的注意力幾乎全在 SSD-as-memory 的 inference 面，不在 KV-cache 的 serving 面。"
+    },
+    "contrarian": {
+      "source_links": [
+        "pulse.hn.2:hn-39827249",
+        "pulse.chinese_community.4:ithome-anthropic-recursive"
+      ],
+      "claim": "LLM-generated code 的品質事件會在 6 個月內迫使至少一個主要 OSS 專案在 CONTRIBUTING.md 正式設限",
+      "rationale": "rsync 研究（349 HN 分）是這個方向的確認訊號，但市場普遍低估了這個趨勢的速度。Anthropic 宣稱 80% 內部代碼由 Claude 生成，代表 LLM-generated code 在高品質組織的滲透率已達到很難忽略的規模。Linux kernel mailing list 在過去數個月已出現拒絕 AI-generated patch 的討論（這是我的分析，不是今天的新聞）——OSS maintainer 的耐受閾值比企業更低。當代碼生成量繼續上升，統計意義上的回歸率上升會加速這個轉捩點。我的 bet：rust-lang/rust、python/cpython 或 torvalds/linux 其中之一在 6 個月內加入明確的 LLM contribution policy。",
+      "resolution_date": "2026-12-06",
+      "verification": "查詢 rust-lang/rust、python/cpython、torvalds/linux 的 CONTRIBUTING.md 或 PULL_REQUEST_TEMPLATE.md diff：任一在 2026-12-06 前新增明確提及 LLM-generated code 的 review 要求或限制 = resolved-yes"
+    },
+    "predictions": [
+      {
+        "id": "pred-2026-06-06-ssd-memory-competitor-q3",
+        "text": "三星或美光在 2026 年 Q3 正式宣布與 Phison SSD-as-memory 直接競爭的 AI PC 解決方案（targeting 120B+ 模型本地推論）",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-06-06"
+      },
+      {
+        "id": "pred-2026-06-06-ms-inhouse-models-azure-ga",
+        "text": "Microsoft 自研的 7 款模型中至少一款出現在 Azure AI 或 Microsoft 365 Copilot 的正式 GA 產品功能中（不只是 preview）到 2026 年底",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-06-06"
+      },
+      {
+        "id": "pred-2026-06-06-vllm-023-45d",
+        "text": "vLLM 在 2026-07-21 前發布 v0.23.0（根據 v0.22.0 到 v0.22.1 不到 4 天的近期 release 節奏推算）",
+        "resolution_date": "2026-07-21",
+        "status": "pending",
+        "created": "2026-06-06"
+      },
+      {
+        "id": "pred-2026-06-06-pg-durable-framework-adoption",
+        "text": "LangChain、AutoGen、Llama Index 或 CrewAI 中至少一個在官方文件或 example 中正式推薦 pg_durable 作為 agent 持久化方案，2026-09-30 前",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-06-06"
+      },
+      {
+        "id": "pred-2026-06-06-oss-llm-contribution-policy",
+        "text": "rust-lang/rust、python/cpython 或 torvalds/linux 其中至少一個在 2026-12-06 前於 CONTRIBUTING.md 新增明確的 LLM-generated code 審查要求或限制",
+        "resolution_date": "2026-12-06",
+        "status": "pending",
+        "created": "2026-06-06"
+      },
+      {
+        "id": "pred-2026-06-06-foxconn-copos-delay",
+        "text": "Foxconn+Intel+TSMC CoPoS 的「兩年量產」時程在 2026 年底前透過官方聲明修訂為三年以上",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-06-06"
+      },
+      {
+        "id": "pred-2026-06-06-benchmark-growth-first-deal-q3",
+        "text": "Benchmark 在 2026-09-30 前公開宣布其成長基金的第一筆被投資案",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-06-06"
+      }
+    ]
+  },
+  "ideation": {
+    "general": [
+      {
+        "audience": "both",
+        "title": "Token 壓縮型 Document RAG Pipeline",
+        "description": "你是一家法律科技 startup 的工程師，手上有 10,000 份 PDF 合約，每次查詢要把整份文件塞進 context 窗口，月帳單已超出預算。headroom 宣稱 60-95% token 縮減，PaddleOCR 的 document parsing 是開源 OCR 領域的行業標準。把兩者串接：PaddleOCR 解析 PDF 為結構化文字，headroom 在進 embedding 前壓縮 chunk，測量壓縮前後的 retrieval recall 是否維持。非 AI 元素：用 SQLite 的 FTS5 extension 做壓縮前的 keyword pre-filter，讓 embedding 只需要 run 在真正相關的段落上，進一步壓縮成本。第一步先用 100 份文件抽樣，避免在全量測試之前才發現 headroom 對特定格式（條款編號、定義段）的壓縮率不如預期。",
+        "tech_stack": "Python + headroom + PaddleOCR + pgvector + SQLite FTS5",
+        "dev_time": "weekend",
+        "first_step": "pip install headroom paddleocr，用 5 份合約建 baseline：記錄壓縮前後的 chunk token 數、MRR@5，壓縮率 >50% 且 MRR 降幅 <5% 才繼續 scale",
+        "market_evidence": "chopratejas/headroom 以 14,674 stars 在 trending 驗證市場對 token 成本優化的真實需求；PaddleOCR 80k+ stars 是 document AI RAG pipeline 的 de facto 開源選擇",
+        "source_links": [
+          "shipped.trending.7:chopratejas/headroom",
+          "shipped.trending.2:PaddlePaddle/PaddleOCR"
+        ]
+      },
+      {
+        "audience": "general",
+        "title": "在 PostgreSQL 裡跑不死的 Agent 任務（pg_durable + MCP）",
+        "description": "你有一個批次 Claude agent 做長時處理——爬蟲、文件摘要、多步報告生成——每次跑到一半崩潰就整批重來。用 pg_durable 把每個 agent 步驟包成 PostgreSQL 原生的 durable function call；搭配 appleboy/mcp-oauth 的 OAuth 2.1 MCP server pattern 做 agent 認證。非 AI 元素：PostgreSQL 的 LISTEN/NOTIFY 取代輪詢，每步完成後 notify 下游 step，不需要外部 queue 或 cron。最重要的 validation 是：kill -9 掉進程，確認任務從上一個 checkpoint 繼續而不是從頭開始——這個驗證只需要 5 分鐘，但決定這個方案值不值得往下建。",
+        "tech_stack": "PostgreSQL + pg_durable + MCP server + Claude API",
+        "dev_time": "weekend",
+        "first_step": "複製 pg_durable 的 hello world durable function example，改寫成 3 步 agent workflow（fetch → summarize → store），測試 kill -9 後的 resume 行為",
+        "market_evidence": "pg_durable HN 358 分、18 則留言，top comment 聚焦在「agent coordination 終於有 native DB 解法」——直接驗證需求的真實性",
+        "source_links": [
+          "pulse.hn.0:hn-39827361",
+          "shipped.dev_watch_taiwan.1:appleboy/mcp-oauth"
+        ]
+      },
+      {
+        "audience": "general",
+        "title": "CI Pipeline 的 AI 安全 Pre-Reviewer（MITRE ATT&CK 對齊）",
+        "description": "你是一個 solo 工程師大量用 LLM 生成代碼，但沒有 security review 資源。Anthropic 剛發布了把一年 AI 輔助攻擊行為對齊 MITRE ATT&CK 的研究，這份 taxonomy 可以直接轉換成 code review checklist。建一個 GitHub Action：對每個 PR 的 diff，用 Claude API 加上 MITRE ATT&CK 的 Initial Access 到 Exfiltration 路徑做 prompt-guided review，輸出結構化報告——哪一行可能對應哪個 technique。目標不是 100% coverage，是在人工 review 之前把最高風險 pattern（credential exposure、command injection、path traversal）先 flag 出來。rsync 那種邊緣條件回歸是這個 pre-filter 抓不到的，所以工具的 scope 定位很重要：這是 security layer，不是邏輯 correctness 的替代品。",
+        "tech_stack": "Python + GitHub Actions + Claude API + MITRE ATT&CK Enterprise JSON",
+        "dev_time": "weekend",
+        "first_step": "下載 MITRE ATT&CK Enterprise JSON，提取 software-related 的前 20 個 technique；寫一個 Claude API call：輸入 git diff，要求標記任何和這些 technique 匹配的 code pattern，在自己的 5 個最近 PR 上測試誤報率",
+        "market_evidence": "rsync 研究 349 HN 分確認開發者對 LLM 引入 bug 的關注已超過閾值；Anthropic MITRE mapping 提供現成的 taxonomy backbone，節省研究成本",
+        "source_links": [
+          "tech.vendor.4:anthropic-cyber-threats",
+          "pulse.hn.2:hn-39827249"
+        ]
+      }
+    ],
+    "work": [
+      {
+        "audience": "work",
+        "title": "aiDAPTIVLink 2 + Phison Pascari：AI PC 上的 120B 模型本地 RAG Demo",
+        "description": "Phison+Intel 聯合宣稱 SSD-as-memory 讓 AI PC 可以跑 120B+ 模型——這是 aiDAPTIV+ 的核心市場訴求，現在有了廠商背書的硬件路線圖。在 Phison demo lab 上用 Qwen 3.6 35B-A3B MoE 配合 aiDAPTIVLink 2 做本地 RAG demo：企業技術文件 corpus（例如產品手冊、規格書）塞進 SSD-backed vector store，查詢走 on-device inference，對比雲端推論的延遲和成本。關鍵 demo 指標：首 token 延遲（目標 <1 秒）、每秒 token 數、以及「多少 context 在 SSD tier vs DRAM tier」的分布圖。面向 Computex 展場企業採購的 demo：一個具體的數字（例如「8GB DRAM + 512GB Pascari 跑 35B MoE，first token 0.8 秒」）比任何 slide 都有說服力。",
+        "tech_stack": "Phison Pascari NVMe + Qwen 3.6 35B-A3B + aiDAPTIVLink 2 + llama.cpp mmap mode + pgvector",
+        "dev_time": "1-2 week PoC",
+        "first_step": "用 llama.cpp 的 mmap 模式載入 Qwen 3.6 35B，把 weight pages 配置到 NVMe tier；與純 DRAM 版本做 baseline 延遲對比，確認 SSD-as-memory 的性能分布在可接受範圍",
+        "market_evidence": "Phison+Intel 聯合發布在 COMPUTEX 2026 直接驗證 SSD-as-memory 的市場敘事；Qwen 3.6 35B-A3B MoE HuggingFace 卡片確認 multimodal + long-context，適合做 enterprise document RAG",
+        "source_links": [
+          "tech.vendor.1:phison-intel-local-ai",
+          "tech.vendor.0:phison-pascari-computex",
+          "tech.models.1:qwen3.6-35b"
+        ]
+      },
+      {
+        "audience": "work",
+        "title": "LMCache CUDA 13.0 + Phison Pascari：128K Context KV-Cache SSD 卸載 Demo",
+        "description": "LMCache 的 CUDA 13.0 輪子讓 KV-cache 卸載到 SSD 的路徑從 patch 走向可打包狀態，這是 aiDAPTIV+ KV-cache offload 能力最直接的技術驗證機會。在 NVIDIA workstation（配 Phison Pascari NVMe）上，跑一個 128K context 的長文摘要任務：vLLM v0.22.1 + LMCache nightly，超出 GPU VRAM 的 KV-cache pages 卸載到 Phison Pascari。Demo 核心指標：「有 SSD offload vs 無 SSD offload」的 maximum context window 差異，以及相同 context 長度下的 throughput 比較。第二週可以加入 KVarN（Huawei 的 native vLLM KV-cache quantization backend，標稱 3-5x context、FP16 throughput 維持），驗證量化後的 serving 效率是否如 repo 宣稱。",
+        "tech_stack": "NVIDIA workstation + Phison Pascari NVMe + vLLM v0.22.1 + LMCache CUDA 13.0 + (week 2) KVarN",
+        "dev_time": "1-2 week PoC",
+        "first_step": "pip install lmcache-cu130，配置 vLLM 的 kv_cache_offload_device 指向 Phison Pascari；在 10K token 的請求上量測 SSD offload 的 latency overhead vs GPU-only 模式，確認 overhead 在 <20% 範圍",
+        "market_evidence": "LMCache CUDA 13.0 發布（age 1 日）和 KVarN 289 stars（新 repo）確認 KV-cache offload 技術路線從理論轉向工程實作；aiDAPTIV+ 的存儲差異化在這個 benchmark 最清晰",
+        "source_links": [
+          "tech.aidaptiv.3:lmcache-cuda-support",
+          "tech.aidaptiv.0:vllm-0.22.0-deepseek",
+          "tech.vendor.0:phison-pascari-computex"
+        ]
+      },
+      {
+        "audience": "work",
+        "title": "aiDAPTIV+ Hybrid-Router：120B 本地 + Nemotron 3 Ultra 雲端的智慧分流",
+        "description": "Phison SSD-as-memory 讓 AI PC 可以承接 120B 以下的 query；NVIDIA Nemotron 3 Ultra 在 SageMaker JumpStart 上提供 multi-turn agent 的高效雲端推論。用 aiDAPTIV+ Hybrid-Router 做 dispatch 邏輯：本地 35B MoE 處理有 cached context 的 follow-up query；需要新鮮資訊或超出本地 memory budget 的 query 走 Nemotron 3 Ultra。具體 routing signal：context length 大於等於 8K（complexity proxy）或 query entropy 超過閾值（衡量需要世界知識的程度）。Demo 的 value prop 是量化：100 條實際產品詢問中有多少比例可以在本地答完，以及雲端 API 成本比 all-cloud 方案的節省幅度。Hybrid-Router 的設計邊界是路由決策，不涉及 KV-cache 內部算法。",
+        "tech_stack": "aiDAPTIV+ Hybrid-Router + Qwen 3.6 35B (local) + NVIDIA Nemotron 3 Ultra via SageMaker + Python routing middleware",
+        "dev_time": "1-2 week PoC",
+        "first_step": "實現一個 router function：輸入 query，輸出 'local' 或 'cloud'；先以 context length 大於等於 8K 為唯一 routing signal，在 50 條 query 上測量分流比率和答題品質，記錄 cost savings baseline",
+        "market_evidence": "Nemotron 3 Ultra 的 takeaway 確認 SageMaker JumpStart day-zero 發布、針對 multi-turn long-running agent 優化；Phison+Intel 聯合發布驗證 120B 本地推論的硬件路線圖",
+        "source_links": [
+          "tech.vendor.3:nvidia-nemotron-agents",
+          "tech.vendor.1:phison-intel-local-ai",
+          "tech.aidaptiv.3:lmcache-cuda-support"
+        ]
+      }
+    ]
+  },
+  "shipped": {
+    "trending": [
+      {
+        "id": "shipped.trending.0:affaan-m/ECC",
+        "audience": "both",
+        "url": "https://github.com/affaan-m/ECC",
+        "name": "affaan-m/ECC",
+        "desc": "Agent harness performance optimization system with skills, memory, and MCP support.",
+        "stars": 208473,
+        "repo_age": "mature",
+        "language": "JavaScript",
+        "relevance": "MCP server framework + Claude Code integration — core builder infrastructure.",
+        "topic_match": [
+          "mcp",
+          "agent-framework",
+          "developer-tools"
+        ]
+      },
+      {
+        "id": "shipped.trending.1:NousResearch/hermes-agent",
+        "audience": "general",
+        "url": "https://github.com/NousResearch/hermes-agent",
+        "name": "NousResearch/hermes-agent",
+        "desc": "Agent framework with adaptive learning and multi-model support.",
+        "stars": 183438,
+        "repo_age": "mature",
+        "language": "Python",
+        "relevance": "Multi-provider agent orchestration — Anthropic + OpenAI interop.",
+        "topic_match": [
+          "agent-framework",
+          "ai-agents"
+        ]
+      },
+      {
+        "id": "shipped.trending.2:PaddlePaddle/PaddleOCR",
+        "audience": "general",
+        "url": "https://github.com/PaddlePaddle/PaddleOCR",
+        "name": "PaddlePaddle/PaddleOCR",
+        "desc": "Lightweight OCR toolkit for document parsing and structured data extraction.",
+        "stars": 80604,
+        "repo_age": "mature",
+        "language": "Python",
+        "relevance": "Document AI for RAG pipelines — PDF/image-to-markdown at scale.",
+        "topic_match": [
+          "rag",
+          "document-ai",
+          "ocr"
+        ]
+      },
+      {
+        "id": "shipped.trending.3:666ghj/MiroFish",
+        "audience": "general",
+        "url": "https://github.com/666ghj/MiroFish",
+        "name": "666ghj/MiroFish",
+        "desc": "Swarm intelligence engine for multi-agent simulation and forecasting.",
+        "stars": 64777,
+        "repo_age": "mature",
+        "language": "Python",
+        "relevance": "Multi-agent coordination + knowledge graph — distributed reasoning pattern.",
+        "topic_match": [
+          "multi-agent",
+          "agent-memory",
+          "knowledge-graph"
+        ]
+      },
+      {
+        "id": "shipped.trending.4:MemPalace/mempalace",
+        "audience": "both",
+        "url": "https://github.com/MemPalace/mempalace",
+        "name": "MemPalace/mempalace",
+        "desc": "Benchmarked open-source AI memory system with MCP support.",
+        "stars": 53945,
+        "repo_age": "mature",
+        "language": "Python",
+        "relevance": "Agent persistence layer — tested memory architecture for long-running systems.",
+        "topic_match": [
+          "agent-memory",
+          "mcp",
+          "embedding-store"
+        ]
+      },
+      {
+        "id": "shipped.trending.5:CopilotKit/CopilotKit",
+        "audience": "general",
+        "url": "https://github.com/CopilotKit/CopilotKit",
+        "name": "CopilotKit/CopilotKit",
+        "desc": "Frontend stack for agents and generative UI with React/Angular support.",
+        "stars": 32771,
+        "repo_age": "mature",
+        "language": "TypeScript",
+        "relevance": "Agent UI framework + AG-UI Protocol — generative UI rendering at scale.",
+        "topic_match": [
+          "agent-framework",
+          "generative-ui",
+          "frontend"
+        ]
+      },
+      {
+        "id": "shipped.trending.6:mvanhorn/last30days-skill",
+        "audience": "general",
+        "url": "https://github.com/mvanhorn/last30days-skill",
+        "name": "mvanhorn/last30days-skill",
+        "desc": "Claude agent skill for multi-source research synthesis and web scraping.",
+        "stars": 28278,
+        "repo_age": "mature",
+        "language": "Python",
+        "relevance": "Agent research pattern — real-time signal synthesis across Reddit, X, HN, web.",
+        "topic_match": [
+          "agent-skill",
+          "web-scraping",
+          "research"
+        ]
+      },
+      {
+        "id": "shipped.trending.7:chopratejas/headroom",
+        "audience": "both",
+        "url": "https://github.com/chopratejas/headroom",
+        "name": "chopratejas/headroom",
+        "desc": "Token compression for RAG chunks and LLM contexts; 60-95% reduction.",
+        "stars": 14674,
+        "repo_age": "mature",
+        "language": "Python",
+        "relevance": "Context optimization — 3-5x effective context window expansion.",
+        "topic_match": [
+          "rag",
+          "context-engineering",
+          "token-optimization"
+        ]
+      }
+    ],
+    "topic_discovery": [
+      {
+        "id": "shipped.topic_discovery.0:huawei-csl/KVarN",
+        "audience": "both",
+        "url": "https://github.com/huawei-csl/KVarN",
+        "name": "huawei-csl/KVarN",
+        "desc": "Native vLLM KV-cache quantization backend for agents.",
+        "stars": 289,
+        "repo_age": "new",
+        "language": "Python",
+        "relevance": "KV-cache quantization — 3-5x context with FP16 throughput.",
+        "topic_match": [
+          "kv-cache",
+          "quantization",
+          "inference"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.1:Kaelio/ktx",
+        "audience": "general",
+        "url": "https://github.com/Kaelio/ktx",
+        "name": "Kaelio/ktx",
+        "desc": "Executable context layer for agents to query data and analytics.",
+        "stars": 903,
+        "repo_age": "new",
+        "language": "TypeScript",
+        "relevance": "Agent data binding layer — executable schema for Claude Code / Codex.",
+        "topic_match": [
+          "agent-framework",
+          "context-layer",
+          "mcp"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.2:juanjuandog/FinSight-AI",
+        "audience": "general",
+        "url": "https://github.com/juanjuandog/FinSight-AI",
+        "name": "juanjuandog/FinSight-AI",
+        "desc": "AI equity research agent with resilient workflows and pgvector RAG.",
+        "stars": 1005,
+        "repo_age": "new",
+        "language": "Java",
+        "relevance": "Enterprise agent pattern — resilient workflows + pgvector RAG + audit trail.",
+        "topic_match": [
+          "rag",
+          "agent-application",
+          "financial-ai"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.3:ClaudioDrews/memory-os",
+        "audience": "general",
+        "url": "https://github.com/ClaudioDrews/memory-os",
+        "name": "ClaudioDrews/memory-os",
+        "desc": "7-layer memory system for agents with Qdrant and structured fact recall.",
+        "stars": 887,
+        "repo_age": "new",
+        "language": "Python",
+        "relevance": "Agent memory architecture — fabric recall + persistent knowledge base.",
+        "topic_match": [
+          "agent-memory",
+          "rag",
+          "vector-store"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.4:gi-dellav/zerostack",
+        "audience": "general",
+        "url": "https://github.com/gi-dellav/zerostack",
+        "name": "gi-dellav/zerostack",
+        "desc": "Minimal coding agent written in Rust with optimized memory footprint.",
+        "stars": 1168,
+        "repo_age": "new",
+        "language": "Rust",
+        "relevance": "Lean agent runtime — Rust-native for embedded deployment and latency.",
+        "topic_match": [
+          "agent-framework",
+          "edge-ai"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.5:UditAkhourii/adhd",
+        "audience": "general",
+        "url": "https://github.com/UditAkhourii/adhd",
+        "name": "UditAkhourii/adhd",
+        "desc": "Claude agent skill with tree-of-thought reasoning and pruning.",
+        "stars": 761,
+        "repo_age": "new",
+        "language": "TypeScript",
+        "relevance": "Agent reasoning pattern — reduces LLM calls via pruned tree-of-thought.",
+        "topic_match": [
+          "agent-skill",
+          "reasoning"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.6:butterbase-ai/butterbase",
+        "audience": "general",
+        "url": "https://github.com/butterbase-ai/butterbase",
+        "name": "butterbase-ai/butterbase",
+        "desc": "Open-source backend-as-a-service with Postgres, auth, storage, and MCP.",
+        "stars": 1327,
+        "repo_age": "new",
+        "language": "TypeScript",
+        "relevance": "Serverless backend for agents — Postgres + auth + MCP gateway.",
+        "topic_match": [
+          "mcp",
+          "agent-infrastructure",
+          "ai-backend"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.7:Helvesec/rmux",
+        "audience": "general",
+        "url": "https://github.com/Helvesec/rmux",
+        "name": "Helvesec/rmux",
+        "desc": "Universal Rust multiplexer with typed SDK for CLI/TUI automation.",
+        "stars": 1579,
+        "repo_age": "new",
+        "language": "Rust",
+        "relevance": "Agent control plane for terminal apps — type-safe cross-platform automation.",
+        "topic_match": [
+          "agent-skill",
+          "developer-tools"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.8:op7418/guizang-social-card-skill",
+        "audience": "general",
+        "url": "https://github.com/op7418/guizang-social-card-skill",
+        "name": "op7418/guizang-social-card-skill",
+        "desc": "Claude Code skill for generating Xiaohongshu carousels and WeChat covers.",
+        "stars": 2969,
+        "repo_age": "new",
+        "language": "HTML",
+        "relevance": "Agent skill for content generation — Xiaohongshu/WeChat format automation.",
+        "topic_match": [
+          "agent-skill",
+          "developer-tools"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.9:alibaba/open-code-review",
+        "audience": "general",
+        "url": "https://github.com/alibaba/open-code-review",
+        "name": "alibaba/open-code-review",
+        "desc": "Hybrid architecture code review: deterministic pipelines + LLM agent.",
+        "stars": 2909,
+        "repo_age": "new",
+        "language": "Go",
+        "relevance": "Production agent pattern — hybrid deterministic + LLM for precision at scale.",
+        "topic_match": [
+          "agent-application",
+          "developer-tools"
+        ]
+      }
+    ],
+    "dev_watch_taiwan": [
+      {
+        "id": "shipped.dev_watch_taiwan.0:aaaddress1/vibe-reading",
+        "audience": "general",
+        "url": "https://github.com/aaaddress1/vibe-reading",
+        "name": "aaaddress1/vibe-reading",
+        "desc": "aaaddress1 (1.5k followers) — new repo",
+        "stars": 15,
+        "language": "JavaScript",
+        "relevance": "On-device LLM via browser Gemini Nano — offline PDF translation.",
+        "topic_match": [
+          "edge-ai",
+          "chrome-extension"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.1:appleboy/mcp-oauth",
+        "audience": "both",
+        "url": "https://github.com/appleboy/mcp-oauth",
+        "name": "appleboy/mcp-oauth",
+        "desc": "appleboy (7.5k followers) — new repo",
+        "stars": 0,
+        "language": null,
+        "relevance": "OAuth 2.1 for MCP servers — authentication standard for agent infrastructure.",
+        "topic_match": [
+          "mcp",
+          "agent-infrastructure"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.2:strategist922/auto-company",
+        "audience": "general",
+        "url": "https://github.com/strategist922/auto-company",
+        "name": "strategist922/auto-company",
+        "desc": "strategist922 (843 followers) — new repo",
+        "stars": 1,
+        "language": null,
+        "relevance": "Multi-agent orchestration for 24/7 PC automation.",
+        "topic_match": [
+          "agent-application",
+          "automation"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.3:roberthsu2003/__2026_06_04_ITRI_n8n__",
+        "audience": "general",
+        "url": "https://github.com/roberthsu2003/__2026_06_04_ITRI_n8n__",
+        "name": "roberthsu2003/__2026_06_04_ITRI_n8n__",
+        "desc": "roberthsu2003 (717 followers) — new repo",
+        "stars": 1,
+        "language": null,
+        "relevance": "Taiwan: n8n workflow automation from ITRI lecture.",
+        "topic_match": [
+          "automation",
+          "workflow"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.4:helloianneo/ian-xiaohei-illustrations",
+        "audience": "general",
+        "url": "https://github.com/helloianneo/ian-xiaohei-illustrations",
+        "name": "helloianneo/ian-xiaohei-illustrations",
+        "desc": "helloianneo (followers) — new repo",
+        "stars": 2581,
+        "language": null,
+        "relevance": "Taiwan: illustration skill for Codex — visual content generation.",
+        "topic_match": [
+          "agent-skill",
+          "developer-tools"
+        ]
+      }
+    ],
+    "dev_watch_global": [
+      {
+        "id": "shipped.dev_watch_global.0:krishnaik06/Deep-agents-With-Langchain",
+        "audience": "general",
+        "url": "https://github.com/krishnaik06/Deep-agents-With-Langchain",
+        "name": "krishnaik06/Deep-agents-With-Langchain",
+        "desc": "krishnaik06 (41.7k followers) — new repo",
+        "stars": 4,
+        "language": "Jupyter Notebook",
+        "relevance": "Deep agent patterns with LangChain — educational implementation.",
+        "topic_match": [
+          "agent-framework",
+          "langchain"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.1:iam-veeramalla/AI-Kubernetes-Upgrades",
+        "audience": "general",
+        "url": "https://github.com/iam-veeramalla/AI-Kubernetes-Upgrades",
+        "name": "iam-veeramalla/AI-Kubernetes-Upgrades",
+        "desc": "iam-veeramalla (31.7k followers) — new repo",
+        "stars": 9,
+        "language": null,
+        "relevance": "LLM-driven Kubernetes upgrade analysis — infrastructure-as-prompt.",
+        "topic_match": [
+          "agent-application",
+          "infrastructure-ai"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.2:adrianhajdin/job_pilot",
+        "audience": "general",
+        "url": "https://github.com/adrianhajdin/job_pilot",
+        "name": "adrianhajdin/job_pilot",
+        "desc": "adrianhajdin (36.9k followers) — new repo",
+        "stars": 11,
+        "language": "TypeScript",
+        "relevance": "AI-powered job search agent — matching + resume tailoring.",
+        "topic_match": [
+          "agent-application",
+          "ai-tools"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.3:microsoft/amplifier-app-paperclip",
+        "audience": "general",
+        "url": "https://github.com/microsoft/amplifier-app-paperclip",
+        "name": "microsoft/amplifier-app-paperclip",
+        "desc": "microsoft (121.8k followers) — new repo",
+        "stars": 0,
+        "language": "TypeScript",
+        "relevance": "Paperclip with Amplifier Agent — Microsoft's agent UX framework.",
+        "topic_match": [
+          "agent-framework",
+          "generative-ui"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.4:google-deepmind/unpic",
+        "audience": "general",
+        "url": "https://github.com/google-deepmind/unpic",
+        "name": "google-deepmind/unpic",
+        "desc": "google-deepmind (24.8k followers) — new repo",
+        "stars": 0,
+        "language": "Python",
+        "relevance": "CVPRW 2026 paper on 3D shape understanding — vision foundation for embodied agents.",
+        "topic_match": [
+          "vision",
+          "3d-understanding"
+        ]
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-39827361",
+        "audience": "work",
+        "url": "https://github.com/microsoft/pg_durable",
+        "title": "pg_durable: Microsoft open sources in-database durable execution",
+        "score": 358,
+        "comments": 18,
+        "takeaway": "PostgreSQL extension enables durable function execution; simplifies agent task coordination across failures."
+      },
+      {
+        "id": "pulse.hn.1:hn-39827324",
+        "audience": "both",
+        "url": "https://blog.google/innovation-and-ai/technology/developers-tools/quantization-aware-training-gemma-4/",
+        "title": "Gemma 4 QAT models: Optimizing compression for mobile and laptop efficiency",
+        "score": 303,
+        "comments": 18,
+        "takeaway": "Quantized inference reaches mobile scale; on-device LLM deployment becomes cost-viable."
+      },
+      {
+        "id": "pulse.hn.2:hn-39827249",
+        "audience": "work",
+        "url": "https://alexispurslane.github.io/rsync-analysis/",
+        "title": "Did Claude increase bugs in rsync?",
+        "score": 349,
+        "comments": 54,
+        "takeaway": "LLM-assisted patches require stricter review; tool capability doesn't equal code safety."
+      },
+      {
+        "id": "pulse.hn.3:hn-39827162",
+        "audience": "work",
+        "url": "https://www.saturnci.com/my-agent-skill-for-test-driven-development.html",
+        "title": "My Agent Skill for Test-Driven Development",
+        "score": 153,
+        "comments": 14,
+        "takeaway": "Agent-driven test generation cuts manual overhead; practical scaffold for code automation workflows."
+      },
+      {
+        "id": "pulse.hn.4:hn-39827098",
+        "audience": "work",
+        "url": "https://github.com/zdk/lowfat",
+        "title": "Show HN: Lowfat – pluggable CLI filter that saved 91.8% of my LLM tokens",
+        "score": 121,
+        "comments": 17,
+        "takeaway": "Token pruning middleware cuts costs without knowledge loss; applies to any prompt pipeline."
+      },
+      {
+        "id": "pulse.hn.5:hn-39827054",
+        "audience": "work",
+        "url": "https://openreview.net/pdf?id=Yxz92UuPLQ",
+        "title": "Transformers are inherently succinct",
+        "score": 103,
+        "comments": 9,
+        "takeaway": "Research confirms transformers compress information effectively; explains scaling behavior at scale."
+      },
+      {
+        "id": "pulse.hn.6:hn-39826998",
+        "audience": "general",
+        "url": "https://sumnerevans.com/posts/software-engineering/stop-using-conventional-commits/",
+        "title": "Conventional Commits encourages focus on the wrong things",
+        "score": 282,
+        "comments": 62,
+        "takeaway": "Critique of Conventional Commits revives commit discipline debate in developer culture."
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lwn-bpf-agents",
+        "audience": "work",
+        "url": "https://lwn.net/Articles/1075067/",
+        "title": "[$] BPF in the agentic era",
+        "score": null,
+        "comments": null,
+        "takeaway": "BPF instrumentation adapts for agentic workloads; kernel observability becomes agent policy layer."
+      },
+      {
+        "id": "pulse.lobsters.1:lwn-open-source-security",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1075741/",
+        "title": "[$] Open-source security is not a solo activity",
+        "score": null,
+        "comments": null,
+        "takeaway": "Maintainer burnout exposes systemic funding gaps; security work remains chronically under-resourced."
+      },
+      {
+        "id": "pulse.lobsters.2:lwn-bundler-cooldown",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1076526/",
+        "title": "Ruby's Bundler adds a cooldown feature",
+        "score": null,
+        "comments": null,
+        "takeaway": "Supply-chain delay defense raises exploit cost; package ecosystem security matures incrementally."
+      },
+      {
+        "id": "pulse.lobsters.3:phoronix-eglstreams",
+        "audience": "general",
+        "url": "https://www.phoronix.com/news/GNOME-51-Drops-EGLStreams",
+        "title": "GNOME 51 Retires Legacy NVIDIA Driver Support With Removing EGLStreams",
+        "score": null,
+        "comments": null,
+        "takeaway": "Wayland adoption deepens; GPU acceleration path consolidation continues."
+      },
+      {
+        "id": "pulse.lobsters.4:lwn-kernel-maintenance",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1076478/",
+        "title": "Dave Airlie on Linux Kernel Maintenance (SE Radio)",
+        "score": null,
+        "comments": null,
+        "takeaway": "Graphics subsystem maintenance pressures highlight coordination challenges in kernel scaling."
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:ithome-computex-taiwan",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/176374",
+        "title": "Computex首設開源臺灣館，向國際展現臺灣開源社群實力",
+        "score": null,
+        "comments": null,
+        "takeaway": "台灣開源社群國際化展示；AI時代開源治理成核心焦點。"
+      },
+      {
+        "id": "pulse.chinese_community.1:ithome-voidzero",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/176396",
+        "title": "Cloudflare收購VoidZero，強化AI代理人開發平臺布局",
+        "score": null,
+        "comments": null,
+        "takeaway": "Vite生態併購保障持續維護；開發工具商業化趨勢加速。"
+      },
+      {
+        "id": "pulse.chinese_community.2:oschina-anthropic-agent",
+        "audience": "work",
+        "url": "https://www.oschina.net/news/452400",
+        "title": "Anthropic 开源自主化代码漏洞发现与修复 Agent 框架",
+        "score": null,
+        "comments": null,
+        "takeaway": "安全審計Agent框架開源；降低自建代碼檢測系統門檻。"
+      },
+      {
+        "id": "pulse.chinese_community.3:oschina-alibaba-review",
+        "audience": "work",
+        "url": "https://www.oschina.net/news/452693",
+        "title": "阿里开源 AI 代码审查 CLI 工具：Open Code Review",
+        "score": null,
+        "comments": null,
+        "takeaway": "兩年內部使用經驗開源；日均審查百萬缺陷規模已驗證。"
+      },
+      {
+        "id": "pulse.chinese_community.4:ithome-anthropic-recursive",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/176389",
+        "title": "Anthropic稱內部逾8成正式程式碼由Claude撰寫，倡議先進AI開發者建立協調暫停機制",
+        "score": null,
+        "comments": null,
+        "takeaway": "AI自我改進超預期；80%代碼自動化率已量化成果。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:latent-space-cosmos",
+        "audience": "both",
+        "url": "https://www.latent.space/p/ainews-nvidia-cosmos-3",
+        "title": "[AINews] NVIDIA Cosmos 3, Nemotron 3 Ultra, and RTX Spark",
+        "score": null,
+        "comments": null,
+        "takeaway": "Unified video/image/audio/text inference; multimodal foundation model economics reshape deployment."
+      },
+      {
+        "id": "pulse.ai_bloggers.1:latent-space-github",
+        "audience": "work",
+        "url": "https://www.latent.space/p/github",
+        "title": "GitHub's plan for Agents — Kyle Daigle, GitHub",
+        "score": null,
+        "comments": null,
+        "takeaway": "GitHub agents move from preview to platform core; code generation→verify→fix loop now standardized."
+      },
+      {
+        "id": "pulse.ai_bloggers.2:latent-space-axiom",
+        "audience": "work",
+        "url": "https://www.latent.space/p/axiom",
+        "title": "🔬Scaling Past Informal AI - Carina Hong, Axiom Math",
+        "score": null,
+        "comments": null,
+        "takeaway": "Axiom achieves formal verification at Putnam level; specialized reasoning agents now productizable."
+      },
+      {
+        "id": "pulse.ai_bloggers.3:latent-space-rl",
+        "audience": "work",
+        "url": "https://www.latent.space/p/bad-envs",
+        "title": "How to Stop Shipping Low-Quality RL Environments (with Examples)",
+        "score": null,
+        "comments": null,
+        "takeaway": "RL environment quality bottleneck exposed; agent training ceiling determined by sim fidelity."
+      },
+      {
+        "id": "pulse.ai_bloggers.4:simon-willison-sandbox",
+        "audience": "both",
+        "url": "https://simonwillison.net/2026/May/30/how-we-contain-claude/#atom-everything",
+        "title": "How we contain Claude across products",
+        "score": null,
+        "comments": null,
+        "takeaway": "Claude sandbox design principles documented; agent permission isolation patterns clarified."
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:cloudflare-voidzero",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/176396",
+        "title": "Cloudflare acquires VoidZero developer tools",
+        "takeaway": "Infrastructure platform consolidates JavaScript tooling ecosystem (Vite, Vitest) to expand developer platform reach",
+        "companies": [
+          "Cloudflare",
+          "VoidZero"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.1:benchmark-2b-growth",
+        "audience": "general",
+        "url": "https://techcrunch.com/2026/06/03/benchmark-raises-its-first-ever-growth-fund-as-part-of-2b-capital-raise/",
+        "title": "Benchmark raises first-ever growth fund as part of $2B capital haul",
+        "takeaway": "Legendary VC firm abandons 20-year tradition of ~$425M fund caps; signals consolidation of AI startup capital",
+        "amount": "$2B",
+        "companies": [
+          "Benchmark"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.2:phison-intel-collaboration",
+        "audience": "both",
+        "url": "https://phisonblog.com/phison-collaborates-with-intel-to-bring-larger-local-ai-workloads-to-intel-ai-pc-platforms/",
+        "title": "Phison collaborates with Intel on local AI workloads for AI PC platforms",
+        "takeaway": "Storage leader partners with CPU vendor to enable edge AI inference on consumer devices; SSD tier critical for on-device model scale",
+        "companies": [
+          "Phison",
+          "Intel"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.ma.3:foxconn-intel-tsmc",
+        "audience": "both",
+        "url": "https://techorange.com/2026/06/05/foxconn-teams-up-with-intel-tsmc-copos-scale-up-in-two-years/",
+        "title": "Foxconn partners with Intel and TSMC on CoPoS manufacturing; two-year scale timeline",
+        "takeaway": "ODM + processor + foundry vertically integrate AI infra manufacturing; chiplet-on-substrate strategy aims to reduce cost and lead time for data-center-to-edge deployment",
+        "companies": [
+          "Foxconn",
+          "Intel",
+          "TSMC"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.ma.4:mediatek-dividend-subsidiary",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2454",
+        "title": "MediaTek subsidiary distributes $600M dividend",
+        "takeaway": "TSMC rival returns capital from Singapore holding; signals confidence in AI SoC roadmap amid supply diversification pressure",
+        "amount": "$600M USD",
+        "companies": [
+          "MediaTek"
+        ],
+        "region": "taiwan"
+      }
+    ],
+    "funding": [
+      {
+        "id": "market.funding.0:microsoft-self-authored-models",
+        "audience": "general",
+        "url": "https://techorange.com/2026/06/04/microsoft-build-2026-sk-hinix-capacity-expansion-nvidia-robotaxi-kaohsiung/",
+        "title": "Microsoft releases seven in-house AI models to reduce OpenAI dependency",
+        "takeaway": "Enterprise vendor complements OpenAI partnership with self-developed models; internal LLM tier intended to lower inference costs",
+        "companies": [
+          "Microsoft",
+          "OpenAI"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.1:delta-electronics-ai-infra",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/176401",
+        "title": "Delta Electronics showcases modular AI data center; 60% build-time reduction",
+        "takeaway": "Thermal-power-infrastructure leader pre-manufactures AI data center modules; addresses 800VDC power architecture and hot-aisle standardization for builders racing to deploy",
+        "companies": [
+          "Delta Electronics"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.funding.2:taiwan-mobile-gmi-cloud-aidc",
+        "audience": "both",
+        "url": "https://techorange.com/2026/06/04/taiwanmobile-gmi-cloud/",
+        "title": "Taiwan Mobile partners with GMI Cloud on international AI data center expansion",
+        "takeaway": "Telecom operator enters AI infra services; positions for GPU-as-a-service monetization alongside 5G capacity already deployed",
+        "companies": [
+          "Taiwan Mobile",
+          "GMI Cloud"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.funding.3:advantech-edge-ai-physical",
+        "audience": "general",
+        "url": "https://techorange.com/2026/06/04/advantech-weda/",
+        "title": "Advantech hosts World Partner Conference; emphasizes edge AI and Physical AI WEDA framework",
+        "takeaway": "Industrial IoT platform vendor rallies 800+ ecosystem partners around edge AI deployment; WEDA architecture targets distributed AI edge nodes",
+        "companies": [
+          "Advantech"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.funding.4:seagate-ai-data-infrastructure",
+        "audience": "both",
+        "url": "https://www.inside.com.tw/article/41472-seagate_2026computex",
+        "title": "Seagate showcases storage solutions for AI data-flow challenge at COMPUTEX",
+        "takeaway": "Storage incumbent positions HDD/SSD hybrid tiers as critical bottleneck relief for data-intensive AI workloads; addresses cost per GB in hot/cold splits",
+        "companies": [
+          "Seagate"
+        ],
+        "region": "global"
+      }
+    ],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-mediatek-2454",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2454",
+        "title": "MediaTek 聯發科 董事會決議股利分派 USD 600M",
+        "takeaway": "處理器大廠宣布 Singapore 子公司派息；AI SoC 布局信心強",
+        "amount": "$600M",
+        "companies": [
+          "聯發科"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:computex-2026-ai-focus",
+        "audience": "general",
+        "url": "https://www.eettaiwan.com/20260603nt22-computex-2026-opens-with-ai-and-next-gen-tech-in-focus/",
+        "title": "COMPUTEX 2026 opens with AI, robotics, next-gen tech as focus pillars",
+        "takeaway": "1,500 vendors from 33 countries showcase AI infra; COMPUTEX 2026 cements Taiwan as global AI supply-chain nexus through June",
+        "companies": [],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:phison-computex-ai-storage",
+        "audience": "both",
+        "url": "https://phisonblog.com/phison-unveils-a-new-era-of-pascari-enterprise-storage-at-computex-2026/",
+        "title": "Phison unveils Pascari enterprise AI storage platform at COMPUTEX 2026",
+        "takeaway": "8299 storage-control vendor launches next-gen SSD architecture for enterprise AI workloads; demonstrates integration of NVMe with on-device inference tiers",
+        "companies": [
+          "群聯 (Phison)"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:longsys-edge-ai-storage",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260604np21-longsys-spotlights-edge-ai-storage-at-computex-2026/",
+        "title": "Longsys (江波龍) spotlights edge AI storage and memory products at COMPUTEX 2026",
+        "takeaway": "Chinese storage vendor expands memory product line for edge AI inference; directly targets Taiwan ecosystem partnerships for on-device model deployment",
+        "companies": [
+          "江波龍 (Longsys)"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:gan-800vdc-psu",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260604nt11-power-integrations-1700v-gan-800vdc-auxiliary-psu-nvidia-kyber/",
+        "title": "Power Integrations reveals GaN-based 800VDC auxiliary PSU optimized for NVIDIA Kyber liquid-cooled racks",
+        "takeaway": "GaN power-converter specialist reveals NVIDIA Kyber-optimized 800VDC auxiliary PSU designs; enables higher-density rack power for liquid-cooled GPU servers",
+        "companies": [
+          "Power Integrations"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.taiwan.5:itri-auvsi-uas",
+        "audience": "general",
+        "url": "https://techorange.com/2026/06/04/itri-auvsi-green-uas/",
+        "title": "ITRI becomes AUVSI Green UAS certification body for Taiwan; drone export pathway",
+        "takeaway": "Industrial Technology Research Institute gains authority to certify Taiwan-made drones to US green-UAV standard; unlocks aerospace export channel amid AI robotics expansion",
+        "companies": [
+          "工研院 (ITRI)"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.6:robotics-industry-consolidation",
+        "audience": "general",
+        "url": "https://www.eettaiwan.com/20260603nt21-taiwan-robotics-industry-strategy-niche-applications/",
+        "title": "Taiwan robotics sector enters consolidation phase; VC capital concentrating on brain + dexterous hand leaders",
+        "takeaway": "資策會MIC analysis shows VC capital consolidating; Taiwan vendors should develop niche robotics applications (not compete on generalist humanoids) to survive 2026 shake-out",
+        "companies": [],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.7:sk-hynix-capacity-expansion",
+        "audience": "both",
+        "url": "https://techorange.com/2026/06/04/microsoft-build-2026-sk-hinix-capacity-expansion-nvidia-robotaxi-kaohsiung/",
+        "title": "SK Hynix signals memory capacity expansion; NVIDIA Robotaxi Kaohsiung deployment underway",
+        "takeaway": "Korean HBM supplier adds capacity in response to GPU cluster buildout; NVIDIA autonomy platform pilot in Kaohsiung signals Taiwan-first robotaxi deployment strategy",
+        "amount": "not specified",
+        "companies": [
+          "SK Hynix",
+          "NVIDIA"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:phison-pascari-computex",
+        "audience": "both",
+        "url": "https://phisonblog.com/phison-unveils-a-new-era-of-pascari-enterprise-storage-at-computex-2026/",
+        "title": "Phison Unveils a New Era of Pascari Enterprise Storage at COMPUTEX 2026",
+        "takeaway": "Phison Pascari enterprise line shipping; SSD-as-memory for 100B+ model on-device deployment.",
+        "companies": [
+          "Phison"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:phison-intel-local-ai",
+        "audience": "both",
+        "url": "https://phisonblog.com/phison-collaborates-with-intel-to-bring-larger-local-ai-workloads-to-intel-ai-pc-platforms/",
+        "title": "Phison Collaborates with Intel to Bring Larger Local AI Workloads to Intel AI PC Platforms",
+        "takeaway": "Joint launch: memory expansion for 120B+ models on AI PC via SSD-as-memory architecture.",
+        "companies": [
+          "Phison",
+          "Intel"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:nvidia-jetpack-memory",
+        "audience": "both",
+        "url": "https://developer.nvidia.com/blog/deploy-agentic-ready-ai-at-the-edge-with-memory-efficiency-in-nvidia-jetpack-7-2/",
+        "title": "Deploy Agentic-Ready AI at the Edge with Memory Efficiency in NVIDIA JetPack 7.2",
+        "takeaway": "JetPack 7.2 memory optimizations unlock agent deployment on Jetson; edge inference scaling.",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:nvidia-nemotron-agents",
+        "audience": "work",
+        "url": "https://developer.nvidia.com/blog/nvidia-nemotron-3-ultra-powers-faster-more-efficient-reasoning-for-long-running-agents/",
+        "title": "NVIDIA Nemotron 3 Ultra Powers Faster, More Efficient Reasoning for Long-Running Agents",
+        "takeaway": "Nemotron 3 Ultra specialized for multi-turn agents; ships on SageMaker JumpStart day-zero.",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:anthropic-cyber-threats",
+        "audience": "work",
+        "url": "https://www.anthropic.com/news/AI-enabled-cyber-threats-mitre-attack",
+        "title": "What we learned mapping a year's worth of AI-enabled cyber threats",
+        "takeaway": "Year-long AI-amplified attack taxonomy mapped to MITRE ATT&CK; guides security operations.",
+        "companies": [
+          "Anthropic"
+        ]
+      },
+      {
+        "id": "tech.vendor.5:anthropic-services-partner",
+        "audience": "general",
+        "url": "https://www.anthropic.com/news/services-track-partner-hub",
+        "title": "Introducing the Services Track and Partner Hub of the Claude Partner Network",
+        "takeaway": "Anthropic services partners program bridges pilot-to-production gap for enterprise Claude.",
+        "companies": [
+          "Anthropic"
+        ]
+      },
+      {
+        "id": "tech.vendor.6:openai-codex-knowledge",
+        "audience": "general",
+        "url": "https://openai.com/index/codex-for-knowledge-work",
+        "title": "Codex is becoming a productivity tool for everyone",
+        "takeaway": "Codex productized for research, data analysis, workflow automation beyond code.",
+        "companies": [
+          "OpenAI"
+        ]
+      },
+      {
+        "id": "tech.vendor.7:aws-nova-hyperparameter",
+        "audience": "general",
+        "url": "https://aws.amazon.com/blogs/machine-learning/the-art-and-science-of-hyperparameter-optimization-on-amazon-nova-forge/",
+        "title": "The art and science of hyperparameter optimization on Amazon Nova Forge",
+        "takeaway": "Nova Forge enables domain-specific fine-tuning at scale for proprietary data.",
+        "companies": [
+          "AWS"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:google-gemma-4",
+        "audience": "both",
+        "url": "https://huggingface.co/google/gemma-4-12B",
+        "title": "Google Gemma 4 12B: Apache 2.0 Multimodal Model",
+        "takeaway": "Gemma 4 12B (image-text-to-text) Apache 2.0 license removes friction for on-device deployment.",
+        "companies": [
+          "Google"
+        ]
+      },
+      {
+        "id": "tech.models.1:qwen3.6-35b",
+        "audience": "both",
+        "url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "title": "Qwen 3.6 35B-A3B MoE: Multimodal Long-Context",
+        "takeaway": "Q1 2026 watch-list ship; 35B MoE with vision+long-context targets efficient inference.",
+        "companies": [
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.2:minicpm5-1b",
+        "audience": "both",
+        "url": "https://huggingface.co/openbmb/MiniCPM5-1B",
+        "title": "OpenBMB MiniCPM5-1B: On-Device Long-Context",
+        "takeaway": "1B model with 128K context + tool-calling; edge inference reference for 100M-parameter class.",
+        "companies": [
+          "OpenBMB"
+        ]
+      },
+      {
+        "id": "tech.models.3:nvidia-locateanything",
+        "audience": "work",
+        "url": "https://huggingface.co/nvidia/LocateAnything-3B",
+        "title": "NVIDIA LocateAnything-3B: Vision Grounding",
+        "takeaway": "Visual spatial reasoning for 3B parameters; object detection in resource-constrained inference.",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.models.4:mellum2-thinking",
+        "audience": "work",
+        "url": "https://huggingface.co/JetBrains/Mellum2-12B-A2.5B-Thinking",
+        "title": "JetBrains Mellum2 12B with Thinking Tokens",
+        "takeaway": "Explicit reasoning tokens enable transparent chain-of-thought in 12B parameter model.",
+        "companies": [
+          "JetBrains"
+        ]
+      },
+      {
+        "id": "tech.models.5:lfm-2.5-8b",
+        "audience": "both",
+        "url": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B",
+        "title": "LiquidAI LFM2.5-8B-A1B: Edge MoE Model",
+        "takeaway": "8B MoE optimized for on-device inference; multilingual, compact deployment.",
+        "companies": [
+          "Liquid AI"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:bfcl-snapshot",
+        "audience": "work",
+        "url": "https://huggingface.co/spaces/anybodys/BFCL",
+        "title": "BFCL: Function Calling — Claude Opus 4.5 Leads",
+        "takeaway": "Claude Opus 4.5 (20251101) maintains top function-calling accuracy; Sonnet 4.5 in top-2.",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Claude-Opus-4-5-20251101 (FC)",
+            "Claude-Sonnet-4-5-20250929 (FC)"
+          ],
+          "rank_changes": []
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:swebench-snapshot",
+        "audience": "work",
+        "url": "https://www.swebench.com/",
+        "title": "SWE-Bench Verified: Live-SWE-Agent + Claude 4.5 Leads",
+        "takeaway": "Live-SWE-Agent + Claude 4.5 Opus achieves top code-reasoning performance.",
+        "benchmark_changes": {
+          "new_top_5": [
+            "live-SWE-agent + Claude 4.5 Opus medium (20251101)"
+          ],
+          "rank_changes": []
+        }
+      },
+      {
+        "id": "tech.benchmarks.2:ocrbench-snapshot",
+        "audience": "general",
+        "url": "https://huggingface.co/spaces/ocr-research/ocrbench",
+        "title": "OCRBench: Llama Nemotron Nano VL Leads Vision",
+        "takeaway": "Llama Nemotron Nano VL 8B tops OCR; momentum in efficient multimodal vision models.",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Llama Nemotron Nano VL 8B",
+            "InternVL-3-14B"
+          ],
+          "rank_changes": []
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:vllm-0.22.0-deepseek",
+        "audience": "work",
+        "url": "https://github.com/vllm-project/vllm/releases/tag/v0.22.0",
+        "title": "vLLM v0.22.0: DeepSeek V4 Hardening + 459 Commits",
+        "takeaway": "KV-cache kernel improvements for DeepSeek V4; paged attention refinement for long-context.",
+        "companies": [
+          "vLLM"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:sk-hynix-computex-ai",
+        "audience": "both",
+        "url": "https://news.skhynix.com/computex-2026/",
+        "title": "SK hynix: AI Memory Solutions at COMPUTEX 2026",
+        "takeaway": "COMPUTEX 2026 showcase; Jensen Huang visit validates HBM/memory strategy for 100B+ inference.",
+        "companies": [
+          "SK hynix"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:sk-hynix-tsmc-chip",
+        "audience": "work",
+        "url": "https://news.skhynix.com/ai-partnership-tsmc-2026/",
+        "title": "SK hynix + TSMC: Next-Gen AI Chip Partnership",
+        "takeaway": "Memory supplier + foundry alignment on AI chip roadmap; HBM/DRAM for inference scaling.",
+        "companies": [
+          "SK hynix",
+          "TSMC"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.3:lmcache-cuda-support",
+        "audience": "work",
+        "url": "https://github.com/LMCache/LMCache/releases/tag/nightly",
+        "title": "LMCache Nightly: CUDA 13.0 Support",
+        "takeaway": "CUDA 13.0 wheels enable KV-cache offload to SSD for long-context serving efficiency.",
+        "companies": [
+          "LMCache"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.4:vllm-0.22.1-patch",
+        "audience": "work",
+        "url": "https://github.com/vllm-project/vllm/releases/tag/v0.22.1",
+        "title": "vLLM v0.22.1: Targeted Stability Fixes",
+        "takeaway": "Production stability improvements; new model support and inference kernel refinements.",
+        "companies": [
+          "vLLM"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.5:phison-ai-full-scale",
+        "audience": "both",
+        "url": "https://phisonblog.com/phison-unlocks-full-scale-ai-deployment-across-industries/",
+        "title": "Phison: Full-Scale AI Deployment Across Industries",
+        "takeaway": "Phison SSD infrastructure supports on-device and edge inference at production scale.",
+        "companies": [
+          "Phison"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-06-06",
+    "flagged": [
+      {
+        "path": "signals.focus[0].body",
+        "type": "temporal",
+        "marker": "同一週",
+        "ids": [
+          "tech.vendor.0:phison-pascari-computex",
+          "tech.vendor.1:phison-intel-local-ai",
+          "tech.vendor.2:nvidia-jetpack-memory"
+        ]
+      },
+      {
+        "path": "signals.focus[2].body",
+        "type": "temporal",
+        "marker": "同一週",
+        "ids": [
+          "pulse.lobsters.0:lwn-bpf-agents",
+          "pulse.ai_bloggers.1:latent-space-github"
+        ]
+      },
+      {
+        "path": "signals.focus[1].body",
+        "type": "attribution",
+        "author": "Delta Electronics",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "signals.focus[3].body",
+        "type": "attribution",
+        "author": "Open Code",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "兩年內部使用經驗開源；日均審查百萬缺陷規模已驗證。"
+      }
+    ],
+    "repaired": 2
+  }
+}
