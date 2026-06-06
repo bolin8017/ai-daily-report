@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { aggregateMeta, aggregateTotals } from '../src/lib/report-meta.js';
+import { ReportSchema } from '../src/schemas/report.js';
 
 describe('aggregateTotals', () => {
   it('sums cost and input+output tokens, ignoring cache tokens', () => {
@@ -42,6 +43,37 @@ describe('aggregateMeta', () => {
     expect(meta.total_cost_usd).toBeCloseTo(0.3);
     expect(meta.total_tokens).toBe(110);
     expect(meta.analyze_duration_ms).toBe(1234);
+  });
+
+  it('keeps source_health uniform and surfaces feeds_sections separately', () => {
+    // Regression for the 2026-06-06 Stage-4 abort: feeds_sections (a section→count
+    // breakdown) used to ride inside `sources`, so aggregateMeta copied it
+    // wholesale into source_health — which the report schema types as a uniform
+    // {ok,count} map, making validation fail on the missing ok/count. The fix
+    // moves feeds_sections to a top-level sibling; here we assert the composed
+    // meta both keeps source_health clean AND validates against the report schema.
+    const meta = aggregateMeta({
+      stagingMeta: {
+        run_id: 'a1b2c3d4-0000-4000-8000-000000000000',
+        sources: {
+          feeds: { ok: true, count: 658 },
+          trending: { ok: true, count: 17 },
+          arxiv: { ok: true, count: 30 },
+        },
+        feeds_sections: { pulse: 245, market: 193, tech: 54, shipped: 53 },
+        degraded: [],
+      },
+      stages: {},
+    });
+    expect(meta.source_health.feeds_sections).toBeUndefined();
+    expect(meta.source_health.feeds.count).toBe(658);
+    expect(meta.feeds_sections).toEqual({ pulse: 245, market: 193, tech: 54, shipped: 53 });
+
+    // ReportSchema.shape.meta is ReportMetaSchema wrapped in .optional() — this is
+    // the exact gate Stage 4 (composeReport) runs, and what failed in production.
+    const result = ReportSchema.shape.meta.safeParse(meta);
+    if (!result.success) console.error(result.error.issues);
+    expect(result.success).toBe(true);
   });
 
   it('returns null when there is nothing to record', () => {

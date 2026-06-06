@@ -89,7 +89,7 @@ describe('schemas', () => {
     },
   );
 
-  it('StagingMetadataSchema accepts feeds_sections in sources', () => {
+  it('StagingMetadataSchema accepts top-level feeds_sections (a sibling of sources)', () => {
     const metadata = {
       date: '2026-06-05',
       run_id: '00000000-0000-4000-8000-000000000000',
@@ -101,13 +101,34 @@ describe('schemas', () => {
         trending: { ok: true, count: 25 },
         search: { ok: true, count: 30 },
         developers: { ok: true, count: 10 },
-        feeds_sections: { pulse: 12, market: 9, tech: 7 },
       },
+      // Lives outside `sources` so source_health stays a uniform {ok,count} map.
+      feeds_sections: { pulse: 12, market: 9, tech: 7, shipped: 5 },
       degraded: [],
     };
     const result = StagingMetadataSchema.safeParse(metadata);
     if (!result.success) console.error(result.error.issues);
     expect(result.success).toBe(true);
+  });
+
+  it('StagingMetadataSchema rejects feeds_sections nested inside sources', () => {
+    // Regression: the section→count breakdown is not a {ok,count} health record,
+    // so it must not ride inside `sources` (which Stage 4 copies verbatim into
+    // report meta.source_health, a uniform {ok,count} map).
+    const metadata = {
+      date: '2026-06-05',
+      collected_at: '2026-06-05T00:00:00.000Z',
+      timezone: 'Asia/Taipei',
+      sources: {
+        feeds: { ok: true, count: 120 },
+        trending: { ok: true, count: 25 },
+        search: { ok: true, count: 30 },
+        developers: { ok: true, count: 10 },
+        feeds_sections: { pulse: 12, market: 9, tech: 7 },
+      },
+      degraded: [],
+    };
+    expect(StagingMetadataSchema.safeParse(metadata).success).toBe(false);
   });
 
   it('ConfigSchema accepts the minimal post-cutover shape (report + providers)', () => {

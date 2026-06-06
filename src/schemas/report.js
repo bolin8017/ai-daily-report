@@ -47,6 +47,9 @@ const ReportMetaSchema = z
     source_health: z
       .record(z.string(), z.object({ ok: z.boolean(), count: z.number().int().nonnegative() }))
       .optional(),
+    // Per-section feed item counts (observability) — a section→count map, kept
+    // separate from source_health so that record stays a uniform {ok,count}.
+    feeds_sections: z.record(z.string(), z.number().int().nonnegative()).optional(),
     degraded_sources: z.array(z.string()).optional(),
     stages: z.record(z.string(), StageUsageSchema).optional(),
     total_cost_usd: z.number().nonnegative().optional(),

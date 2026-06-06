@@ -231,13 +231,19 @@ async function main() {
           count: raw.hf_trending?.items?.length ?? 0,
         },
         arxiv: { ok: raw.arxiv?.ok ?? false, count: raw.arxiv?.items?.length ?? 0 },
-        feeds_sections: {
-          ...Object.fromEntries(FEED_SECTIONS.map((s) => [s, sectionSlices[s].items.length])),
-          shipped:
-            shippedSlice.trending.length +
-            shippedSlice.search.length +
-            shippedSlice.developers.length,
-        },
+      },
+      // Per-section feed item counts — observability for the section-slice
+      // engine. A sibling of `sources` (NOT a member): every `sources` entry is
+      // a {ok,count} health record, and Stage 4 copies that whole object into
+      // report meta.source_health, which the report schema types as a uniform
+      // {ok,count} map. Keeping this section→count breakdown out of `sources`
+      // preserves that invariant.
+      feeds_sections: {
+        ...Object.fromEntries(FEED_SECTIONS.map((s) => [s, sectionSlices[s].items.length])),
+        shipped:
+          shippedSlice.trending.length +
+          shippedSlice.search.length +
+          shippedSlice.developers.length,
       },
       degraded: raw._degraded ?? [],
     },
