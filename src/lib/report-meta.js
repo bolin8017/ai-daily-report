@@ -39,6 +39,7 @@ export function aggregateMeta({
   if (generatedAt) meta.generated_at = generatedAt;
   if (Number.isInteger(analyzeDurationMs)) meta.analyze_duration_ms = analyzeDurationMs;
   if (stagingMeta.sources) meta.source_health = stagingMeta.sources;
+  if (stagingMeta.feeds_sections) meta.feeds_sections = stagingMeta.feeds_sections;
   if (Array.isArray(stagingMeta.degraded)) meta.degraded_sources = stagingMeta.degraded;
   if (Object.keys(stages).length > 0) {
     meta.stages = stages;
