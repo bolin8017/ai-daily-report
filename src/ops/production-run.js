@@ -9,9 +9,14 @@
 // here we only run, observe, and report.
 //
 // Commands:
-//   node src/ops/production-run.js run     --state-dir D [--wiki-root W] [--skip-push]
+//   node src/ops/production-run.js run     --state-dir D [--wiki-root W] [--skip-push] [--recover-from STAGE]
 //   node src/ops/production-run.js status  --state-dir D [--json]
 //   node src/ops/production-run.js monitor --state-dir D
+//
+// `run --recover-from STAGE` resumes the sequencer from STAGE (reusing already-
+// finished upstream stages — no re-collect, no re-spent LLM work) and still runs
+// the full publish tail. Use it to re-publish after fixing a deterministic stage
+// (e.g. merge) without re-running collect/curate/synthesize.
 //
 // Secrets: GITHUB_TOKEN is read from the environment for the Pages dispatch and
 // is NEVER written to the run log or status JSON.
@@ -28,6 +33,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { allStageIds } from '../pipeline/stages.js';
 import { parseStageResults, summarizeStages } from './stage-results.js';
 
 const STATE_SCHEMA_VERSION = 1;
@@ -147,6 +153,39 @@ export function renderOrphan(latest) {
   ].join('\n');
 }
 
+// ---- pure: run.sh invocation (unit-tested) --------------------------------
+
+/**
+ * Build the run.sh argv + extra env for cmdRun. Extracted so the
+ * full / skip-push / recover-from branching is unit-testable without spawning.
+ *
+ * - default → `--full`: re-runs Stage 1 collect, then the sequencer resumes.
+ *   Re-collect rewrites metadata.json (the freshness anchor), so every
+ *   downstream output is invalidated and recomputed — the correct behaviour
+ *   when the source data is refetched.
+ * - recoverFrom → `--recover-from <stage>`: drives the sequencer `--from
+ *   <stage>` and NEVER touches collect, so metadata.json keeps its mtime and
+ *   already-finished upstream stages stay satisfied and are reused. This is the
+ *   cheap path for re-running a deterministic tail (e.g. merge) after a fix,
+ *   without re-spending the LLM stages. The publish tail still runs.
+ *
+ * run.sh's `--recover-from` reads SKIP_PUSH from the environment
+ * (publish_unless_skip), not a positional flag, so a no-push rehearsal must
+ * pass it via env rather than as `--skip-push`.
+ *
+ * @param {{recoverFrom?: string|null, skipPush?: boolean}} [opts]
+ * @returns {{args: string[], env: Record<string,string>}}
+ */
+export function buildRunArgs({ recoverFrom = null, skipPush = false } = {}) {
+  if (recoverFrom) {
+    return {
+      args: ['scripts/run.sh', '--recover-from', recoverFrom],
+      env: skipPush ? { SKIP_PUSH: '1' } : {},
+    };
+  }
+  return { args: ['scripts/run.sh', skipPush ? '--skip-push' : '--full'], env: {} };
+}
+
 // ---- IO helpers -----------------------------------------------------------
 
 function atomicWriteJson(file, obj) {
@@ -240,7 +279,7 @@ function writeToFd(fd, text) {
 
 // ---- commands -------------------------------------------------------------
 
-function cmdRun({ stateDir, wikiRoot, skipPush }) {
+function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
   const runId = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
   const tz = process.env.REPORT_TIMEZONE ?? 'Asia/Taipei';
   const date = new Date().toLocaleDateString('sv-SE', { timeZone: tz });
@@ -253,8 +292,10 @@ function cmdRun({ stateDir, wikiRoot, skipPush }) {
 
   const startedAt = isoNow();
   const startMs = Date.now();
-  const extraEnv = { REPORT_TIMEZONE: tz };
+  const { args: runArgs, env: runEnv } = buildRunArgs({ recoverFrom, skipPush });
+  const extraEnv = { REPORT_TIMEZONE: tz, ...runEnv };
   if (wikiRoot) extraEnv.AI_DAILY_REPORT_WIKI_ROOT = wikiRoot;
+  const mode = recoverFrom ? `recover-from:${recoverFrom}` : skipPush ? 'skip-push' : 'full';
 
   // Mark running before the long step so monitor can report a stuck run.
   const base = {
@@ -276,13 +317,11 @@ function cmdRun({ stateDir, wikiRoot, skipPush }) {
   };
   atomicWriteJson(path.join(stateDir, 'latest.json'), base);
 
-  writeToFd(logFd, `[production:${runId}] start ${startedAt} (skip_push=${Boolean(skipPush)})\n`);
-  const runRc = runToLog(
-    'bash',
-    ['scripts/run.sh', skipPush ? '--skip-push' : '--full'],
+  writeToFd(
     logFd,
-    extraEnv,
+    `[production:${runId}] start ${startedAt} (mode=${mode} skip_push=${Boolean(skipPush)})\n`,
   );
+  const runRc = runToLog('bash', runArgs, logFd, extraEnv);
   writeToFd(logFd, `[production:${runId}] run.sh rc=${runRc}\n`);
 
   // Parse what the sequencer emitted for observability.
@@ -383,13 +422,14 @@ function cmdMonitor({ stateDir }) {
 
 // ---- CLI ------------------------------------------------------------------
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const [command, ...rest] = argv;
   const opts = { command };
   for (let i = 0; i < rest.length; i += 1) {
     const a = rest[i];
     if (a === '--state-dir') opts.stateDir = rest[++i];
     else if (a === '--wiki-root') opts.wikiRoot = rest[++i];
+    else if (a === '--recover-from') opts.recoverFrom = rest[++i];
     else if (a === '--skip-push') opts.skipPush = true;
     else if (a === '--json') opts.json = true;
     else {
@@ -412,6 +452,15 @@ if (isMain) {
   const opts = parseArgs(process.argv.slice(2));
   if (!opts.stateDir) {
     process.stderr.write('[production] --state-dir is required\n');
+    process.exit(2);
+  }
+  // Fail fast on an operator typo: a bad --recover-from stage would otherwise
+  // surface only as a failed run buried in the log (and a monitor alert).
+  if (opts.recoverFrom != null && !allStageIds().includes(opts.recoverFrom)) {
+    process.stderr.write(
+      `[production] unknown --recover-from stage: ${opts.recoverFrom}\n` +
+        `  valid stages: ${allStageIds().join(', ')}\n`,
+    );
     process.exit(2);
   }
   let rc = 0;

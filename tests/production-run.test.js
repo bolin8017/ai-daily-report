@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildRunArgs,
   decideNotice,
+  parseArgs,
   renderFailure,
   renderOrphan,
   renderSuccess,
@@ -148,5 +150,51 @@ describe('renderSuccess', () => {
     expect(text).toMatch(/duration: 25 min/);
     expect(text).toMatch(/auto-recovered: curate\.market/);
     expect(text).toMatch(/report: https:\/\/bolin8017\.github\.io\/ai-daily-report\//);
+  });
+});
+
+describe('buildRunArgs', () => {
+  it('defaults to a full run (re-collect + sequencer) that publishes', () => {
+    expect(buildRunArgs()).toEqual({ args: ['scripts/run.sh', '--full'], env: {} });
+  });
+
+  it('uses --skip-push for a full-run rehearsal', () => {
+    expect(buildRunArgs({ skipPush: true })).toEqual({
+      args: ['scripts/run.sh', '--skip-push'],
+      env: {},
+    });
+  });
+
+  it('resumes from a stage without re-running collect, still publishing', () => {
+    // --recover-from drives the sequencer --from <stage>; it never touches Stage 1
+    // collect, so metadata.json (the freshness anchor) keeps its mtime and the
+    // already-finished upstream stages stay satisfied and get reused.
+    expect(buildRunArgs({ recoverFrom: 'merge' })).toEqual({
+      args: ['scripts/run.sh', '--recover-from', 'merge'],
+      env: {},
+    });
+  });
+
+  it('passes SKIP_PUSH via env for a recover-from rehearsal', () => {
+    // run.sh --recover-from honours SKIP_PUSH from the environment (publish_unless_skip),
+    // not a positional flag — so a no-push rehearsal must set it in env.
+    expect(buildRunArgs({ recoverFrom: 'merge', skipPush: true })).toEqual({
+      args: ['scripts/run.sh', '--recover-from', 'merge'],
+      env: { SKIP_PUSH: '1' },
+    });
+  });
+});
+
+describe('parseArgs', () => {
+  it('parses run with --recover-from <stage>', () => {
+    expect(parseArgs(['run', '--state-dir', '/s', '--recover-from', 'merge'])).toMatchObject({
+      command: 'run',
+      stateDir: '/s',
+      recoverFrom: 'merge',
+    });
+  });
+
+  it('leaves recoverFrom undefined for a plain run', () => {
+    expect(parseArgs(['run', '--state-dir', '/s']).recoverFrom).toBeUndefined();
   });
 });
