@@ -340,12 +340,18 @@ export default [
     ],
   },
 
-  // === MOPS (1) — single-tier, no public fallback ===
+  // === MOPS (1) — single-tier, no public fallback, low-frequency watchlist ===
+  // threshold: 0 allows 0 items on weekends/holidays when markets are closed.
+  // This is not a fetch failure; it's the normal state of a watchlist with no
+  // disclosures that day. Without threshold:0, every weekend/holiday wrongly
+  // marks mops as "degraded" in run-all (though telemetry correctly classifies
+  // it as tier-0-healthy).
   {
     id: 'mops-disclosure',
     label: 'TWSE 重大訊息',
     category: 'taiwan-market',
     itemType: 'mops-disclosure',
+    threshold: 0,
     chain: [{ provider: 'mops-twse-openapi', config: {} }],
   },
 

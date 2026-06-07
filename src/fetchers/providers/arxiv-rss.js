@@ -8,6 +8,25 @@ const MAX_RESULTS = 30;
 const ARXIV_CATEGORIES = ['cs.AI', 'cs.CL', 'cs.LG', 'cs.IR'];
 const MAX_KEYWORDS = 40;
 const API_BASE = 'https://export.arxiv.org/api/query';
+const RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 3_000;
+
+// arXiv's export API throttles bursts with HTTP 429 (and occasionally 503). It
+// asks for ~1 request / 3s, so a transient throttle should be retried with
+// exponential backoff rather than failing the whole source on a single 429 —
+// the 2026-06-07 run lost arxiv-cs-ai entirely to a one-off 429.
+const RETRYABLE_STATUS_RE = /\b(429|503)\b/;
+
+async function fetchFeedWithRetry(fetchFeed, url, { retries, baseDelayMs, sleep }) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetchFeed(url);
+    } catch (err) {
+      if (attempt >= retries || !RETRYABLE_STATUS_RE.test(err?.message ?? '')) throw err;
+      await sleep(baseDelayMs * 2 ** attempt);
+    }
+  }
+}
 
 // Build an arxiv-API search_query (URL-encoded) from interest keywords:
 //   (abs:"kw1" OR abs:kw2 OR ...) AND (cat:cs.AI OR cat:cs.CL OR ...)
@@ -76,8 +95,13 @@ export async function arxivRssProvider(cfg = {}, ctx = {}) {
   const max = cfg.maxResults ?? MAX_RESULTS;
   const url = `${API_BASE}?search_query=${query}&start=0&max_results=${max}&sortBy=submittedDate&sortOrder=descending`;
   const fetchFeed = ctx._fetchFeed ?? ((u) => parser.parseURL(u));
+  const sleep = ctx._sleep ?? ((ms) => new Promise((r) => setTimeout(r, ms)));
   try {
-    const parsed = await fetchFeed(url);
+    const parsed = await fetchFeedWithRetry(fetchFeed, url, {
+      retries: cfg.retries ?? RETRIES,
+      baseDelayMs: cfg.retryDelayMs ?? RETRY_BASE_DELAY_MS,
+      sleep,
+    });
     const items = parseArxivEntries(parsed).slice(0, max); // defensive cap (max_results already bounds the API)
     return { ok: items.length > 0, items };
   } catch (err) {
