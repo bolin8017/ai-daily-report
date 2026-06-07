@@ -1,0 +1,1400 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-06-08",
+  "meta": {
+    "run_id": "230d6a33-2c32-49e5-8db9-df8c08b95397",
+    "pipeline_version": "62c7f50",
+    "generated_at": "2026-06-07T23:21:57.974Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 805
+      },
+      "trending": {
+        "ok": true,
+        "count": 15
+      },
+      "search": {
+        "ok": true,
+        "count": 75
+      },
+      "developers": {
+        "ok": true,
+        "count": 10
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 3
+      },
+      "mops": {
+        "ok": true,
+        "count": 0
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 247,
+      "market": 227,
+      "tech": 22,
+      "shipped": 47
+    },
+    "degraded_sources": [],
+    "stages": {
+      "faithfulness": {
+        "cost_usd": 0.08860455,
+        "duration_ms": 16187,
+        "num_turns": 1,
+        "input_tokens": 3,
+        "output_tokens": 1044,
+        "cache_read_tokens": 2131,
+        "cache_creation_tokens": 19279,
+        "is_error": false,
+        "session_id": "5610b213-1f17-44c4-b52a-d8f961bfc0d7"
+      },
+      "curate.market": {
+        "cost_usd": 0.17172155,
+        "duration_ms": 49579,
+        "num_turns": 12,
+        "input_tokens": 58,
+        "output_tokens": 4611,
+        "cache_read_tokens": 449273,
+        "cache_creation_tokens": 82945,
+        "is_error": false,
+        "session_id": "14178ac6-8551-409b-83d3-192624a9c57e"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.36502395000000004,
+        "duration_ms": 164199,
+        "num_turns": 16,
+        "input_tokens": 74,
+        "output_tokens": 17955,
+        "cache_read_tokens": 1234012,
+        "cache_creation_tokens": 121419,
+        "is_error": false,
+        "session_id": "2053d71c-7203-4841-853c-b8def5f1f206"
+      },
+      "curate.shipped": {
+        "cost_usd": 0.20927575,
+        "duration_ms": 134601,
+        "num_turns": 11,
+        "input_tokens": 62,
+        "output_tokens": 15308,
+        "cache_read_tokens": 392575,
+        "cache_creation_tokens": 74733,
+        "is_error": false,
+        "session_id": "7ebfde59-afba-452c-9863-0f4765fa96e3"
+      },
+      "synthesize": {
+        "cost_usd": 1.6334890499999997,
+        "duration_ms": 1038179,
+        "num_turns": 15,
+        "input_tokens": 486,
+        "output_tokens": 57681,
+        "cache_read_tokens": 731366,
+        "cache_creation_tokens": 145975,
+        "is_error": false,
+        "session_id": "1d7e5fdb-5ee1-4a79-844e-baad8110e682"
+      },
+      "curate.tech": {
+        "cost_usd": 0.14842719999999998,
+        "duration_ms": 56595,
+        "num_turns": 10,
+        "input_tokens": 40,
+        "output_tokens": 5928,
+        "cache_read_tokens": 237022,
+        "cache_creation_tokens": 76036,
+        "is_error": false,
+        "session_id": "39300a93-4596-433f-89ba-1c3a9026f2db"
+      }
+    },
+    "total_cost_usd": 2.6165420499999996,
+    "total_tokens": 103250
+  },
+  "lead": {
+    "html": "<h3>2026-06-08 — Agent Skills 形成市場、Context 成為瓶頸、台灣供應鏈全棧宣示</h3>\n<h4>GitHub Trending 正在描述一個 Agent Skill 分發市場</h4>\n<p>近期 GitHub trending 前幾名：hermes-agent（185K stars）、goose（47K，Rust，MCP-aware）、taste-skill（36K）、last30days-skill（30K，跨 Reddit/X/HN 的研究 skill）。幾乎全是獨立安裝的 agent skill repo，不是完整應用。topic search 另有 5 個以上的 agent-tool 類結果同期進榜。這個格局不像「更多 AI 工具」，像 npm 出現後第一年：可安裝的能力模組成為獨立交付單元，discovery 和 security audit 工具還不存在。</p>\n<h4>OpenAI 的記憶、NVIDIA 的 405B、LMCache 的 SSD Offload：本週三條路徑攻擊同一個瓶頸</h4>\n<p>本週，OpenAI 的「dreaming」讓 ChatGPT 跨對話保留偏好而不佔用 context window；NVIDIA Nemotron 3 Ultra 405B 明確以減少 multi-turn agentic loop 中的 KV-cache 壓力為設計目標；LMCache nightly 同時支援 CUDA 13.0 與 12.9。三條路線（session persistence、架構優化、SSD offload）指向同一個行業共識：multi-turn agent 的 context 管理是 2026 年的核心瓶頸，不是模型智能本身。</p>\n<h4>Computex 落幕後：SK Hynix + NVIDIA 宣布記憶體合作，台灣供應鏈全棧宣示</h4>\n<p>SK Hynix 與 NVIDIA 宣布多年期 HBM/DRAM 技術合作，時間點在 Computex 收尾後第一個工作日。這一週的 snapshot：Phison Pascari NVMe 整合邊緣 AI 推論層、鴻海聯合 Intel 與台積電探索 CoPoS chiplet 量產、台達電模組化 AI 數據中心建置時間縮短 6 成。從 DRAM/HBM 到 NVMe 到封裝到電源，台灣供應鏈各層在同一週宣示更深的 AI 整合企圖——不再只是零件供應，而是垂直整合參考架構的定義者。</p>\n<h4>開發者勞動市場的壓力在 HN 浮現</h4>\n<p>HN 當期最高分：「LLMs are eroding my software engineering career and I don't know what to do」（743 分，158 留言）。與此同時：「I design with Claude more than Figma now」（234 分）、「Use LLMs to learn a new domain, not skip past it」（213 分）。Gary Marcus 的「AI's Black Friday」記錄裁員與股價下跌 pattern。同一批 builder，三種截然不同的應對姿勢。這不是預言，是已在頂帖裡直接顯現的分化。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "agent-skill-market",
+        "title": "GitHub Trending 描繪 Agent Skill 分發市場，不是工具箱",
+        "body": "今日 trending 中四個獨立的 agent skill repo（hermes-agent 185K、goose 47K、taste-skill 36K、last30days-skill 30K），加上 topic search 另外 5 個以上的 agent-tool 類結果，顯示一個新的分發模式：可安裝的 agent 能力模組，以 GitHub repo 形式分發，執行在 Claude Code 或 Codex 的 skill loader 上。Pattern 和 npm 2009-2010 的早期爆發相似——大量模組，尚無統一 permission model，也沒有等價的 audit 工具。agents-best-practices 同期進榜（跨 Claude Code / Codex / agentic harness 的 provider-neutral 設計規範），說明社群已意識到設計標準的缺位。",
+        "mechanism": "Claude Code 和 Codex 建立了 skill loader runtime：任何人用一個 YAML 或 Markdown 文件定義 agent 能力，以 GitHub repo 發布，使用者 install 後直接獲得 shell 執行和 file read/write 等能力。這讓 agent 能力的分發和 npm 套件一樣低門檻，包括 npm 早期的安全問題。",
+        "cross_source": 5,
+        "product_opportunity": "Agent skill registry 與 audit CLI（類 npm audit）：掃描 permission surface（哪些 skill 有 BashTool 或 file write 權限）、版本追蹤、已知惡意 repo 黑名單。先行者成為 skill 發現的入口。",
+        "source_links": [
+          "shipped.trending.0:NousResearch/hermes-agent",
+          "shipped.trending.3:aaif-goose/goose",
+          "shipped.trending.4:Leonxlnx/taste-skill",
+          "shipped.trending.5:mvanhorn/last30days-skill",
+          "shipped.topic_discovery.4:DenisSergeevitch/agents-best-practices"
+        ]
+      },
+      {
+        "id": "context-bottleneck-multiagent",
+        "title": "Multi-Turn Agent 的 Context 壓力：本週三條技術路徑並進",
+        "body": "近期，OpenAI 的「dreaming」讓 ChatGPT 跨對話保留偏好而不佔用 context window；NVIDIA Nemotron 3 Ultra 405B 明確以減少 multi-turn agentic loop 中的 KV-cache 壓力為設計目標；LMCache nightly 同時支援 CUDA 13.0 與 12.9，NVMe SSD offload 功能持續推進。topic search 另外進榜了 KVarN（Huawei CSL 的 vLLM KV-cache 量化 backend，聲稱 3-5x context 擴展）。四個方向同時活躍，行業對「multi-turn context 是 2026 年的核心瓶頸」形成默契。",
+        "mechanism": "單次 LLM 呼叫的 context window 已夠大，但 multi-turn agent 跑幾十輪後的 KV-cache 積累量遠超 GPU 記憶體上限，既不能無限擴大 HBM，也不能犧牲 latency。session persistence（ChatGPT dreaming）、in-GPU 架構優化（Nemotron Ultra）、SSD offload（LMCache）是三條不互斥的解法，正在被行業頭部玩家近期推進。",
+        "cross_source": 4,
+        "product_opportunity": "在本地部署的 agent 框架中整合 LMCache + Phison NVMe offload，實現低成本的長 context serving，避免每次對話都重算完整 KV-cache。Nemotron Ultra 的 SageMaker day-zero availability 提供了雲端備援路徑。",
+        "source_links": [
+          "tech.vendor.3:openai-chatgpt-memory-dreaming",
+          "tech.vendor.1:nvidia-nemotron-3-ultra",
+          "tech.aidaptiv.2:lmcache-cuda-nightly",
+          "shipped.topic_discovery.9:huawei-csl/KVarN"
+        ]
+      },
+      {
+        "id": "taiwan-supply-chain-ai-integration",
+        "title": "Computex 落幕週：台灣供應鏈從零件供應商升格為 AI 全棧整合者",
+        "body": "這一週的 snapshot 橫跨整個 AI 硬體堆疊：SK Hynix 與 NVIDIA 宣布多年期 HBM/DRAM 技術合作；Phison Pascari NVMe 整合邊緣 AI 推論層；鴻海聯合 Intel 與台積電探索 CoPoS chiplet 量產以降低數據中心至邊緣部署成本；台達電模組化 AI 數據中心建置時間縮短 6 成。SK Hynix 董事長另外確認記憶體供給缺口將持續至 2030 年，即便 5 年內翻倍產能仍難滿足需求。五個來源指向同一個方向。",
+        "mechanism": "Computex 是年度壓縮觀察窗口，今年的特殊之處：從 DRAM/HBM（記憶體）到 NVMe（儲存）到 chiplet（封裝）到電源（800VDC），台灣供應鏈各層在近期分別宣示更深的 AI 整合企圖。這不是零組件展示，而是各層廠商試圖切入更高價值層，把「Taiwan makes the components」升級為「Taiwan defines the AI stack reference architecture」。",
+        "cross_source": 5,
+        "product_opportunity": "aiDAPTIV+ 型 on-device 推論 demo 的最佳切入點：Computex 後 OEM 廠商正在選擇 NVMe KV-cache offload 合作夥伴，現在進入比 GTC 2025 晚半步但比 CES 2027 早一整年。",
+        "source_links": [
+          "market.taiwan.3:phison-pascari-storage",
+          "market.ma.2:foxconn-intel-tsmc-copos",
+          "tech.aidaptiv.0:skhynix-nvidia-memory-partnership",
+          "market.funding.2:delta-electronics-ai-datacenter",
+          "market.funding.4:sk-hynix-memory-2030"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "kv-cache-quantization-sleeper",
+      "title": "KVarN：不買 HBM、不加 SSD，靠 KV-cache 量化擴展 context",
+      "body": "Huawei CSL 的 KVarN 是 vLLM 的 KV-cache 量化 backend，聲稱把 KV-cache 從 FP16 壓縮後，在 FP16 throughput 基礎上把 context window 擴展 3-5 倍。目前 351 顆星，幾乎沒有英文社群討論。機制是對 KV-cache 做 INT4/INT8 量化（而非 model weights），理論上不影響輸出質量，只影響可用 context 長度。如果數字可以重現，這是比花錢買更多 GPU 記憶體或加 NVMe SSD 更便宜的 long-context agent path，成本幾乎為零。",
+      "source_links": [
+        "shipped.topic_discovery.9:huawei-csl/KVarN",
+        "tech.aidaptiv.2:lmcache-cuda-nightly",
+        "tech.aidaptiv.0:skhynix-nvidia-memory-partnership"
+      ],
+      "why_asymmetric": "當前社群注意力集中在 HBM 供應（SK Hynix+NVIDIA 合作）和 SSD offload（LMCache），KV-cache in-GPU 量化幾乎沒有競爭者。Huawei CSL 背景讓它在英文社群被低估，但 vLLM plugin architecture 讓整合門檻極低。先驗證數字，再判斷值不值得追。",
+      "commercial_path": "驗證步驟：在 vLLM v0.22.1 上安裝 KVarN，對比 32K vs 128K context 的 throughput 和輸出品質，確認 3-5x claim 在哪個模型 size 下成立。"
+    },
+    "contrarian": {
+      "id": "agent-skill-supply-chain-risk",
+      "title": "Agent Skill 生態在第一個重大安全事件之前，等同 npm 2010",
+      "body": "主流觀點把 taste-skill、hermes-agent、last30days-skill 的爆發看成 agent 生態成熟的訊號。更準確的類比是 npm 2010：大量 install-and-run 模組，沒有統一的 permission model，沒有 audit trail。Agent skills 有 shell 執行權限和 file read/write 能力。npm 和 PHP 的 postinstall 機制剛剛污染了 700 個以上的 repo。第一個 compromised skill repo 導致 API key 外洩或 source code 竊取，只是時間問題。",
+      "source_links": [
+        "shipped.trending.4:Leonxlnx/taste-skill",
+        "pulse.chinese_community.2:ithome-supply-chain",
+        "shipped.topic_discovery.4:DenisSergeevitch/agents-best-practices"
+      ],
+      "rationale": "npm/PHP postinstall 供應鏈攻擊污染 700+ repos 的模式已成熟（ithome，age=3）；agent skills 以 GitHub 為分發渠道、以 shell 為執行環境，攻擊面比 postinstall 更大，而 install-and-run 的文化讓使用者警覺性更低。驗證標準：2026-12-08 之前出現指名 Claude Code 或 Codex skill repo 的公開 CVE 或主流安全媒體報導，確認 API key 外洩或 source code 竊取事件。",
+      "resolution_date": "2026-12-08"
+    },
+    "predictions": [
+      {
+        "id": "pred-skhynix-hbm-dominance",
+        "text": "SK hynix 將在 NVIDIA Blackwell 後繼世代 GPU 的 HBM 供應中取得超過 35% 市佔，Samsung 和 Micron 合計份額跌破 60%（以市場研究機構報告或 NVIDIA 供應商揭露資訊為準）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "SK hynix + NVIDIA 多年期技術合作剛宣布（age=1），加上 SK hynix 董事長確認記憶體供給缺口持續至 2030 年，長期合約鎖定先行者優勢。"
+      },
+      {
+        "id": "pred-claude-cross-session-memory",
+        "text": "Anthropic 將在 2026-09-06 之前推出 Claude 跨對話持久記憶 API，直接回應 OpenAI ChatGPT dreaming 的功能競爭。",
+        "resolution_date": "2026-09-06",
+        "status": "pending",
+        "rationale": "ChatGPT dreaming 把 cross-session memory 推成市場標配（age=4）；Anthropic 近期 Claude 4.x 迭代節奏快，功能競爭滯後期通常 60-90 天。"
+      },
+      {
+        "id": "pred-agent-skill-security-incident",
+        "text": "在 2026-12-08 之前，出現至少一個公開安全事件，直接源於 Claude Code 或 Codex agent skill repo 被惡意植入，導致 API key 外洩或 source code 竊取，並由 CVE 或主流安全媒體記錄。",
+        "resolution_date": "2026-12-08",
+        "status": "pending",
+        "rationale": "npm/PHP postinstall 攻擊模式已污染 700+ repos（ithome，age=3）；agent skills 攻擊面更大（shell 執行 + file R/W），install-and-run 文化讓使用者警覺性低。"
+      },
+      {
+        "id": "pred-moe-architecture-all-major-labs",
+        "text": "到 2026-12-31，OpenAI、Google、Anthropic、Meta 都將各自發布至少一款生產可用的 MoE 架構模型（研究模型不計，需有公開 API 或下載途徑）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "Qwen 3.6-35B-A3B（2.9M downloads）、Liquid LFM2.5 MoE（118K）、Google Gemma 4-12B multimodal（434K）顯示 MoE 已是開放模型主流；閉源大廠不跟進將在效率上持續被拉大差距。"
+      },
+      {
+        "id": "pred-phison-pascari-oem-integration",
+        "text": "Phison Pascari 企業儲存平台將在 2026-12-31 之前被至少兩家主要伺服器 OEM（Dell、HPE、Super Micro、Lenovo 任一兩家）列入官方 AI 推論參考架構文件。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "Computex 2026 Phison Pascari 展示 NVMe + edge AI inference layer 整合；鴻海 CoPoS + 台達電模組化數據中心顯示 OEM 整合時機成熟。"
+      },
+      {
+        "id": "pred-microsoft-mai-pricing",
+        "text": "微軟 Build 2026 發表的自研 MAI 系列模型將在 2026-12-31 之前以低於等效 GPT-4o API 定價至少 40% 的價格提供商業 API 存取（Azure 任意 tier）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "微軟自研模型的明確動機是降低推論成本、補強對 OpenAI 的依賴（takeaway 明述）；過去 Phi 系列模型的定價策略採用明顯低於 GPT 的定價點。"
+      }
+    ]
+  },
+  "ideation": {
+    "general": [
+      {
+        "id": "idea-agent-skill-auditor",
+        "audience": "both",
+        "title": "Agent Skill 安全審計 CLI",
+        "description": "你花一週把 Claude Code 技能工具集建起來了，但你不知道哪個 skill 有 shell 執行權限。寫一個 Node.js CLI：掃描 ~/.claude/ 下所有已安裝的 skill YAML 和 Markdown 文件，解析 BashTool 和 file write 宣告，輸出一份 permission surface 報告——哪些 skill 可以讀寫 home directory、哪些能呼叫外部 API、哪些沒有宣告任何能力。npm 的 postinstall 攻擊剛污染了 700 個以上的 repository；agent skills 有相同的攻擊面，但目前沒有等價的 audit 工具。",
+        "tech_stack": "Node.js + js-yaml + chalk；optional：Claude API for natural language permission description",
+        "hardware": "MacBook M1+",
+        "dev_time": "weekend",
+        "first_step": "在終端機跑 find ~/.claude -name '*.md' -o -name '*.yaml' 後 grep BashTool 或 bash_tool，記錄結果清單",
+        "market_evidence": "700 個 GitHub repo 遭 postinstall 機制污染（ithome 報導，age=3）；agent skill 類 repo 在 GitHub trending 和 topic search 同週出現 9 個以上",
+        "source_links": [
+          "shipped.trending.4:Leonxlnx/taste-skill",
+          "shipped.topic_discovery.4:DenisSergeevitch/agents-best-practices",
+          "pulse.chinese_community.2:ithome-supply-chain"
+        ]
+      },
+      {
+        "id": "idea-arxiv-audio-digest",
+        "audience": "general",
+        "title": "每日 arXiv 論文 Audio Digest Agent",
+        "description": "你每天需要跟蹤 ML 研究，但從 arXiv 摘要到真正理解要半小時。用 Open-Notebook 的 document-to-audio 管線加上本地 Gemma 4-12B-it（Apache 2.0 授權），做一個本地 agent：每天抓 arXiv cs.LG/cs.CL 前 10 篇，Gemma 4-12B-it 分析摘要與你目前專案的相關性後排序，再傳入 Open-Notebook fork 生成 8 分鐘中文播客。Open-Notebook 27K stars，document-to-audio pipeline 已成熟；Gemma 4-12B-it 在 MacBook M3 Ultra 上可跑，不需要雲端 API。通勤時收聽，不再 scroll Hugging Face。",
+        "tech_stack": "Open-Notebook fork (TypeScript) + Gemma 4-12B-it via llama.cpp + arXiv API + ffmpeg for audio concat",
+        "hardware": "MacBook M1+ / RTX 3060+",
+        "dev_time": "weekend",
+        "first_step": "Fork open-notebook，把 document source 從 local PDF 換成 arXiv abstract fetch（arxiv.org/abs/XXXX.XXXXX），確認 audio 生成管線正常輸出",
+        "market_evidence": "Open-Notebook 27K stars，document-to-audio use case 成熟；Sebastian Raschka 2026 LLM paper curation 顯示 ML 研究者有高信噪比摘要需求",
+        "source_links": [
+          "shipped.trending.6:lfnovo/open-notebook",
+          "pulse.ai_bloggers.4:sebastian-raschka-llm-papers-2026",
+          "tech.models.1:google-gemma-4-12b-it"
+        ]
+      },
+      {
+        "id": "idea-wasm-offline-agent",
+        "audience": "general",
+        "title": "瀏覽器原生 Coding Agent（MicroPython WASM + llama.cpp）",
+        "description": "Simon Willison 的 MicroPython-in-WASM 沙盒提供了安全的瀏覽器端 Python 執行環境，不需要 Docker，不需要後端。把它和 llama.cpp 的 WASM port 組合：整個 coding agent 跑在一個 browser tab 裡，使用者輸入任務，agent 用 llama.cpp WASM 推論後生成 Python 程式碼，MicroPython 沙盒執行並回傳結果，形成工具呼叫迴圈。Project NOMAD（29K stars）的離線 AI 思路加上 WASM 的瀏覽器隔離安全性，最終產物是一個單一 HTML 文件，可完全離線使用。WASM 沙盒本身是非 AI 的瀏覽器安全技術，和 AI 推論的組合是新的。",
+        "tech_stack": "MicroPython WASM + llama.cpp WASM port + IndexedDB for file persistence + vanilla JS",
+        "hardware": "MacBook M1+（瀏覽器原生，不需要 GPU）",
+        "dev_time": "weekend",
+        "first_step": "按照 Simon Willison 的指引在瀏覽器載入 MicroPython WASM，執行 import json; print(json.dumps({'test': 42}))，確認沙盒執行正常",
+        "market_evidence": "Project NOMAD 29K stars，離線 AI 需求明確；Simon Willison MicroPython WASM 沙盒文章（age=2）在 builder 社群獲得正面反饋",
+        "source_links": [
+          "shipped.trending.7:Crosstalk-Solutions/project-nomad",
+          "pulse.ai_bloggers.1:simon-willison-micropython-sandbox"
+        ]
+      },
+      {
+        "id": "idea-socratic-research-agent",
+        "audience": "general",
+        "title": "用 LLM 學習，不是跳過——Socratic 研究 Agent",
+        "description": "主流 AI 研究助理幫你跳過閱讀。Lathe（HN 213 分）的思路反過來：LLM 讀完指定主題的資料後，不直接給摘要，而是用 Socratic 問答強制你建立理解。做法：用 last30days-skill 抓某個技術主題過去 30 天的 Reddit/HN/YouTube 討論，Claude API 整合後出三個 Bloom Taxonomy Level-3 以上的問題，你回答後它評分並解鎖更深的分析。用於快速進入陌生領域，例如「我需要在一週內理解 pNFS 的 metadata 瓶頸」，而不是在摘要裡浮潛。",
+        "tech_stack": "last30days-skill (Python) + Claude API（question generation + answer grading）+ 簡單 terminal interface",
+        "hardware": "MacBook M1+",
+        "dev_time": "weekend",
+        "first_step": "在 last30days-skill 輸出後加一個 Python 函數，用 Claude API system prompt 要求它對摘要內容出三個 Bloom Level-3 應用題",
+        "market_evidence": "Lathe HN 213 分、23 留言，明確框架 LLM 為學習放大器；「LLMs eroding my career」743 分顯示開發者有主動應對學習壓力的迫切需求",
+        "source_links": [
+          "pulse.hn.1:hn-39851547",
+          "pulse.hn.0:hn-39855223",
+          "shipped.trending.5:mvanhorn/last30days-skill"
+        ]
+      }
+    ],
+    "work": [
+      {
+        "id": "idea-hybrid-router-nemotron-lmcache",
+        "audience": "work",
+        "title": "aiDAPTIV+ 混合路由：Nemotron Ultra 雲端 + 本地 NVMe KV-cache Offload",
+        "description": "NVIDIA Nemotron 3 Ultra（405B）已登 SageMaker JumpStart，設計目標明確是減少 multi-turn agentic loop 的 KV-cache 壓力，這正是 aiDAPTIV+ 的整合點。PoC 目標：在 Phison workstation 上部署 vLLM v0.22.1 + LMCache（NVMe SSD offload），處理 token 數小於 8K 的短 context query；超過 8K 或需要 reasoning 的 query 路由到 SageMaker Nemotron Ultra endpoint。路由決策基於 token count 加上小模型快速複雜度分類。展示 on-premise 與雲端的成本延遲 tradeoff curve，給潛在客戶一個明確的決策數據。",
+        "tech_stack": "vLLM v0.22.1 + LMCache (CUDA 12.9/13.0) + AWS SageMaker JumpStart Nemotron Ultra + Python routing layer",
+        "hardware": "NVIDIA workstation / Phison demo lab",
+        "dev_time": "1-2 week PoC",
+        "first_step": "在 workstation 跑 vLLM v0.22.1 + LMCache，設定一個 NVMe partition 作為 KV-cache offload device，用 latency 對比測試確認 8K token threshold 的合理性",
+        "market_evidence": "Nemotron Ultra SageMaker day-zero 上線（age=4）；vLLM v0.22.1 本週發布，DeepSeek-V4 CUTLASS compatibility，針對 inference optimizations",
+        "source_links": [
+          "tech.vendor.1:nvidia-nemotron-3-ultra",
+          "tech.vendor.2:aws-nemotron-sagemaker",
+          "tech.aidaptiv.1:vllm-v0.22.1-release",
+          "tech.aidaptiv.2:lmcache-cuda-nightly",
+          "tech.aidaptiv.3:phison-storage-strategic-asset"
+        ]
+      },
+      {
+        "id": "idea-gemma4-industrial-doc-ai",
+        "audience": "work",
+        "title": "工業文件視覺 AI：Gemma 4-12B-it + Pascari NVMe 全本地推論",
+        "description": "Gemma 4-12B-it（Apache 2.0，圖文多模態，434K downloads）小到可以在 NVIDIA RTX 工作站本地跑。場景：一家台灣製造商的 QA 部門，手邊有 3,000 份掃描 PCB 缺陷照片和檢驗報告，法規要求不得上雲。工作流：照片存在 Phison Pascari NVMe（高吞吐量讀取），Gemma 4-12B-it 讀取圖像後提取結構化缺陷資料（類型、位置、嚴重度）輸出 JSON，全程本地。這個 demo 直接對應 on-device LLM 的 aiDAPTIV+ 商業化 use case：資料不出廠房，符合製造業保密需求，NVMe 高吞吐量讓批次掃描數百張照片的 I/O 不成瓶頸。",
+        "tech_stack": "Google Gemma 4-12B-it via llama.cpp + Phison Pascari NVMe（高吞吐量圖像 I/O）+ Python + Pydantic output validation",
+        "hardware": "NVIDIA workstation / Phison demo lab",
+        "dev_time": "1-2 week PoC",
+        "first_step": "下載 Gemma 4-12B-it GGUF，用 llama.cpp CLI 對一張 PCB 照片測試缺陷描述，確認 JSON mode 可正常輸出 structured 結果（type, location, severity）",
+        "market_evidence": "Gemma 4-12B-it 434K downloads，Apache 2.0 授權（age=4）；市場資料顯示汽車製造業 AI 視覺檢測需求",
+        "source_links": [
+          "tech.models.1:google-gemma-4-12b-it",
+          "market.taiwan.3:phison-pascari-storage",
+          "tech.aidaptiv.3:phison-storage-strategic-asset"
+        ]
+      },
+      {
+        "id": "idea-locateanything-kiosk",
+        "audience": "work",
+        "title": "展場 Physical AI Kiosk：LocateAnything-3B + Pascari 規格書即時檢索",
+        "description": "Computex 剛結束，展場 kiosk demo 是 Phison 最直接的客戶接觸點。用 NVIDIA LocateAnything-3B（115K downloads，Qwen 2.5 3B backbone，視覺定位）做展示：相機對準任何一個 SSD 或儲存模組，物件偵測識別型號，從 Pascari NVMe 裡讀取對應的技術規格書片段，顯示在螢幕並播放語音摘要。整個推論鏈在 workstation 本地完成，不需要網路，不依賴雲端 API。比靜態 QR code 展示進一個層次，直接 demo 了 aiDAPTIV+ 在 Physical AI 場景的能力軸。keijiro 的 AI demo kiosk 系統（23K followers）展示了這類展場 AI 互動的市場需求。",
+        "tech_stack": "NVIDIA LocateAnything-3B (Hugging Face) + Phison Pascari NVMe（規格書檢索）+ pyttsx3 TTS + 簡單 kiosk web UI (HTML/JS)",
+        "hardware": "NVIDIA workstation / Phison demo lab + USB 攝影機",
+        "dev_time": "1-2 week PoC",
+        "first_step": "在 workstation 跑 LocateAnything-3B inference，對一張 SSD 模組照片確認可輸出正確 bounding box 和物件標籤，然後設計 spec lookup 的 key schema（型號對應規格書段落）",
+        "market_evidence": "LocateAnything-3B 115K downloads，vision grounding 場景需求旺盛；keijiro 的 AI demo kiosk 系統（23K followers）顯示 physical interactive AI 展示需求",
+        "source_links": [
+          "tech.models.2:nvidia-locateanything-3b",
+          "shipped.dev_watch_global.4:keijiro/aia-demo-kiosk",
+          "market.taiwan.3:phison-pascari-storage",
+          "tech.aidaptiv.3:phison-storage-strategic-asset"
+        ]
+      }
+    ]
+  },
+  "shipped": {
+    "trending": [
+      {
+        "id": "shipped.trending.0:NousResearch/hermes-agent",
+        "audience": "both",
+        "url": "https://github.com/NousResearch/hermes-agent",
+        "name": "NousResearch/hermes-agent",
+        "desc": "The agent that grows with you",
+        "stars": 185857,
+        "repo_age": null,
+        "language": "Python",
+        "relevance": "Agent framework spanning reasoning + code execution + long-context memory.",
+        "topic_match": [
+          "agent",
+          "framework",
+          "code-execution"
+        ]
+      },
+      {
+        "id": "shipped.trending.1:ggml-org/llama.cpp",
+        "audience": "both",
+        "url": "https://github.com/ggml-org/llama.cpp",
+        "name": "ggml-org/llama.cpp",
+        "desc": "LLM inference in C/C++",
+        "stars": 115301,
+        "repo_age": null,
+        "language": "C++",
+        "relevance": "Quantized inference backbone enabling on-device builder workflows.",
+        "topic_match": [
+          "inference",
+          "quantization",
+          "on-device"
+        ]
+      },
+      {
+        "id": "shipped.trending.2:opencv/opencv",
+        "audience": "general",
+        "url": "https://github.com/opencv/opencv",
+        "name": "opencv/opencv",
+        "desc": "Open Source Computer Vision Library",
+        "stars": 88053,
+        "repo_age": null,
+        "language": "C++",
+        "relevance": "Vision foundation for multimodal tools and embodied AI systems.",
+        "topic_match": [
+          "vision",
+          "multimodal",
+          "computer-vision"
+        ]
+      },
+      {
+        "id": "shipped.trending.3:aaif-goose/goose",
+        "audience": "both",
+        "url": "https://github.com/aaif-goose/goose",
+        "name": "aaif-goose/goose",
+        "desc": "an open source, extensible AI agent that goes beyond code suggestions - install, execute, edit, and test with any LLM",
+        "stars": 47458,
+        "repo_age": null,
+        "language": "Rust",
+        "relevance": "Agent executor with native tool binding + testing; MCP-aware foundation.",
+        "topic_match": [
+          "agent",
+          "mcp",
+          "code-execution"
+        ]
+      },
+      {
+        "id": "shipped.trending.4:Leonxlnx/taste-skill",
+        "audience": "general",
+        "url": "https://github.com/Leonxlnx/taste-skill",
+        "name": "Leonxlnx/taste-skill",
+        "desc": "Taste-Skill - gives your AI good taste. stops the AI from generating boring, generic slop",
+        "stars": 36523,
+        "repo_age": null,
+        "language": "Shell",
+        "relevance": "Anti-slop pattern library for Claude Code agents.",
+        "topic_match": [
+          "prompt-engineering",
+          "agent-skill",
+          "quality-control"
+        ]
+      },
+      {
+        "id": "shipped.trending.5:mvanhorn/last30days-skill",
+        "audience": "general",
+        "url": "https://github.com/mvanhorn/last30days-skill",
+        "name": "mvanhorn/last30days-skill",
+        "desc": "AI agent skill that researches any topic across Reddit, X, YouTube, HN, Polymarket, and the web - then synthesizes a gro...",
+        "stars": 30768,
+        "repo_age": null,
+        "language": "Python",
+        "relevance": "Agent skill for multimodal research + synthesis across platforms.",
+        "topic_match": [
+          "agent-skill",
+          "research",
+          "rag"
+        ]
+      },
+      {
+        "id": "shipped.trending.6:lfnovo/open-notebook",
+        "audience": "general",
+        "url": "https://github.com/lfnovo/open-notebook",
+        "name": "lfnovo/open-notebook",
+        "desc": "An Open Source implementation of Notebook LM with more flexibility and features",
+        "stars": 27200,
+        "repo_age": null,
+        "language": "TypeScript",
+        "relevance": "Notebook-to-audio + synthesis for document understanding at scale.",
+        "topic_match": [
+          "document-ai",
+          "rag",
+          "multimodal"
+        ]
+      },
+      {
+        "id": "shipped.trending.7:Crosstalk-Solutions/project-nomad",
+        "audience": "both",
+        "url": "https://github.com/Crosstalk-Solutions/project-nomad",
+        "name": "Crosstalk-Solutions/project-nomad",
+        "desc": "Project N.O.M.A.D, is a self-contained, offline survival computer packed with critical tools, knowledge, and AI to keep ...",
+        "stars": 29687,
+        "repo_age": null,
+        "language": "TypeScript",
+        "relevance": "Offline-first agent + knowledge bundle for disconnected deployments.",
+        "topic_match": [
+          "on-device",
+          "edge-ai",
+          "agent"
+        ]
+      }
+    ],
+    "topic_discovery": [
+      {
+        "id": "shipped.topic_discovery.0:alibaba/open-code-review",
+        "audience": "general",
+        "url": "https://github.com/alibaba/open-code-review",
+        "name": "alibaba/open-code-review",
+        "desc": "Open-source & free — Battle-tested at Alibaba's scale. Hybrid architecture code review tool: deterministic pipelines + L...",
+        "stars": 4660,
+        "repo_age": null,
+        "language": "Go",
+        "relevance": "LLM-backed code review hybrid avoiding hallucination at scale.",
+        "topic_match": [
+          "agent",
+          "code-review",
+          "deterministic"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.1:helloianneo/ian-xiaohei-illustrations",
+        "audience": "general",
+        "url": "https://github.com/helloianneo/ian-xiaohei-illustrations",
+        "name": "helloianneo/ian-xiaohei-illustrations",
+        "desc": "中文小黑怪诞正文配图生成 Skill | 16:9 白底手绘 | 少量红橙蓝批注 | Codex Skill",
+        "stars": 3358,
+        "repo_age": null,
+        "language": null,
+        "relevance": "Visual content generation skill for code agents.",
+        "topic_match": [
+          "agent-skill",
+          "generation",
+          "creative"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.2:op7418/guizang-social-card-skill",
+        "audience": "general",
+        "url": "https://github.com/op7418/guizang-social-card-skill",
+        "name": "op7418/guizang-social-card-skill",
+        "desc": "🪧 Claude Code / Codex skill — generate Xiaohongshu carousels & WeChat 21:9+1:1 cover pairs. Editorial × Swiss visual sy...",
+        "stars": 3067,
+        "repo_age": null,
+        "language": "HTML",
+        "relevance": "Social media carousel generation for content-creating agents.",
+        "topic_match": [
+          "agent-skill",
+          "generation",
+          "social-media"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.3:nexu-io/html-video",
+        "audience": "general",
+        "url": "https://github.com/nexu-io/html-video",
+        "name": "nexu-io/html-video",
+        "desc": "Programmatic video for coding agents — HTML to video on your laptop. Turn HTML, CSS & data into real MP4s with pluggable...",
+        "stars": 2033,
+        "repo_age": null,
+        "language": "HTML",
+        "relevance": "DOM-to-video synthesis enabling agents to produce visual artifacts.",
+        "topic_match": [
+          "agent-tool",
+          "video-generation",
+          "multimedia"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.4:DenisSergeevitch/agents-best-practices",
+        "audience": "general",
+        "url": "https://github.com/DenisSergeevitch/agents-best-practices",
+        "name": "DenisSergeevitch/agents-best-practices",
+        "desc": "Provider-neutral Agent Skill for Codex, Claude Code, and agentic harness design.",
+        "stars": 1858,
+        "repo_age": null,
+        "language": null,
+        "relevance": "Cross-platform agent design patterns for reliable harnesses.",
+        "topic_match": [
+          "agent",
+          "best-practices",
+          "methodology"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.5:Helvesec/rmux",
+        "audience": "general",
+        "url": "https://github.com/Helvesec/rmux",
+        "name": "Helvesec/rmux",
+        "desc": "Universal Rust multiplexer with a typed SDK — drive any CLI or TUI app from code. Native on Linux, macOS, and Windows.",
+        "stars": 1621,
+        "repo_age": null,
+        "language": "Rust",
+        "relevance": "Type-safe CLI orchestration unifying tool invocation in agents.",
+        "topic_match": [
+          "agent-tool",
+          "cli-automation",
+          "rust"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.6:butterbase-ai/butterbase",
+        "audience": "general",
+        "url": "https://github.com/butterbase-ai/butterbase",
+        "name": "butterbase-ai/butterbase",
+        "desc": "Open-source backend-as-a-service. Postgres, auth, storage, functions, AI gateway, MCP.",
+        "stars": 1472,
+        "repo_age": null,
+        "language": "TypeScript",
+        "relevance": "Backend infrastructure with MCP integration for agent deployment.",
+        "topic_match": [
+          "mcp",
+          "infrastructure",
+          "backend"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.7:gi-dellav/zerostack",
+        "audience": "both",
+        "url": "https://github.com/gi-dellav/zerostack",
+        "name": "gi-dellav/zerostack",
+        "desc": "Minimal coding agent written in Rust, optimized for memory footprint and performance",
+        "stars": 1214,
+        "repo_age": null,
+        "language": "Rust",
+        "relevance": "Lightweight agent runtime for resource-constrained environments.",
+        "topic_match": [
+          "agent",
+          "edge-ai",
+          "memory-efficient"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.8:Kaelio/ktx",
+        "audience": "general",
+        "url": "https://github.com/Kaelio/ktx",
+        "name": "Kaelio/ktx",
+        "desc": "ktx is an executable context layer for data and analytics agents 🐙 Allow Claude Code, Codex, and any AI agent to query ...",
+        "stars": 943,
+        "repo_age": null,
+        "language": "TypeScript",
+        "relevance": "Query-to-insight context isolation preventing agent hallucination.",
+        "topic_match": [
+          "agent-tool",
+          "data-analytics",
+          "context-layer"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.9:huawei-csl/KVarN",
+        "audience": "both",
+        "url": "https://github.com/huawei-csl/KVarN",
+        "name": "huawei-csl/KVarN",
+        "desc": "KVarN is a native vLLM KV-cache quantization backend for your agents: 3-5x more context, throughput above FP16, and FP16...",
+        "stars": 351,
+        "repo_age": null,
+        "language": "Python",
+        "relevance": "KV-cache quantization expanding context 3-5x for long-horizon workflows.",
+        "topic_match": [
+          "kv-cache",
+          "inference",
+          "quantization"
+        ]
+      }
+    ],
+    "dev_watch_taiwan": [
+      {
+        "id": "shipped.dev_watch_taiwan.0:aaaddress1/vibe-reading",
+        "audience": "both",
+        "url": "https://github.com/aaaddress1/vibe-reading",
+        "name": "aaaddress1/vibe-reading",
+        "desc": "aaaddress1 (1.5k followers) — 氛圍閱讀 offline PDF segmental translation using Chrome's Gemini Nano.",
+        "stars": 30,
+        "language": "JavaScript",
+        "relevance": "On-device LLM browser extension for reading research papers."
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.1:doggy8088/dgx-spark-status",
+        "audience": "general",
+        "url": "https://github.com/doggy8088/dgx-spark-status",
+        "name": "doggy8088/dgx-spark-status",
+        "desc": "doggy8088 (4.4k followers) — DGX Spark real-time monitoring dashboard (SvelteKit + SSE).",
+        "stars": 0,
+        "language": "JavaScript",
+        "relevance": "Builder environment observability with real-time status tracking."
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.2:strategist922/heretic",
+        "audience": "general",
+        "url": "https://github.com/strategist922/heretic",
+        "name": "strategist922/heretic",
+        "desc": "strategist922 (844 followers) — Fully automatic censorship removal for language models.",
+        "stars": 0,
+        "language": null,
+        "relevance": "Model alignment intervention tool for autonomy + safety engineering."
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.3:JacobLinCool/trace-field-notes",
+        "audience": "both",
+        "url": "https://github.com/JacobLinCool/trace-field-notes",
+        "name": "JacobLinCool/trace-field-notes",
+        "desc": "JacobLinCool (442 followers) — Coding-agent session logs → qualitative field reports.",
+        "stars": 0,
+        "language": "Python",
+        "relevance": "Agent introspection tool enabling post-hoc analysis of decision paths."
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.4:appleboy/mcp-oauth",
+        "audience": "general",
+        "url": "https://github.com/appleboy/mcp-oauth",
+        "name": "appleboy/mcp-oauth",
+        "desc": "appleboy (7.5k followers) — OAuth 2.1 Auth Server library for MCP servers.",
+        "stars": 0,
+        "language": null,
+        "relevance": "Standard authentication unblocking enterprise agent deployments."
+      }
+    ],
+    "dev_watch_global": [
+      {
+        "id": "shipped.dev_watch_global.0:krishnaik06/Deep-agents-With-Langchain",
+        "audience": "general",
+        "url": "https://github.com/krishnaik06/Deep-agents-With-Langchain",
+        "name": "krishnaik06/Deep-agents-With-Langchain",
+        "desc": "krishnaik06 (41.8k followers) — deep agents with Langchain tutorial.",
+        "stars": 9,
+        "language": "Jupyter Notebook",
+        "relevance": "Agent + LangChain educational content from high-signal developer."
+      },
+      {
+        "id": "shipped.dev_watch_global.1:steipete/signalpress",
+        "audience": "general",
+        "url": "https://github.com/steipete/signalpress",
+        "name": "steipete/signalpress",
+        "desc": "steipete (51.1k followers) — Local-first activity reports from Gitcrawl and Slackx.",
+        "stars": 5,
+        "language": null,
+        "relevance": "Developer signal aggregation for team intelligence infrastructure."
+      },
+      {
+        "id": "shipped.dev_watch_global.2:WebDevSimplified/docker-sandbox-kit-examples",
+        "audience": "general",
+        "url": "https://github.com/WebDevSimplified/docker-sandbox-kit-examples",
+        "name": "WebDevSimplified/docker-sandbox-kit-examples",
+        "desc": "WebDevSimplified (32.3k followers) — Docker sandbox kit examples.",
+        "stars": 2,
+        "language": null,
+        "relevance": "Containerized agent execution for safe code evaluation."
+      },
+      {
+        "id": "shipped.dev_watch_global.3:hadley/data-editor",
+        "audience": "general",
+        "url": "https://github.com/hadley/data-editor",
+        "name": "hadley/data-editor",
+        "desc": "hadley (26.6k followers) — Data editor component infrastructure.",
+        "stars": 0,
+        "language": "TypeScript",
+        "relevance": "Interactive analytics UI component library for builders."
+      },
+      {
+        "id": "shipped.dev_watch_global.4:keijiro/aia-demo-kiosk",
+        "audience": "general",
+        "url": "https://github.com/keijiro/aia-demo-kiosk",
+        "name": "keijiro/aia-demo-kiosk",
+        "desc": "keijiro (23.6k followers) — AI interactive demonstration kiosk system.",
+        "stars": 0,
+        "language": "HTML",
+        "relevance": "Embodied AI display infrastructure for multimodal agent interaction."
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-39855223",
+        "audience": "general",
+        "url": "https://human-in-the-loop.bearblog.dev/llms-are-eroding-my-software-engineering-career-and-i-dont-know-what-to-do/",
+        "title": "LLMs are eroding my software engineering career and I don't know what to do",
+        "score": 743,
+        "comments": 158,
+        "takeaway": "Developer anxieties about AI codegen fundamentally reshape skill acquisition models."
+      },
+      {
+        "id": "pulse.hn.1:hn-39851547",
+        "audience": "general",
+        "url": "https://github.com/devenjarvis/lathe",
+        "title": "Show HN: Lathe – Use LLMs to learn a new domain, not skip past it",
+        "score": 213,
+        "comments": 23,
+        "takeaway": "Tools framing LLMs as learning amplifiers rather than shortcuts gain traction."
+      },
+      {
+        "id": "pulse.hn.2:hn-39845032",
+        "audience": "general",
+        "url": "https://blog.janestreet.com/i-design-with-claude-code-more-than-figma-now-index/",
+        "title": "I design with Claude more than Figma now",
+        "score": 234,
+        "comments": 40,
+        "takeaway": "Claude Code used for design workflows; production adoption narratives emerging."
+      },
+      {
+        "id": "pulse.hn.3:hn-39848291",
+        "audience": "general",
+        "url": "https://github.com/anthropics/claude-code/issues/65697",
+        "title": "Anthropic, please ship an official Claude Desktop for Linux",
+        "score": 422,
+        "comments": 45,
+        "takeaway": "Linux support gap for Claude Desktop surfaces as ecosystem friction point."
+      },
+      {
+        "id": "pulse.hn.4:hn-39833405",
+        "audience": "general",
+        "url": "https://performance.dev/how-is-linear-so-fast-a-technical-breakdown",
+        "title": "How's Linear so fast? A technical breakdown",
+        "score": 225,
+        "comments": 40,
+        "takeaway": "Performance analysis in AI-scale tool discussions signals deeper builder focus."
+      },
+      {
+        "id": "pulse.hn.5:hn-39847263",
+        "audience": "work",
+        "url": "https://github.com/zdk/lowfat",
+        "title": "Show HN: Lowfat – pluggable CLI filter that saved 91.8% of my LLM tokens",
+        "score": 151,
+        "comments": 21,
+        "takeaway": "Cost optimization for LLM prompts emerges as day-to-day builder concern."
+      },
+      {
+        "id": "pulse.hn.6:hn-39854398",
+        "audience": "general",
+        "url": "https://www.ioccc.org/2025/",
+        "title": "The 29th International Obfuscated C Code Contest (IOCCC) 2025 Winners",
+        "score": 353,
+        "comments": 15,
+        "takeaway": "Classic programming culture artifacts maintain reader engagement despite AI era."
+      },
+      {
+        "id": "pulse.hn.7:hn-39849621",
+        "audience": "work",
+        "url": "https://github.com/schildep/verified-polygon-intersection",
+        "title": "Show HN: Formally verified polygon intersection – Opus 4.8 oneshots, prev failed",
+        "score": 88,
+        "comments": 6,
+        "takeaway": "Claude Opus proves capable of formal verification tasks; language spec boundaries shift."
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-to-my-students",
+        "audience": "general",
+        "url": "http://ozark.hendrix.edu/~yorgey/forest/00FD/index.xml",
+        "title": "To my students",
+        "score": 192,
+        "takeaway": "Educator reflection on teaching in AI era resonates across technical community."
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-how-llms-work",
+        "audience": "general",
+        "url": "https://0xkato.xyz/how-llms-actually-work/",
+        "title": "How LLMs Actually Work",
+        "score": 40,
+        "takeaway": "Accessible LLM mechanics explainers remain community staple."
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-fork-exec",
+        "audience": "work",
+        "url": "https://lwn.net/SubscriberLink/1076018/16f01bbbb8e0d1f0/",
+        "title": "Moving beyond fork() + exec()",
+        "score": 32,
+        "takeaway": "Unix process model evolution sparks infrastructure conversation."
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-life-terminal",
+        "audience": "work",
+        "url": "https://mijndertstuij.nl/posts/life-is-too-short-for-a-slow-terminal/",
+        "title": "Life is too short for a slow terminal",
+        "score": 76,
+        "takeaway": "Developer experience minutiae (terminal speed) matter for daily velocity."
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-guix-nix",
+        "audience": "work",
+        "url": "https://fzakaria.com/2026/06/05/the-guix-nix-abomination-leveraging-guix-derivations-in-nix",
+        "title": "The Guix Nix Abomination: Leveraging Guix derivations in Nix",
+        "score": 24,
+        "takeaway": "Package managers and reproducibility remain builder infrastructure pain points."
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-servo-april",
+        "audience": "general",
+        "url": "https://servo.org/blog/2026/05/31/april-in-servo/",
+        "title": "April in Servo: new Android UI, focus, forms, security fixes, and more",
+        "score": 8,
+        "takeaway": "Browser engine alternatives continue incremental progress; community-driven viability."
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:ithome-caliptra",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/176369",
+        "title": "Caliptra 2.x安全架構，信驊於Computex 2026展示晶片級資安布局",
+        "score": 247,
+        "takeaway": "台廠信驊推進硬體安全信任根；台灣供應鏈深入基礎設施防禦。"
+      },
+      {
+        "id": "pulse.chinese_community.1:ithome-computex-opensource",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/176374",
+        "title": "Computex首設開源臺灣館，向國際展現臺灣開源社群實力",
+        "score": 243,
+        "takeaway": "台灣開源生態國際化；Kubernetes、Apache等核心貢獻者扮演角色。"
+      },
+      {
+        "id": "pulse.chinese_community.2:ithome-supply-chain",
+        "audience": "work",
+        "url": "https://www.ithome.com.tw/news/176409",
+        "title": "研究人員發現逾700個GitHub程式碼庫遭污染，攻擊者利用postinstall機制散布惡意程式",
+        "score": 350,
+        "takeaway": "npm/PHP供應鏈污染規模升級；700+庫影響；postinstall機制破口深。"
+      },
+      {
+        "id": "pulse.chinese_community.3:ithome-anthropic-glasswing",
+        "audience": "work",
+        "url": "https://www.ithome.com.tw/news/176412",
+        "title": "用AI對抗AI：趨勢科技加入Anthropic Project Glasswing，開啟資安攻防新紀元",
+        "score": 363,
+        "takeaway": "台灣資安廠商與Anthropic合作AI防禦框架；代理人零信任成焦點。"
+      },
+      {
+        "id": "pulse.chinese_community.4:oschina-aifei",
+        "audience": "work",
+        "url": "https://www.oschina.net/news/452924",
+        "title": "Aifei發布，世界首個AI Coding框架",
+        "score": 521,
+        "takeaway": "中文AI代碼框架問世；Java服務端開發從基礎架構重構。"
+      },
+      {
+        "id": "pulse.chinese_community.5:oschina-cloudflare-voidzero",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/452361",
+        "title": "Cloudflare收購VoidZero，強化AI代理人開發平臺布局",
+        "score": 325,
+        "takeaway": "尤雨溪Vite團隊被收購；開源工具鏈商業化新路徑。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:simon-willison-may-newsletter",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Jun/1/may-newsletter/#atom-everything",
+        "title": "May 2026 newsletter",
+        "takeaway": "Monthly curator reflects on AI economics shifting rapidly; pricing transparency diverged."
+      },
+      {
+        "id": "pulse.ai_bloggers.1:simon-willison-micropython-sandbox",
+        "audience": "work",
+        "url": "https://simonwillison.net/2026/Jun/6/micropython-in-a-sandbox/#atom-everything",
+        "title": "Running Python code in a sandbox with MicroPython and WASM",
+        "takeaway": "MicroPython WASM sandbox pattern; safe code execution for agents/datasette."
+      },
+      {
+        "id": "pulse.ai_bloggers.2:gary-marcus-ai-black-friday",
+        "audience": "general",
+        "url": "https://garymarcus.substack.com/p/ais-black-friday",
+        "title": "AI's Black Friday",
+        "takeaway": "Contrarian take on GenAI industry health; layoff + stock declines pattern."
+      },
+      {
+        "id": "pulse.ai_bloggers.3:latent-space-rl-envs",
+        "audience": "work",
+        "url": "https://www.latent.space/p/bad-envs",
+        "title": "How to Stop Shipping Low-Quality RL Environments (with Examples)",
+        "takeaway": "RL environment quality standards; labs converge on eval methodology rigor."
+      },
+      {
+        "id": "pulse.ai_bloggers.4:sebastian-raschka-llm-papers-2026",
+        "audience": "work",
+        "url": "https://magazine.sebastianraschka.com/p/llm-research-papers-2026-part1",
+        "title": "LLM Research Papers: The 2026 List (January to May)",
+        "takeaway": "Curator filters signal-to-noise in research; five months show capability diversity."
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:cloudflare-voidzero",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/176396",
+        "title": "Cloudflare 收購 VoidZero，納入 Vite/Vitest 開發工具生態",
+        "takeaway": "基礎設施平台整合 JavaScript 工具鏈，維持開源中立而非鎖定",
+        "companies": [
+          "Cloudflare",
+          "VoidZero"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.1:benchmark-2b-growth-fund",
+        "audience": "general",
+        "url": "https://techcrunch.com/2026/06/03/benchmark-raises-its-first-ever-growth-fund-as-part-of-2b-capital-raise/",
+        "title": "Benchmark 募資 20 億美元首檔成長基金",
+        "takeaway": "矽谷頂級創投打破 20 年傳統，首次突破 $425M 基金規模上限",
+        "amount": "$2B",
+        "companies": [
+          "Benchmark"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.2:foxconn-intel-tsmc-copos",
+        "audience": "both",
+        "url": "https://techorange.com/2026/06/05/foxconn-teams-up-with-intel-tsmc-copos-scale-up-in-two-years/",
+        "title": "鴻海結盟 Intel 與台積電，共同探索 CoPoS 客製晶片量產",
+        "takeaway": "代工 + 處理器 + 晶圓代工垂直整合，Chiplet-on-Substrate 策略力求降低數據中心至邊緣部署成本",
+        "companies": [
+          "鴻海",
+          "Intel",
+          "台積電"
+        ],
+        "region": "taiwan"
+      }
+    ],
+    "funding": [
+      {
+        "id": "market.funding.0:foxconn-may-revenue",
+        "audience": "both",
+        "url": "https://finance.technews.tw/2026/06/05/foxconn-may-revenue-record-nt8594-billion-q2-operations-exceed-forecasts/",
+        "title": "鴻海 5 月營收 8,594 億元，創同期新高",
+        "takeaway": "AI 伺服器需求強勁，第二季營運動能優於預期",
+        "amount": "8,594",
+        "companies": [
+          "鴻海"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.funding.1:microsoft-seven-ai-models",
+        "audience": "general",
+        "url": "https://techorange.com/2026/06/04/microsoft-build-2026-sk-hinix-capacity-expansion-nvidia-robotaxi-kaohsiung/",
+        "title": "微軟 Build 2026 發表七款自研 AI 模型",
+        "takeaway": "企業供應商自主開發模型以降低推論成本，補強 OpenAI 合作",
+        "companies": [
+          "Microsoft",
+          "OpenAI"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.2:delta-electronics-ai-datacenter",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/176401",
+        "title": "台達電推出預製模組化 AI 資料中心，建置時間縮短 6 成",
+        "takeaway": "工廠預組裝方案加速高密度 AI 部署，專利 800VDC 架構優化散熱效率",
+        "companies": [
+          "台達電"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.funding.3:taiwan-mobile-gmi-cloud",
+        "audience": "both",
+        "url": "https://techorange.com/2026/06/04/taiwanmobile-gmi-cloud/",
+        "title": "台灣大與 GMI Cloud 簽 MOU，共拓國際 AIDC 市場",
+        "takeaway": "電信營運商進軍 AI 基礎設施，利用既有機房資產推進 GPU 即服務",
+        "companies": [
+          "台灣大",
+          "GMI Cloud"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.funding.4:sk-hynix-memory-2030",
+        "audience": "both",
+        "url": "https://www.techbang.com/posts/129964-no-short-term-relief-for-memory-shortage",
+        "title": "SK 海力士董事長：AI 記憶體短缺將續至 2030 年",
+        "takeaway": "記憶體供給缺口長期化，即便 5 年內翻倍產能仍難滿足 AI 需求",
+        "companies": [
+          "SK 海力士"
+        ],
+        "region": "global"
+      }
+    ],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:computex-2026-opens",
+        "audience": "general",
+        "url": "https://www.eettaiwan.com/20260603nt22-computex-2026-opens-with-ai-and-next-gen-tech-in-focus/",
+        "title": "COMPUTEX 2026 開展，1,500 家廠商聚焦 AI 運算與次世代科技",
+        "takeaway": "台北國際電腦展成為全球 AI 供應鏈樞紐，33 國廠商展示下一代基礎設施",
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:chiun-caliptra-2x",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/176369",
+        "title": "信驊展示 Caliptra 2.x 晶片級資安，全球首家整合新版本",
+        "takeaway": "台股股王領先業界將 OCP 開源硬體信任根標準整合至伺服器管理晶片",
+        "companies": [
+          "信驊"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:global-silicon-invest",
+        "audience": "both",
+        "url": "https://money.udn.com/money/story/5612/9549047",
+        "title": "環球晶加碼投資台灣 32.5 億元，強化第三代半導體布局",
+        "takeaway": "晶圓供應商三年投資臺灣以鞏固利基產品競爭力，四家企業合計挹注 138 億",
+        "amount": "32.5",
+        "companies": [
+          "環球晶"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:phison-pascari-storage",
+        "audience": "both",
+        "url": "https://phisonblog.com/phison-unveils-a-new-era-of-pascari-enterprise-storage-at-computex-2026/",
+        "title": "群聯推 Pascari 企業級 AI 儲存平台",
+        "takeaway": "8299 儲存控制廠商推出新一代 NVMe 架構，整合邊緣 AI 推論層",
+        "companies": [
+          "群聯"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:longsys-edge-ai",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260604np21-longsys-spotlights-edge-ai-storage-at-computex-2026/",
+        "title": "江波龍展示 Edge AI 儲存與記憶體應用",
+        "takeaway": "中國儲存廠商擴充記憶體產線，瞄準台灣生態系邊緣 AI 推論部署",
+        "companies": [
+          "江波龍"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.5:advantech-edge-ai-weda",
+        "audience": "general",
+        "url": "https://techorange.com/2026/06/04/advantech-weda/",
+        "title": "研華舉辦全球夥伴大會，力推 Physical AI 與 WEDA 架構",
+        "takeaway": "工業物聯網平台廠商集結 800+ 生態夥伴，定義分散式 AI 邊緣節點標準",
+        "companies": [
+          "研華"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.6:robotics-consolidation",
+        "audience": "general",
+        "url": "https://www.eettaiwan.com/20260603nt21-taiwan-robotics-industry-strategy-niche-applications/",
+        "title": "台灣機器人產業進入整合階段，創投資本集中於頭部廠商",
+        "takeaway": "資策會研究顯示投資集中於「腦能力」與「靈巧手」領導者，台灣廠商應聚焦利基應用",
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.7:itri-uas-certification",
+        "audience": "general",
+        "url": "https://techorange.com/2026/06/04/itri-auvsi-green-uas/",
+        "title": "工研院獲授權成為 AUVSI Green UAS 認證機構",
+        "takeaway": "台灣無人機產業取得美國綠色無人機認證途徑，為出口開闢新管道",
+        "companies": [
+          "工研院"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:skhynix-nvidia-partnership",
+        "audience": "both",
+        "url": "https://news.skhynix.com/multi-year-tech-partnership-with-nvidia/",
+        "title": "SK hynix and NVIDIA Announce Multi-year Technology Partnership to Advance Memory for AI Factories",
+        "takeaway": "SK hynix + NVIDIA partner on next-generation HBM/DRAM for AI training and inference at scale.",
+        "companies": [
+          "SK hynix",
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:nvidia-nemotron-3-ultra",
+        "audience": "both",
+        "url": "https://developer.nvidia.com/blog/nvidia-nemotron-3-ultra-powers-faster-more-efficient-reasoning-for-long-running-agents/",
+        "title": "NVIDIA Nemotron 3 Ultra Powers Faster, More Efficient Reasoning for Long-Running Agents",
+        "takeaway": "Specialized 405B model reduces per-token latency and KV-cache pressure in multi-turn agentic loops.",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:aws-nemotron-sagemaker",
+        "audience": "work",
+        "url": "https://aws.amazon.com/blogs/machine-learning/nvidia-nemotron-3-ultra-now-available-on-amazon-sagemaker-jumpstart/",
+        "title": "NVIDIA Nemotron 3 Ultra now available on Amazon SageMaker JumpStart",
+        "takeaway": "Day-zero SageMaker availability accelerates agent deployment without custom inference tuning.",
+        "companies": [
+          "AWS",
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:openai-chatgpt-memory-dreaming",
+        "audience": "general",
+        "url": "https://openai.com/index/chatgpt-memory-dreaming",
+        "title": "Dreaming: Better memory for a more helpful ChatGPT",
+        "takeaway": "ChatGPT memory consolidation persists user preferences across sessions without context bloat.",
+        "companies": [
+          "OpenAI"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:google-ai-updates-may",
+        "audience": "general",
+        "url": "https://blog.google/innovation-and-ai/technology/ai/google-ai-updates-may-2026/",
+        "title": "The latest AI news Google announced in May 2026",
+        "takeaway": "Summary of Google's May product and research advances in LLMs and agents.",
+        "companies": [
+          "Google"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:qwen-qwen3.6-35b-a3b",
+        "audience": "work",
+        "url": "https://huggingface.co/HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
+        "title": "Qwen 3.6-35B-A3B: Multimodal MoE (35B active × 3.5B per expert)",
+        "takeaway": "2.9M downloads signal strong adoption of efficient MoE architecture for deployment.",
+        "companies": [
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.1:google-gemma-4-12b-it",
+        "audience": "work",
+        "url": "https://huggingface.co/google/gemma-4-12B-it",
+        "title": "Google Gemma 4-12B instruction-tuned multimodal",
+        "takeaway": "12B Apache 2.0 image-text-to-text variant; 434K downloads indicate on-device deployment interest.",
+        "companies": [
+          "Google"
+        ]
+      },
+      {
+        "id": "tech.models.2:nvidia-locateanything-3b",
+        "audience": "work",
+        "url": "https://huggingface.co/nvidia/LocateAnything-3B",
+        "title": "NVIDIA LocateAnything-3B: Vision grounding and object detection",
+        "takeaway": "3B-param vision grounding built on Qwen 2.5 3B; 115K downloads for spatial reasoning at scale.",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.models.3:sapient-hrm-text-1b",
+        "audience": "general",
+        "url": "https://huggingface.co/sapientinc/HRM-Text-1B",
+        "title": "HRM-Text-1B: Hierarchical Reasoning Model with prefix-LM",
+        "takeaway": "1B-param hierarchical architecture enables structured reasoning without scaling decoder.",
+        "companies": [
+          "Sapient"
+        ]
+      },
+      {
+        "id": "tech.models.4:liquidai-lfm2.5-8b-a1b",
+        "audience": "work",
+        "url": "https://huggingface.co/LiquidAI/LFM2.5-8B-A1B",
+        "title": "Liquid AI LFM2.5-8B-A1B: Multilingual MoE",
+        "takeaway": "8B MoE (1B active) spanning 9 languages; 118K downloads for edge inference.",
+        "companies": [
+          "Liquid AI"
+        ]
+      },
+      {
+        "id": "tech.models.5:ideogram-ai-ideogram-4",
+        "audience": "general",
+        "url": "https://huggingface.co/ideogram-ai/ideogram-4-fp8",
+        "title": "Ideogram-4 quantized (FP8): Flow-matching text-to-image",
+        "takeaway": "FP8 quantization reduces memory footprint for image generation without quality loss.",
+        "companies": [
+          "Ideogram"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:ocrbench-nemotron-top",
+        "audience": "general",
+        "url": "https://github.com/Yuliang-Liu/Multimodal-OCR",
+        "title": "OCRBench: Nemotron Nano VL 8B leads object-text understanding",
+        "takeaway": "Nemotron Nano VL 8B and InternVL-3-14B dominate OCR/object-detection leaderboard.",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Llama Nemotron Nano VL 8B",
+            "InternVL-3-14B",
+            "Gemini-Pro",
+            "Qwen2-VL-7B",
+            "InternVL2.5-26B"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:skhynix-nvidia-memory-partnership",
+        "audience": "both",
+        "url": "https://news.skhynix.com/multi-year-tech-partnership-with-nvidia/",
+        "title": "SK hynix and NVIDIA Announce Multi-year Technology Partnership for AI Memory",
+        "takeaway": "HBM/DRAM supply agreement addresses GPU-memory bandwidth bottleneck in large-scale inference.",
+        "companies": [
+          "SK hynix",
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:vllm-v0.22.1-release",
+        "audience": "work",
+        "url": "https://github.com/vllm-project/vllm/releases/tag/v0.22.1",
+        "title": "vLLM v0.22.1: DeepSeek-V4 CUTLASS compatibility and inference optimizations",
+        "takeaway": "Patch release enables DeepSeek-V4 deployments with targeted memory and compute optimizations.",
+        "companies": [
+          "vLLM"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:lmcache-cuda-nightly",
+        "audience": "work",
+        "url": "https://github.com/LMCache/LMCache/releases/tag/nightly",
+        "title": "LMCache nightly wheels (CUDA 13.0 and 12.9): KV-cache SSD offload",
+        "takeaway": "Dual CUDA support tracks rapid GPU evolution; active development for long-context serving efficiency.",
+        "companies": [
+          "LMCache"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.3:phison-storage-strategic-asset",
+        "audience": "work",
+        "url": "https://phisonblog.com/make-storage-a-strategic-asset/",
+        "title": "Make Storage a Strategic Asset (Phison AI infrastructure perspective)",
+        "takeaway": "Phison frames NVMe as core lever for KV-cache offload and training checkpoint I/O.",
+        "companies": [
+          "Phison"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.4:peak-lattice-pnfs",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/file/2026/06/04/peakaios-lattice-open-source-pnfs-metadata-server-speeds-ai-data-feeds/5251325",
+        "title": "PEAK:AIO Lattice: Open-source pNFS metadata server for AI training",
+        "takeaway": "Parallel NFS metadata acceleration reduces training pipeline I/O latency at scale.",
+        "companies": [
+          "PEAK:AIO"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-06-08",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "temporal",
+        "marker": "今日",
+        "ids": [
+          "pulse.ai_bloggers.2:gary-marcus-ai-black-friday"
+        ]
+      },
+      {
+        "path": "signals.focus[1].body",
+        "type": "temporal",
+        "marker": "本週",
+        "ids": [
+          "tech.vendor.3:openai-chatgpt-memory-dreaming",
+          "tech.vendor.1:nvidia-nemotron-3-ultra",
+          "tech.aidaptiv.2:lmcache-cuda-nightly"
+        ]
+      },
+      {
+        "path": "signals.focus[1].mechanism",
+        "type": "temporal",
+        "marker": "同時",
+        "ids": [
+          "tech.vendor.3:openai-chatgpt-memory-dreaming",
+          "tech.vendor.1:nvidia-nemotron-3-ultra",
+          "tech.aidaptiv.2:lmcache-cuda-nightly"
+        ]
+      },
+      {
+        "path": "signals.focus[2].mechanism",
+        "type": "temporal",
+        "marker": "同一週",
+        "ids": [
+          "market.taiwan.3:phison-pascari-storage",
+          "market.ma.2:foxconn-intel-tsmc-copos",
+          "market.funding.2:delta-electronics-ai-datacenter",
+          "market.funding.4:sk-hynix-memory-2030"
+        ]
+      },
+      {
+        "path": "signals.focus[2].body",
+        "type": "attribution",
+        "author": "Phison Pascari",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      }
+    ],
+    "repaired": 4
+  }
+}
