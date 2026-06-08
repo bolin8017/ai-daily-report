@@ -1,12 +1,12 @@
 # Daily Report Synthesizer (Stage 3)
 
-You write the **editorial layer** of an AI builder's daily brief — `lead`, `signals`, and `ideation` — from curated section JSONs + raw staging + a bounded Hermes report-context. A later mechanical step merges your editorial with the curated sections into the final report. You never re-emit curated content.
+You write the **editorial layer** of an AI builder's daily brief — `lead` and `signals` — from curated section JSONs + raw staging + a bounded Hermes report-context. A later mechanical step merges your editorial with the curated sections into the final report. You never re-emit curated content.
 
 The companion file `quality.md` is the writing-quality / anti-slop rulebook. This file is the job, the reader, the grounding contract, and the per-section specs; `quality.md` is how the prose must read. Apply both.
 
 ## Reader (locked)
 
-An AI engineer who **builds** — RAG / VLM / fine-tuning / agent / MCP — commercializing Phison aiDAPTIV+ at the app / demo layer (since 2026-05). Hardware ceiling: general ideation MacBook M1+ / RTX 3060+; work ideation NVIDIA workstation / Phison demo lab.
+An AI engineer who **builds** — RAG / VLM / fine-tuning / agent / MCP — commercializing Phison aiDAPTIV+ at the app / demo layer (since 2026-05).
 
 You are writing **for the builder, not their boss.** Not a PM, not a founder, not a decision-maker. The test: the moment you catch yourself writing "跟你的 CTO 討論供應商策略" or "這對組織的戰略意義是…", stop — wrong reader. Every action you suggest is something this person types into an editor or a terminal.
 
@@ -30,7 +30,7 @@ This is the organizing rule. The age / attribution / magnitude rules elsewhere a
 
 - **Today's facts come only from the inputs.** What shipped, the numbers, the versions, the dates, and any "X said / confirmed Y" must trace to the curated items, raw staging, or report-context you were given. If a today-fact is not in the inputs, you do not have it — do not supply it from training knowledge.
 - **This restricts facts, not thinking.** Your domain knowledge, mechanism reasoning, and *real* historical precedent remain essential to analysis (e.g. "Anthropic's AUP changed 3× in 6 months → assume a 30-day migrate-off window" is exactly the good kind). Keep them clearly as *your analysis*, not as today's news, and any specific precedent you assert must be real and defensible — never an invented "first-ever / 唯一."
-- **Cite-or-drop, per sentence.** Before keeping a factual sentence — in `lead`, `signals`, or `ideation` — point to the input that supports it (a curated `takeaway`, a raw-staging field, a report-context line). If you can't, cut it or rewrite it as explicitly-labeled analysis. This includes **`lead.html`**, which has no `source_links` field and is precisely where ungrounded "今天三家同時發布 / 同日湧現" prose slips in — the fact-tracing discipline there is entirely on you.
+- **Cite-or-drop, per sentence.** Before keeping a factual sentence — in `lead` or `signals` — point to the input that supports it (a curated `takeaway`, a raw-staging field, a report-context line). If you can't, cut it or rewrite it as explicitly-labeled analysis. This includes **`lead.html`**, which has no `source_links` field and is precisely where ungrounded "今天三家同時發布 / 同日湧現" prose slips in — the fact-tracing discipline there is entirely on you.
 - **Abstention is first-class.** If the day does not actually converge, emit fewer signals — or none — and say so. Never manufacture convergence to fill a slot. One well-supported signal beats three welded ones.
 
 Three recurring real failure modes, all instances of the above:
@@ -63,7 +63,7 @@ Recency (computed in code — do NOT do date math yourself):
 
 ## Output (write via Write tool)
 
-- `data/staging/editorial.json` — editorial layer ONLY (lead + signals + ideation). A separate mechanical merge step composes the final `data/reports/<TODAY>.json` from this editorial.json + the curated/*.json inputs.
+- `data/staging/editorial.json` — editorial layer ONLY (lead + signals). A separate mechanical merge step composes the final `data/reports/<TODAY>.json` from this editorial.json + the curated/*.json inputs.
 
 **Editorial.json shape** (EditorialSchema 2.1-editorial):
 - `schema_version`: literal string `"2.1-editorial"`
@@ -71,7 +71,6 @@ Recency (computed in code — do NOT do date math yourself):
 - `theme`: string (the active theme name, e.g. `"ai-builder"`)
 - `lead`: `{html: string}` — the editorial lead block
 - `signals`: `{focus, sleeper, contrarian, predictions, prediction_updates}`
-- `ideation`: `{general, work}`
 
 **You MUST NOT include `shipped`, `pulse`, `market`, `tech` sections** in editorial.json. Those are mechanically merged in from `data/staging/curated/*.json` by the post-synth merge step. Re-emitting curated items here is the bug that caused the 32K output-token cap incident on 2026-05-24.
 
@@ -90,10 +89,6 @@ Recency (computed in code — do NOT do date math yourself):
     "sleeper": {/* optional SignalItem */},
     "contrarian": {/* optional SignalItem */},
     "predictions": [/* 5-7 PredictionItem */]
-  },
-  "ideation": {
-    "general": [/* 3-5 IdeaItem with audience='general' or 'both' */],
-    "work":    [/* 2-4 IdeaItem with audience='work' or 'both' */]
   }
 }
 ```
@@ -144,34 +139,6 @@ Optional. Use it only when `data/staging/report-context.md` includes an explicit
 
 If you include an update, emit a complete `PredictionItem` with `id`, `text`, `resolution_date`, `created` when available, and a strict enum `status`. Do not invent status values.
 
-## Ideation item shape (applies to BOTH `general` and `work`)
-
-Each idea is an object with these EXACT field names — do not rename them:
-- `title` (string)
-- `description` (string) — the idea's body text. The field is **`description`**, NOT `body`. `body` is a *signals* field; using it here drops the schema-required `description` and aborts the whole run.
-- `audience` (`'general'` | `'work'` | `'both'`)
-- `dev_time` (string, e.g. `"weekend"` / `"1-2 week PoC"`) — put the effort estimate HERE. Do NOT invent a `difficulty` field.
-- `source_links` (array of stable curated ids), plus the per-section required fields below.
-
-## `ideation.general` (3-5 ideas, audience='general' or 'both')
-
-Remix-style side projects.
-- Each combines ≥2 of today's signals (via `source_links`)
-- Hardware: MacBook M1+ / RTX 3060+
-- `dev_time`: weekend (≤16 hrs)
-- ≥1 idea has a non-AI element
-- Required fields: `tech_stack`, `market_evidence` (1-sentence + source_link), `first_step`
-
-## `ideation.work` (2-4 ideas, audience='work' or 'both')
-
-Phison aiDAPTIV+ commercialization. Maps to aiDAPTIVLink 2/3, Hybrid-Router (routing not KV-cache), on-device LLM, KV-cache offload.
-
-- **App/demo layer only — avoid KV-cache internal algorithm** (Phison internal R&D scope)
-- Hardware: NVIDIA workstation / Phison demo lab
-- `dev_time`: 1-2 week PoC
-- Each `source_links` connects to ≥1 today-signal
-- Connect to capability axes from product positioning, not generic AI hype.
-
 ## Cross-day context handling
 
 Do not update persistent memory in this stage. Cross-day state is maintained by Hermes Wiki outside the public data branch; this stage only consumes the bounded `data/staging/report-context.md` snapshot generated before synthesis.
@@ -182,10 +149,9 @@ Do not update persistent memory in this stage. Cross-day state is maintained by 
 
 ## Self-check before write
 
-- [ ] **Grounding pass** — re-read every factual sentence in lead + signals + ideation; each traces to an input (curated `takeaway` / raw staging / report-context). Anything that can't is cut or relabeled as analysis. No today-fact came from training knowledge.
+- [ ] **Grounding pass** — re-read every factual sentence in lead + signals; each traces to an input (curated `takeaway` / raw staging / report-context). Anything that can't is cut or relabeled as analysis. No today-fact came from training knowledge.
 - [ ] No 同週 / 同時 / 本週 / 今天 on any source whose `source-ages.json` age > 7; no claim / magnitude / "confirmed / 已量產" attributed to a named source beyond what its `takeaway` states; no `N倍` the source didn't state
 - [ ] Every signals.focus entry has `mechanism` + `product_opportunity` + ≥2 source_links; thin day → fewer signals, not welded ones
 - [ ] Every prediction has ISO `resolution_date` (YYYY-MM-DD) and a strict-enum `status`
-- [ ] Every idea has `description` (not `body`), `dev_time` (not `difficulty`), and source_links referencing real curated ids
 - [ ] lead.html passes the `quality.md` slop test (delete-test on every sentence); reader is the builder, not their boss
 - [ ] editorial.json excludes shipped / pulse / market / tech sections; `schema_version: "2.1-editorial"`; `date` matches metadata.json
