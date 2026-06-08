@@ -50,10 +50,10 @@ For each item: `id`, `title`, `url`, `audience`, `takeaway`, `companies` (model 
 Source: leaderboards.json (per-bench snapshots + diff fields: `new_top_5`, `rank_changes`, `top_5_today`).
 
 - **Include:** new top-5 entries, rank changes affecting top-10, new benchmark releases, third-party independent eval blog posts.
-- **Active benchmarks (Phase 1):** MTEB, PinchBench, BFCL, SWE-bench Verified, OCRBench. (Phase 1.5: Terminal-Bench, OSWorld, GAIA, VoiceBench, RULER, LiveCodeBench.)
+- **Active benchmarks:** BFCL, SWE-bench Verified, OCRBench — these are the ONLY benches in leaderboards.json. Emit an item only for a bench actually present there; never invent a benchmark or its rankings (e.g. do NOT add MTEB / PinchBench — they are not collected).
 - **Exclude:** internal-only benchmarks, vendor-self-reported numbers without independent replication.
 
-For each item: `id`, `title` (e.g. "MTEB: bge-large-en-v1.5 enters top-5"), `url` (link to leaderboard), `audience`, `takeaway`, `benchmark_changes: { new_top_5: [...], rank_changes: [...] }`.
+For each item: `id`, `title` (e.g. "SWE-bench Verified: <model> enters top-5"), `audience`, `takeaway`, `benchmark_changes: { new_top_5: [...], rank_changes: [...] }`. Do NOT emit a `url` — the official leaderboard link is attached deterministically by the system; never construct, copy, or guess one.
 
 ### aidaptiv (cap 6) — aiDAPTIV 相關
 

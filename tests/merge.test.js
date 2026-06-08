@@ -2,6 +2,7 @@
 // curated section JSON into the final v2.1 report.
 
 import { describe, expect, it } from 'vitest';
+import { BENCH_LEADERBOARD_URL } from '../src/lib/leaderboard-urls.js';
 import {
   composeReport,
   extractIdSpace,
@@ -312,6 +313,82 @@ describe('composeReport', () => {
       themeName: 'ai-builder',
     });
     expect(report.meta).toBeUndefined();
+  });
+});
+
+// Benchmark leaderboard items carry only rankings; the curator was asked to
+// supply a "link to leaderboard" with no source and hallucinated a fabricated
+// (often 404) url every day. merge deterministically replaces it with the
+// canonical leaderboard url, and strips the url from a ghost benchmark that has
+// no backing leaderboard (e.g. an MTEB item invented from a stale prompt).
+describe('composeReport benchmark URL cure', () => {
+  function curatedWithBenchmarks(benchmarks) {
+    return {
+      shipped: { trending: [] },
+      pulse: { hn: [] },
+      market: { ma: [] },
+      tech: { vendor: [], benchmarks },
+    };
+  }
+  const emptyEditorial = fixtureEditorial({ signals: { focus: [], predictions: [] } });
+
+  it('replaces fabricated benchmark urls with the canonical leaderboard url', async () => {
+    const report = await composeReport({
+      editorial: emptyEditorial,
+      curated: curatedWithBenchmarks([
+        {
+          id: 'tech.benchmarks.0:ocrbench',
+          title: 'OCRBench: Nemotron Nano VL 8B leads object-text understanding',
+          url: 'https://github.com/Yuliang-Liu/Multimodal-OCR', // 404 the user hit
+          audience: 'work',
+        },
+        {
+          id: 'tech.benchmarks.1:bfcl',
+          title: 'BFCL: function-calling parity across vendors',
+          url: 'https://huggingface.co/spaces/anybodys/BFCL', // fabricated
+          audience: 'work',
+        },
+        {
+          id: 'tech.benchmarks.2:swebench',
+          title: 'SWE-Bench Verified: Live-SWE-agent + Opus 4.5 #1',
+          url: 'https://www.swebench.com/', // happened to be correct
+          audience: 'work',
+        },
+      ]),
+      themeName: 'ai-builder',
+    });
+    expect(report.tech.benchmarks[0].url).toBe(BENCH_LEADERBOARD_URL.ocrbench);
+    expect(report.tech.benchmarks[1].url).toBe(BENCH_LEADERBOARD_URL.bfcl);
+    expect(report.tech.benchmarks[2].url).toBe(BENCH_LEADERBOARD_URL.swebench);
+  });
+
+  it('strips the url from a ghost benchmark with no backing leaderboard', async () => {
+    const report = await composeReport({
+      editorial: emptyEditorial,
+      curated: curatedWithBenchmarks([
+        {
+          id: 'tech.benchmarks.0:mteb',
+          title: 'MTEB Leaderboard: Claude models dominate embedding tasks',
+          url: 'https://huggingface.co/spaces/mteb/leaderboard',
+          audience: 'work',
+        },
+      ]),
+      themeName: 'ai-builder',
+    });
+    expect(report.tech.benchmarks[0].url).toBeUndefined();
+  });
+
+  it('does not mutate the caller-supplied curated benchmarks', async () => {
+    const curated = curatedWithBenchmarks([
+      {
+        id: 'tech.benchmarks.0:ocrbench',
+        title: 'OCRBench: leader',
+        url: 'https://github.com/fake/ocrbench',
+        audience: 'work',
+      },
+    ]);
+    await composeReport({ editorial: emptyEditorial, curated, themeName: 'ai-builder' });
+    expect(curated.tech.benchmarks[0].url).toBe('https://github.com/fake/ocrbench');
   });
 });
 

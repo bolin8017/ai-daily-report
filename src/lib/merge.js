@@ -11,6 +11,7 @@
 
 import { EditorialSchema } from '../schemas/editorial.js';
 import { buildReportSchema } from '../schemas/report.js';
+import { BENCH_LEADERBOARD_URL, benchOf } from './leaderboard-urls.js';
 import { listActiveSections } from './theme.js';
 
 /**
@@ -152,6 +153,38 @@ export function stripDanglingSourceLinks(editorial, idSpace) {
 }
 
 /**
+ * Deterministic backstop for fabricated benchmark leaderboard links. The
+ * leaderboard staging items carry no url, so the tech curator hallucinated a
+ * (frequently 404) leaderboard url for each benchmark every run. Replace each
+ * tech.benchmarks item's url with the canonical url for its bench, and strip the
+ * url entirely for an unknown / ghost benchmark with no backing leaderboard so a
+ * dead link never reaches the page. Returns a new array; inputs are not mutated.
+ * Same cure-don't-abort philosophy as stripDanglingSourceLinks.
+ *
+ * @param {object[]} benchmarks
+ * @returns {{benchmarks: object[], cured: number, stripped: number}}
+ */
+export function cureBenchmarkUrls(benchmarks) {
+  let cured = 0;
+  let stripped = 0;
+  const out = benchmarks.map((item) => {
+    const bench = benchOf(item);
+    if (bench) {
+      const url = BENCH_LEADERBOARD_URL[bench];
+      if (item.url !== url) cured++;
+      return { ...item, url };
+    }
+    if ('url' in item) {
+      stripped++;
+      const { url: _dropped, ...rest } = item;
+      return rest;
+    }
+    return item;
+  });
+  return { benchmarks: out, cured, stripped };
+}
+
+/**
  * Compose the final v2.1 report from validated editorial + curated inputs.
  *
  * Steps:
@@ -200,6 +233,18 @@ export async function composeReport({ editorial, curated, meta, themeName = 'ai-
   const sections = await listActiveSections(themeName);
   for (const sec of sections) {
     composed[sec.id] = curated[sec.id] ?? {};
+  }
+  // Deterministic benchmark-url cure: overwrite LLM-fabricated leaderboard links
+  // with the canonical url per bench (strip unknown/ghost ones). tech.benchmarks
+  // is theme-specific + optional, hence guarded.
+  if (Array.isArray(composed.tech?.benchmarks)) {
+    const { benchmarks, cured, stripped } = cureBenchmarkUrls(composed.tech.benchmarks);
+    composed.tech = { ...composed.tech, benchmarks };
+    if (cured || stripped) {
+      console.warn(
+        `[merge] benchmark urls: ${cured} set to canonical, ${stripped} stripped (unknown bench)`,
+      );
+    }
   }
   // Preserve any extra editorial fields (passthrough)
   for (const [k, v] of Object.entries(cured)) {
