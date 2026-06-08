@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Stage 3: Synthesize — single claude -p Sonnet call.
 # Reads curated/* + raw staging + bounded Hermes report-context, writes ONLY
-# the editorial layer (lead/signals/ideation) to data/staging/editorial.json.
+# the editorial layer (lead/signals) to data/staging/editorial.json.
 # Stage 4 (merge-report.sh) composes the final report from editorial +
 # curated/*; the synthesizer never re-emits curated content or writes legacy memory.
 #
@@ -111,9 +111,9 @@ node --input-type=module -e "
   import { repairEditorial } from './src/lib/repair-editorial.js';
   const doc = JSON.parse(await readFile('$EDITORIAL_FILE', 'utf8'));
   const r = repairEditorial(doc);
-  if (r.statusCoerced || r.dropped || r.ideationCoerced) {
+  if (r.statusCoerced || r.dropped) {
     await writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
-    console.error('[synthesize.sh] repaired editorial: statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped + ' ideationCoerced=' + r.ideationCoerced);
+    console.error('[synthesize.sh] repaired editorial: statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped);
   }
 "
 

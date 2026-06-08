@@ -88,16 +88,12 @@ describe('buildCuratedIndex', () => {
 });
 
 describe('collectProseFields', () => {
-  it('yields lead.html (no source_links) + signal body/mechanism + ideation descriptions', () => {
+  it('yields lead.html (no source_links) + signal body/mechanism', () => {
     const editorial = {
       lead: { html: '<p>Simon Willison 同天出現</p>' },
       signals: {
         focus: [{ body: 'b', mechanism: 'm', source_links: ['pulse.ai_bloggers.3:x'] }],
         predictions: [],
-      },
-      ideation: {
-        general: [{ description: 'd', source_links: ['shipped.trending.0:y'] }],
-        work: [],
       },
     };
     const fields = collectProseFields(editorial);
@@ -105,9 +101,7 @@ describe('collectProseFields', () => {
     expect(fields.find((f) => f.path === 'signals.focus[0].body').sourceLinks).toEqual([
       'pulse.ai_bloggers.3:x',
     ]);
-    expect(fields.find((f) => f.path === 'ideation.general[0].description').sourceLinks).toEqual([
-      'shipped.trending.0:y',
-    ]);
+    expect(fields.find((f) => f.path?.startsWith('ideation'))).toBeUndefined();
   });
 });
 
@@ -134,7 +128,6 @@ describe('detectTemporalFlags', () => {
     const editorial = {
       lead: { html: '<p>Simon Willison 的 SQLite AGENTS.md 是同天出現的第三個訊號</p>' },
       signals: { predictions: [] },
-      ideation: { general: [], work: [] },
     };
     const flags = detectTemporalFlags(editorial, idx, {
       reportDate: '2026-05-29',
@@ -149,7 +142,6 @@ describe('detectTemporalFlags', () => {
     const editorial = {
       lead: { html: '<p>Simon Willison 同天</p>' },
       signals: { predictions: [] },
-      ideation: { general: [], work: [] },
     };
     const flags = detectTemporalFlags(editorial, idx, {
       reportDate: '2026-05-27',
@@ -162,7 +154,6 @@ describe('detectTemporalFlags', () => {
     const editorial = {
       lead: { html: '<p>Simon Willison 近期發表</p>' },
       signals: { predictions: [] },
-      ideation: { general: [], work: [] },
     };
     expect(detectTemporalFlags(editorial, idx, { reportDate: '2026-05-29' })).toHaveLength(0);
   });
@@ -183,7 +174,6 @@ describe('detectAttributionClaims', () => {
         ],
         predictions: [],
       },
-      ideation: { general: [], work: [] },
     };
     const claims = detectAttributionClaims(editorial, idx);
     expect(claims).toHaveLength(1);
@@ -205,7 +195,6 @@ describe('detectAttributionClaims', () => {
         ],
         predictions: [],
       },
-      ideation: { general: [], work: [] },
     };
     const claims = detectAttributionClaims(editorial, idx);
     expect(claims).toHaveLength(1);
@@ -221,7 +210,6 @@ describe('detectAttributionClaims', () => {
         ],
         predictions: [],
       },
-      ideation: { general: [], work: [] },
     };
     expect(detectAttributionClaims(editorial, idx)).toHaveLength(0);
   });
@@ -278,7 +266,6 @@ describe('applyRepairs', () => {
     const editorial = {
       lead: { html: '<p>X 是同天出現的訊號</p>' },
       signals: { predictions: [] },
-      ideation: {},
     };
     const { audit } = applyRepairs(
       editorial,
@@ -307,7 +294,6 @@ describe('applyRepairs', () => {
         focus: [{ body: 'Sebastian Raschka 本週確認 GQA 在 Gemma 4 中已量產。' }],
         predictions: [],
       },
-      ideation: {},
     };
     const verdicts = [
       {
@@ -333,7 +319,6 @@ describe('applyRepairs', () => {
     const editorial = {
       lead: { html: '' },
       signals: { focus: [{ body: 'keep me' }], predictions: [] },
-      ideation: {},
     };
     applyRepairs(
       editorial,
@@ -355,10 +340,6 @@ describe('applyRepairs', () => {
         focus: [{ body: 'Hamel Husain 的論文說明：沒有人能靠 benchmark 證實自己選對了模型。' }],
         predictions: [],
       },
-      ideation: {
-        general: [{ description: '每次跑到一半要手動確認「要改這個檔案嗎」。' }],
-        work: [],
-      },
     };
     const { audit } = applyRepairs(
       editorial,
@@ -371,19 +352,11 @@ describe('applyRepairs', () => {
             verdict: 'NOT_ENOUGH_INFO',
             grounded_rewrite: '',
           },
-          {
-            path: 'ideation.general[0].description',
-            author: 'Claude Code',
-            span: '每次跑到一半要手動確認「要改這個檔案嗎」。',
-            verdict: 'NOT_ENOUGH_INFO',
-            grounded_rewrite: '',
-          },
         ],
       },
       { reportDate: '2026-05-31' },
     );
     expect(editorial.signals.focus[0].body).toContain('證實'); // never clobbered to 提到
-    expect(editorial.ideation.general[0].description).toContain('手動確認'); // untouched
     expect(audit.flagged[0].verdict).toBe('NOT_ENOUGH_INFO'); // still logged
     expect(audit.repaired).toBe(0); // honest: flagged, not repaired
   });
@@ -392,7 +365,6 @@ describe('applyRepairs', () => {
     const editorial = {
       lead: { html: '' },
       signals: { focus: [{ body: 'Sebastian Raschka 確認 GQA 已量產。' }], predictions: [] },
-      ideation: {},
     };
     const { audit } = applyRepairs(
       editorial,
@@ -453,7 +425,6 @@ describe('detectTemporalFlags with sidecar (undateable URLs)', () => {
       ],
       predictions: [],
     },
-    ideation: { general: [], work: [] },
   };
 
   it('flags a substack source (no URL date) dated 15 days stale via the sidecar', () => {
@@ -504,7 +475,6 @@ describe('week-scale temporal markers', () => {
         ],
         predictions: [],
       },
-      ideation: { general: [], work: [] },
     };
     const flags = detectTemporalFlags(editorial, idx, {
       reportDate: '2026-05-31',
@@ -522,7 +492,6 @@ describe('week-scale temporal markers', () => {
         focus: [{ body, source_links: ['pulse.ai_bloggers.0:sebastianraschka-kv'] }],
         predictions: [],
       },
-      ideation: { general: [], work: [] },
     });
     const opts = { reportDate: '2026-05-31', toleranceDays: 1, sidecar };
     expect(detectTemporalFlags(base('Raschka 同時發布架構綜述'), idx, opts)).toHaveLength(1);
@@ -546,15 +515,14 @@ describe('attribution stop-list (non-person bigrams)', () => {
     const idx = buildCuratedIndex(curated);
     const editorial = {
       lead: { html: '' },
-      signals: { focus: [], predictions: [] },
-      ideation: {
-        general: [
+      signals: {
+        focus: [
           {
-            description: '你在用 Claude Code 重構，每次跑到一半要手動確認「要改這個檔案嗎」。',
+            body: '你在用 Claude Code 重構，每次跑到一半要手動確認「要改這個檔案嗎」。',
             source_links: ['shipped.trending.1:anthropics/claude-code'],
           },
         ],
-        work: [],
+        predictions: [],
       },
     };
     expect(detectAttributionClaims(editorial, idx)).toHaveLength(0);
@@ -573,7 +541,6 @@ describe('attribution stop-list (non-person bigrams)', () => {
         ],
         predictions: [],
       },
-      ideation: { general: [], work: [] },
     };
     expect(detectAttributionClaims(editorial, idx)).toHaveLength(1);
   });

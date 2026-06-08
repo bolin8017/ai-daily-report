@@ -100,7 +100,7 @@ export function buildCuratedIndex(curated) {
 
 /**
  * Flatten the editorial's prose-bearing fields. lead.html has no source_links
- * (sourceLinks=null → entity-match path); signal/ideation fields carry them.
+ * (sourceLinks=null → entity-match path); signal fields carry them.
  * @param {object} editorial
  * @returns {{path:string, text:string, sourceLinks:(string[]|null)}[]}
  */
@@ -123,19 +123,6 @@ export function collectProseFields(editorial) {
     }
   }
 
-  const ide = editorial?.ideation ?? {};
-  for (const grp of ['general', 'work']) {
-    const arr = Array.isArray(ide[grp]) ? ide[grp] : [];
-    arr.forEach((it, i) => {
-      if (typeof it?.description === 'string') {
-        fields.push({
-          path: `ideation.${grp}[${i}].description`,
-          text: it.description,
-          sourceLinks: it.source_links ?? [],
-        });
-      }
-    });
-  }
   return fields;
 }
 
@@ -385,18 +372,6 @@ function locateField(editorial, path) {
           get: () => it[single[2]],
           set: (v) => {
             it[single[2]] = v;
-          },
-        }
-      : null;
-  }
-  const ide = path.match(/^ideation\.(general|work)\[(\d+)\]\.description$/);
-  if (ide) {
-    const it = editorial?.ideation?.[ide[1]]?.[Number(ide[2])];
-    return it
-      ? {
-          get: () => it.description,
-          set: (v) => {
-            it.description = v;
           },
         }
       : null;
