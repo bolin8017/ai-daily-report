@@ -1,6 +1,7 @@
 import { BENCH_LEADERBOARD_URL } from '../../lib/leaderboard-urls.js';
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
+import { fetchAider } from './leaderboards-parsers/aider.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
 import { fetchOcrBench } from './leaderboards-parsers/ocrbench.js';
 import { fetchSwebench } from './leaderboards-parsers/swebench.js';
@@ -10,6 +11,7 @@ import { fetchSwebench } from './leaderboards-parsers/swebench.js';
 // pinchbench exposes no stable API (data only lives in its Next.js RSC stream).
 // Both would require exactly the fragile scraping this provider moved away from.
 const FETCHERS = {
+  aider: fetchAider,
   bfcl: fetchBfcl,
   ocrbench: fetchOcrBench,
   swebench: fetchSwebench,
