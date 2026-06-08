@@ -1,0 +1,53 @@
+{# 精選 tab — catalog.picks (AI-first + 精選 general), category-filtered #}
+<section class="section-catalog tab-panel" id="catalog" role="tabpanel" aria-labelledby="tab-catalog">
+  <h2>精選 — 值得認識的大專案</h2>
+
+  {% set aiPicks = [] %}
+  {% set generalPicks = [] %}
+  {%- for item in report.catalog.picks %}
+    {%- if item.category == 'general' %}{% set generalPicks = (generalPicks.push(item), generalPicks) %}
+    {%- else %}{% set aiPicks = (aiPicks.push(item), aiPicks) %}{% endif %}
+  {%- endfor %}
+
+  <div class="section-filter" role="radiogroup" aria-label="精選 篩選">
+    <button type="button" class="section-chip active" role="radio" aria-checked="true" data-filter="all">全部</button>
+    {% if aiPicks | length %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="ai">AI 相關</button>{% endif %}
+    {% if generalPicks | length %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="general">通用精選</button>{% endif %}
+  </div>
+
+  {% if aiPicks | length %}
+  <div class="sub-section" data-subsection="ai">
+    <h3 class="sub-section-title"><span class="sub-title-text">AI 相關</span><span class="sub-count">{{ aiPicks | length }} 項</span></h3>
+    <ol class="shipped-list">
+      {%- for item in aiPicks %}
+      <li class="shipped-item" id="{{ item.id }}">
+        <div class="shipped-head">
+          <a href="{{ item.url }}" class="shipped-name">{{ item.name }}</a>
+          {% if item.stars %}<span class="shipped-stars">★ {{ item.stars | formatNum }}</span>{% endif %}
+          {% if item.language %}<span class="shipped-lang">{{ item.language }}</span>{% endif %}
+        </div>
+        {% if item.takeaway %}<p class="shipped-relevance">{{ item.takeaway }}</p>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+  </div>
+  {% endif %}
+
+  {% if generalPicks | length %}
+  <div class="sub-section" data-subsection="general">
+    <h3 class="sub-section-title"><span class="sub-title-text">通用精選</span><span class="sub-count">{{ generalPicks | length }} 項</span></h3>
+    <ol class="shipped-list">
+      {%- for item in generalPicks %}
+      <li class="shipped-item" id="{{ item.id }}">
+        <div class="shipped-head">
+          <a href="{{ item.url }}" class="shipped-name">{{ item.name }}</a>
+          {% if item.stars %}<span class="shipped-stars">★ {{ item.stars | formatNum }}</span>{% endif %}
+          {% if item.language %}<span class="shipped-lang">{{ item.language }}</span>{% endif %}
+        </div>
+        {% if item.takeaway %}<p class="shipped-relevance">{{ item.takeaway }}</p>{% endif %}
+      </li>
+      {%- endfor %}
+    </ol>
+  </div>
+  {% endif %}
+</section>

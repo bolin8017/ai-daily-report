@@ -11,7 +11,7 @@ describe('theme loader', () => {
     expect(theme.persona.audience).toMatch(/AI engineers who build/);
     expect(theme.llm.curator_model).toBe('claude-haiku-4-5');
     expect(theme.llm.synthesizer_model).toBe('claude-sonnet-4-6');
-    expect(theme.sections).toHaveLength(4);
+    expect(theme.sections).toHaveLength(5);
   });
 
   it('loadTheme resolves prompt file paths relative to theme directory', async () => {
@@ -34,7 +34,7 @@ describe('theme loader', () => {
 
   it('listActiveSections returns sections in ascending order', async () => {
     const sections = await listActiveSections('ai-builder');
-    expect(sections.map((s) => s.id)).toEqual(['shipped', 'pulse', 'market', 'tech']);
+    expect(sections.map((s) => s.id)).toEqual(['catalog', 'shipped', 'pulse', 'market', 'tech']);
   });
 
   it('loadSection("ai-builder", "shipped") returns manifest + resolved paths', async () => {

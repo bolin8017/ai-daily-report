@@ -31,6 +31,14 @@ export const ShippedItem = ItemBase.extend({
   topic_match: z.array(z.string()).optional(),
 });
 
+export const CatalogItem = ItemBase.extend({
+  name: z.string(),
+  stars: z.number().nullable().optional(),
+  language: z.string().nullable().optional(),
+  category: z.enum(['ai', 'general']).default('ai'),
+  takeaway: z.string().optional(),
+});
+
 export const PulseItem = ItemBase.extend({
   title: z.string(),
   score: z.number().nullable().optional(),
