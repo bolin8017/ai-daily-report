@@ -1,3 +1,4 @@
+import { BENCH_LEADERBOARD_URL } from '../../lib/leaderboard-urls.js';
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
@@ -32,6 +33,9 @@ export async function leaderboardHtmlProvider(cfg, _ctx) {
       items: [
         {
           bench: cfg.parser,
+          // Canonical leaderboard link, stamped from the single source of truth
+          // so the curator never has to (and never should) invent one.
+          url: BENCH_LEADERBOARD_URL[cfg.parser],
           fetched_at: new Date().toISOString(),
           ...d,
         },
