@@ -314,6 +314,29 @@ describe('composeReport', () => {
     });
     expect(report.meta).toBeUndefined();
   });
+
+  it('composes a catalog section from curated picks', async () => {
+    const curated = fixtureCurated();
+    curated.catalog = {
+      picks: [
+        {
+          id: 'catalog.picks.0:vllm-project/vllm',
+          name: 'vllm-project/vllm',
+          url: 'https://github.com/vllm-project/vllm',
+          stars: 40000,
+          category: 'ai',
+          audience: 'both',
+          takeaway: '高吞吐 LLM 推論引擎。',
+        },
+      ],
+    };
+    const report = await composeReport({
+      editorial: fixtureEditorial(),
+      curated,
+      themeName: 'ai-builder',
+    });
+    expect(report.catalog.picks[0].id).toBe('catalog.picks.0:vllm-project/vllm');
+  });
 });
 
 // Benchmark leaderboard items carry only rankings; the curator was asked to

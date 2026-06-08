@@ -72,6 +72,20 @@ describe('stage registry', () => {
     expect(getStage('merge').deps).toContain('faithfulness');
   });
 
+  // Catalog (精選) is the 5th curated section but must never block the pipeline,
+  // so it is OPTIONAL, kept OUT of CURATE_SECTIONS (the required-curator barrier),
+  // and only `merge` orders after it — context/synthesize must NOT wait on it.
+  it('catalog is an optional standalone curator that only merge depends on', () => {
+    expect(CURATE_SECTIONS).not.toContain('catalog');
+    const catalog = getStage('curate.catalog');
+    expect(catalog.criticality).toBe('optional');
+    expect(catalog.deps).toEqual(['collect']);
+    expect(catalog.command).toEqual(['bash', 'scripts/curate.sh', 'catalog']);
+    expect(getStage('merge').deps).toContain('curate.catalog');
+    expect(getStage('context').deps).not.toContain('curate.catalog');
+    expect(getStage('synthesize').deps).not.toContain('curate.catalog');
+  });
+
   it('getStage throws on an unknown id', () => {
     expect(() => getStage('nope')).toThrow(/unknown stage/);
   });

@@ -30,7 +30,7 @@ if [ ! -f "$EDITORIAL_FILE" ]; then
   exit 1
 fi
 
-for sec in shipped pulse market tech; do
+for sec in shipped pulse market tech catalog; do
   if [ ! -f "$CURATED_DIR/$sec.json" ]; then
     echo "[merge-report] WARN: curated/$sec.json missing — section will be empty" >&2
   fi
@@ -44,10 +44,11 @@ node --input-type=module -e "
 import {readFileSync, writeFileSync, existsSync, readdirSync} from 'node:fs';
 import {composeReport} from './src/lib/merge.js';
 import {aggregateMeta} from './src/lib/report-meta.js';
+import {appendSeen} from './src/lib/seen-repos.js';
 
 const editorial = JSON.parse(readFileSync('$EDITORIAL_FILE', 'utf8'));
 const curated = {};
-for (const sec of ['shipped', 'pulse', 'market', 'tech']) {
+for (const sec of ['shipped', 'pulse', 'market', 'tech', 'catalog']) {
   const p = '$CURATED_DIR/' + sec + '.json';
   curated[sec] = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
 }
@@ -79,6 +80,16 @@ try {
   const report = await composeReport({editorial, curated, themeName: '$ACTIVE_THEME', meta});
   writeFileSync('$REPORT_FILE', JSON.stringify(report, null, 2) + '\n');
   console.log('[merge-report] wrote $REPORT_FILE schema_version=' + report.schema_version + (meta ? ' meta=yes stages=' + Object.keys(meta.stages || {}).length : ' meta=no'));
+  try {
+    const picks = Array.isArray(report.catalog?.picks) ? report.catalog.picks : [];
+    const shown = picks.map((p) => ({ repo: p.name, stars: p.stars })).filter((p) => p.repo);
+    if (shown.length) {
+      const { added, total } = appendSeen(shown, '$DATE');
+      console.log('[merge-report] seen-repos +' + added + ' (total ' + total + ')');
+    }
+  } catch (e) {
+    console.error('[merge-report] WARN: seen-repos ledger update failed (report still written): ' + e.message);
+  }
 } catch (e) {
   if (/dangling source_link/.test(e.message)) {
     console.error('[merge-report] ' + e.message);

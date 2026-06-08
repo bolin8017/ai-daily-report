@@ -11,6 +11,7 @@ const ALL = [
   'curate.pulse',
   'curate.market',
   'curate.tech',
+  'curate.catalog',
   'context',
   'synthesize',
   'faithfulness',
@@ -94,6 +95,7 @@ describe('runPipeline — resume / topo', () => {
         'curate.pulse',
         'curate.market',
         'curate.tech',
+        'curate.catalog',
         'context',
       ],
     });
@@ -108,6 +110,7 @@ describe('runPipeline — resume / topo', () => {
     ).toEqual([
       'collect',
       'context',
+      'curate.catalog',
       'curate.market',
       'curate.pulse',
       'curate.shipped',
@@ -115,10 +118,12 @@ describe('runPipeline — resume / topo', () => {
     ]);
   });
 
-  it('runs the four curators as one concurrent batch', async () => {
+  it('runs the curators as one concurrent batch', async () => {
     const h = harness();
     await h.run();
-    expect(h.maxInFlight).toBe(4); // collect alone, then 4 curators together
+    // collect alone, then the 4 required curators + the optional catalog curator
+    // all batch together (all depend only on collect).
+    expect(h.maxInFlight).toBe(5);
   });
 });
 
@@ -153,6 +158,16 @@ describe('runPipeline — optional never blocks', () => {
     expect(ok).toBe(true);
     expect(h.calls).toContain('merge');
     expect(h.emitted.find((e) => e.stage === 'faithfulness').status).toBe('degraded');
+  });
+
+  it('merge still runs when the optional catalog curator fails', async () => {
+    const h = harness({ results: { 'curate.catalog': { exitCode: 1 } } });
+    const { ok, state } = await h.run();
+    expect(ok).toBe(true);
+    expect(state['curate.catalog']).toBe('degraded'); // optional → degraded, not failed
+    expect(state.merge).toBe('ok'); // not blocked by the degraded optional dep
+    expect(h.calls).toContain('merge');
+    expect(h.emitted.find((e) => e.stage === 'curate.catalog').status).toBe('degraded');
   });
 
   it('merge still runs when faithfulness exits 0 without writing an audit', async () => {
