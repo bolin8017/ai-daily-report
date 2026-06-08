@@ -29,6 +29,7 @@ export const StagingMetadataSchema = z.object({
       trending: SourceHealthSchema,
       search: SourceHealthSchema,
       developers: SourceHealthSchema,
+      catalog: SourceHealthSchema.optional(),
       leaderboards: SourceHealthSchema.optional(),
       mops: SourceHealthSchema.optional(),
       hf_trending: SourceHealthSchema.optional(),
