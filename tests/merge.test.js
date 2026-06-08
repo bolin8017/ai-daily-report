@@ -31,7 +31,6 @@ function fixtureEditorial(overrides = {}) {
       ],
       predictions: [],
     },
-    ideation: { general: [], work: [] },
     ...overrides,
   };
 }
@@ -280,15 +279,18 @@ describe('composeReport', () => {
     expect(report.signals.focus[0].source_links).toEqual(['shipped.trending.0', 'pulse.hn.0']);
   });
 
-  it('preserves editorial fields under the same names in the merged report', async () => {
+  it('preserves editorial signals under the same name in the merged report', async () => {
     const editorial = fixtureEditorial();
     const report = await composeReport({
       editorial,
       curated: fixtureCurated(),
       themeName: 'ai-builder',
     });
-    expect(report.ideation).toEqual(editorial.ideation);
     expect(report.signals).toEqual(editorial.signals);
+    // Soft guarantee: composeReport has no hard block on ideation — it relies on
+    // the synthesizer no longer emitting it (Task 8). A stray ideation key in
+    // editorial.json would still pass through. The fixture omits it, so it's undefined here.
+    expect(report.ideation).toBeUndefined();
   });
 
   it('attaches a provided meta block to the composed report', async () => {

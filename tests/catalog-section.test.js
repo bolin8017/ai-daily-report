@@ -32,14 +32,13 @@ describe('CatalogCuratedSchema', () => {
 });
 
 describe('buildReportSchema includes catalog', () => {
-  it('accepts a report carrying a catalog section and omitting ideation-only extras', async () => {
+  it('accepts a report carrying a catalog section', async () => {
     const schema = await buildReportSchema('ai-builder');
     const report = {
       schema_version: 2.1,
       date: '2026-06-08',
       lead: { html: '<p>x</p>' },
       signals: { focus: [], predictions: [] },
-      ideation: { general: [], work: [] },
       shipped: {},
       pulse: {},
       market: {},

@@ -65,39 +65,6 @@ export const TechItem = ItemBase.extend({
     .optional(),
 });
 
-// Accept either a comma-separated string or an array; templates display either
-// — LLM occasionally returns an array even when prompt asks for a string.
-const StringOrArrayString = z
-  .union([z.string(), z.array(z.string()).transform((a) => a.join(', '))])
-  .optional();
-
-export const IdeaItem = z
-  .object({
-    id: z.string().optional(),
-    audience: AudienceTag,
-    title: z.string(),
-    description: z.string(),
-    format: z.string().optional(),
-    projects: z
-      .array(
-        z.object({
-          name: z.string(),
-          url: z.string().optional(),
-          note: z.string().optional(),
-        }),
-      )
-      .optional(),
-    use_case: z.string().optional(),
-    tech_stack: StringOrArrayString,
-    hardware: z.string().optional(),
-    skill_level: z.string().optional(),
-    dev_time: z.string().optional(),
-    first_step: z.string().optional(),
-    market_evidence: z.string().optional(),
-    source_links: z.array(z.string()).optional(),
-  })
-  .passthrough();
-
 export const SignalItem = z
   .object({
     // id is recommended but not required — synthesized signals (focus/sleeper/
