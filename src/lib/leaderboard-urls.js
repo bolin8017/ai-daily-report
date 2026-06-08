@@ -12,6 +12,7 @@ export const BENCH_LEADERBOARD_URL = {
   bfcl: 'https://gorilla.cs.berkeley.edu/leaderboard.html',
   swebench: 'https://www.swebench.com/',
   ocrbench: 'https://huggingface.co/spaces/ling99/OCRBench-v2-leaderboard',
+  aider: 'https://aider.chat/docs/leaderboards/',
 };
 
 // Identify which benchmark a curated tech.benchmarks item refers to. Prefer an
@@ -26,5 +27,6 @@ export function benchOf(item) {
   if (/ocrbench/i.test(title)) return 'ocrbench';
   if (/bfcl/i.test(title)) return 'bfcl';
   if (/swe-?bench/i.test(title)) return 'swebench';
+  if (/aider/i.test(title)) return 'aider';
   return null;
 }

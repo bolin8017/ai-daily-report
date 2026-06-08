@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseAiderYaml } from '../src/fetchers/providers/leaderboards-parsers/aider.js';
 import { parseBfclCsv } from '../src/fetchers/providers/leaderboards-parsers/bfcl.js';
 import { parseOcrBenchCsv } from '../src/fetchers/providers/leaderboards-parsers/ocrbench.js';
 import { parseSwebenchLeaderboards } from '../src/fetchers/providers/leaderboards-parsers/swebench.js';
@@ -69,5 +70,45 @@ describe('parseSwebenchLeaderboards', () => {
 
   it('returns [] when the split is missing', () => {
     expect(parseSwebenchLeaderboards({ leaderboards: [] })).toEqual([]);
+  });
+});
+
+describe('parseAiderYaml', () => {
+  it('ranks by best pass_rate_2 per model, deduping multiple runs', () => {
+    const yaml = [
+      '- model: Model A',
+      '  edit_format: diff',
+      '  pass_rate_2: 70.0',
+      '- model: Model A',
+      '  edit_format: whole',
+      '  pass_rate_2: 82.5',
+      '- model: Model B',
+      '  pass_rate_2: 88.1',
+      '- model: Model C',
+      '  pass_rate_2: 40.0',
+    ].join('\n');
+    const entries = parseAiderYaml(yaml);
+    expect(entries).toHaveLength(3); // Model A's two runs collapse to one
+    expect(entries[0]).toMatchObject({ model_id: 'Model B', rank: 1, score: 88.1 });
+    expect(entries[1]).toMatchObject({ model_id: 'Model A', rank: 2, score: 82.5 });
+    expect(entries[2]).toMatchObject({ model_id: 'Model C', rank: 3 });
+  });
+
+  it('drops entries with no model or a non-numeric pass_rate_2', () => {
+    const yaml = [
+      '- model: Good',
+      '  pass_rate_2: 50.0',
+      '- model: Bad',
+      '  pass_rate_2: null',
+      '- edit_format: whole',
+      '  pass_rate_2: 99',
+    ].join('\n');
+    const entries = parseAiderYaml(yaml);
+    expect(entries).toHaveLength(1);
+    expect(entries[0].model_id).toBe('Good');
+  });
+
+  it('returns [] for non-list YAML', () => {
+    expect(parseAiderYaml('foo: bar')).toEqual([]);
   });
 });

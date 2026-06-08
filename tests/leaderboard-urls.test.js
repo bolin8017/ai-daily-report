@@ -13,6 +13,7 @@ describe('benchOf', () => {
     expect(benchOf({ title: 'BFCL: function-calling parity across vendors' })).toBe('bfcl');
     expect(benchOf({ title: 'SWE-Bench Verified: Opus 4.5 #1' })).toBe('swebench');
     expect(benchOf({ title: 'SWEbench: collapsed spelling still matches' })).toBe('swebench');
+    expect(benchOf({ title: 'Aider polyglot: Opus 4.5 tops code editing' })).toBe('aider');
   });
 
   it('returns null for an unknown / ghost benchmark', () => {
@@ -27,7 +28,12 @@ describe('benchOf', () => {
   });
 
   it('every known bench maps to a canonical https url', () => {
-    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual(['bfcl', 'ocrbench', 'swebench']);
+    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
+      'aider',
+      'bfcl',
+      'ocrbench',
+      'swebench',
+    ]);
     for (const url of Object.values(BENCH_LEADERBOARD_URL)) {
       expect(url).toMatch(/^https:\/\//);
     }
