@@ -81,4 +81,10 @@ describe('build-synthesizer-prompt', () => {
     expect(result.outputPath).toBe(outputPath);
     await expect(readFile(outputPath, 'utf8')).resolves.toContain('data/staging/report-context.md');
   });
+
+  it('omits ideation from the output contract (removed 2026-06)', async () => {
+    const prompt = await buildSynthesizerPrompt({ date: '2026-06-09' });
+    expect(prompt).not.toMatch(/ideation/i);
+    expect(prompt).not.toContain('IdeaItem');
+  });
 });

@@ -61,14 +61,12 @@ Produce exactly ONE artifact: the editorial layer, written with the Write tool t
     "contrarian": { /* SignalItem */ },      // optional
     "predictions": [ /* PredictionItem */ ],
     "prediction_updates": [ /* PredictionItem */ ]  // optional
-  },
-  "ideation": { "general": [ /* IdeaItem */ ], "work": [ /* IdeaItem */ ] }
+  }
 }
 </shape>
 Keys marked optional (\`sleeper\`, \`contrarian\`, \`prediction_updates\`) appear only when the
-day's evidence genuinely supports them — never an empty placeholder to fill a slot. Field
-names are exact: ideation items use \`description\` (not \`body\`) and \`dev_time\` (not
-\`difficulty\`); \`status\` is one of the four allowed enum values. See the per-section specs above.
+day's evidence genuinely supports them — never an empty placeholder to fill a slot. \`status\`
+is one of the four allowed enum values. See the per-section specs above.
 
 <exclude>
 Do NOT put \`shipped\`, \`pulse\`, \`market\`, or \`tech\` in this file — a later mechanical step
