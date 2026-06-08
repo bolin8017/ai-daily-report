@@ -228,7 +228,7 @@ export default function (eleventyConfig) {
       ['dev_watch_taiwan', 'Dev Watch 台灣'],
       ['dev_watch_global', 'Dev Watch 全球'],
     ];
-    return groups
+    const shipped = groups
       .filter(
         ([key]) => Array.isArray(latestReport.shipped[key]) && latestReport.shipped[key].length > 0,
       )
@@ -238,6 +238,16 @@ export default function (eleventyConfig) {
         count: latestReport.shipped[key].length,
         tabs: ['shipped'],
       }));
+    const catalogPicks = latestReport.catalog?.picks;
+    if (Array.isArray(catalogPicks) && catalogPicks.length > 0) {
+      shipped.push({
+        name: 'GitHub 精選',
+        ok: true,
+        count: catalogPicks.length,
+        tabs: ['catalog'],
+      });
+    }
+    return shipped;
   }
 
   eleventyConfig.addGlobalData('sourcesStatus', async () => {
