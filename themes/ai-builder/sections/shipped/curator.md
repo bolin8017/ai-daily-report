@@ -47,7 +47,7 @@ Same fields as trending; `topic_match` always populated.
 
 Source: `feeds-shipped.json` `developers` array, items where `developer_region === 'taiwan'`.
 
-- **All-domain retained** (Taiwan dev ecosystem is small; cross-domain creativity matters for ideation). AI/builder items get `relevance` mentioning the AI angle; non-AI items get neutral `relevance`.
+- **All-domain retained** (Taiwan dev ecosystem is small; cross-domain creativity matters). AI/builder items get `relevance` mentioning the AI angle; non-AI items get neutral `relevance`.
 - **Audience:** AI/builder repos `general` or `both`; non-AI repos `general`.
 - **Exclude:** forks, dotfiles / personal config, template clones.
 
