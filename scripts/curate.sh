@@ -28,7 +28,7 @@ mkdir -p "$CURATED_DIR"
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR"
 
-ALL_SECTIONS=(shipped pulse market tech)
+ALL_SECTIONS=(shipped pulse market tech catalog)
 CRITICAL=(shipped pulse)
 
 # Optional positional args restrict the run to specific sections, e.g.

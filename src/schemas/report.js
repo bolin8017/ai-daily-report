@@ -10,7 +10,6 @@
 
 import { z } from 'zod';
 import {
-  IdeaItem,
   MarketItem,
   PredictionItem,
   PulseItem,
@@ -65,11 +64,6 @@ const SignalsSection = z.object({
   prediction_updates: z.array(PredictionItem).optional(),
 });
 
-const IdeationSection = z.object({
-  general: z.array(IdeaItem),
-  work: z.array(IdeaItem),
-});
-
 const ShippedSection = z.object({
   trending: z.array(ShippedItem).optional(),
   topic_discovery: z.array(ShippedItem).optional(),
@@ -108,7 +102,6 @@ export const ReportSchema = z
     meta: ReportMetaSchema.optional(),
     lead: z.object({ html: z.string() }),
     signals: SignalsSection,
-    ideation: IdeationSection,
     shipped: ShippedSection,
     pulse: PulseSection,
     market: MarketSection,
@@ -140,7 +133,6 @@ export async function buildReportSchema(themeName = ACTIVE_THEME) {
       meta: ReportMetaSchema.optional(),
       lead: z.object({ html: z.string() }),
       signals: SignalsSection,
-      ideation: IdeationSection,
       ...sectionShapes,
     })
     .passthrough();

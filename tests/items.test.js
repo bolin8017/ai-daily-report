@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   AudienceTag,
-  IdeaItem,
   ItemBase,
   MarketItem,
   PredictionItem,
@@ -77,22 +76,6 @@ describe('TechItem', () => {
       benchmark_changes: { new_top_5: ['foo'], rank_changes: ['bar: #5→#2'] },
     });
     expect(parsed.benchmark_changes.new_top_5).toEqual(['foo']);
-  });
-});
-
-describe('IdeaItem', () => {
-  it('requires audience explicitly', () => {
-    expect(() => IdeaItem.parse({ id: 'x', title: 't', description: 'd' })).toThrow();
-  });
-  it('accepts source_links array', () => {
-    const parsed = IdeaItem.parse({
-      id: 'idea-1',
-      audience: 'work',
-      title: 'test',
-      description: 'd',
-      source_links: ['shipped.trending.0:vllm-project/vllm'],
-    });
-    expect(parsed.source_links).toEqual(['shipped.trending.0:vllm-project/vllm']);
   });
 });
 

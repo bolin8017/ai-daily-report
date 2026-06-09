@@ -80,7 +80,7 @@
   let firstActivation = true;
 
   // Footer "Sources" pill visibility — hide source-status pills whose
-  // data-tabs doesn't include the active tab. 訊號 / 動手做 are synthesis
+  // data-tabs doesn't include the active tab. 訊號 is a synthesis
   // tabs that read from every source, so all pills stay visible there.
   const sourcesContainer = document.querySelector('.sources');
   const allSourcePills = sourcesContainer
@@ -90,13 +90,13 @@
   const tabCountEl = sourcesContainer?.querySelector('.sources-count');
   const TAB_LABELS = {
     signals: '綜合',
-    ideation: '綜合',
+    catalog: '精選',
     shipped: '上線',
     pulse: '脈動',
     market: '市場',
     tech: '技術',
   };
-  const isSynthesisTab = (id) => id === 'signals' || id === 'ideation';
+  const isSynthesisTab = (id) => id === 'signals';
 
   const updateSourcesFor = (id) => {
     if (!sourcesContainer) return;

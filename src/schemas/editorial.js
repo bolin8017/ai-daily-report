@@ -9,7 +9,7 @@
 // in the composed report) to make file-level type checks unambiguous.
 
 import { z } from 'zod';
-import { IdeaItem, PredictionItem, SignalItem } from './items.js';
+import { PredictionItem, SignalItem } from './items.js';
 
 const SignalsBlock = z.object({
   focus: z.array(SignalItem),
@@ -19,11 +19,6 @@ const SignalsBlock = z.object({
   prediction_updates: z.array(PredictionItem).optional(),
 });
 
-const IdeationBlock = z.object({
-  general: z.array(IdeaItem),
-  work: z.array(IdeaItem),
-});
-
 export const EditorialSchema = z
   .object({
     schema_version: z.literal('2.1-editorial'),
@@ -31,6 +26,5 @@ export const EditorialSchema = z
     theme: z.string(),
     lead: z.object({ html: z.string() }),
     signals: SignalsBlock,
-    ideation: IdeationBlock,
   })
   .passthrough();

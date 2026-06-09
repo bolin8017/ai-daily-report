@@ -326,6 +326,13 @@ export default [
     itemType: 'repo-card',
     chain: [{ provider: 'github-search-api', config: {} }],
   },
+  {
+    id: 'github-catalog',
+    label: 'GitHub Catalog (30k+)',
+    category: 'github',
+    itemType: 'repo-card',
+    chain: [{ provider: 'github-catalog', config: {} }],
+  },
 
   // === HF (1) ===
   {

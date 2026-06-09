@@ -31,6 +31,14 @@ export const ShippedItem = ItemBase.extend({
   topic_match: z.array(z.string()).optional(),
 });
 
+export const CatalogItem = ItemBase.extend({
+  name: z.string(),
+  stars: z.number().nullable().optional(),
+  language: z.string().nullable().optional(),
+  category: z.enum(['ai', 'general']).default('ai'),
+  takeaway: z.string().optional(),
+});
+
 export const PulseItem = ItemBase.extend({
   title: z.string(),
   score: z.number().nullable().optional(),
@@ -56,39 +64,6 @@ export const TechItem = ItemBase.extend({
     })
     .optional(),
 });
-
-// Accept either a comma-separated string or an array; templates display either
-// — LLM occasionally returns an array even when prompt asks for a string.
-const StringOrArrayString = z
-  .union([z.string(), z.array(z.string()).transform((a) => a.join(', '))])
-  .optional();
-
-export const IdeaItem = z
-  .object({
-    id: z.string().optional(),
-    audience: AudienceTag,
-    title: z.string(),
-    description: z.string(),
-    format: z.string().optional(),
-    projects: z
-      .array(
-        z.object({
-          name: z.string(),
-          url: z.string().optional(),
-          note: z.string().optional(),
-        }),
-      )
-      .optional(),
-    use_case: z.string().optional(),
-    tech_stack: StringOrArrayString,
-    hardware: z.string().optional(),
-    skill_level: z.string().optional(),
-    dev_time: z.string().optional(),
-    first_step: z.string().optional(),
-    market_evidence: z.string().optional(),
-    source_links: z.array(z.string()).optional(),
-  })
-  .passthrough();
 
 export const SignalItem = z
   .object({

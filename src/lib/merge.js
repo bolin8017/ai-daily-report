@@ -6,8 +6,8 @@
 // stays well under any cap. The merge step is deterministic / pure /
 // idempotent — same inputs produce the same output, safe to re-run.
 //
-// Activated under FEATURE_MERGE_STEP=1 via scripts/merge-report.sh which
-// is called by the sequencer (src/pipeline/run.js) after the synthesizer succeeds.
+// Invoked as scripts/merge-report.sh by the sequencer (src/pipeline/run.js)
+// after the synthesizer succeeds.
 
 import { EditorialSchema } from '../schemas/editorial.js';
 import { buildReportSchema } from '../schemas/report.js';
@@ -28,8 +28,6 @@ function sourceLinkBlocks(editorial) {
   const blocks = [
     ['signals.focus', editorial.signals?.focus ?? []],
     ['signals.predictions', editorial.signals?.predictions ?? []],
-    ['ideation.general', editorial.ideation?.general ?? []],
-    ['ideation.work', editorial.ideation?.work ?? []],
   ];
   if (editorial.signals?.sleeper) blocks.push(['signals.sleeper', [editorial.signals.sleeper]]);
   if (editorial.signals?.contrarian) {
@@ -39,7 +37,7 @@ function sourceLinkBlocks(editorial) {
 }
 
 /**
- * Walk every signals/ideation item in editorial.json and yield each
+ * Walk every signals item in editorial.json and yield each
  * source_links entry. Used both for dangling detection and for generating
  * helpful warning messages.
  *
@@ -190,7 +188,7 @@ export function cureBenchmarkUrls(benchmarks) {
  * Steps:
  *   1. Validate editorial against EditorialSchema
  *   2. Collect curated id space
- *   3. Check for dangling source_links — throws if any
+ *   3. Cure dangling source_links — drop unresolvable ones + warn (never throws)
  *   4. Compose: editorial fields + curated section objects, schema_version 2.1
  *   5. Validate composed report against buildReportSchema()
  *   6. Return the report (caller writes it to data/reports/<date>.json)
@@ -224,7 +222,6 @@ export async function composeReport({ editorial, curated, meta, themeName = 'ai-
     date: cured.date,
     lead: cured.lead,
     signals: cured.signals,
-    ideation: cured.ideation,
   };
   // Observability block (assembled by the caller from per-stage sidecars).
   // Optional + pre-shaped; the report schema validates it as meta?.optional().
