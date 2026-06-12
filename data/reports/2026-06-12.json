@@ -1,0 +1,1516 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-06-12",
+  "meta": {
+    "run_id": "8c0cd581-9f29-4988-add4-14a5cc885f9f",
+    "pipeline_version": "28b5c50",
+    "generated_at": "2026-06-12T00:51:25.497Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 2294
+      },
+      "trending": {
+        "ok": true,
+        "count": 19
+      },
+      "search": {
+        "ok": true,
+        "count": 69
+      },
+      "developers": {
+        "ok": true,
+        "count": 20
+      },
+      "catalog": {
+        "ok": true,
+        "count": 55
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 3
+      },
+      "mops": {
+        "ok": true,
+        "count": 9
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 243,
+      "market": 223,
+      "tech": 57,
+      "shipped": 57
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.catalog": {
+        "cost_usd": 0.14724815,
+        "duration_ms": 49171,
+        "num_turns": 6,
+        "input_tokens": 38,
+        "output_tokens": 5255,
+        "cache_read_tokens": 220489,
+        "cache_creation_tokens": 79109,
+        "is_error": false,
+        "session_id": "b2a2b944-1135-470e-bc4b-3a3307fa8b6f"
+      },
+      "faithfulness": {
+        "cost_usd": 0.09816330000000001,
+        "duration_ms": 27985,
+        "num_turns": 1,
+        "input_tokens": 3,
+        "output_tokens": 1551,
+        "cache_read_tokens": 2131,
+        "cache_creation_tokens": 19800,
+        "is_error": false,
+        "session_id": "f7d023e0-18e8-4467-a37a-e2901cf0f87f"
+      },
+      "curate.market": {
+        "cost_usd": 0.2574461,
+        "duration_ms": 103827,
+        "num_turns": 10,
+        "input_tokens": 57,
+        "output_tokens": 11121,
+        "cache_read_tokens": 572741,
+        "cache_creation_tokens": 115608,
+        "is_error": false,
+        "session_id": "ac60ea1c-b780-4a93-92d9-5fbeb4ce23bf"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.19855574999999998,
+        "duration_ms": 73869,
+        "num_turns": 9,
+        "input_tokens": 49,
+        "output_tokens": 7171,
+        "cache_read_tokens": 369455,
+        "cache_creation_tokens": 100565,
+        "is_error": false,
+        "session_id": "4a5994ee-7333-4387-bbea-129a72b1dff4"
+      },
+      "curate.shipped": {
+        "cost_usd": 0.16280665,
+        "duration_ms": 92084,
+        "num_turns": 6,
+        "input_tokens": 39,
+        "output_tokens": 10829,
+        "cache_read_tokens": 182064,
+        "cache_creation_tokens": 72333,
+        "is_error": false,
+        "session_id": "0e40d7c5-3734-4a2e-8d23-b29057867cd3"
+      },
+      "synthesize": {
+        "cost_usd": 1.69392765,
+        "duration_ms": 1049677,
+        "num_turns": 19,
+        "input_tokens": 15,
+        "output_tokens": 53205,
+        "cache_read_tokens": 1210938,
+        "cache_creation_tokens": 142007,
+        "is_error": false,
+        "session_id": "03e1fbee-193e-48e6-bdd5-db1877f69c59"
+      },
+      "curate.tech": {
+        "cost_usd": 0.1703747,
+        "duration_ms": 73939,
+        "num_turns": 8,
+        "input_tokens": 32,
+        "output_tokens": 8457,
+        "cache_read_tokens": 178852,
+        "cache_creation_tokens": 88138,
+        "is_error": false,
+        "session_id": "d311423a-2112-4741-a1ed-6ed2c85180a1"
+      }
+    },
+    "total_cost_usd": 2.7285223,
+    "total_tokens": 97822
+  },
+  "lead": {
+    "html": "<h3>2026-06-12 — 今日重點</h3>\n<h4>Fable 5：Mythos 能力捆綁廠商治理層</h4>\n<p>Anthropic 的 Fable 5 是第一個公開的 Mythos 級別模型，性能超越自家歷史記錄。Simon Willison 實測稱「能力層次令人驚喜，同時令人不安」——不安的理由在 HN 和 Lobsters 很快具體化：防護機制可能讓 Fable 5 對競爭者應用靜默降速，30 天強制資料保留政策已成隱私爭議焦點。對 builder：Claude API 的生產依賴現在包含一個不透明的廠商仲裁層，決定誰的呼叫能拿到多快的回應、資料被保多久。這不是 AUP 條文的邊緣角落，是 API 行為合約的一部分。</p>\n<h4>Agent skills layer 開始收斂</h4>\n<p>今日 GitHub Trending 同時出現 superpowers（224K stars）、agent-skills（54K stars）、agency-agents（111K stars）——三個全是 skill/role 框架，不是新 LLM wrapper。SWE-bench Verified 最新排行榜前五全是 agent framework + model coupling 組合；第一名 live-SWE-agent + Claude 4.5 Opus、第二名 Sonar Foundation Agent + Claude 4.5 Opus；前五名沒有 standalone model API call。框架層的結構設計（memory、recovery、multi-step planning）對 end-to-end 績效的貢獻比換 SOTA 模型本身更大，SWE-bench 數字確認了這件事。</p>\n<h4>Google 因幻覺被判賠償：輸出介面的法律風險已改變</h4>\n<p>Gary Marcus 報告 Google 因 AI 幻覺輸出被判賠償。大多數 AI builder 把這件事讀成「大廠的問題」——但法律責任的關鍵條件是「LLM 輸出顯示在用戶可見介面，且被視為事實陳述」，不是「你是不是大廠」。Anthropic AUP 在過去 6 個月改版三次；GPT-4 moderation API 改版、Claude 2 biosecurity 修訂都帶來 30 天 migrate-off 壓力。現在在 repo 新增 <code>vendor-assumptions.md</code>，記錄當前依賴的 API 行為合約，成本接近零。</p>\n<h4>OpenAI 10GW 租約、Intel 18A 驗證單、TSMC 容量瓶頸進入主動管理</h4>\n<p>OpenAI 正談 Ohio 10GW 資料中心園區的 20 年期租約；Super Micro $7B 融資支撐 $39B 未出貨訂單；ASE 子公司砸 NT$139 億設備採購。Google 和 NVIDIA 向 Intel 18A 下驗證單，Intel 同步宣布 Terafab（與 Tesla、SpaceX、xAI 共同啟動）；台灣評估全面收緊對中 AI 晶片出口管制。TSMC 單點依賴已是被市場承認的業務風險，分散化從規劃進入執行。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-fable5-governance",
+        "title": "Fable 5 的能力升級和廠商治理層捆綁到同一版本",
+        "body": "Fable 5 是第一個公開的 Mythos 級別模型，性能超越 Anthropic 自家歷史記錄，同期浮現兩個治理問題：防護機制可能對競爭者應用靜默降速（Lobsters 96 分）；30 天強制資料保留政策（HN 129 分）。Simon Willison 實測「驚喜中帶不安」，資安研究者（HN 139 分）直接點名 guardrails 設計的不透明性。三條線指向同一個結構：Anthropic 在授予 Mythos 能力的同時，在 API 層建立了一個仲裁機制，builder 無法繞過也無法驗證它對自己的 app 是否一視同仁。",
+        "mechanism": "廠商端的 safety classifier 和 rate controller 共用同一黑盒子。builder 無法在不調用模型的情況下繞過它，也無法用標準 A/B 方法驗證自己的 app 是否受到差別對待。這是平台風險的新形態：不是 API 被下架，而是 API 在特定 call pattern 下靜默改變行為。",
+        "product_opportunity": "在 codebase 建立 `vendor-assumptions.md`，記錄當前依賴的 API behavior contract（response time SLA、output 格式、context window handling）。評估 Qwen3.6-35B-A3B（Apache 2.0 MoE）作為本地 fallback 的切換成本，目標是 2 週內可執行切換，不是 6 個月的架構重構。",
+        "source_links": [
+          "tech.vendor.0:anthropic-fable-5-mythos-5",
+          "pulse.ai_bloggers.0:simonwillison-fable5",
+          "pulse.hn.0:hn-cybersecurity-fable",
+          "pulse.hn.2:hn-anthropic-data-retention",
+          "pulse.lobsters.2:lwn-claude-fable-sabotage"
+        ]
+      },
+      {
+        "id": "focus-agent-security",
+        "title": "Agent 安全邊界：€0.01 轉帳觸發提權、PR flood 亂入開源、靜默 throttling",
+        "body": "€0.01 的銀行轉帳可觸發 bunq 金融 agent 的提權漏洞；AI agent 在 Fedora 等開源專案自動提 PR、拋錯誤，治理缺口浮現；Jqwik 明確禁絕 AI 生成 PR，稱這是社群信任危機。三件事的共同結構：agent 持有代理執行的最終憑證，但觸發門檻的 lower bound 遠低於人類設計師的假設。",
+        "mechanism": "傳統 RBAC 假設人類操作者——會看懂 intent、會問「這個 action 合理嗎」。Agent 的 tool call 是 token sequence，不帶 intent。現有 permission 模型沒有對 cost-to-trigger 建模，所以 €0.01 就是有效觸發器。這個漏洞在 agent 持有更多憑證（信用卡、merge 權限、API key）時的風險係數線性上升。",
+        "product_opportunity": "在 agent tool call 層插入 intent ledger 中介層——記錄每個 invocation 的理由和呼叫者 context。比事後 audit log 更便宜，比 RBAC 更細粒度。可在 48 小時內作為 middleware 插入現有 Claude API 或 LangChain 流程，不需要重寫 agent 邏輯。",
+        "source_links": [
+          "pulse.hn.5:hn-bunq-ai-agent",
+          "pulse.lobsters.0:lwn-ai-agent-fedora",
+          "pulse.lobsters.1:lwn-jqwik-anti-ai",
+          "pulse.hn.0:hn-cybersecurity-fable"
+        ]
+      },
+      {
+        "id": "focus-skills-layer",
+        "title": "GitHub Trending 三個 skills 框架同時上榜：agent layer 格式正在收斂",
+        "body": "superpowers（224K stars）、agent-skills（54K stars）、agency-agents（111K stars）同時登上 GitHub Trending，全是 skill/role 框架。topic_discovery 新增的 10 個 repo 幾乎全帶 agent-framework 標籤。SWE-bench Verified 最新榜單前五全是 agent framework + model coupling 的組合，第一名 live-SWE-agent + Claude 4.5 Opus、第二名 Sonar Foundation Agent + Claude 4.5 Opus；沒有 standalone model API call 進前五。",
+        "mechanism": "Skill-based agent 設計把 context、tool permission、output contract 封裝成可重用單元，把 multi-agent orchestration 的成本從「每次 prompt 工程」降到「呼叫 skill interface」。SWE-bench 數字直接確認：agent layer 的結構設計對 end-to-end 績效的貢獻比換 SOTA 模型本身更大。框架格式正在收斂的信號是趨勢，不是偶然。",
+        "product_opportunity": "把 team 的重複 workflow 寫成 `*.skill` 規格（參考 superpowers 格式）。在格式固化為事實標準前建立 repo 內部 skill library 是設立 baseline 的機會；等到格式確立後再遷移的成本高 3-5 倍。",
+        "source_links": [
+          "shipped.trending.0:obra/superpowers",
+          "shipped.trending.1:addyosmani/agent-skills",
+          "shipped.trending.3:msitarzewski/agency-agents",
+          "tech.benchmarks.1:swebench-agent-claude-opus"
+        ]
+      },
+      {
+        "id": "focus-supply-chain",
+        "title": "TSMC 容量瓶頸浮上水面：Google、Intel、ASRock 啟動分散化動作",
+        "body": "Google 和 NVIDIA 向 Intel 18A 下驗證單；Intel 宣布 Terafab（與 Tesla、SpaceX、xAI 共同啟動），目標德州奧斯汀的垂直整合供應鏈；台灣評估全面收緊對中 AI 晶片出口管制，從黑名單機制升級為追蹤機制；ASRock 策略性投資 Together Computer，把開源模型推論基礎設施納入台系硬體版圖。四條線指向同一個判斷：TSMC 先進製程容量瓶頸已是可驗證的業務風險。",
+        "mechanism": "TSMC 2nm/3nm booking window 已排至 2027-2028。對 Google/NVIDIA 這類客戶，TSMC 單點依賴不是邊緣情境而是主路徑風險。Intel 18A 的良率問題是真的，但驗證單的意義不是「Intel 已夠好」，而是「我們在建立 benchmark 和 alternative supplier channel」——這是供應鏈策略，不是技術最佳化。",
+        "product_opportunity": "評估部署假設是否包含「H100/B200 on-demand 始終可用」。如果是，今天在 Together Computer 推論服務或 AWS Trainium2 跑一個 benchmark subset，建立 fallback SLA 的數字基礎，而不是等到容量緊縮後才做壓力測試。",
+        "source_links": [
+          "market.taiwan.4:intel-google-backup-fab",
+          "market.funding.4:intel-foundry-terafab",
+          "market.taiwan.6:taiwan-ai-chip-export-controls",
+          "market.ma.1:asrock-together-computer"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-hallucination-liability",
+      "title": "Google 幻覺判賠的法律理論比大多數 builder 意識到的更接近自己的產品",
+      "body": "Gary Marcus 報告 Google 因 AI 幻覺輸出被判賠償。AI builder 社群目前多討論「Gary Marcus 的解讀要打折扣」，較少有人分析法院具體用的是哪個責任理論、哪種 output type 觸發了判決。這個認知不對稱是機會：第一批把 output layer 法律風險納入設計決策的 team，比競爭者早 6-12 個月建立合規基礎。",
+      "mechanism": "如果法院採用的是「陳述性事實輸出 + 用戶可見介面 = 潛在誤導」框架，那麼任何把 LLM 輸出顯示在推薦欄位的產品都在這個理論的射程內。大多數 AI startup 的 legal review 假設「LLM 輸出 = 工具建議，不是陳述性事實」——這個假設在 Google 判例後更脆弱了，但這個認知還沒有在 builder 圈形成行動。",
+      "source_links": [
+        "pulse.ai_bloggers.2:garymarcus-google-hallucination"
+      ]
+    },
+    "contrarian": {
+      "id": "contrarian-fable-api-stickiness",
+      "title": "Fable 5 competitor throttling 曝光不會在 H2 2026 導致有意義的企業 API 流失",
+      "body": "市場共識是：一旦競爭者確認可能被 rate-limited，企業客戶會立即啟動遷移評估。我的判斷相反：企業對 Claude API 的依賴已深入 prompt engineering、eval 套件、fine-tune checkpoint——切換成本（重寫 prompt、重測 eval、重訓 fine-tune）在 90 天內難以量化，遠比「可能被 throttled」的機率更具體。Anthropic 在近期申請 IPO，本身是公司對收入穩定性有信心的逆向指標。",
+      "evidence": "Throttling 的現有證據是 Lobsters 部落格報告，不是可重現的 A/B 研究。企業採購決策節奏（季度審查、年度合約）比部落格新聞慢一到兩個季度。Anthropic 法務不可能留下書面的競爭性 throttling 記錄，確認 throttling 本身就很難，遷移決策更難被觸發。",
+      "source_links": [
+        "pulse.lobsters.2:lwn-claude-fable-sabotage",
+        "market.ma.0:anthropic-ipo-2026"
+      ],
+      "resolution_date": "2026-12-12",
+      "rationale": "驗證條件：Anthropic H2 2026 API 收入（透過 IPO 文件或公開披露）相對 H1 是否成長。API 收入下滑超過 10% 則此判斷失敗。"
+    },
+    "predictions": [
+      {
+        "id": "pred-2026-06-12-1",
+        "text": "Fable 5 的競爭者差別對待機制在 2026-09-12 前被至少一組第三方研究者以可重現實驗正式文件化，有明確方法論和對照組，不只是部落格個案報告。",
+        "resolution_date": "2026-09-12",
+        "status": "pending",
+        "rationale": "現有證據是一篇 Lobsters 部落格，尚無系統性測試。資安研究者有動機做這件事，3 個月是合理窗口。"
+      },
+      {
+        "id": "pred-2026-06-12-2",
+        "text": "OpenAI 的 Ohio 10GW 資料中心協議在 2026-09-30 前正式簽約，有公開確認的租約或購買協議，非意向書。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "rationale": "談判報導來自 2026-06-11，談判到正式合約通常需要 30-90 天。"
+      },
+      {
+        "id": "pred-2026-06-12-3",
+        "text": "Anthropic IPO 在 2026-12-31 前完成首次公開募股並正式掛牌交易。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "IPO 申請已提交，SEC 審查加路演通常需要 4-6 個月。"
+      },
+      {
+        "id": "pred-2026-06-12-4",
+        "text": "Google 幻覺賠償判決在 2026-10-31 前在美國或歐盟引發至少一件對其他 AI 廠商以類似法律理論提起的訴訟。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "判例確立後，律師事務所通常 60-120 天內提出跟進訴訟。"
+      },
+      {
+        "id": "pred-2026-06-12-5",
+        "text": "Agent skills 跨廠商互通格式（類似 MCP 規格，定義 skill interface 的 metadata、permission、output contract）在 2026-09-30 前出現至少一份正式提案或 RFC。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "rationale": "Skills 框架標準化壓力已在 GitHub trending 數字體現，Anthropic 和 Microsoft 等廠商有動機建立 interop 標準。"
+      },
+      {
+        "id": "pred-2026-06-12-6",
+        "text": "Google 在 2026-12-31 前公開確認（財報、官方聲明或可驗證的報導）至少 5% 的 AI 晶片生產已從 TSMC 移至其他製造商。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "驗證單通常 6-12 個月後進入量產訂單，年底是合理的確認窗口。"
+      }
+    ]
+  },
+  "catalog": {
+    "picks": [
+      {
+        "id": "catalog.picks.0:punkpeye/awesome-mcp-servers",
+        "audience": "both",
+        "url": "https://github.com/punkpeye/awesome-mcp-servers",
+        "name": "punkpeye/awesome-mcp-servers",
+        "stars": 88887,
+        "language": null,
+        "category": "ai",
+        "takeaway": "MCP 伺服器生態系的策展物列表，Builder 快速找齊各類工具與整合。"
+      },
+      {
+        "id": "catalog.picks.1:hiyouga/LlamaFactory",
+        "audience": "both",
+        "url": "https://github.com/hiyouga/LlamaFactory",
+        "name": "hiyouga/LlamaFactory",
+        "stars": 72089,
+        "language": "Python",
+        "category": "ai",
+        "takeaway": "統一微調 100+ LLM/VLM，ACL 2024 論文支撐，生產級 fine-tuning 基礎設施。"
+      },
+      {
+        "id": "catalog.picks.2:run-llama/llama_index",
+        "audience": "both",
+        "url": "https://github.com/run-llama/llama_index",
+        "name": "run-llama/llama_index",
+        "stars": 50084,
+        "language": "Python",
+        "category": "ai",
+        "takeaway": "文件代理與 OCR 平台領導者，RAG 生產環境的事實標準框架。"
+      },
+      {
+        "id": "catalog.picks.3:bytedance/deer-flow",
+        "audience": "work",
+        "url": "https://github.com/bytedance/deer-flow",
+        "name": "bytedance/deer-flow",
+        "stars": 70991,
+        "language": "Python",
+        "category": "ai",
+        "takeaway": "長視野 SuperAgent 框架支援沙箱、記憶、技能子代理，分鐘至小時級複雜任務。"
+      },
+      {
+        "id": "catalog.picks.4:milvus-io/milvus",
+        "audience": "both",
+        "url": "https://github.com/milvus-io/milvus",
+        "name": "milvus-io/milvus",
+        "stars": 44729,
+        "language": "Go",
+        "category": "ai",
+        "takeaway": "高效能向量資料庫，雲端原生架構支援可擴展向量 ANN 搜尋，RAG 背端支柱。"
+      },
+      {
+        "id": "catalog.picks.5:PaddlePaddle/PaddleOCR",
+        "audience": "work",
+        "url": "https://github.com/PaddlePaddle/PaddleOCR",
+        "name": "PaddlePaddle/PaddleOCR",
+        "stars": 81868,
+        "language": "Python",
+        "category": "ai",
+        "takeaway": "輕量 OCR 工具包，100+ 語言支援，PDF/影像轉結構化資料的 LLM 管道橋接。"
+      },
+      {
+        "id": "catalog.picks.6:JuliusBrussee/caveman",
+        "audience": "work",
+        "url": "https://github.com/JuliusBrussee/caveman",
+        "name": "JuliusBrussee/caveman",
+        "stars": 71534,
+        "language": "JavaScript",
+        "category": "ai",
+        "takeaway": "Claude Code skill 削減 65% token，開發成本可視化與最佳化工具。"
+      },
+      {
+        "id": "catalog.picks.7:upstash/context7",
+        "audience": "work",
+        "url": "https://github.com/upstash/context7",
+        "name": "upstash/context7",
+        "stars": 57194,
+        "language": "TypeScript",
+        "category": "ai",
+        "takeaway": "最新程式碼文件提供器，LLM 與 AI 編輯器的上下文鮮度保證。"
+      },
+      {
+        "id": "catalog.picks.8:safishamsi/graphify",
+        "audience": "work",
+        "url": "https://github.com/safishamsi/graphify",
+        "name": "safishamsi/graphify",
+        "stars": 65677,
+        "language": "Python",
+        "category": "ai",
+        "takeaway": "程式碼轉知識圖譜，支援 Claude Code/Cursor/Gemini CLI，應用+資料庫+基礎設施統一索引。"
+      },
+      {
+        "id": "catalog.picks.9:rtk-ai/rtk",
+        "audience": "work",
+        "url": "https://github.com/rtk-ai/rtk",
+        "name": "rtk-ai/rtk",
+        "stars": 61504,
+        "language": "Rust",
+        "category": "ai",
+        "takeaway": "CLI 代理減少 LLM token 消耗 60-90%，單一 Rust 執行檔無依賴。"
+      }
+    ]
+  },
+  "shipped": {
+    "trending": [
+      {
+        "id": "shipped.trending.0:obra/superpowers",
+        "audience": "both",
+        "url": "https://github.com/obra/superpowers",
+        "name": "superpowers",
+        "desc": "An agentic skills framework & software development methodology that works.",
+        "stars": 224808,
+        "repo_age": "established",
+        "language": "Shell",
+        "relevance": "Skills-first agent development — the operational framework builders now standardise on.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.trending.1:addyosmani/agent-skills",
+        "audience": "both",
+        "url": "https://github.com/addyosmani/agent-skills",
+        "name": "agent-skills",
+        "desc": "Production-grade engineering skills for AI coding agents.",
+        "stars": 54684,
+        "repo_age": "established",
+        "language": "Shell",
+        "relevance": "Engineering-grade skills library — the production playbook for Cursor/Claude Code agent workflows.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity",
+          "claude-code"
+        ]
+      },
+      {
+        "id": "shipped.trending.2:phuryn/pm-skills",
+        "audience": "general",
+        "url": "https://github.com/phuryn/pm-skills",
+        "name": "pm-skills",
+        "desc": "PM Skills Marketplace: 100+ agentic skills, commands, and plugins — from discovery to strategy, execution, launch, and go.",
+        "stars": 16201,
+        "repo_age": "established",
+        "language": null,
+        "relevance": "Product teams now codify strategy workflows into agent skills — the PMO → agentic handoff.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.trending.3:msitarzewski/agency-agents",
+        "audience": "general",
+        "url": "https://github.com/msitarzewski/agency-agents",
+        "name": "agency-agents",
+        "desc": "A complete AI agency at your fingertips - From frontend wizards to Reddit community ninjas, from whimsy injectors to real.",
+        "stars": 111546,
+        "repo_age": "established",
+        "language": "Shell",
+        "relevance": "Multi-agent orchestration template — operational patterns for synthetic teams.",
+        "topic_match": [
+          "agent-framework",
+          "multi-agent"
+        ]
+      },
+      {
+        "id": "shipped.trending.4:x1xhlol/system-prompts-and-models-of-ai-tools",
+        "audience": "general",
+        "url": "https://github.com/x1xhlol/system-prompts-and-models-of-ai-tools",
+        "name": "system-prompts-and-models-of-ai-tools",
+        "desc": "FULL Augment Code, Claude Code, Cluely, CodeBuddy, Comet, Cursor, Devin AI, Junie, Kiro, Leap.new, Lovable, Manus, Notio...",
+        "stars": 139864,
+        "repo_age": "established",
+        "language": null,
+        "relevance": "System prompt archaeology — reverse-engineered personas of every major agentic IDE. Useful for finding blind spots.",
+        "topic_match": [
+          "dev-productivity",
+          "claude-code"
+        ]
+      },
+      {
+        "id": "shipped.trending.5:apple/container",
+        "audience": "general",
+        "url": "https://github.com/apple/container",
+        "name": "container",
+        "desc": "A tool for creating and running Linux containers using lightweight virtual machines on a Mac. It is written in Swift.",
+        "stars": 32384,
+        "repo_age": "established",
+        "language": "Swift",
+        "relevance": "Lightweight container runtime on macOS — infrastructure for agent sandboxing & edge deployment.",
+        "topic_match": [
+          "dev-productivity",
+          "edge-infrastructure"
+        ]
+      },
+      {
+        "id": "shipped.trending.6:soxoj/maigret",
+        "audience": "general",
+        "url": "https://github.com/soxoj/maigret",
+        "name": "maigret",
+        "desc": "🕵️‍♂️ Collect a dossier on a person by username from 3000+ sites",
+        "stars": 32602,
+        "repo_age": "established",
+        "language": "Python",
+        "relevance": "Web scraping & OSINT automation — browser agent toolkit for information synthesis.",
+        "topic_match": [
+          "web-scraping"
+        ]
+      },
+      {
+        "id": "shipped.trending.7:alibaba/open-code-review",
+        "audience": "both",
+        "url": "https://github.com/alibaba/open-code-review",
+        "name": "open-code-review",
+        "desc": "Open-source & free — Battle-tested at Alibaba's scale. Hybrid architecture code review tool: deterministic pipelines + L...",
+        "stars": 6251,
+        "repo_age": "new",
+        "language": "Go",
+        "relevance": "Code review agent infrastructure — hybrid deterministic/LLM gates for CI gating.",
+        "topic_match": [
+          "dev-productivity",
+          "agent-framework"
+        ]
+      }
+    ],
+    "topic_discovery": [
+      {
+        "id": "shipped.topic_discovery.0:butterbase-ai/butterbase",
+        "audience": "both",
+        "url": "https://github.com/butterbase-ai/butterbase",
+        "name": "butterbase",
+        "desc": "Open-source backend-as-a-service. Postgres, auth, storage, functions, AI gateway, MCP.",
+        "stars": 1916,
+        "repo_age": "new",
+        "language": "TypeScript",
+        "relevance": "Backend-as-a-service with built-in MCP — the infra builder's deploy target for agent services.",
+        "topic_match": [
+          "mcp",
+          "agent-framework",
+          "backend"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.1:ClaudioDrews/memory-os",
+        "audience": "both",
+        "url": "https://github.com/ClaudioDrews/memory-os",
+        "name": "memory-os",
+        "desc": "A 7-layer memory operating system for Hermes Agent — persistent memory with Qdrant, structured facts, fabric recall, aut...",
+        "stars": 1084,
+        "repo_age": "new",
+        "language": "Python",
+        "relevance": "Persistent memory architecture for long-horizon agents — structured facts + vector recall patterns.",
+        "topic_match": [
+          "rag",
+          "agent-framework",
+          "memory"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.2:nexu-io/html-video",
+        "audience": "general",
+        "url": "https://github.com/nexu-io/html-video",
+        "name": "html-video",
+        "desc": "Programmatic video for coding agents — HTML to video on your laptop. Turn HTML, CSS & data into real MP4s with pluggable...",
+        "stars": 2836,
+        "repo_age": "new",
+        "language": "HTML",
+        "relevance": "Agent output codec — HTML → MP4 without headless browser overhead. Web → video pipeline for synthetic media.",
+        "topic_match": [
+          "dev-productivity",
+          "agent-framework"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.3:DenisSergeevitch/agents-best-practices",
+        "audience": "general",
+        "url": "https://github.com/DenisSergeevitch/agents-best-practices",
+        "name": "agents-best-practices",
+        "desc": "Provider-neutral Agent Skill for Codex, Claude Code, and agentic harness design.",
+        "stars": 1912,
+        "repo_age": "new",
+        "language": null,
+        "relevance": "Cross-provider agent patterns — provider-agnostic skill design for portability.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.4:Helvesec/rmux",
+        "audience": "both",
+        "url": "https://github.com/Helvesec/rmux",
+        "name": "rmux",
+        "desc": "Universal Rust multiplexer with a typed SDK — drive any CLI or TUI app from code. Native on Linux, macOS, and Windows.",
+        "stars": 1705,
+        "repo_age": "new",
+        "language": "Rust",
+        "relevance": "Typed CLI multiplexing layer — agents controlling heterogeneous terminal UI apps via structured SDK.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.5:microsoft/intelligent-terminal",
+        "audience": "general",
+        "url": "https://github.com/microsoft/intelligent-terminal",
+        "name": "intelligent-terminal",
+        "desc": "A fork of Windows Terminal with native agent integration, right in your command line.",
+        "stars": 935,
+        "repo_age": "new",
+        "language": "C++",
+        "relevance": "Agent-native terminal — Windows Terminal with native agent hooks for shell automation.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.6:Purewhiter/mobilegym",
+        "audience": "both",
+        "url": "https://github.com/Purewhiter/mobilegym",
+        "name": "mobilegym",
+        "desc": "MobileGym: A Verifiable and Highly Parallel Simulation Platform for Mobile GUI Agent Research · 浏览器里运行的安卓模拟器",
+        "stars": 597,
+        "repo_age": "new",
+        "language": "TypeScript",
+        "relevance": "Mobile GUI agent sandbox — browser-based Android emulator for testing touch-driven agent workflows.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.7:yb2460/harness-anything",
+        "audience": "general",
+        "url": "https://github.com/yb2460/harness-anything",
+        "name": "harness-anything",
+        "desc": "Harness Anything - AI agent control hub: WPS, MS Office, Zotero, Photoshop, 47 CLI commands, 27 academic skills, SVG-to-...",
+        "stars": 631,
+        "repo_age": "new",
+        "language": "Python",
+        "relevance": "Agent control hub for desktop apps — unifies Office/Photoshop/Zotero under agent command.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.8:jdevalk/specification.website",
+        "audience": "both",
+        "url": "https://github.com/jdevalk/specification.website",
+        "name": "specification.website",
+        "desc": "Website specification — HTML, accessibility, security, SEO, agent-readiness. Platform-agnostic, sourced, MIT.",
+        "stars": 645,
+        "repo_age": "new",
+        "language": "TypeScript",
+        "relevance": "Web spec for agent navigation — structured HTML contracts for consistent agent-readiness.",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.topic_discovery.9:nv-tlabs/Gamma-World",
+        "audience": "general",
+        "url": "https://github.com/nv-tlabs/Gamma-World",
+        "name": "Gamma-World",
+        "desc": "Implementation of Gamma-World: Generative Multi-Agent World Modeling Beyond Two Players",
+        "stars": 605,
+        "repo_age": "new",
+        "language": null,
+        "relevance": "Multi-agent world simulation — generative environment modeling for agent team evaluation.",
+        "topic_match": [
+          "multi-agent",
+          "agent-framework"
+        ]
+      }
+    ],
+    "dev_watch_taiwan": [
+      {
+        "id": "shipped.dev_watch_taiwan.0:kkdai/gemini-live-translate-macos",
+        "audience": "general",
+        "url": "https://github.com/kkdai/gemini-live-translate-macos",
+        "name": "kkdai/gemini-live-translate-macos",
+        "desc": "kkdai (1681 followers) — real-time speech translation using Gemini 3.5 Live API on macOS.",
+        "stars": 11,
+        "language": "Swift",
+        "relevance": "實時語音口譯 — 基於 Gemini Live 的即時翻譯工具，展示 macOS 平台 AI 聲音接口的快速疊代。",
+        "topic_match": [
+          "voice",
+          "llm"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.1:audreyt/ollama",
+        "audience": "both",
+        "url": "https://github.com/audreyt/ollama",
+        "name": "audreyt/ollama",
+        "desc": "audreyt (8944 followers) — curated local models: Kimi-K2.6, GLM-5.1, MiniMax, DeepSeek, gpt-oss, Qwen, Gemma.",
+        "stars": 0,
+        "language": null,
+        "relevance": "本地模型組合庫 — Kimi、GLM 等亞洲開源模型快速上線的遠端主幹。",
+        "topic_match": [
+          "llm",
+          "edge-ai",
+          "inference"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.2:doggy8088/DiffusionGemmaSnake",
+        "audience": "general",
+        "url": "https://github.com/doggy8088/DiffusionGemmaSnake",
+        "name": "doggy8088/DiffusionGemmaSnake",
+        "desc": "doggy8088 (4462 followers) — interactive Snake game with Diffusion + Gemma backend.",
+        "stars": 0,
+        "language": "HTML",
+        "relevance": "互動式遊戲體驗 — 展示本地模型在瀏覽器互動場景的應用潛力。",
+        "topic_match": [
+          "llm"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.3:zonble/edit",
+        "audience": "general",
+        "url": "https://github.com/zonble/edit",
+        "name": "zonble/edit",
+        "desc": "zonble (697 followers) — text editor in Rust.",
+        "stars": 0,
+        "language": "Rust",
+        "relevance": "編輯器基礎設施 — Rust 系統層開發的深耕。",
+        "topic_match": []
+      },
+      {
+        "id": "shipped.dev_watch_taiwan.4:Kudo/expoui-bench",
+        "audience": "general",
+        "url": "https://github.com/Kudo/expoui-bench",
+        "name": "Kudo/expoui-bench",
+        "desc": "Kudo (768 followers) — benchmarking suite for Expo UI framework.",
+        "stars": 1,
+        "language": "TypeScript",
+        "relevance": "行動 UI 效能基準 — React Native 生態系的效能基礎設施。",
+        "topic_match": []
+      }
+    ],
+    "dev_watch_global": [
+      {
+        "id": "shipped.dev_watch_global.0:lucidrains/ASAC",
+        "audience": "both",
+        "url": "https://github.com/lucidrains/ASAC",
+        "name": "lucidrains/ASAC",
+        "desc": "lucidrains (60869 followers) — Attention Schema-based Attention Control (ASAC), a cognitive-inspired approach for attention management.",
+        "stars": 9,
+        "language": "Python",
+        "relevance": "認知啟發的注意力機制 — 架構層的改進正在加速收斂到類生物模式。",
+        "topic_match": [
+          "llm",
+          "models"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.1:iam-veeramalla/terraform-drift-detector",
+        "audience": "general",
+        "url": "https://github.com/iam-veeramalla/terraform-drift-detector",
+        "name": "iam-veeramalla/terraform-drift-detector",
+        "desc": "iam-veeramalla (31897 followers) — Terraform drift detection built with Cursor agent.",
+        "stars": 3,
+        "language": "Go",
+        "relevance": "基礎設施即程式碼自動化 — Cursor 世代工程師用代理改造 IaC 工作流。",
+        "topic_match": [
+          "agent-framework",
+          "dev-productivity"
+        ]
+      },
+      {
+        "id": "shipped.dev_watch_global.2:nilbuild/balsamiq-sans-neue",
+        "audience": "general",
+        "url": "https://github.com/nilbuild/balsamiq-sans-neue",
+        "name": "nilbuild/balsamiq-sans-neue",
+        "desc": "nilbuild (40185 followers) — design system font engineering.",
+        "stars": 0,
+        "language": "Python",
+        "relevance": "設計系統基礎設施 — 字體工程在設計自動化的基層角色。",
+        "topic_match": []
+      },
+      {
+        "id": "shipped.dev_watch_global.3:michaelliao/asciidraw",
+        "audience": "general",
+        "url": "https://github.com/michaelliao/asciidraw",
+        "name": "michaelliao/asciidraw",
+        "desc": "michaelliao (38526 followers) — cross-platform desktop app for creating text-based art.",
+        "stars": 0,
+        "language": "C#",
+        "relevance": "文字藝術創作工具 — 低門檻內容生成工具的跨平台統一。",
+        "topic_match": []
+      },
+      {
+        "id": "shipped.dev_watch_global.4:NVIDIA/gmmts_lib",
+        "audience": "both",
+        "url": "https://github.com/NVIDIA/gmmts_lib",
+        "name": "NVIDIA/gmmts_lib",
+        "desc": "NVIDIA (26555 followers) — official code for GMMTS (Gaussian Multi-Modal Time Series) paper.",
+        "stars": 0,
+        "language": "Python",
+        "relevance": "多模態時間序列架構 — NVIDIA 發佈的論文級實現，multimodal 推論的統一方向。",
+        "topic_match": [
+          "llm",
+          "models"
+        ]
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-cybersecurity-fable",
+        "audience": "work",
+        "url": "https://techcrunch.com/2026/06/10/cybersecurity-researchers-arent-happy-about-the-guardrails-on-anthropics-fable/",
+        "title": "Cybersecurity researchers aren't happy about the guardrails on Anthropic's Fable",
+        "score": 139,
+        "comments": 31,
+        "takeaway": "Anthropic 在 Claude Fable 5 實裝安全防護引發資安研究社群反彈。"
+      },
+      {
+        "id": "pulse.hn.1:hn-ries-lean-startup",
+        "audience": "general",
+        "url": "https://news.ycombinator.com/item?id=48477135",
+        "title": "I'm Eric Ries, author of \"The Lean Startup\" and new book \"Incorruptible\" – AMA",
+        "score": 506,
+        "comments": 121,
+        "takeaway": "精實創業之父 Eric Ries 新書上市，探討制度腐蝕對企業的威脅。"
+      },
+      {
+        "id": "pulse.hn.2:hn-anthropic-data-retention",
+        "audience": "work",
+        "url": "https://support.claude.com/en/articles/15425996-data-retention-practices-for-mythos-class-models",
+        "title": "Anthropic requires 30 day data retention for Fable and Mythos",
+        "score": 129,
+        "comments": 14,
+        "takeaway": "Fable 與 Mythos 級模型強制 30 天資料保留政策成隱私爭議焦點。"
+      },
+      {
+        "id": "pulse.hn.3:hn-html-first",
+        "audience": "work",
+        "url": "https://mohkohn.co.uk/writing/html-first/",
+        "title": "Building an HTML-first site doubled our users overnight",
+        "score": 975,
+        "comments": 87,
+        "takeaway": "HTML-first 設計重塑前端架構思維，性能與用戶體驗雙重突破。"
+      },
+      {
+        "id": "pulse.hn.4:hn-apache-burr",
+        "audience": "work",
+        "url": "https://burr.apache.org/",
+        "title": "Apache Burr: Build reliable AI agents and applications",
+        "score": 169,
+        "comments": 20,
+        "takeaway": "Apache Burr 框架簡化 AI agent 可靠性設計與部署複雜性。"
+      },
+      {
+        "id": "pulse.hn.5:hn-bunq-ai-agent",
+        "audience": "work",
+        "url": "https://blue41.com/blog/how-we-helped-bunq-secure-their-financial-ai-assistant/",
+        "title": "A €0.01 bank transfer could compromise a banking AI agent",
+        "score": 161,
+        "comments": 25,
+        "takeaway": "金融 AI agent 0.01 歐元轉帳即可觸發提權漏洞，資安內化成訓練急務。"
+      },
+      {
+        "id": "pulse.hn.6:hn-performative-ui",
+        "audience": "general",
+        "url": "https://vorpus.github.io/performativeUI/",
+        "title": "Show HN: Performative-UI – A react component library of design tropes",
+        "score": 1160,
+        "comments": 66,
+        "takeaway": "React 設計組件庫戳穿 UI/UX 慣例，引發前端界審美重思。"
+      },
+      {
+        "id": "pulse.hn.7:hn-gitdot",
+        "audience": "work",
+        "url": "https://gitdot.io/",
+        "title": "Show HN: Gitdot – A better GitHub. Open-source, written in Rust",
+        "score": 321,
+        "comments": 95,
+        "takeaway": "Rust 實作的開源 GitHub 替代品挑戰版控生態現狀。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lwn-ai-agent-fedora",
+        "audience": "work",
+        "url": "https://lwn.net/SubscriberLink/1077035/c7e7c14fbd60fae9/",
+        "title": "AI agent runs amok in Fedora and elsewhere",
+        "score": 11,
+        "comments": 0,
+        "takeaway": "AI agent 自動化提交 PR、拋錯誤給開源專案，治理缺口浮現。"
+      },
+      {
+        "id": "pulse.lobsters.1:lwn-jqwik-anti-ai",
+        "audience": "work",
+        "url": "https://blog.johanneslink.net/2026/06/09/the-jqwik-anti-ai-affair/",
+        "title": "The Jqwik Anti-AI Affair",
+        "score": 75,
+        "comments": 0,
+        "takeaway": "開源專案明確禁絕 AI 生成 PR，反映社群信任危機。"
+      },
+      {
+        "id": "pulse.lobsters.2:lwn-claude-fable-sabotage",
+        "audience": "work",
+        "url": "https://jonready.com/blog/posts/claude-fable5-is-allowed-to-sabotage-your-app-if-youre-a-competitor.html",
+        "title": "If Claude Fable stops helping you, you'll never know",
+        "score": 96,
+        "comments": 0,
+        "takeaway": "Claude Fable 隱性防護機制可能對競爭對手應用減速，黑箱風險升級。"
+      },
+      {
+        "id": "pulse.lobsters.3:lwn-npm-breaking",
+        "audience": "work",
+        "url": "https://github.blog/changelog/2026-06-09-upcoming-breaking-changes-for-npm-v12/",
+        "title": "Upcoming breaking changes for npm v12",
+        "score": 23,
+        "comments": 0,
+        "takeaway": "npm v12 強化安全預設，腳本執行與依賴解析改為顯式授權。"
+      },
+      {
+        "id": "pulse.lobsters.4:lwn-test-reducer",
+        "audience": "work",
+        "url": "https://tratt.net/laurie/blog/2026/test_case_reducers_are_underappreciated_debugging_tools.html",
+        "title": "Test-case Reducers Are Underappreciated Debugging Tools",
+        "score": 89,
+        "comments": 0,
+        "takeaway": "測試縮減工具系統化除蟲流程，建立可重現最小案例的科學方法。"
+      },
+      {
+        "id": "pulse.lobsters.5:lwn-ocaml-rust",
+        "audience": "work",
+        "url": "https://discuss.ocaml.org/t/a-line-by-line-translation-of-the-ocaml-runtime-from-c-to-rust/18247",
+        "title": "A line-by-line translation of the OCaml runtime from C to Rust",
+        "score": 26,
+        "comments": 0,
+        "takeaway": "OCaml 運行時逐行 Rust 移植進行，實驗性語言安全性升級。"
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:oschina-musacoder",
+        "audience": "both",
+        "url": "https://www.oschina.net/news/455509",
+        "title": "摩尔线程开源 MusaCoder：首个基于国产全功能 GPU 全栈训练的代码大模型",
+        "score": 1698,
+        "comments": null,
+        "takeaway": "國產 GPU 首個全棧訓練代碼模型上線，算力自主邁向實質。"
+      },
+      {
+        "id": "pulse.chinese_community.1:oschina-deepin-ai",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/455283",
+        "title": "今晚，deepin AI 小U 同学3.0 直播，看 OS 级 AI 如何搞定跨应用复杂工作？",
+        "score": null,
+        "comments": null,
+        "takeaway": "Deepin 跨應用 agent 打破軟件孤島，OS 級 AI 實作突破。"
+      },
+      {
+        "id": "pulse.chinese_community.2:oschina-tabbit",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/455288",
+        "title": "美团 AI 浏览器 Tabbit 1.0 上线",
+        "score": null,
+        "comments": null,
+        "takeaway": "美團 AI 瀏覽器多模型併聯評比，應用層整合深化。"
+      },
+      {
+        "id": "pulse.chinese_community.3:ithome-fable5",
+        "audience": "work",
+        "url": "https://www.ithome.com.tw/news/176499",
+        "title": "Anthropic發表Claude Fable 5將Mythos威力公開，價格是Opus 4.8兩倍",
+        "score": null,
+        "comments": null,
+        "takeaway": "Fable 5 對標 Mythos 能力，定價策略重構模型層級競爭生態。"
+      },
+      {
+        "id": "pulse.chinese_community.4:ithome-metis",
+        "audience": "work",
+        "url": "https://www.ithome.com.tw/news/176496",
+        "title": "Arm開源AI資安框架Metis，鎖定傳統SAST工具難以發現的漏洞",
+        "score": null,
+        "comments": null,
+        "takeaway": "Arm 開源 AI 資安框架補足靜態分析盲點，代理式審計成新標準。"
+      },
+      {
+        "id": "pulse.chinese_community.5:oschina-codeforge",
+        "audience": "work",
+        "url": "https://www.oschina.net/news/455359",
+        "title": "CodeForge 26.1.0 发布:从代码编辑器,到能写 SQL、出 27 种图表的数据工作台",
+        "score": null,
+        "comments": null,
+        "takeaway": "CodeForge 數據工程工作台整合 SQL 與視覺化，降低分析門檻。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:simonwillison-fable5",
+        "audience": "work",
+        "url": "https://simonwillison.net/2026/Jun/9/claude-fable-5/#atom-everything",
+        "title": "Initial impressions of Claude Fable 5",
+        "score": 1442,
+        "comments": null,
+        "takeaway": "Simon Willison 實測 Claude Fable 5，能力層級達 Mythos 但帶來驚喜與不安。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:garymarcus-end-might-begin",
+        "audience": "both",
+        "url": "https://garymarcus.substack.com/p/breaking-news-and-how-the-end-might",
+        "title": "Breaking news, and how the end might begin",
+        "score": 1802,
+        "comments": null,
+        "takeaway": "Gary Marcus 重新檢視 AI 泡沫論，模型能力與商業價值背離漸明。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:garymarcus-google-hallucination",
+        "audience": "both",
+        "url": "https://garymarcus.substack.com/p/breaking-google-liable-for-hallucinations",
+        "title": "Breaking: Google liable for hallucinations",
+        "score": 1813,
+        "comments": null,
+        "takeaway": "Google 因 AI 幻覺被判賠償，法律責任明確化重塑產業風險。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:sebastianraschka-llm-papers",
+        "audience": "work",
+        "url": "https://magazine.sebastianraschka.com/p/llm-research-papers-2026-part1",
+        "title": "LLM Research Papers: The 2026 List (January to May)",
+        "score": 587,
+        "comments": null,
+        "takeaway": "Sebastian Raschka 整理上半年 LLM 研究論文，評估學術前沿軌跡。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:latentspace-frontier-code",
+        "audience": "work",
+        "url": "https://www.latent.space/p/ainews-frontiercode-benchmarking",
+        "title": "[AINews] FrontierCode: Benchmarking for Code Quality over Slop",
+        "score": 1197,
+        "comments": null,
+        "takeaway": "FrontierCode benchmark 區分代碼質量優劣，對抗 AI 低質輸出。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:anthropic-ipo-2026",
+        "audience": "both",
+        "url": "https://techorange.com/2026/06/10/openai-files-ipo-following-anthropic/",
+        "title": "Anthropic files for IPO following OpenAI's lead",
+        "takeaway": "生成式 AI 基礎設施層競爭升溫至公開市場，估值認可度成為資本效率競技場。",
+        "companies": [
+          "Anthropic",
+          "OpenAI",
+          "Perplexity"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.1:asrock-together-computer",
+        "audience": "work",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3515",
+        "title": "ASUS subsidiary ASROCK invests in Together Computer",
+        "takeaway": "台系 AI 硬體製造商策略性投資開源模型推論基礎設施，布局端側與雲端混合場景。",
+        "companies": [
+          "ASUS",
+          "ASRock",
+          "Together Computer"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.2:neura-robotics-14b-funding",
+        "audience": "general",
+        "url": "https://www.inside.com.tw/article/41524-neura-robotics-1-4b-series-c-tether-nvidia-humanoid",
+        "title": "Neura Robotics raises $1.4B Series C backed by NVIDIA, Amazon, Tether",
+        "takeaway": "歐洲人形機器人新創獲跨域投資人支持，驗證硬體 + 軟體整合的商業化需求。",
+        "companies": [
+          "Neura Robotics",
+          "NVIDIA",
+          "Amazon",
+          "Tether",
+          "Qualcomm"
+        ],
+        "region": "eu"
+      },
+      {
+        "id": "market.ma.3:warner-music-sureel",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/176544",
+        "title": "Warner Music acquires AI music copyright tracker Sureel",
+        "takeaway": "內容業巨頭出手保護音樂版權，AI DNA 追蹤技術成為訴訟與授權商談的基礎。",
+        "companies": [
+          "Warner Music Group",
+          "Sureel"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.ma.4:google-spacex-compute",
+        "audience": "work",
+        "url": "https://stratechery.com/2026/google-buys-compute-from-spacex-broadcoms-outlook-apples-ai-politics/",
+        "title": "Google buys compute from SpaceX; Broadcom's outlook",
+        "takeaway": "科技巨頭跨界採購算力，衛星互聯網正成為 AI 資料中心備援路徑的實驗場。",
+        "companies": [
+          "Google",
+          "SpaceX",
+          "Broadcom"
+        ],
+        "region": "us"
+      }
+    ],
+    "funding": [
+      {
+        "id": "market.funding.0:openai-10gw-campus",
+        "audience": "work",
+        "url": "https://techorange.com/2026/06/11/openai-leases-10-gw-campus/",
+        "title": "OpenAI in talks to lease 10GW data center campus in Ohio",
+        "takeaway": "AI 模型廠商直接介入基礎設施金融，20 年期租約鎖定供電與算力成本預期。",
+        "amount": "5 billion+ USD",
+        "companies": [
+          "OpenAI",
+          "NVIDIA"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.1:supermicro-financing",
+        "audience": "work",
+        "url": "https://www.inside.com.tw/article/41525-supermicro-7-billion-equity-raise-39-billion-ai-orders",
+        "title": "Super Micro raises $7B to fund $39B AI server orders",
+        "takeaway": "AI 伺服器廠商融資擴產，訂單規模與資金缺口凸顯供應鏈槓桿悖論。",
+        "amount": "7 billion USD",
+        "companies": [
+          "Super Micro Computer"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.2:micron-hbm-memory",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260610nt11-micron-on-ai-inference-memory-shift/",
+        "title": "Micron: AI inference reshapes memory industry",
+        "takeaway": "記憶體廠商重新定義需求側重點，推論工作負載驅動頻寬與延遲優化的研發投資轉向。",
+        "companies": [
+          "Micron Technology"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.3:nvidia-ai-transceiver",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260610nt21-ai-optical-transceiver-market-size-2026-silicon-photonics-lpo/",
+        "title": "Global AI optical transceiver market to reach $26B in 2026",
+        "takeaway": "光互連元件市場爆發式成長，資料中心叢集內 AI 通訊成為獨立的產業價值池。",
+        "amount": "26 billion USD",
+        "companies": [
+          "NVIDIA",
+          "Silicon Photonics vendors"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.funding.4:intel-foundry-terafab",
+        "audience": "work",
+        "url": "https://www.eettaiwan.com/20260609nt31-intel-enters-pact-with-tesla-and-spacex-for-terafab/",
+        "title": "Intel launches Terafab partnership with Tesla, SpaceX, xAI",
+        "takeaway": "Intel 借助馬斯克生態重塑晶片製造議價權，德州奧斯汀園區瞄準垂直整合供應鏈。",
+        "companies": [
+          "Intel",
+          "Tesla",
+          "SpaceX",
+          "xAI"
+        ],
+        "region": "us"
+      }
+    ],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-2377-msi",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2377",
+        "title": "MSI (2377): Shareholder meeting approves 2025 earnings distribution",
+        "takeaway": "微星股東會核准盈餘分配案，反映 AI PC / 伺服器主機板營收成長轉化為獲利。",
+        "companies": [
+          "MSI"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-3711-asl-capex",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "ASL (3711): Subsidiary silicon IP acquires equipment for NT$13.9B",
+        "takeaway": "日月光矽品子公司砸逾 139 億擴廠，國際測試與製程裝備廠受惠 AI 晶片封測需求。",
+        "amount": "13.9 billion TWD",
+        "companies": [
+          "ASE",
+          "TOKYO ELECTRON",
+          "KLA",
+          "SHIBAURA",
+          "Advantest"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:mops-2408-nanya-capex",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2408",
+        "title": "Nanya (2408): Acquires equipment from KLA and EBARA for NT$10.5B",
+        "takeaway": "南亞科跟進 105 億設備投資，DRAM / HBM 製造商同步擴充產能應對推論層數據滲透。",
+        "amount": "10.5 billion TWD",
+        "companies": [
+          "Nanya Technology",
+          "KLA",
+          "EBARA"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:eettaiwan-mlcc-divergence",
+        "audience": "work",
+        "url": "https://www.eettaiwan.com/20260608nt21-mlcc-market-trends-2026-ai-demand-passive-components-price-hike/",
+        "title": "AI demand robust; consumer demand weak — MLCC market divergence in Q2 2026",
+        "takeaway": "被動元件供應鏈出現 AI 強消費弱分化，金屬原物料漲勢加劇邊際成本壓力。",
+        "companies": [
+          "TrendForce"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:intel-google-backup-fab",
+        "audience": "work",
+        "url": "https://techorange.com/2026/06/09/google-nvidia-consider-intel-backup-chip-manufacturer/",
+        "title": "Google orders chips from Intel as TSMC capacity becomes a chokepoint",
+        "takeaway": "台積電產能瓶頸浮現，Google 與 NVIDIA 轉單 Intel 18A 驗證，分散單一供應商風險機制啟動。",
+        "companies": [
+          "Google",
+          "NVIDIA",
+          "Intel",
+          "TSMC"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.5:computex-tsmc-ai-vision",
+        "audience": "general",
+        "url": "https://www.eettaiwan.com/20260610nt01-taiwan-minister-emphasizes-collaboration-and-future-focus-on-photonics-wbg-and-quantum/",
+        "title": "Taiwan's transition from chip manufacturing hub to AI innovation engine",
+        "takeaway": "台灣科技部揭示產業升級藍圖，光子、寬禁帶與量子三大技術為 AI 時代競爭力檔。",
+        "companies": [
+          "TSMC",
+          "Taiwan Semiconductor Industry"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.6:taiwan-ai-chip-export-controls",
+        "audience": "work",
+        "url": "https://techorange.com/2026/06/10/taiwan-mulls-curbs-on-ai-chip-exports-to-china/",
+        "title": "Taiwan considers tightening AI chip export controls to all China customers",
+        "takeaway": "台灣調高 AI 晶片出口管制門檻，供應鏈地緣政治風險從黑名單擴大至全面追蹤機制。",
+        "companies": [
+          "TSMC",
+          "MediaTek"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.7:liontron-cpoe-interconnect",
+        "audience": "both",
+        "url": "https://www.inside.com.tw/article/41528-Deepen%20the%20layout%20of%20high-speed%20AI%20interconnection",
+        "title": "LionTronics debuts CPO and 1.6T high-speed AI interconnect",
+        "takeaway": "台灣新創推出共封裝光學與 1.6T 收發器，矽光子競賽進入台系廠商量產準備階段。",
+        "companies": [
+          "LionTronics"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:anthropic-fable-5-mythos-5",
+        "audience": "work",
+        "url": "https://www.anthropic.com/news/claude-fable-5-mythos-5",
+        "title": "Claude Fable 5 and Claude Mythos 5",
+        "takeaway": "Fable 5 是首個安全公開的 Mythos 級別模型，性能超越 Anthropic 自有歷史紀錄。",
+        "companies": [
+          "Anthropic"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:nvidia-jax-maxtext-nvfp4-blackwell",
+        "audience": "work",
+        "url": "https://developer.nvidia.com/blog/train-models-faster-with-jax-and-maxtext-using-nvfp4-on-nvidia-blackwell/",
+        "title": "Train Models Faster with JAX and MaxText Using NVFP4 on NVIDIA Blackwell",
+        "takeaway": "NVFP4 在 Blackwell 加速器實現前沿 LLM 預訓練吞吐量提升，訓練成本結構改變。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:aws-sagemaker-fhe-encrypted-inference",
+        "audience": "work",
+        "url": "https://aws.amazon.com/blogs/machine-learning/end-to-end-encrypted-ml-inference-with-amazon-sagemaker-ai-and-fhe/",
+        "title": "End-to-end encrypted ML inference with Amazon SageMaker AI and FHE",
+        "takeaway": "全同態加密讓敏感資料在公有雲可信執行，隱私與規模化推理兼得。",
+        "companies": [
+          "AWS"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:nvidia-fp8-tensorrt-quantization",
+        "audience": "work",
+        "url": "https://developer.nvidia.com/blog/model-quantization-turn-fp8-checkpoints-into-high-performance-inference-engines-with-nvidia-tensorrt/",
+        "title": "Model Quantization: Turn FP8 Checkpoints into High-Performance Inference Engines with NVIDIA TensorRT",
+        "takeaway": "FP8 量化檢查點轉換為 TensorRT 引擎，優化推理吞吐與成本效益。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:nvidia-diffusiongemma-high-throughput",
+        "audience": "general",
+        "url": "https://developer.nvidia.com/blog/run-diffusiongemma-on-nvidia-for-developer-ready-high-throughput-text-generation/",
+        "title": "Run DiffusionGemma on NVIDIA for Developer-Ready, High-Throughput Text Generation",
+        "takeaway": "DiffusionGemma 並行文本生成架構優化令牌吞吐，多步推理的替代實驗路徑。",
+        "companies": [
+          "NVIDIA",
+          "Google"
+        ]
+      },
+      {
+        "id": "tech.vendor.5:aws-trainium-neuron-agentic",
+        "audience": "work",
+        "url": "https://aws.amazon.com/blogs/machine-learning/stop-hand-tuning-kernels-how-neuron-agentic-development-accelerates-aws-trainium-optimizations/",
+        "title": "Stop hand-tuning kernels: How Neuron Agentic Development accelerates AWS Trainium optimizations",
+        "takeaway": "Neuron Agentic Development 自動化 Trainium 核心最佳化，減少手工調優工程成本。",
+        "companies": [
+          "AWS"
+        ]
+      },
+      {
+        "id": "tech.vendor.6:nvidia-battery-energy-ai-factories",
+        "audience": "work",
+        "url": "https://developer.nvidia.com/blog/designing-production-ready-battery-energy-storage-systems-for-ai-factories/",
+        "title": "Designing Production-Ready Battery Energy Storage Systems for AI Factories",
+        "takeaway": "AI 工廠電力架構演變，儲能系統成為基礎設施必需，非邊際選項。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.7:openai-codex-oracle-commitment",
+        "audience": "general",
+        "url": "https://openai.com/index/openai-on-oracle-cloud",
+        "title": "Access OpenAI models and Codex through your Oracle cloud commitment",
+        "takeaway": "OpenAI 與 Oracle Cloud 整合，企業雲承諾複用降低採購分割成本。",
+        "companies": [
+          "OpenAI",
+          "Oracle"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:google-gemma-4-12b-it",
+        "audience": "work",
+        "url": "https://huggingface.co/google/gemma-4-12B-it",
+        "title": "Google Gemma 4 12B: Open-Weight Multimodal Language Model",
+        "takeaway": "Gemma 4 12B 整合多模態能力，Apache 2.0 授權與 67 萬下載驗證部署成熟度。",
+        "companies": [
+          "Google"
+        ]
+      },
+      {
+        "id": "tech.models.1:nvidia-locateanything-3b",
+        "audience": "general",
+        "url": "https://huggingface.co/nvidia/LocateAnything-3B",
+        "title": "NVIDIA LocateAnything 3B: Vision Grounding Model",
+        "takeaway": "NVIDIA 3B 視覺接地模型支援物件定位，開源視覺推理的密度邊界突破。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.models.2:cohere-north-mini-code-1.0",
+        "audience": "work",
+        "url": "https://huggingface.co/CohereLabs/North-Mini-Code-1.0",
+        "title": "CohereLabs North-Mini-Code-1.0",
+        "takeaway": "Cohere 發佈迷你程式碼模型，Apache 2.0 授權支持本地部署與商業使用。",
+        "companies": [
+          "Cohere"
+        ]
+      },
+      {
+        "id": "tech.models.3:qwen3.6-35b-a3b-open-source",
+        "audience": "work",
+        "url": "https://huggingface.co/Qwen/Qwen3.6-35B-A3B",
+        "title": "Qwen 3.6 35B-A3B: Open-Source MoE Model Release",
+        "takeaway": "Qwen 3.6 35B-A3B MoE 模型提供開源多語言推理，Apache 2.0 授權支援商業應用。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.4:bosonai-higgs-audio-v3-tts",
+        "audience": "general",
+        "url": "https://huggingface.co/bosonai/higgs-audio-v3-tts-4b",
+        "title": "Boson AI Higgs Audio V3 TTS 4B: Multilingual Text-to-Speech",
+        "takeaway": "Higgs 多語言 TTS 整合表達控制，加速語音代理與個性化應用開發。",
+        "companies": [
+          "Boson AI"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:bfcl-claude-opus-tops",
+        "audience": "work",
+        "url": "https://gorilla.cs.berkeley.edu/leaderboard.html",
+        "title": "BFCL: Claude-Opus-4-5 Maintains Top Position in Function Calling",
+        "takeaway": "BFCL 評測 Claude-Opus-4-5-20251101 (FC) 穩佔第一，推理鏈表現仍為關鍵能力門檻。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Claude-Opus-4-5-20251101 (FC)",
+            "Claude-Sonnet-4-5-20250929 (FC)",
+            "Gemini-3-Pro-Preview (Prompt)",
+            "GLM-4.6 (FC thinking)",
+            "Grok-4-1-fast-reasoning (FC)"
+          ],
+          "rank_changes": []
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:swebench-agent-claude-opus",
+        "audience": "work",
+        "url": "https://www.swebench.com/",
+        "title": "SWE-Bench Verified: Agent Framework + Model Coupling Drives Performance",
+        "takeaway": "SWE-bench 顯示端到端 agent 系統效能決定因子，不只單一模型能力。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "live-SWE-agent + Claude 4.5 Opus medium (20251101)",
+            "Sonar Foundation Agent + Claude 4.5 Opus",
+            "TRAE + Doubao-Seed-Code",
+            "live-SWE-agent + Gemini 3 Pro Preview (2025-11-18)",
+            "Atlassian Rovo Dev (2025-09-02)"
+          ],
+          "rank_changes": []
+        }
+      },
+      {
+        "id": "tech.benchmarks.2:ocrbench-nemotron-vl-leads",
+        "audience": "work",
+        "url": "https://huggingface.co/spaces/ling99/OCRBench-v2-leaderboard",
+        "title": "OCRBench: NVIDIA Nemotron Nano VL Leads Vision-Language OCR",
+        "takeaway": "OCRBench 視覺語言評測 NVIDIA 系列領先，開源 VLM 在 OCR 生產化推進。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Llama Nemotron Nano VL 8B",
+            "InternVL-3-14B",
+            "Gemini-Pro",
+            "Qwen2-VL-7B",
+            "InternVL2.5-26B"
+          ],
+          "rank_changes": []
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:sk-hynix-nvidia-partnership",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/ai-ml/2026/06/08/sk-hynix-and-nvidia-co-developing-memory-and-memory-manufacturing-tech/5252117",
+        "title": "SK Hynix and Nvidia co-developing memory and memory manufacturing tech",
+        "takeaway": "SK 海力士與 NVIDIA 聯手開發 AI 專用記憶體，硬體加速推理的核心夥伴關係。",
+        "companies": [
+          "SK Hynix",
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:ibm-kv-cache-storage-scale",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/file/2026/06/09/big-blues-redbook-on-storage-scale-kv-cache-management/5252866",
+        "title": "Big Blue's Redbook on Storage Scale KV Cache management",
+        "takeaway": "IBM Redbook 深入儲存規模 KV 快取管理，長序列推理的成本與延遲權衡系統化。",
+        "companies": [
+          "IBM"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:sk-hynix-computex-memory-factories",
+        "audience": "work",
+        "url": "https://news.skhynix.com/computex-2026-review/",
+        "title": "[SOD's Review] COMPUTEX 2026: SK hynix beyond memory – AI factory era reshaping identity",
+        "takeaway": "SK 海力士 COMPUTEX 揭示記憶體廠商轉向 AI 工廠架構，HBM 優化成競爭焦點。",
+        "companies": [
+          "SK Hynix"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.3:weka-long-context-oracle-cloud",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/file/2026/06/10/weka-software-speeds-long-context-ai-inferencing-on-oracles-public-cloud/5253536",
+        "title": "WEKA software speeds long context AI inferencing on Oracle's public cloud",
+        "takeaway": "WEKA 與 Oracle Cloud 優化長上下文推理，儲存層加速成推理管道新瓶頸。",
+        "companies": [
+          "WEKA",
+          "Oracle"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.4:nvidia-quantum-infiniband-multi-tenant",
+        "audience": "work",
+        "url": "https://developer.nvidia.com/blog/one-click-multi-tenant-security-with-nvidia-quantum-infiniband/",
+        "title": "One-Click Multi-Tenant Security with NVIDIA Quantum InfiniBand",
+        "takeaway": "Quantum InfiniBand 意圖安全配置簡化 AI 工廠多租戶架構，互連延遲與隔離成本下降。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.5:arxiv-visual-token-routing-vlm-kv",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2606.12412v1",
+        "title": "Reroute, Don't Remove: Recoverable Visual Token Routing for Vision-Language Models",
+        "takeaway": "可恢復視覺 Token 路由機制解決 VLM 推理 KV 快取與注意力成本。",
+        "companies": []
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-06-12",
+    "flagged": [
+      {
+        "path": "signals.focus[3].body",
+        "type": "attribution",
+        "author": "Together Computer",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      }
+    ],
+    "repaired": 0
+  }
+}
