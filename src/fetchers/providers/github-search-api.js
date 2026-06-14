@@ -56,6 +56,9 @@ async function searchTopic(octokit, topic, since, limit) {
             created_at: r.created_at || '',
             pushed_at: r.pushed_at || '',
             readme_excerpt: readmeExcerpt,
+            default_branch: r.default_branch || null,
+            license: r.license?.spdx_id ?? null,
+            fork: r.fork ?? false,
           };
         }),
       );

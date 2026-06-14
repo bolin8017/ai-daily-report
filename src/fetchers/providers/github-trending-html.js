@@ -55,6 +55,9 @@ async function enrichRepo(octokit, fullName, rank, starsToday = null) {
       topics: data.topics ?? [],
       readme_excerpt: readme ?? '',
       rank,
+      default_branch: data.default_branch || null,
+      license: data.license?.spdx_id ?? null,
+      fork: data.fork ?? false,
     };
   } catch {
     return null;

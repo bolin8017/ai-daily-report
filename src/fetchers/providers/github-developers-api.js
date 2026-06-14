@@ -70,6 +70,10 @@ async function processUser(octokit, cutoffMs, login, region) {
     created_at: repo.created_at,
     created_hours_ago: Math.floor((Date.now() - repoMs) / (60 * 60 * 1000)),
     readme_excerpt: readmeExcerpt,
+    forks: repo.forks_count ?? 0,
+    default_branch: repo.default_branch || null,
+    license: repo.license?.spdx_id ?? null,
+    fork: repo.fork ?? false,
   };
 }
 
