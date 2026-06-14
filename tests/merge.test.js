@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { BENCH_LEADERBOARD_URL } from '../src/lib/leaderboard-urls.js';
 import {
+  buildDiscoveriesSection,
   composeReport,
   extractIdSpace,
   findDanglingSourceLinks,
@@ -414,6 +415,64 @@ describe('composeReport benchmark URL cure', () => {
     ]);
     await composeReport({ editorial: emptyEditorial, curated, themeName: 'ai-builder' });
     expect(curated.tech.benchmarks[0].url).toBe('https://github.com/fake/ocrbench');
+  });
+});
+
+describe('buildDiscoveriesSection', () => {
+  const staging = {
+    candidates: [
+      { full_name: 'o/fast', excellence_score: 0.9, velocity_per_day: 30, eng_score: 5 },
+      { full_name: 'o/mid', excellence_score: 0.4, velocity_per_day: 8, eng_score: 3 },
+    ],
+    watchlist: [{ full_name: 'o/new', stars: 200, stars_today: 50, repo_age_days: 2 }],
+  };
+  it('ranks by 0.5 novelty + 0.5 excellence, attaching scores from staging', () => {
+    const out = buildDiscoveriesSection(
+      {
+        rising: [
+          { name: 'o/mid', url: 'https://github.com/o/mid', novelty_strength: 3 },
+          { name: 'o/fast', url: 'https://github.com/o/fast', novelty_strength: 1 },
+        ],
+        dev_watch: [],
+      },
+      staging,
+    );
+    // o/mid: 0.5*(3/3) + 0.5*0.4 = 0.5 + 0.2 = 0.7
+    // o/fast: 0.5*(1/3) + 0.5*0.9 = 0.167 + 0.45 = 0.617
+    // descending: o/mid first
+    expect(out.rising.map((r) => r.name)).toEqual(['o/mid', 'o/fast']);
+    expect(out.rising[0].excellence_score).toBe(0.4);
+    expect(out.rising[1].excellence_score).toBe(0.9);
+  });
+  it('marks cold-start items provisional and still ranks them', () => {
+    const out = buildDiscoveriesSection(
+      {
+        rising: [{ name: 'o/new', url: 'https://github.com/o/new', novelty_strength: 2 }],
+        dev_watch: [],
+      },
+      staging,
+    );
+    expect(out.rising[0].provisional).toBe(true);
+    expect(out.rising[0].excellence_score == null).toBe(true);
+  });
+  it('applies the soft ceiling at 30', () => {
+    const rising = Array.from({ length: 35 }, (_, i) => ({
+      name: `o/r${i}`,
+      url: `https://github.com/o/r${i}`,
+      novelty_strength: 1,
+    }));
+    const out = buildDiscoveriesSection(
+      { rising, dev_watch: [] },
+      { candidates: [], watchlist: [] },
+    );
+    expect(out.rising).toHaveLength(30);
+  });
+  it('tolerates null staging (all provisional)', () => {
+    const out = buildDiscoveriesSection(
+      { rising: [{ name: 'o/x', url: 'https://github.com/o/x' }], dev_watch: [] },
+      null,
+    );
+    expect(out.rising[0].provisional).toBe(true);
   });
 });
 

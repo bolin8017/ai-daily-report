@@ -12,6 +12,7 @@
 import { EditorialSchema } from '../schemas/editorial.js';
 import { buildReportSchema } from '../schemas/report.js';
 import { BENCH_LEADERBOARD_URL, benchOf } from './leaderboard-urls.js';
+import { canonicalRepoKey } from './repo-key.js';
 import { listActiveSections } from './theme.js';
 
 /**
@@ -183,6 +184,84 @@ export function cureBenchmarkUrls(benchmarks) {
 }
 
 /**
+ * Attach deterministic signals from the staging file onto curator picks, rank
+ * `rising` by `0.5·novelty + 0.5·excellence`, apply the soft anomaly ceiling,
+ * and handle cold-start (no excellence data yet → provisional score).
+ *
+ * @param {{rising: object[], dev_watch: object[]}} curatedDiscoveries
+ * @param {object|null} discoveriesStaging  parsed feeds-discoveries.json, or null
+ * @returns {{rising: object[], dev_watch: object[]}}
+ */
+export function buildDiscoveriesSection(curatedDiscoveries, discoveriesStaging) {
+  // Build a byKey map from staging candidates ∪ watchlist.
+  const byKey = new Map();
+  if (discoveriesStaging) {
+    for (const item of [
+      ...(discoveriesStaging.candidates ?? []),
+      ...(discoveriesStaging.watchlist ?? []),
+    ]) {
+      const key = canonicalRepoKey(item);
+      if (key) byKey.set(key, item);
+    }
+  }
+
+  function attachSignals(item) {
+    const key = canonicalRepoKey(item);
+    const staging = key ? byKey.get(key) : undefined;
+    if (!staging) return item;
+    // Staging wins over any curator-copied value for these fields.
+    const attached = { ...item };
+    for (const field of [
+      'excellence_score',
+      'velocity_per_day',
+      'eng_score',
+      'repo_age_days',
+      'stars_today',
+      'validation_refs',
+    ]) {
+      if (staging[field] !== undefined) attached[field] = staging[field];
+    }
+    return attached;
+  }
+
+  function provisionalScore(item) {
+    const starsClamped = Math.min((item.stars ?? 0) / 500, 1);
+    const todayClamped = Math.min((item.stars_today ?? 0) / 100, 1);
+    const validated = item.validation_refs?.length > 0 ? 1 : 0;
+    const recency = Math.max(0, 1 - (item.repo_age_days ?? 30) / 30);
+    return 0.4 * starsClamped + 0.3 * todayClamped + 0.2 * validated + 0.1 * recency;
+  }
+
+  function rankScore(item) {
+    const novelty = (item.novelty_strength ?? 1) / 3;
+    if (item.excellence_score != null) {
+      return 0.5 * novelty + 0.5 * item.excellence_score;
+    }
+    return 0.5 * novelty + 0.5 * provisionalScore(item);
+  }
+
+  // Process rising: attach signals, mark provisional, rank, apply soft ceiling.
+  const risingAttached = curatedDiscoveries.rising.map((raw) => {
+    const item = attachSignals(raw);
+    if (item.excellence_score == null) item.provisional = true;
+    return item;
+  });
+  risingAttached.sort((a, b) => rankScore(b) - rankScore(a));
+  let rising = risingAttached;
+  if (rising.length > 30) {
+    console.warn(
+      `[merge] discoveries.rising exceeded 30 (got ${rising.length}) — slicing; check funnel/curator`,
+    );
+    rising = rising.slice(0, 30);
+  }
+
+  // Process dev_watch: attach signals, pass through (no ceiling slice).
+  const devWatch = curatedDiscoveries.dev_watch.map(attachSignals);
+
+  return { rising, dev_watch: devWatch };
+}
+
+/**
  * Compose the final v2.1 report from validated editorial + curated inputs.
  *
  * Steps:
@@ -200,7 +279,13 @@ export function cureBenchmarkUrls(benchmarks) {
  * @param {string} args.themeName  default "ai-builder"
  * @returns {Promise<object>}  validated v2.1 report
  */
-export async function composeReport({ editorial, curated, meta, themeName = 'ai-builder' }) {
+export async function composeReport({
+  editorial,
+  curated,
+  meta,
+  themeName = 'ai-builder',
+  discoveriesStaging = null,
+}) {
   // 1. Validate editorial
   const editorialParsed = EditorialSchema.parse(editorial);
 
@@ -230,6 +315,13 @@ export async function composeReport({ editorial, curated, meta, themeName = 'ai-
   const sections = await listActiveSections(themeName);
   for (const sec of sections) {
     composed[sec.id] = curated[sec.id] ?? {};
+  }
+  // Apply discoveries signal re-attach + ranking (no-op when discoveries not in this theme).
+  if (composed.discoveries) {
+    composed.discoveries = buildDiscoveriesSection(
+      composed.discoveries,
+      discoveriesStaging ?? null,
+    );
   }
   // Deterministic benchmark-url cure: overwrite LLM-fabricated leaderboard links
   // with the canonical url per bench (strip unknown/ghost ones). tech.benchmarks
