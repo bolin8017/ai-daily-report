@@ -7,9 +7,9 @@ describe('canonicalRepoKey', () => {
   });
 
   it('parses owner/repo out of a github url when name is a bare slug', () => {
-    expect(canonicalRepoKey({ name: 'superpowers', url: 'https://github.com/obra/superpowers' })).toBe(
-      'obra/superpowers',
-    );
+    expect(
+      canonicalRepoKey({ name: 'superpowers', url: 'https://github.com/obra/superpowers' }),
+    ).toBe('obra/superpowers');
   });
 
   it('falls back to name when it already looks like owner/repo', () => {

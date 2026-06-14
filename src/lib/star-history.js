@@ -70,7 +70,8 @@ export function recordSnapshot(items, date, historyPath = DEFAULT_HISTORY_PATH) 
     const stars = Number.isFinite(item?.stars) ? item.stars : null;
     if (stars === null) continue;
     const forks = Number.isFinite(item?.forks) ? item.forks : null;
-    const rec = history[repo] ?? (history[repo] = { first_seen: date, snapshots: [] });
+    if (!history[repo]) history[repo] = { first_seen: date, snapshots: [] };
+    const rec = history[repo];
     const existing = rec.snapshots.find((s) => s.date === date);
     if (existing) {
       existing.stars = stars;

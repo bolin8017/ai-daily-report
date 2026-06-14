@@ -34,7 +34,10 @@ describe('recordSnapshot', () => {
     );
     expect(r).toEqual({ recorded: 2, repos: 2 });
     const h = JSON.parse(readFileSync(path, 'utf8'));
-    expect(h['a/b']).toEqual({ first_seen: '2026-06-15', snapshots: [{ date: '2026-06-15', stars: 40, forks: 3 }] });
+    expect(h['a/b']).toEqual({
+      first_seen: '2026-06-15',
+      snapshots: [{ date: '2026-06-15', stars: 40, forks: 3 }],
+    });
     expect(h['o/c'].snapshots[0]).toEqual({ date: '2026-06-15', stars: 120, forks: null });
   });
 
@@ -55,23 +58,35 @@ describe('recordSnapshot', () => {
   });
 
   it('skips items with no derivable owner/repo or no numeric stars', () => {
-    const r = recordSnapshot([{ name: 'bareslug', stars: 5 }, { full_name: 'a/b' }], '2026-06-15', path);
+    const r = recordSnapshot(
+      [{ name: 'bareslug', stars: 5 }, { full_name: 'a/b' }],
+      '2026-06-15',
+      path,
+    );
     expect(r.recorded).toBe(0);
   });
 
   it('throws on a non-YYYY-MM-DD date', () => {
-    expect(() => recordSnapshot([{ full_name: 'a/b', stars: 1 }], '2026/06/15', path)).toThrow(/YYYY-MM-DD/);
+    expect(() => recordSnapshot([{ full_name: 'a/b', stars: 1 }], '2026/06/15', path)).toThrow(
+      /YYYY-MM-DD/,
+    );
   });
 });
 
 describe('pruneStarHistory', () => {
   it('drops snapshots older than the retention window and empties stale repos', () => {
     const h = {
-      'a/b': { first_seen: '2026-05-01', snapshots: [
-        { date: '2026-05-01', stars: 1, forks: null },
-        { date: '2026-06-14', stars: 9, forks: null },
-      ] },
-      'c/d': { first_seen: '2026-05-01', snapshots: [{ date: '2026-05-01', stars: 1, forks: null }] },
+      'a/b': {
+        first_seen: '2026-05-01',
+        snapshots: [
+          { date: '2026-05-01', stars: 1, forks: null },
+          { date: '2026-06-14', stars: 9, forks: null },
+        ],
+      },
+      'c/d': {
+        first_seen: '2026-05-01',
+        snapshots: [{ date: '2026-05-01', stars: 1, forks: null }],
+      },
     };
     const pruned = pruneStarHistory(h, '2026-06-15', 30);
     expect(pruned['a/b'].snapshots.map((s) => s.date)).toEqual(['2026-06-14']);

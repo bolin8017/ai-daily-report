@@ -10,7 +10,10 @@
 const GH_URL = /github\.com\/([^/\s]+\/[^/\s#?]+)/i;
 
 function clean(s) {
-  return s.trim().replace(/\.git$/i, '').replace(/\/$/, '');
+  return s
+    .trim()
+    .replace(/\.git$/i, '')
+    .replace(/\/$/, '');
 }
 
 /**
