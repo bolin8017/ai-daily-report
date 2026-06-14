@@ -30,6 +30,8 @@ describe('githubTopicsForDate rotatingPerDay override', () => {
     expect(githubTopicsForDate(reg, '2026-06-15', 5)).toHaveLength(1 + 5);
   });
   it('is deterministic for a given date', () => {
-    expect(githubTopicsForDate(reg, '2026-06-15', 4)).toEqual(githubTopicsForDate(reg, '2026-06-15', 4));
+    expect(githubTopicsForDate(reg, '2026-06-15', 4)).toEqual(
+      githubTopicsForDate(reg, '2026-06-15', 4),
+    );
   });
 });

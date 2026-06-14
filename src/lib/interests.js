@@ -38,7 +38,11 @@ function pickRotating(pool, n, seed) {
 
 // Core interests' github terms (every day) + a seeded daily sample of
 // rotating interests' github terms. Deduped; `off` excluded.
-export function githubTopicsForDate(reg, dateString, rotatingPerDay = reg.rotation.rotating_per_day) {
+export function githubTopicsForDate(
+  reg,
+  dateString,
+  rotatingPerDay = reg.rotation.rotating_per_day,
+) {
   const entries = Object.values(reg.interests);
   const core = entries.filter((e) => e.level === 'core');
   // Rotating entries with no github terms are pre-filtered from the pool so a
