@@ -13,7 +13,7 @@
 // `command` is the argv the sequencer (src/pipeline/run.js) spawns to produce a
 // stage's outputs. It is declarative data only — nothing here executes it.
 
-export const CURATE_SECTIONS = ['shipped', 'pulse', 'market', 'tech'];
+export const CURATE_SECTIONS = ['discoveries', 'pulse', 'market', 'tech'];
 
 export const STAGES = [
   {
@@ -39,22 +39,6 @@ export const STAGES = [
     command: ['bash', 'scripts/curate.sh', s],
     recovery: 'retry-self',
   })),
-  // Catalog (精選) is a 5th curated section but NON-CRITICAL — its failure must
-  // never block the pipeline. So it is kept OUT of CURATE_SECTIONS (the required-
-  // curator barrier feeding context/synthesize) and declared standalone as an
-  // optional stage that only `merge` orders after. classify() maps an optional
-  // stage's failure to 'degraded' (AVAILABLE), so merge still runs and
-  // composeReport falls back to an empty catalog section.
-  {
-    id: 'curate.catalog',
-    deps: ['collect'],
-    cost: 'llm',
-    criticality: 'optional',
-    outputs: ['curated/catalog.json'],
-    satisfiedCheck: 'fresh-outputs',
-    command: ['bash', 'scripts/curate.sh', 'catalog'],
-    recovery: 'retry-self',
-  },
   {
     id: 'context',
     deps: CURATE_SECTIONS.map((s) => `curate.${s}`),
@@ -89,12 +73,7 @@ export const STAGES = [
   },
   {
     id: 'merge',
-    deps: [
-      ...CURATE_SECTIONS.map((s) => `curate.${s}`),
-      'curate.catalog',
-      'synthesize',
-      'faithfulness',
-    ],
+    deps: [...CURATE_SECTIONS.map((s) => `curate.${s}`), 'synthesize', 'faithfulness'],
     cost: 'cheap',
     criticality: 'required',
     outputs: [], // report lands outside staging; see 'report-for-day'

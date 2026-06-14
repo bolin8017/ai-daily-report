@@ -241,7 +241,9 @@ export function buildDiscoveriesSection(curatedDiscoveries, discoveriesStaging) 
   }
 
   // Process rising: attach signals, mark provisional, rank, apply soft ceiling.
-  const risingAttached = curatedDiscoveries.rising.map((raw) => {
+  // Default to [] so a degraded/empty curator output ({} or {rising:undefined})
+  // composes to an empty section instead of throwing.
+  const risingAttached = (curatedDiscoveries.rising ?? []).map((raw) => {
     const item = attachSignals(raw);
     if (item.excellence_score == null) item.provisional = true;
     return item;
@@ -256,7 +258,7 @@ export function buildDiscoveriesSection(curatedDiscoveries, discoveriesStaging) 
   }
 
   // Process dev_watch: attach signals, pass through (no ceiling slice).
-  const devWatch = curatedDiscoveries.dev_watch.map(attachSignals);
+  const devWatch = (curatedDiscoveries.dev_watch ?? []).map(attachSignals);
 
   return { rising, dev_watch: devWatch };
 }

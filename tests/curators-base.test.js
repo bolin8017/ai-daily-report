@@ -96,9 +96,9 @@ describe('validateCuratedOutput', () => {
 
 describe('mergePrompts', () => {
   it('concatenates shared + section prompt', async () => {
-    const merged = await mergePrompts('shipped');
+    const merged = await mergePrompts('discoveries');
     expect(merged).toContain('Curator shared voice');
-    expect(merged).toContain('Curator: Shipped');
+    expect(merged).toContain('Curator: Discoveries');
     expect(merged.length).toBeGreaterThan(1000);
   });
 });

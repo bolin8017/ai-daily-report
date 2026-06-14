@@ -27,7 +27,7 @@ function fixtureEditorial(overrides = {}) {
           title: 's',
           body: 'b',
           audience: 'general',
-          source_links: ['shipped.trending.0:foo/bar'],
+          source_links: ['discoveries.rising.0:foo/bar'],
         },
       ],
       predictions: [],
@@ -38,15 +38,16 @@ function fixtureEditorial(overrides = {}) {
 
 function fixtureCurated() {
   return {
-    shipped: {
-      trending: [
+    discoveries: {
+      rising: [
         {
-          id: 'shipped.trending.0:foo/bar',
+          id: 'discoveries.rising.0:foo/bar',
           name: 'foo/bar',
-          desc: 'd',
+          relevance: 'd',
           audience: 'general',
         },
       ],
+      dev_watch: [],
     },
     pulse: {
       hn: [
@@ -66,7 +67,7 @@ describe('extractIdSpace', () => {
   it('collects ids across all curated sections + sub-groups', () => {
     const curated = fixtureCurated();
     const ids = extractIdSpace(curated);
-    expect(ids.has('shipped.trending.0:foo/bar')).toBe(true);
+    expect(ids.has('discoveries.rising.0:foo/bar')).toBe(true);
     expect(ids.has('pulse.hn.0:hn-1')).toBe(true);
     expect(ids.size).toBe(2);
   });
@@ -113,7 +114,7 @@ describe('findDanglingSourceLinks', () => {
             title: 's',
             body: 'b',
             audience: 'general',
-            source_links: ['shipped.trending.0'],
+            source_links: ['discoveries.rising.0'],
           },
         ],
         predictions: [],
@@ -134,7 +135,7 @@ describe('findDanglingSourceLinks', () => {
             title: 's',
             body: 'b',
             audience: 'general',
-            source_links: ['shipped.trending.9'],
+            source_links: ['discoveries.rising.9'],
           },
         ],
         predictions: [],
@@ -143,7 +144,7 @@ describe('findDanglingSourceLinks', () => {
     const idSpace = extractIdSpace(fixtureCurated());
     const dangling = findDanglingSourceLinks(editorial, idSpace);
     expect(dangling).toHaveLength(1);
-    expect(dangling[0]).toMatch(/shipped\.trending\.9/);
+    expect(dangling[0]).toMatch(/discoveries\.rising\.9/);
   });
 });
 
@@ -153,7 +154,7 @@ describe('stripDanglingSourceLinks', () => {
     const idSpace = extractIdSpace(fixtureCurated());
     const { editorial: out, dropped } = stripDanglingSourceLinks(editorial, idSpace);
     expect(dropped).toEqual([]);
-    expect(out.signals.focus[0].source_links).toEqual(['shipped.trending.0:foo/bar']);
+    expect(out.signals.focus[0].source_links).toEqual(['discoveries.rising.0:foo/bar']);
   });
 
   it('removes only the unresolvable ids and reports their paths, keeping resolvable ones', () => {
@@ -165,7 +166,7 @@ describe('stripDanglingSourceLinks', () => {
             title: 's',
             body: 'b',
             audience: 'general',
-            source_links: ['shipped.trending.0', 'shipped.trending.9', 'ghost.id'],
+            source_links: ['discoveries.rising.0', 'discoveries.rising.9', 'ghost.id'],
           },
         ],
         predictions: [],
@@ -173,9 +174,9 @@ describe('stripDanglingSourceLinks', () => {
     });
     const idSpace = extractIdSpace(fixtureCurated());
     const { editorial: out, dropped } = stripDanglingSourceLinks(editorial, idSpace);
-    expect(out.signals.focus[0].source_links).toEqual(['shipped.trending.0']);
+    expect(out.signals.focus[0].source_links).toEqual(['discoveries.rising.0']);
     expect(dropped).toHaveLength(2);
-    expect(dropped.join('\n')).toMatch(/shipped\.trending\.9/);
+    expect(dropped.join('\n')).toMatch(/discoveries\.rising\.9/);
     expect(dropped.join('\n')).toMatch(/ghost\.id/);
   });
 
@@ -224,7 +225,7 @@ describe('composeReport', () => {
     expect(report.date).toBe('2026-05-24');
     expect(report.lead.html).toBe('<p>lead</p>');
     expect(report.signals.focus).toHaveLength(1);
-    expect(report.shipped.trending[0].id).toBe('shipped.trending.0:foo/bar');
+    expect(report.discoveries.rising[0].id).toBe('discoveries.rising.0:foo/bar');
     expect(report.pulse.hn[0].id).toBe('pulse.hn.0:hn-1');
   });
 
@@ -241,7 +242,7 @@ describe('composeReport', () => {
               body: 'b',
               audience: 'general',
               // one real id + one ghost — the ghost is dropped, the real one kept
-              source_links: ['shipped.trending.0:foo/bar', 'ghost.id'],
+              source_links: ['discoveries.rising.0:foo/bar', 'ghost.id'],
             },
           ],
           predictions: [],
@@ -251,7 +252,7 @@ describe('composeReport', () => {
       themeName: 'ai-builder',
     });
     expect(report.schema_version).toBe(2.1);
-    expect(report.signals.focus[0].source_links).toEqual(['shipped.trending.0:foo/bar']);
+    expect(report.signals.focus[0].source_links).toEqual(['discoveries.rising.0:foo/bar']);
   });
 
   // The 2026-05-28 run aborted here: every source_link was a bare prefix
@@ -267,7 +268,7 @@ describe('composeReport', () => {
               title: 's',
               body: 'b',
               audience: 'general',
-              source_links: ['shipped.trending.0', 'pulse.hn.0'],
+              source_links: ['discoveries.rising.0', 'pulse.hn.0'],
             },
           ],
           predictions: [],
@@ -277,7 +278,7 @@ describe('composeReport', () => {
       themeName: 'ai-builder',
     });
     expect(report.schema_version).toBe(2.1);
-    expect(report.signals.focus[0].source_links).toEqual(['shipped.trending.0', 'pulse.hn.0']);
+    expect(report.signals.focus[0].source_links).toEqual(['discoveries.rising.0', 'pulse.hn.0']);
   });
 
   it('preserves editorial signals under the same name in the merged report', async () => {
@@ -318,27 +319,33 @@ describe('composeReport', () => {
     expect(report.meta).toBeUndefined();
   });
 
-  it('composes a catalog section from curated picks', async () => {
+  it('composes the discoveries section, re-attaching funnel signals from staging', async () => {
     const curated = fixtureCurated();
-    curated.catalog = {
-      picks: [
+    curated.discoveries = {
+      rising: [
         {
-          id: 'catalog.picks.0:vllm-project/vllm',
-          name: 'vllm-project/vllm',
-          url: 'https://github.com/vllm-project/vllm',
-          stars: 40000,
-          category: 'ai',
+          id: 'discoveries.rising.0:o/fast',
+          name: 'o/fast',
+          url: 'https://github.com/o/fast',
+          novelty_strength: 2,
           audience: 'both',
-          takeaway: '高吞吐 LLM 推論引擎。',
         },
       ],
+      dev_watch: [],
     };
     const report = await composeReport({
-      editorial: fixtureEditorial(),
+      editorial: fixtureEditorial({ signals: { focus: [], predictions: [] } }),
       curated,
       themeName: 'ai-builder',
+      discoveriesStaging: {
+        candidates: [{ full_name: 'o/fast', excellence_score: 0.8, velocity_per_day: 25 }],
+        watchlist: [],
+      },
     });
-    expect(report.catalog.picks[0].id).toBe('catalog.picks.0:vllm-project/vllm');
+    expect(report.discoveries.rising[0].id).toBe('discoveries.rising.0:o/fast');
+    // staging signals are re-attached deterministically (not trusted from curator)
+    expect(report.discoveries.rising[0].excellence_score).toBe(0.8);
+    expect(report.discoveries.rising[0].velocity_per_day).toBe(25);
   });
 });
 
@@ -350,7 +357,7 @@ describe('composeReport', () => {
 describe('composeReport benchmark URL cure', () => {
   function curatedWithBenchmarks(benchmarks) {
     return {
-      shipped: { trending: [] },
+      discoveries: { rising: [], dev_watch: [] },
       pulse: { hn: [] },
       market: { ma: [] },
       tech: { vendor: [], benchmarks },

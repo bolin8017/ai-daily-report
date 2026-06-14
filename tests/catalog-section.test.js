@@ -1,8 +1,10 @@
-// Schema + composer coverage for the catalog ("精選") section.
+// Schema coverage for the retired catalog ("精選") section. The section is no
+// longer in the active theme (replaced by 新發現/discoveries on 2026-06-15), but
+// CatalogCuratedSchema stays in the codebase so the 60-day legacy archive window
+// of reports carrying a `catalog` block still validates + renders.
 
 import { describe, expect, it } from 'vitest';
 import { CatalogCuratedSchema } from '../src/schemas/curated.js';
-import { buildReportSchema } from '../src/schemas/report.js';
 
 const validCurated = {
   picks: [
@@ -28,23 +30,5 @@ describe('CatalogCuratedSchema', () => {
   });
   it('accepts an empty picks array (catalog exhausted / thin day)', () => {
     expect(() => CatalogCuratedSchema.parse({ picks: [] })).not.toThrow();
-  });
-});
-
-describe('buildReportSchema includes catalog', () => {
-  it('accepts a report carrying a catalog section', async () => {
-    const schema = await buildReportSchema('ai-builder');
-    const report = {
-      schema_version: 2.1,
-      date: '2026-06-08',
-      lead: { html: '<p>x</p>' },
-      signals: { focus: [], predictions: [] },
-      shipped: {},
-      pulse: {},
-      market: {},
-      tech: {},
-      catalog: validCurated,
-    };
-    expect(() => schema.parse(report)).not.toThrow();
   });
 });

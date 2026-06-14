@@ -7,11 +7,10 @@ import { downstreamOf, runPipeline } from '../src/pipeline/run.js';
 const TODAY = '2026-06-04';
 const ALL = [
   'collect',
-  'curate.shipped',
+  'curate.discoveries',
   'curate.pulse',
   'curate.market',
   'curate.tech',
-  'curate.catalog',
   'context',
   'synthesize',
   'faithfulness',
@@ -80,7 +79,7 @@ describe('runPipeline — resume / topo', () => {
     expect(ok).toBe(true);
     expect([...h.calls].sort()).toEqual([...ALL].sort());
     const pos = (id) => h.calls.indexOf(id);
-    expect(pos('collect')).toBeLessThan(pos('curate.shipped'));
+    expect(pos('collect')).toBeLessThan(pos('curate.discoveries'));
     expect(pos('curate.market')).toBeLessThan(pos('context'));
     expect(pos('context')).toBeLessThan(pos('synthesize'));
     expect(pos('synthesize')).toBeLessThan(pos('faithfulness'));
@@ -91,11 +90,10 @@ describe('runPipeline — resume / topo', () => {
     const h = harness({
       satisfied: [
         'collect',
-        'curate.shipped',
+        'curate.discoveries',
         'curate.pulse',
         'curate.market',
         'curate.tech',
-        'curate.catalog',
         'context',
       ],
     });
@@ -110,10 +108,9 @@ describe('runPipeline — resume / topo', () => {
     ).toEqual([
       'collect',
       'context',
-      'curate.catalog',
+      'curate.discoveries',
       'curate.market',
       'curate.pulse',
-      'curate.shipped',
       'curate.tech',
     ]);
   });
@@ -121,9 +118,9 @@ describe('runPipeline — resume / topo', () => {
   it('runs the curators as one concurrent batch', async () => {
     const h = harness();
     await h.run();
-    // collect alone, then the 4 required curators + the optional catalog curator
+    // collect alone, then the 4 required curators (discoveries/pulse/market/tech)
     // all batch together (all depend only on collect).
-    expect(h.maxInFlight).toBe(5);
+    expect(h.maxInFlight).toBe(4);
   });
 });
 
@@ -158,16 +155,6 @@ describe('runPipeline — optional never blocks', () => {
     expect(ok).toBe(true);
     expect(h.calls).toContain('merge');
     expect(h.emitted.find((e) => e.stage === 'faithfulness').status).toBe('degraded');
-  });
-
-  it('merge still runs when the optional catalog curator fails', async () => {
-    const h = harness({ results: { 'curate.catalog': { exitCode: 1 } } });
-    const { ok, state } = await h.run();
-    expect(ok).toBe(true);
-    expect(state['curate.catalog']).toBe('degraded'); // optional → degraded, not failed
-    expect(state.merge).toBe('ok'); // not blocked by the degraded optional dep
-    expect(h.calls).toContain('merge');
-    expect(h.emitted.find((e) => e.stage === 'curate.catalog').status).toBe('degraded');
   });
 
   it('merge still runs when faithfulness exits 0 without writing an audit', async () => {
@@ -254,7 +241,7 @@ describe('runPipeline — auto-recover', () => {
     expect(h.calls).toContain('synthesize');
     expect(h.calls).toContain('merge');
     // sibling curators that already succeeded are NOT re-run
-    expect(h.counts['curate.shipped']).toBe(1);
+    expect(h.counts['curate.discoveries']).toBe(1);
   });
 
   it('retries at most once — a persistently failing stage still fails', async () => {
@@ -326,10 +313,10 @@ describe('runPipeline — suspicious-empty (disk-backed)', () => {
     ]);
     const emitted = [];
     const runStage = async (stage) => {
-      if (stage.id === 'curate.shipped') {
+      if (stage.id === 'curate.discoveries') {
         writeFileSync(
-          path.join(staging, 'curated', 'shipped.json'),
-          JSON.stringify({ trending: [], topic_discovery: [] }),
+          path.join(staging, 'curated', 'discoveries.json'),
+          JSON.stringify({ rising: [], dev_watch: [] }),
         );
       }
       sat.add(stage.id);
@@ -344,7 +331,7 @@ describe('runPipeline — suspicious-empty (disk-backed)', () => {
       emit: (r) => emitted.push(r),
     });
     expect(ok).toBe(true);
-    expect(emitted.find((e) => e.stage === 'curate.shipped').status).toBe('suspicious-empty');
+    expect(emitted.find((e) => e.stage === 'curate.discoveries').status).toBe('suspicious-empty');
   });
 });
 
