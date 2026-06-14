@@ -243,8 +243,12 @@ export function buildDiscoveriesSection(curatedDiscoveries, discoveriesStaging) 
   // Process rising: attach signals, mark provisional, rank, apply soft ceiling.
   // Default to [] so a degraded/empty curator output ({} or {rising:undefined})
   // composes to an empty section instead of throwing.
+  // Never mutate the caller's input: attachSignals already returns a fresh
+  // object when staging data is found; when no staging match is found it
+  // returns the same reference — shallow-copy it before setting provisional.
   const risingAttached = (curatedDiscoveries.rising ?? []).map((raw) => {
-    const item = attachSignals(raw);
+    const attached = attachSignals(raw);
+    const item = attached === raw ? { ...raw } : attached;
     if (item.excellence_score == null) item.provisional = true;
     return item;
   });

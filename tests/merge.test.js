@@ -481,6 +481,16 @@ describe('buildDiscoveriesSection', () => {
     );
     expect(out.rising[0].provisional).toBe(true);
   });
+  it('does not mutate the input rising items (no-staging-match path)', () => {
+    // When no staging entry matches, attachSignals returns the same object
+    // reference. buildDiscoveriesSection must not set `provisional` on that
+    // shared object — it must work on a fresh copy instead.
+    const item = { name: 'o/unknown', url: 'https://github.com/o/unknown', novelty_strength: 1 };
+    const input = { rising: [item], dev_watch: [] };
+    const snapshot = JSON.stringify(item);
+    buildDiscoveriesSection(input, { candidates: [], watchlist: [] });
+    expect(JSON.stringify(item)).toBe(snapshot);
+  });
 });
 
 describe('idPrefix', () => {
