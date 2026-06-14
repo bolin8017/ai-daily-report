@@ -93,3 +93,52 @@ export async function getReadmeExcerpt(octokit, owner, repo, logPrefix = 'github
     return '';
   }
 }
+
+/**
+ * Fetch the most recent commits for a repo, normalized to {login, date, message}.
+ * `message` is the first line only. Returns [] on any error (fail-soft) so the
+ * behavioral-signal enrichment degrades gracefully and never aborts the funnel.
+ *
+ * @param {Octokit} octokit
+ * @param {string} owner
+ * @param {string} repo
+ * @param {number} [perPage=30]
+ * @param {string} [logPrefix='github']
+ * @returns {Promise<{ login: string|null, date: string|null, message: string }[]>}
+ */
+export async function getRecentCommits(octokit, owner, repo, perPage = 30, logPrefix = 'github') {
+  try {
+    const { data } = await octokit.rest.repos.listCommits({ owner, repo, per_page: perPage });
+    return (data ?? []).map((c) => ({
+      login: c.author?.login ?? c.commit?.author?.name ?? null,
+      date: c.commit?.author?.date ?? null,
+      message: (c.commit?.message ?? '').split('\n')[0],
+    }));
+  } catch (err) {
+    console.error(`[${logPrefix}] getRecentCommits(${owner}/${repo}) failed: ${err.message}`);
+    return [];
+  }
+}
+
+/**
+ * Fetch the contributor list for a repo, normalized to {login, contributions}.
+ * Returns [] on any error (fail-soft).
+ *
+ * @param {Octokit} octokit
+ * @param {string} owner
+ * @param {string} repo
+ * @param {string} [logPrefix='github']
+ * @returns {Promise<{ login: string|null, contributions: number }[]>}
+ */
+export async function getContributors(octokit, owner, repo, logPrefix = 'github') {
+  try {
+    const { data } = await octokit.rest.repos.listContributors({ owner, repo, per_page: 30 });
+    return (data ?? []).map((u) => ({
+      login: u.login ?? null,
+      contributions: u.contributions ?? 0,
+    }));
+  } catch (err) {
+    console.error(`[${logPrefix}] getContributors(${owner}/${repo}) failed: ${err.message}`);
+    return [];
+  }
+}
