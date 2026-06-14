@@ -1,0 +1,38 @@
+{# 新發現 tab — discoveries.rising (新星) / dev_watch (開發者動態).
+   Live tab driven by the excellence funnel; replaced 精選 (catalog) + 上線
+   (shipped) on 2026-06-15. Guarded by `report.discoveries` so legacy archived
+   reports (which carry catalog/shipped instead) skip this panel and render the
+   legacy tabs via unified.njk's conditional. #}
+{% if report.discoveries %}
+<section class="section-discoveries tab-panel" id="discoveries" role="tabpanel" aria-labelledby="tab-discoveries">
+  <h2>新發現 — 正在崛起的專案</h2>
+
+  <div class="section-filter" role="radiogroup" aria-label="新發現 篩選">
+    <button type="button" class="section-chip active" role="radio" aria-checked="true" data-filter="all">全部</button>
+    {% if report.discoveries.rising and (report.discoveries.rising | length) %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="rising">新星</button>{% endif %}
+    {% if report.discoveries.dev_watch and (report.discoveries.dev_watch | length) %}<button type="button" class="section-chip" role="radio" aria-checked="false" data-filter="dev_watch">開發者動態</button>{% endif %}
+  </div>
+
+  {% if report.discoveries.rising and (report.discoveries.rising | length) %}
+  <div class="sub-section" data-subsection="rising">
+    <h3 class="sub-section-title"><span class="sub-title-text">新星</span><span class="sub-count">{{ report.discoveries.rising | length }} 項</span></h3>
+    <ol class="shipped-list">
+      {%- for item in report.discoveries.rising %}
+      {% include "v2/item-discovery.njk" %}
+      {%- endfor %}
+    </ol>
+  </div>
+  {% endif %}
+
+  {% if report.discoveries.dev_watch and (report.discoveries.dev_watch | length) %}
+  <div class="sub-section" data-subsection="dev_watch">
+    <h3 class="sub-section-title"><span class="sub-title-text">開發者動態</span><span class="sub-count">{{ report.discoveries.dev_watch | length }} 項</span></h3>
+    <ol class="shipped-list">
+      {%- for item in report.discoveries.dev_watch %}
+      {% include "v2/item-discovery.njk" %}
+      {%- endfor %}
+    </ol>
+  </div>
+  {% endif %}
+</section>
+{% endif %}

@@ -90,6 +90,8 @@
   const tabCountEl = sourcesContainer?.querySelector('.sources-count');
   const TAB_LABELS = {
     signals: '綜合',
+    discoveries: '新發現',
+    // catalog/shipped retained for legacy archived reports (still render those tabs).
     catalog: '精選',
     shipped: '上線',
     pulse: '脈動',

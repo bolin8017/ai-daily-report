@@ -8,8 +8,12 @@
 <nav class="tab-bar" role="tablist" aria-label="報告分區">
   <div class="tab-bar-inner">
     <a href="#signals" class="tab active" role="tab" id="tab-signals" aria-controls="signals" aria-selected="true" tabindex="0" data-tab="signals">訊號</a>
+    {% if report.discoveries %}
+    <a href="#discoveries" class="tab" role="tab" id="tab-discoveries" aria-controls="discoveries" aria-selected="false" tabindex="-1" data-tab="discoveries">新發現</a>
+    {% else %}
     <a href="#catalog" class="tab" role="tab" id="tab-catalog" aria-controls="catalog" aria-selected="false" tabindex="-1" data-tab="catalog">精選</a>
     <a href="#shipped" class="tab" role="tab" id="tab-shipped" aria-controls="shipped" aria-selected="false" tabindex="-1" data-tab="shipped">上線</a>
+    {% endif %}
     <a href="#pulse" class="tab" role="tab" id="tab-pulse" aria-controls="pulse" aria-selected="false" tabindex="-1" data-tab="pulse">脈動</a>
     <a href="#market" class="tab" role="tab" id="tab-market" aria-controls="market" aria-selected="false" tabindex="-1" data-tab="market">市場</a>
     <a href="#tech" class="tab" role="tab" id="tab-tech" aria-controls="tech" aria-selected="false" tabindex="-1" data-tab="tech">技術</a>
@@ -17,8 +21,14 @@
 </nav>
 
 {% include "v2/section-signals.njk" %}
-{% include "v2/section-catalog.njk" %}
-{% include "v2/section-shipped.njk" %}
+{% if report.discoveries %}
+  {# Live 新發現 tab (excellence funnel). #}
+  {% include "v2/section-discoveries.njk" %}
+{% else %}
+  {# Legacy archived reports: keep 精選 + 上線 tabs. #}
+  {% include "v2/section-catalog.njk" %}
+  {% include "v2/section-shipped.njk" %}
+{% endif %}
 {% include "v2/section-pulse.njk" %}
 {% include "v2/section-market.njk" %}
 {% include "v2/section-tech.njk" %}
