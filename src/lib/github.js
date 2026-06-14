@@ -50,6 +50,26 @@ export function makeOctokit({ requireAuth = false } = {}) {
 }
 
 /**
+ * Fetch the recursive file-path list of a repo's tree in ONE API call.
+ * Returns [] on any error (fail-soft, consistent with getReadmeExcerpt).
+ * @returns {Promise<string[]>} repo-relative paths
+ */
+export async function getRepoTree(octokit, owner, repo, defaultBranch, logPrefix = 'github') {
+  try {
+    const { data } = await octokit.rest.git.getTree({
+      owner,
+      repo,
+      tree_sha: defaultBranch || 'HEAD',
+      recursive: 'true',
+    });
+    return (data.tree ?? []).map((t) => t.path).filter(Boolean);
+  } catch (err) {
+    console.error(`[${logPrefix}] getRepoTree(${owner}/${repo}) failed: ${err.message}`);
+    return [];
+  }
+}
+
+/**
  * Fetches the raw README, strips control chars, truncates to 500 chars.
  * Returns '' on any error (missing README, private repo, rate limit) so
  * callers can keep the enriched item rather than dropping it entirely.

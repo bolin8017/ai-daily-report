@@ -3,13 +3,13 @@ import { githubTopicsForDate, loadInterests } from '../../lib/interests.js';
 import { defineProvider } from './_registry.js';
 
 const LOG_PREFIX = 'github-search';
-const MIN_STARS = 100;
+const MIN_STARS = 40;
 const CREATED_WINDOW_DAYS = 30;
 const README_BATCH_SIZE = 5;
 
 export async function resolveSearchTopics(dateString, theme) {
   const reg = await loadInterests(theme);
-  return githubTopicsForDate(reg, dateString);
+  return githubTopicsForDate(reg, dateString, 8);
 }
 
 function todayInTz() {
@@ -56,6 +56,9 @@ async function searchTopic(octokit, topic, since, limit) {
             created_at: r.created_at || '',
             pushed_at: r.pushed_at || '',
             readme_excerpt: readmeExcerpt,
+            default_branch: r.default_branch || null,
+            license: r.license?.spdx_id ?? null,
+            fork: r.fork ?? false,
           };
         }),
       );
@@ -79,7 +82,7 @@ export async function githubSearchApiProvider(_cfg, _ctx) {
   const allItems = [];
   let topicsOk = 0;
   let topicsTotal = 0;
-  const limit = 10;
+  const limit = 25;
 
   for (const topic of topics) {
     if (!topic) continue;
