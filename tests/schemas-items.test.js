@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ItemSchemas } from '../src/schemas/items/index.js';
-import { ShippedItem } from '../src/schemas/items.js';
+import { ProjectItem, ShippedItem } from '../src/schemas/items.js';
 
 describe('ItemSchemas registry', () => {
   it('exposes all 7 itemTypes', () => {
@@ -70,6 +70,36 @@ describe('ItemSchemas registry', () => {
         url: 'https://mops.twse.com.tw/mops/web/t05st01?co_id=8299',
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('ProjectItem', () => {
+  it('accepts a curator pick with optional merge-added fields absent', () => {
+    expect(() =>
+      ProjectItem.parse({
+        id: 'discoveries.rising.0:o/r',
+        name: 'o/r',
+        novelty_strength: 3,
+        relevance: 'x',
+      }),
+    ).not.toThrow();
+  });
+  it('accepts the full funnel-enriched shape', () => {
+    expect(() =>
+      ProjectItem.parse({
+        id: 'd.r.0:o/r',
+        name: 'o/r',
+        stars: 120,
+        velocity_per_day: 10,
+        eng_score: 4,
+        excellence_score: 0.6,
+        validation_refs: ['hn'],
+        group: 'rising',
+      }),
+    ).not.toThrow();
+  });
+  it('requires name', () => {
+    expect(() => ProjectItem.parse({ id: 'x' })).toThrow();
   });
 });
 

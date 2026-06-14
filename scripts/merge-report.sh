@@ -30,7 +30,7 @@ if [ ! -f "$EDITORIAL_FILE" ]; then
   exit 1
 fi
 
-for sec in shipped pulse market tech catalog; do
+for sec in discoveries pulse market tech; do
   if [ ! -f "$CURATED_DIR/$sec.json" ]; then
     echo "[merge-report] WARN: curated/$sec.json missing — section will be empty" >&2
   fi
@@ -49,10 +49,17 @@ import {canonicalRepoKey} from './src/lib/repo-key.js';
 
 const editorial = JSON.parse(readFileSync('$EDITORIAL_FILE', 'utf8'));
 const curated = {};
-for (const sec of ['shipped', 'pulse', 'market', 'tech', 'catalog']) {
+for (const sec of ['discoveries', 'pulse', 'market', 'tech']) {
   const p = '$CURATED_DIR/' + sec + '.json';
   curated[sec] = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
 }
+
+// The discoveries funnel signals (excellence_score, velocity, eng) live in the
+// Stage-1 staging file; merge re-attaches them onto the curator's picks by repo
+// key (never trusting the LLM to copy numbers). Best-effort: a missing/unparsable
+// staging file leaves every pick provisional (cold-start path in merge).
+let discoveriesStaging = null;
+try { discoveriesStaging = JSON.parse(readFileSync('$STAGING_DIR/feeds-discoveries.json', 'utf8')); } catch {}
 
 // Observability: assemble report.meta from Stage-1 staging identity/health +
 // per-stage usage sidecars (written by claude-envelope.js after each claude -p
@@ -78,12 +85,14 @@ const meta = aggregateMeta({
 });
 
 try {
-  const report = await composeReport({editorial, curated, themeName: '$ACTIVE_THEME', meta});
+  const report = await composeReport({editorial, curated, themeName: '$ACTIVE_THEME', meta, discoveriesStaging});
   writeFileSync('$REPORT_FILE', JSON.stringify(report, null, 2) + '\n');
   console.log('[merge-report] wrote $REPORT_FILE schema_version=' + report.schema_version + (meta ? ' meta=yes stages=' + Object.keys(meta.stages || {}).length : ' meta=no'));
   try {
-    const picks = Array.isArray(report.catalog?.picks) ? report.catalog.picks : [];
-    const shown = picks.map((p) => ({ repo: canonicalRepoKey(p) ?? p.name, stars: p.stars })).filter((p) => p.repo);
+    const shown = [
+      ...(report.discoveries?.rising ?? []),
+      ...(report.discoveries?.dev_watch ?? []),
+    ].map((p) => ({ repo: canonicalRepoKey(p), stars: p.stars ?? 0 })).filter((p) => p.repo);
     if (shown.length) {
       const { added, total } = appendSeen(shown, '$DATE');
       console.log('[merge-report] seen-repos +' + added + ' (total ' + total + ')');

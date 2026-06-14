@@ -72,18 +72,28 @@ describe('stage registry', () => {
     expect(getStage('merge').deps).toContain('faithfulness');
   });
 
-  // Catalog (精選) is the 5th curated section but must never block the pipeline,
-  // so it is OPTIONAL, kept OUT of CURATE_SECTIONS (the required-curator barrier),
-  // and only `merge` orders after it — context/synthesize must NOT wait on it.
-  it('catalog is an optional standalone curator that only merge depends on', () => {
+  // 新發現 (discoveries) replaced the retired 精選 (catalog) + 上線 (shipped) tabs.
+  // It is a CRITICAL core curator inside CURATE_SECTIONS — failure aborts the
+  // pipeline — and there is no longer any standalone optional catalog stage.
+  it('discoveries is a critical core curator inside CURATE_SECTIONS', () => {
+    expect(CURATE_SECTIONS).toContain('discoveries');
+    const discoveries = getStage('curate.discoveries');
+    expect(discoveries.criticality).toBe('required');
+    expect(discoveries.deps).toEqual(['collect']);
+    expect(discoveries.command).toEqual(['bash', 'scripts/curate.sh', 'discoveries']);
+    expect(getStage('synthesize').deps).toContain('curate.discoveries');
+    expect(getStage('merge').deps).toContain('curate.discoveries');
+  });
+
+  it('the retired catalog/shipped curators are no longer declared stages', () => {
     expect(CURATE_SECTIONS).not.toContain('catalog');
-    const catalog = getStage('curate.catalog');
-    expect(catalog.criticality).toBe('optional');
-    expect(catalog.deps).toEqual(['collect']);
-    expect(catalog.command).toEqual(['bash', 'scripts/curate.sh', 'catalog']);
-    expect(getStage('merge').deps).toContain('curate.catalog');
-    expect(getStage('context').deps).not.toContain('curate.catalog');
-    expect(getStage('synthesize').deps).not.toContain('curate.catalog');
+    expect(CURATE_SECTIONS).not.toContain('shipped');
+    expect(() => getStage('curate.catalog')).toThrow(/unknown stage/);
+    expect(() => getStage('curate.shipped')).toThrow(/unknown stage/);
+    for (const s of STAGES) {
+      expect(s.deps).not.toContain('curate.catalog');
+      expect(s.deps).not.toContain('curate.shipped');
+    }
   });
 
   it('getStage throws on an unknown id', () => {

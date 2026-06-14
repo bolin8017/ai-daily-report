@@ -1,0 +1,12 @@
+{# Discovery item card (新發現). Expects loop var `item` (a ProjectItem).
+   Velocity badge precedence: velocity_per_day → stars_today → provisional. #}
+<li id="{{ item.id }}" class="shipped-card" data-audience="{{ item.audience | default('general') }}">
+  {% if item.url %}<a href="{{ item.url }}"><strong>{{ item.name }}</strong></a>{% else %}<strong>{{ item.name }}</strong>{% endif %}
+  {% if item.stars %}<span class="score">★ {{ item.stars | formatNum }}</span>{% endif %}
+  {% if item.language %}<code class="lang-tag">{{ item.language }}</code>{% endif %}
+  {% if item.velocity_per_day %}<span class="velocity-badge">+{{ item.velocity_per_day | round }} ⭐/day</span>{% elif item.stars_today %}<span class="velocity-badge">{{ item.stars_today }} stars today</span>{% elif item.provisional %}<span class="velocity-badge velocity-new">新上線</span>{% endif %}
+  {% if item.relevance %}<p class="relevance"><em>今日意義：</em>{{ item.relevance }}</p>{% endif %}
+  {% if item.topic_match and (item.topic_match | length) %}
+  <p class="topics">{% for t in item.topic_match %}<code class="topic-tag">{{ t }}</code>{% endfor %}</p>
+  {% endif %}
+</li>

@@ -11,7 +11,7 @@ describe('theme loader', () => {
     expect(theme.persona.audience).toMatch(/AI engineers who build/);
     expect(theme.llm.curator_model).toBe('claude-haiku-4-5');
     expect(theme.llm.synthesizer_model).toBe('claude-sonnet-4-6');
-    expect(theme.sections).toHaveLength(5);
+    expect(theme.sections).toHaveLength(4);
   });
 
   it('loadTheme resolves prompt file paths relative to theme directory', async () => {
@@ -28,27 +28,29 @@ describe('theme loader', () => {
 
   it('loadTheme exposes ui_strings.yaml as theme.ui_strings', async () => {
     const theme = await loadTheme('ai-builder');
-    expect(theme.ui_strings.tabs.shipped.label).toBe('上線');
+    expect(theme.ui_strings.tabs.pulse.label).toBe('脈動');
     expect(theme.ui_strings.site.title).toMatch(/AI Engineer/);
   });
 
   it('listActiveSections returns sections in ascending order', async () => {
     const sections = await listActiveSections('ai-builder');
-    expect(sections.map((s) => s.id)).toEqual(['catalog', 'shipped', 'pulse', 'market', 'tech']);
+    expect(sections.map((s) => s.id)).toEqual(['discoveries', 'pulse', 'market', 'tech']);
   });
 
-  it('loadSection("ai-builder", "shipped") returns manifest + resolved paths', async () => {
-    const section = await loadSection('ai-builder', 'shipped');
-    expect(section.id).toBe('shipped');
-    expect(section.tab_label).toBe('上線');
+  it('loadSection("ai-builder", "discoveries") returns manifest + resolved paths', async () => {
+    const section = await loadSection('ai-builder', 'discoveries');
+    expect(section.id).toBe('discoveries');
+    expect(section.tab_label).toBe('新發現');
     expect(section.critical).toBe(true);
-    expect(section.audience_split).toBe(true);
-    expect(section.groups).toHaveLength(4);
+    expect(section.audience_split).toBe(false);
+    expect(section.groups).toHaveLength(2);
     expect(section.paths.curator_prompt).toMatch(
-      /themes\/ai-builder\/sections\/shipped\/curator\.md$/,
+      /themes\/ai-builder\/sections\/discoveries\/curator\.md$/,
     );
-    expect(section.paths.schema).toMatch(/themes\/ai-builder\/sections\/shipped\/schema\.js$/);
-    expect(section.paths.partial).toMatch(/themes\/ai-builder\/sections\/shipped\/partial\.njk$/);
+    expect(section.paths.schema).toMatch(/themes\/ai-builder\/sections\/discoveries\/schema\.js$/);
+    expect(section.paths.partial).toMatch(
+      /themes\/ai-builder\/sections\/discoveries\/partial\.njk$/,
+    );
   });
 
   it('loadSection throws when section id is not declared in theme', async () => {

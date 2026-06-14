@@ -9,7 +9,7 @@
 #   CURATED_DIR  — output dir (default: data/staging/curated)
 #
 # Exit codes:
-#   0  — all critical (shipped, pulse) succeeded
+#   0  — all critical (discoveries, pulse) succeeded
 #   1  — a critical section failed (abort pipeline)
 #   2  — unknown section argument
 
@@ -28,8 +28,8 @@ mkdir -p "$CURATED_DIR"
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR"
 
-ALL_SECTIONS=(shipped pulse market tech catalog)
-CRITICAL=(shipped pulse)
+ALL_SECTIONS=(discoveries pulse market tech)
+CRITICAL=(discoveries pulse)
 
 # Optional positional args restrict the run to specific sections, e.g.
 #   bash scripts/curate.sh market        # re-run only the market curator

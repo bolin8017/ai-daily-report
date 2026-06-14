@@ -219,9 +219,32 @@ export default function (eleventyConfig) {
 
   function shippedSyntheticSources(latestReport) {
     // `>= 2` (not `=== 2`): v2.1 reports (post-2026-05-24 split) must still
-    // synthesize the 上線-tab pills. A bare `!== 2` dropped them for every 2.1
-    // report, so the 上線 tab footer showed no source pills.
-    if (!(latestReport?.schema_version >= 2) || !latestReport?.shipped) return [];
+    // synthesize the github-derived tab pills. A bare `!== 2` dropped them for
+    // every 2.1 report, so the tab footer showed no source pills.
+    if (!(latestReport?.schema_version >= 2)) return [];
+
+    // Live reports (2026-06-15+) carry a `discoveries` section in place of the
+    // retired catalog/shipped sections — synthesize 新發現-tab pills from it.
+    if (latestReport.discoveries) {
+      const discoveries = [];
+      const rising = latestReport.discoveries.rising;
+      if (Array.isArray(rising) && rising.length > 0) {
+        discoveries.push({ name: '新星', ok: true, count: rising.length, tabs: ['discoveries'] });
+      }
+      const devWatch = latestReport.discoveries.dev_watch;
+      if (Array.isArray(devWatch) && devWatch.length > 0) {
+        discoveries.push({
+          name: '開發者動態',
+          ok: true,
+          count: devWatch.length,
+          tabs: ['discoveries'],
+        });
+      }
+      return discoveries;
+    }
+
+    // Legacy archived reports: synthesize the 上線 (shipped) + 精選 (catalog) pills.
+    if (!latestReport.shipped) return [];
     const groups = [
       ['trending', 'GitHub Trending'],
       ['topic_discovery', 'Topic Discovery'],

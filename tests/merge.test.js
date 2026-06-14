@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { BENCH_LEADERBOARD_URL } from '../src/lib/leaderboard-urls.js';
 import {
+  buildDiscoveriesSection,
   composeReport,
   extractIdSpace,
   findDanglingSourceLinks,
@@ -26,7 +27,7 @@ function fixtureEditorial(overrides = {}) {
           title: 's',
           body: 'b',
           audience: 'general',
-          source_links: ['shipped.trending.0:foo/bar'],
+          source_links: ['discoveries.rising.0:foo/bar'],
         },
       ],
       predictions: [],
@@ -37,15 +38,16 @@ function fixtureEditorial(overrides = {}) {
 
 function fixtureCurated() {
   return {
-    shipped: {
-      trending: [
+    discoveries: {
+      rising: [
         {
-          id: 'shipped.trending.0:foo/bar',
+          id: 'discoveries.rising.0:foo/bar',
           name: 'foo/bar',
-          desc: 'd',
+          relevance: 'd',
           audience: 'general',
         },
       ],
+      dev_watch: [],
     },
     pulse: {
       hn: [
@@ -65,7 +67,7 @@ describe('extractIdSpace', () => {
   it('collects ids across all curated sections + sub-groups', () => {
     const curated = fixtureCurated();
     const ids = extractIdSpace(curated);
-    expect(ids.has('shipped.trending.0:foo/bar')).toBe(true);
+    expect(ids.has('discoveries.rising.0:foo/bar')).toBe(true);
     expect(ids.has('pulse.hn.0:hn-1')).toBe(true);
     expect(ids.size).toBe(2);
   });
@@ -112,7 +114,7 @@ describe('findDanglingSourceLinks', () => {
             title: 's',
             body: 'b',
             audience: 'general',
-            source_links: ['shipped.trending.0'],
+            source_links: ['discoveries.rising.0'],
           },
         ],
         predictions: [],
@@ -133,7 +135,7 @@ describe('findDanglingSourceLinks', () => {
             title: 's',
             body: 'b',
             audience: 'general',
-            source_links: ['shipped.trending.9'],
+            source_links: ['discoveries.rising.9'],
           },
         ],
         predictions: [],
@@ -142,7 +144,7 @@ describe('findDanglingSourceLinks', () => {
     const idSpace = extractIdSpace(fixtureCurated());
     const dangling = findDanglingSourceLinks(editorial, idSpace);
     expect(dangling).toHaveLength(1);
-    expect(dangling[0]).toMatch(/shipped\.trending\.9/);
+    expect(dangling[0]).toMatch(/discoveries\.rising\.9/);
   });
 });
 
@@ -152,7 +154,7 @@ describe('stripDanglingSourceLinks', () => {
     const idSpace = extractIdSpace(fixtureCurated());
     const { editorial: out, dropped } = stripDanglingSourceLinks(editorial, idSpace);
     expect(dropped).toEqual([]);
-    expect(out.signals.focus[0].source_links).toEqual(['shipped.trending.0:foo/bar']);
+    expect(out.signals.focus[0].source_links).toEqual(['discoveries.rising.0:foo/bar']);
   });
 
   it('removes only the unresolvable ids and reports their paths, keeping resolvable ones', () => {
@@ -164,7 +166,7 @@ describe('stripDanglingSourceLinks', () => {
             title: 's',
             body: 'b',
             audience: 'general',
-            source_links: ['shipped.trending.0', 'shipped.trending.9', 'ghost.id'],
+            source_links: ['discoveries.rising.0', 'discoveries.rising.9', 'ghost.id'],
           },
         ],
         predictions: [],
@@ -172,9 +174,9 @@ describe('stripDanglingSourceLinks', () => {
     });
     const idSpace = extractIdSpace(fixtureCurated());
     const { editorial: out, dropped } = stripDanglingSourceLinks(editorial, idSpace);
-    expect(out.signals.focus[0].source_links).toEqual(['shipped.trending.0']);
+    expect(out.signals.focus[0].source_links).toEqual(['discoveries.rising.0']);
     expect(dropped).toHaveLength(2);
-    expect(dropped.join('\n')).toMatch(/shipped\.trending\.9/);
+    expect(dropped.join('\n')).toMatch(/discoveries\.rising\.9/);
     expect(dropped.join('\n')).toMatch(/ghost\.id/);
   });
 
@@ -223,7 +225,7 @@ describe('composeReport', () => {
     expect(report.date).toBe('2026-05-24');
     expect(report.lead.html).toBe('<p>lead</p>');
     expect(report.signals.focus).toHaveLength(1);
-    expect(report.shipped.trending[0].id).toBe('shipped.trending.0:foo/bar');
+    expect(report.discoveries.rising[0].id).toBe('discoveries.rising.0:foo/bar');
     expect(report.pulse.hn[0].id).toBe('pulse.hn.0:hn-1');
   });
 
@@ -240,7 +242,7 @@ describe('composeReport', () => {
               body: 'b',
               audience: 'general',
               // one real id + one ghost — the ghost is dropped, the real one kept
-              source_links: ['shipped.trending.0:foo/bar', 'ghost.id'],
+              source_links: ['discoveries.rising.0:foo/bar', 'ghost.id'],
             },
           ],
           predictions: [],
@@ -250,7 +252,7 @@ describe('composeReport', () => {
       themeName: 'ai-builder',
     });
     expect(report.schema_version).toBe(2.1);
-    expect(report.signals.focus[0].source_links).toEqual(['shipped.trending.0:foo/bar']);
+    expect(report.signals.focus[0].source_links).toEqual(['discoveries.rising.0:foo/bar']);
   });
 
   // The 2026-05-28 run aborted here: every source_link was a bare prefix
@@ -266,7 +268,7 @@ describe('composeReport', () => {
               title: 's',
               body: 'b',
               audience: 'general',
-              source_links: ['shipped.trending.0', 'pulse.hn.0'],
+              source_links: ['discoveries.rising.0', 'pulse.hn.0'],
             },
           ],
           predictions: [],
@@ -276,7 +278,7 @@ describe('composeReport', () => {
       themeName: 'ai-builder',
     });
     expect(report.schema_version).toBe(2.1);
-    expect(report.signals.focus[0].source_links).toEqual(['shipped.trending.0', 'pulse.hn.0']);
+    expect(report.signals.focus[0].source_links).toEqual(['discoveries.rising.0', 'pulse.hn.0']);
   });
 
   it('preserves editorial signals under the same name in the merged report', async () => {
@@ -317,27 +319,33 @@ describe('composeReport', () => {
     expect(report.meta).toBeUndefined();
   });
 
-  it('composes a catalog section from curated picks', async () => {
+  it('composes the discoveries section, re-attaching funnel signals from staging', async () => {
     const curated = fixtureCurated();
-    curated.catalog = {
-      picks: [
+    curated.discoveries = {
+      rising: [
         {
-          id: 'catalog.picks.0:vllm-project/vllm',
-          name: 'vllm-project/vllm',
-          url: 'https://github.com/vllm-project/vllm',
-          stars: 40000,
-          category: 'ai',
+          id: 'discoveries.rising.0:o/fast',
+          name: 'o/fast',
+          url: 'https://github.com/o/fast',
+          novelty_strength: 2,
           audience: 'both',
-          takeaway: '高吞吐 LLM 推論引擎。',
         },
       ],
+      dev_watch: [],
     };
     const report = await composeReport({
-      editorial: fixtureEditorial(),
+      editorial: fixtureEditorial({ signals: { focus: [], predictions: [] } }),
       curated,
       themeName: 'ai-builder',
+      discoveriesStaging: {
+        candidates: [{ full_name: 'o/fast', excellence_score: 0.8, velocity_per_day: 25 }],
+        watchlist: [],
+      },
     });
-    expect(report.catalog.picks[0].id).toBe('catalog.picks.0:vllm-project/vllm');
+    expect(report.discoveries.rising[0].id).toBe('discoveries.rising.0:o/fast');
+    // staging signals are re-attached deterministically (not trusted from curator)
+    expect(report.discoveries.rising[0].excellence_score).toBe(0.8);
+    expect(report.discoveries.rising[0].velocity_per_day).toBe(25);
   });
 });
 
@@ -349,7 +357,7 @@ describe('composeReport', () => {
 describe('composeReport benchmark URL cure', () => {
   function curatedWithBenchmarks(benchmarks) {
     return {
-      shipped: { trending: [] },
+      discoveries: { rising: [], dev_watch: [] },
       pulse: { hn: [] },
       market: { ma: [] },
       tech: { vendor: [], benchmarks },
@@ -414,6 +422,74 @@ describe('composeReport benchmark URL cure', () => {
     ]);
     await composeReport({ editorial: emptyEditorial, curated, themeName: 'ai-builder' });
     expect(curated.tech.benchmarks[0].url).toBe('https://github.com/fake/ocrbench');
+  });
+});
+
+describe('buildDiscoveriesSection', () => {
+  const staging = {
+    candidates: [
+      { full_name: 'o/fast', excellence_score: 0.9, velocity_per_day: 30, eng_score: 5 },
+      { full_name: 'o/mid', excellence_score: 0.4, velocity_per_day: 8, eng_score: 3 },
+    ],
+    watchlist: [{ full_name: 'o/new', stars: 200, stars_today: 50, repo_age_days: 2 }],
+  };
+  it('ranks by 0.5 novelty + 0.5 excellence, attaching scores from staging', () => {
+    const out = buildDiscoveriesSection(
+      {
+        rising: [
+          { name: 'o/mid', url: 'https://github.com/o/mid', novelty_strength: 3 },
+          { name: 'o/fast', url: 'https://github.com/o/fast', novelty_strength: 1 },
+        ],
+        dev_watch: [],
+      },
+      staging,
+    );
+    // o/mid: 0.5*(3/3) + 0.5*0.4 = 0.5 + 0.2 = 0.7
+    // o/fast: 0.5*(1/3) + 0.5*0.9 = 0.167 + 0.45 = 0.617
+    // descending: o/mid first
+    expect(out.rising.map((r) => r.name)).toEqual(['o/mid', 'o/fast']);
+    expect(out.rising[0].excellence_score).toBe(0.4);
+    expect(out.rising[1].excellence_score).toBe(0.9);
+  });
+  it('marks cold-start items provisional and still ranks them', () => {
+    const out = buildDiscoveriesSection(
+      {
+        rising: [{ name: 'o/new', url: 'https://github.com/o/new', novelty_strength: 2 }],
+        dev_watch: [],
+      },
+      staging,
+    );
+    expect(out.rising[0].provisional).toBe(true);
+    expect(out.rising[0].excellence_score == null).toBe(true);
+  });
+  it('applies the soft ceiling at 30', () => {
+    const rising = Array.from({ length: 35 }, (_, i) => ({
+      name: `o/r${i}`,
+      url: `https://github.com/o/r${i}`,
+      novelty_strength: 1,
+    }));
+    const out = buildDiscoveriesSection(
+      { rising, dev_watch: [] },
+      { candidates: [], watchlist: [] },
+    );
+    expect(out.rising).toHaveLength(30);
+  });
+  it('tolerates null staging (all provisional)', () => {
+    const out = buildDiscoveriesSection(
+      { rising: [{ name: 'o/x', url: 'https://github.com/o/x' }], dev_watch: [] },
+      null,
+    );
+    expect(out.rising[0].provisional).toBe(true);
+  });
+  it('does not mutate the input rising items (no-staging-match path)', () => {
+    // When no staging entry matches, attachSignals returns the same object
+    // reference. buildDiscoveriesSection must not set `provisional` on that
+    // shared object — it must work on a fresh copy instead.
+    const item = { name: 'o/unknown', url: 'https://github.com/o/unknown', novelty_strength: 1 };
+    const input = { rising: [item], dev_watch: [] };
+    const snapshot = JSON.stringify(item);
+    buildDiscoveriesSection(input, { candidates: [], watchlist: [] });
+    expect(JSON.stringify(item)).toBe(snapshot);
   });
 });
 
