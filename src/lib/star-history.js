@@ -54,7 +54,13 @@ export function loadStarHistory(historyPath = DEFAULT_HISTORY_PATH) {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    const guarded = StarHistorySchema.safeParse(parsed);
+    if (guarded.success) return guarded.data;
+    console.error(
+      `[star-history] data-branch file failed schema validation — using empty history (${guarded.error.issues[0]?.message ?? 'invalid shape'})`,
+    );
+    return {};
   } catch {
     return {};
   }

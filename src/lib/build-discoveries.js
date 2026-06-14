@@ -126,7 +126,9 @@ export async function buildDiscoveries({
     // Compute forkPerDay from history forks delta
     let forkPerDay = 0;
     if (rec?.snapshots?.length >= 2) {
-      const sorted = [...rec.snapshots].sort((a, b) => (a.date < b.date ? -1 : 1));
+      const sorted = [...rec.snapshots].sort((a, b) =>
+        a.date < b.date ? -1 : a.date > b.date ? 1 : 0,
+      );
       const forksDelta = (sorted[sorted.length - 1].forks ?? 0) - (sorted[0].forks ?? 0);
       const daySpan = Math.max(vstats.historyDays, 1);
       forkPerDay = forksDelta / daySpan;
