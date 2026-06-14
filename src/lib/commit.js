@@ -116,7 +116,7 @@ function sanitizeToken(str) {
 export async function commitAndPush({ date, message, paths, removePaths }) {
   await ensureGitAuthor();
 
-  const addPaths = paths ?? ['data/reports', 'data/feeds-snapshot.json'];
+  const addPaths = paths ?? ['data/reports', 'data/feeds-snapshot.json', 'data/star-history.json'];
   const removeList = removePaths ?? [];
   const commitMsg = message ?? `report: ${date} daily creative brief`;
   const explicitPaths = Array.isArray(paths);

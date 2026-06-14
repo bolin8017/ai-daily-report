@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ItemSchemas } from '../src/schemas/items/index.js';
+import { ShippedItem } from '../src/schemas/items.js';
 
 describe('ItemSchemas registry', () => {
   it('exposes all 7 itemTypes', () => {
@@ -69,5 +70,15 @@ describe('ItemSchemas registry', () => {
         url: 'https://mops.twse.com.tw/mops/web/t05st01?co_id=8299',
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('ShippedItem.stars_today', () => {
+  it('accepts a numeric or null stars_today', () => {
+    expect(() => ShippedItem.parse({ id: 'x', name: 'a/b', stars_today: 1531 })).not.toThrow();
+    expect(() => ShippedItem.parse({ id: 'x', name: 'a/b', stars_today: null })).not.toThrow();
+  });
+  it('rejects a non-numeric stars_today', () => {
+    expect(() => ShippedItem.parse({ id: 'x', name: 'a/b', stars_today: 'lots' })).toThrow();
   });
 });

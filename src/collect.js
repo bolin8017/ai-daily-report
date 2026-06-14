@@ -44,6 +44,7 @@ import { loadSectionMap } from './lib/section-map.js';
 import { buildSnapshot } from './lib/snapshot.js';
 import { buildSourceDateMap, computeAges } from './lib/source-dates.js';
 import { resolveEffectiveSources } from './lib/sources.js';
+import { recordSnapshot as recordStarSnapshot } from './lib/star-history.js';
 import { getCachedTheme } from './lib/theme.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
@@ -155,6 +156,19 @@ async function main() {
   // Phase 2 — build feeds snapshot (committed to data/feeds-snapshot.json for 11ty)
   banner('building snapshot');
   buildSnapshot(raw.feeds);
+
+  // Phase 2b — append today's star/fork snapshot for every collected GitHub
+  // repo to data/star-history.json (velocity backbone; committed by Stage 4).
+  // Zero extra API: the numbers are already in the fetched payloads.
+  banner('recording star snapshot');
+  const githubItems = [
+    ...(raw.trending.items ?? []),
+    ...(raw.search.items ?? []),
+    ...(raw.developers.items ?? []),
+    ...(raw.catalog?.items ?? []),
+  ];
+  const starSnap = recordStarSnapshot(githubItems, date);
+  banner(`star-history: recorded ${starSnap.recorded} repos (${starSnap.repos} tracked)`);
 
   // Phase 3 — tag scope on RAW items BEFORE condense.
   // Items from global sources get ["global"]; items also matching the theme's

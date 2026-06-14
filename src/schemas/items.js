@@ -25,6 +25,7 @@ export const ShippedItem = ItemBase.extend({
   name: z.string(),
   desc: z.string().optional(),
   stars: z.number().nullable().optional(),
+  stars_today: z.number().nullable().optional(),
   repo_age: StringNumberOrNull,
   language: z.string().nullable().optional(),
   relevance: z.string().optional(),

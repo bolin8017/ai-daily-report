@@ -41,6 +41,7 @@ commit_outputs() {
   [ -f "$report_file" ] && commit_paths+=("$report_file")
   [ -f "data/feeds-snapshot.json" ] && commit_paths+=("data/feeds-snapshot.json")
   [ -f "data/seen-repos.json" ] && commit_paths+=("data/seen-repos.json")
+  [ -f "data/star-history.json" ] && commit_paths+=("data/star-history.json")
   if [ "${#commit_paths[@]}" -eq 0 ]; then
     echo "[run] no outputs to commit — exiting nonzero" >&2
     return 1
