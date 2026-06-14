@@ -297,21 +297,79 @@ export function externalValidation(repoFullName, feedItems) {
 }
 
 // ---------------------------------------------------------------------------
+// Behavioral signals (Phase 4): commit-continuity + contributor-diversity.
+// Computed only for the top funnel survivors (build-discoveries) from the
+// fail-soft GitHub helpers. Bot authors are excluded so automation noise
+// (dependabot/renovate/CI) does not masquerade as sustained human effort.
+// ---------------------------------------------------------------------------
+
+const BOT = /\bbot\b|\[bot\]|dependabot|renovate|github-actions/i;
+
+/**
+ * Distinct recent days with non-bot commits — distinguishes a repo that is
+ * actively built from a one-day spike-and-abandon.
+ *
+ * @param {{ login: string|null, date: string|null, message: string }[]} commits
+ * @param {string} todayISO  YYYY-MM-DD (or any Date-parseable today)
+ * @returns {{ daysWithCommits: number, nonBotCommits: number, coherent: boolean }}
+ */
+export function commitContinuity(commits, todayISO) {
+  const days = new Set();
+  let nonBotCommits = 0;
+  for (const c of commits ?? []) {
+    if (!c?.date || BOT.test(c.login ?? '')) continue;
+    const age = Math.round((Date.parse(todayISO) - Date.parse(c.date)) / 86_400_000);
+    if (Number.isNaN(age) || age > 14 || age < 0) continue;
+    nonBotCommits++;
+    days.add(c.date.slice(0, 10));
+  }
+  const coherent =
+    nonBotCommits === 0
+      ? false
+      : nonBotCommits >= Math.max(1, Math.ceil((commits?.length ?? 0) * 0.4));
+  return { daysWithCommits: days.size, nonBotCommits, coherent };
+}
+
+/**
+ * 0–1 contributor-diversity term: rewards a real team, penalizes one-author
+ * dominance. Returns 0 when there are no non-bot contributors.
+ *
+ * @param {{ login: string|null, contributions: number }[]} contributors
+ * @param {number} repoAgeDays
+ * @returns {number}
+ */
+export function contributorDiversity(contributors, repoAgeDays) {
+  const list = (contributors ?? []).filter((c) => c?.login && !BOT.test(c.login));
+  if (list.length === 0) return 0;
+  const total = list.reduce((s, c) => s + (c.contributions ?? 0), 0) || 1;
+  const topShare = Math.max(...list.map((c) => (c.contributions ?? 0) / total));
+  const dominancePenalty = topShare > 0.9 ? 0.5 : 1; // one author owns >90% → halve
+  const ageNorm = Math.min(list.length / Math.max((repoAgeDays ?? 30) / 7 + 1, 1), 1);
+  return Math.min(ageNorm * dominancePenalty, 1);
+}
+
+// ---------------------------------------------------------------------------
 // excellenceScore
 // ---------------------------------------------------------------------------
 
 /**
- * Composite 0–1 score.
+ * Composite 0–1 score. Weights sum to 1.00 and every term clamps to [0,1].
  *
  * Weights:
- *   velocity   0.30  min(perDay/50, 1)
- *   eng        0.25  engScore/6
- *   validation 0.20  min(validationCount/2, 1)
- *   fork       0.12  min(forkPerDay/10, 1)
- *   readme     0.08  min(readmeLen/400, 1)
- *   substance  0.05  codeSubstance ? 1 : 0
+ *   velocity         0.25  min(perDay/50, 1)
+ *   eng              0.20  engScore/6
+ *   validation       0.18  min(validationCount/2, 1)
+ *   commitScore      0.12  behavioral (min(daysWithCommits/5, 1))
+ *   fork             0.08  min(forkPerDay/10, 1)
+ *   contributorScore 0.07  behavioral (contributorDiversity)
+ *   downloadScore    0.05  behavioral (min(downloads/5000, 1))
+ *   readme           0.03  min(readmeLen/400, 1)
+ *   substance        0.02  codeSubstance ? 1 : 0
  *
- * @param {{ perDay: number, engScore: number, validationCount: number, forkPerDay: number, readmeLen: number, codeSubstance: boolean }} params
+ * The three behavioral terms default to 0, so P2/P3 callers that omit them
+ * keep working — their score just lacks the behavioral lift.
+ *
+ * @param {{ perDay: number, engScore: number, validationCount: number, forkPerDay: number, readmeLen: number, codeSubstance: boolean, commitScore?: number, contributorScore?: number, downloadScore?: number }} params
  * @returns {number}
  */
 export function excellenceScore({
@@ -321,12 +379,20 @@ export function excellenceScore({
   forkPerDay,
   readmeLen,
   codeSubstance,
+  commitScore = 0,
+  contributorScore = 0,
+  downloadScore = 0,
 }) {
-  const velocity = Math.min(perDay / 50, 1) * 0.3;
-  const engComponent = (eng / 6) * 0.25;
-  const validation = Math.min(validationCount / 2, 1) * 0.2;
-  const fork = Math.min(forkPerDay / 10, 1) * 0.12;
-  const readme = Math.min(readmeLen / 400, 1) * 0.08;
-  const substance = (codeSubstance ? 1 : 0) * 0.05;
-  return velocity + engComponent + validation + fork + readme + substance;
+  const clamp = (x) => Math.max(0, Math.min(x, 1));
+  return (
+    0.25 * clamp((perDay ?? 0) / 50) +
+    0.2 * clamp((eng ?? 0) / 6) +
+    0.18 * clamp(Math.min(validationCount ?? 0, 2) / 2) +
+    0.12 * clamp(commitScore) +
+    0.08 * clamp((forkPerDay ?? 0) / 10) +
+    0.07 * clamp(contributorScore) +
+    0.05 * clamp(downloadScore) +
+    0.03 * clamp((readmeLen ?? 0) / 400) +
+    0.02 * (codeSubstance ? 1 : 0)
+  );
 }

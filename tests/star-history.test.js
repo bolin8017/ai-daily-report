@@ -2,7 +2,12 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadStarHistory, pruneStarHistory, recordSnapshot } from '../src/lib/star-history.js';
+import {
+  loadStarHistory,
+  pruneStarHistory,
+  recordSnapshot,
+  StarHistorySchema,
+} from '../src/lib/star-history.js';
 
 let dir;
 let path;
@@ -91,5 +96,21 @@ describe('pruneStarHistory', () => {
     const pruned = pruneStarHistory(h, '2026-06-15', 30);
     expect(pruned['a/b'].snapshots.map((s) => s.date)).toEqual(['2026-06-14']);
     expect(pruned['c/d']).toBeUndefined();
+  });
+});
+
+describe('StarHistorySchema', () => {
+  it('accepts a well-formed ledger', () => {
+    expect(() =>
+      StarHistorySchema.parse({
+        'o/r': {
+          first_seen: '2026-06-15',
+          snapshots: [{ date: '2026-06-15', stars: 40, forks: 3 }],
+        },
+      }),
+    ).not.toThrow();
+  });
+  it('rejects a malformed entry', () => {
+    expect(() => StarHistorySchema.parse({ 'o/r': { snapshots: 'nope' } })).toThrow();
   });
 });

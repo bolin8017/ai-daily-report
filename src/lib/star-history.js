@@ -11,16 +11,40 @@
 
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { z } from 'zod';
 import { canonicalRepoKey } from './repo-key.js';
 
 export const DEFAULT_HISTORY_PATH = 'data/star-history.json';
 const DATA_BRANCH_REF = 'refs/remotes/origin/data';
 const RETENTION_DAYS = 30;
 
+export const StarSnapshot = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  stars: z.number().int().nonnegative(),
+  forks: z.number().int().nonnegative().nullable().optional(),
+});
+export const StarHistorySchema = z.record(
+  z
+    .object({
+      first_seen: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}$/)
+        .optional(),
+      watch_since: z.string().optional(),
+      snapshots: z.array(StarSnapshot),
+    })
+    .passthrough(),
+);
+
 export function loadStarHistory(historyPath = DEFAULT_HISTORY_PATH) {
   if (existsSync(historyPath)) {
     try {
-      return JSON.parse(readFileSync(historyPath, 'utf8'));
+      const parsed = JSON.parse(readFileSync(historyPath, 'utf8'));
+      const guarded = StarHistorySchema.safeParse(parsed);
+      if (guarded.success) return guarded.data;
+      console.error(
+        `[star-history] local file failed schema validation — trying data branch (${guarded.error.issues[0]?.message ?? 'invalid shape'})`,
+      );
     } catch (err) {
       console.error(`[star-history] local file unreadable (${err.message}) — trying data branch`);
     }
@@ -30,7 +54,13 @@ export function loadStarHistory(historyPath = DEFAULT_HISTORY_PATH) {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     });
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    const guarded = StarHistorySchema.safeParse(parsed);
+    if (guarded.success) return guarded.data;
+    console.error(
+      `[star-history] data-branch file failed schema validation — using empty history (${guarded.error.issues[0]?.message ?? 'invalid shape'})`,
+    );
+    return {};
   } catch {
     return {};
   }

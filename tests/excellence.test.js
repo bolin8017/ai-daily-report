@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  commitContinuity,
+  contributorDiversity,
   engGatePass,
   engScore,
   engSignalsFromTree,
@@ -177,6 +179,9 @@ describe('excellenceScore', () => {
       forkPerDay: 10,
       readmeLen: 400,
       codeSubstance: true,
+      commitScore: 1,
+      contributorScore: 1,
+      downloadScore: 1,
     });
     expect(hi).toBeCloseTo(1, 2);
     const lo = excellenceScore({
@@ -186,7 +191,51 @@ describe('excellenceScore', () => {
       forkPerDay: 0,
       readmeLen: 0,
       codeSubstance: false,
+      commitScore: 0,
+      contributorScore: 0,
+      downloadScore: 0,
     });
     expect(lo).toBe(0);
+  });
+});
+
+describe('commitContinuity', () => {
+  const commits = (days) =>
+    days.map((d, i) => ({
+      login: 'human',
+      date: `${d}T0${i % 9}:00:00Z`,
+      message: 'feat: real work',
+    }));
+  it('counts distinct recent days with non-bot commits', () => {
+    const c = commitContinuity(
+      commits(['2026-06-14', '2026-06-14', '2026-06-12', '2026-06-09']),
+      '2026-06-15',
+    );
+    expect(c.daysWithCommits).toBe(3);
+    expect(c.nonBotCommits).toBe(4);
+  });
+  it('ignores bot commits', () => {
+    const c = commitContinuity(
+      [{ login: 'dependabot[bot]', date: '2026-06-14T00:00:00Z', message: 'bump' }],
+      '2026-06-15',
+    );
+    expect(c.nonBotCommits).toBe(0);
+    expect(c.daysWithCommits).toBe(0);
+  });
+});
+
+describe('contributorDiversity', () => {
+  it('rewards multiple contributors, penalizes single-author dominance', () => {
+    const many = contributorDiversity(
+      [
+        { login: 'a', contributions: 10 },
+        { login: 'b', contributions: 8 },
+        { login: 'c', contributions: 6 },
+      ],
+      10,
+    );
+    const solo = contributorDiversity([{ login: 'a', contributions: 100 }], 10);
+    expect(many).toBeGreaterThan(solo);
+    expect(solo).toBeGreaterThanOrEqual(0);
   });
 });
