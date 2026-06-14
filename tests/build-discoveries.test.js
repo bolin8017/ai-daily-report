@@ -1,16 +1,42 @@
-import { describe, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 import { buildDiscoveries } from '../src/lib/build-discoveries.js';
 
 const base = {
-  url: '', stars: 0, forks: 0, created_at: '2026-06-10', pushed_at: '2026-06-15',
-  fork: false, license: 'MIT', default_branch: 'main', readme_excerpt: 'x', source: 'github-search',
+  url: '',
+  stars: 0,
+  forks: 0,
+  created_at: '2026-06-10',
+  pushed_at: '2026-06-15',
+  fork: false,
+  license: 'MIT',
+  default_branch: 'main',
+  readme_excerpt: 'x',
+  source: 'github-search',
 };
-const goodTree = ['src/a.ts', 'src/b.ts', 'src/c.ts', 'src/d.ts', 'src/e.ts', 'tests/a.test.ts', '.github/workflows/ci.yml', 'tsconfig.json', 'package-lock.json'];
+const goodTree = [
+  'src/a.ts',
+  'src/b.ts',
+  'src/c.ts',
+  'src/d.ts',
+  'src/e.ts',
+  'tests/a.test.ts',
+  '.github/workflows/ci.yml',
+  'tsconfig.json',
+  'package-lock.json',
+];
 
 it('passes a fast-rising, well-engineered, unseen repo', async () => {
   const out = await buildDiscoveries({
     items: [{ ...base, full_name: 'o/fast', url: 'https://github.com/o/fast', stars: 200 }],
-    history: { 'o/fast': { first_seen: '2026-06-08', snapshots: [{ date: '2026-06-08', stars: 50 }, { date: '2026-06-15', stars: 200 }] } },
+    history: {
+      'o/fast': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 50 },
+          { date: '2026-06-15', stars: 200 },
+        ],
+      },
+    },
     feedItems: [],
     seen: new Set(),
     todayISO: '2026-06-15',
@@ -30,8 +56,20 @@ it('drops a seen repo, a flat repo, and a fork; watchlists a brand-new one', asy
       { ...base, full_name: 'o/new', url: 'https://github.com/o/new', stars: 40 },
     ],
     history: {
-      'o/flat': { first_seen: '2026-06-08', snapshots: [{ date: '2026-06-08', stars: 30 }, { date: '2026-06-15', stars: 50 }] },
-      'o/new': { first_seen: '2026-06-14', snapshots: [{ date: '2026-06-14', stars: 30 }, { date: '2026-06-15', stars: 40 }] },
+      'o/flat': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 30 },
+          { date: '2026-06-15', stars: 50 },
+        ],
+      },
+      'o/new': {
+        first_seen: '2026-06-14',
+        snapshots: [
+          { date: '2026-06-14', stars: 30 },
+          { date: '2026-06-15', stars: 40 },
+        ],
+      },
     },
     seen: new Set(['o/seen']),
     feedItems: [],
@@ -46,8 +84,18 @@ it('drops a seen repo, a flat repo, and a fork; watchlists a brand-new one', asy
 it('external validation rescues a flat repo past the velocity gate', async () => {
   const out = await buildDiscoveries({
     items: [{ ...base, full_name: 'o/niche', url: 'https://github.com/o/niche', stars: 50 }],
-    history: { 'o/niche': { first_seen: '2026-06-08', snapshots: [{ date: '2026-06-08', stars: 30 }, { date: '2026-06-15', stars: 50 }] } },
-    feedItems: [{ source: 'simonwillison', url: 'https://github.com/o/niche', title: '', description: '' }],
+    history: {
+      'o/niche': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 30 },
+          { date: '2026-06-15', stars: 50 },
+        ],
+      },
+    },
+    feedItems: [
+      { source: 'simonwillison', url: 'https://github.com/o/niche', title: '', description: '' },
+    ],
     seen: new Set(),
     todayISO: '2026-06-15',
     fetchTree: async () => goodTree,
@@ -59,7 +107,15 @@ it('external validation rescues a flat repo past the velocity gate', async () =>
 it('drops a pass-velocity repo that fails the engineering gate', async () => {
   const out = await buildDiscoveries({
     items: [{ ...base, full_name: 'o/thin', url: 'https://github.com/o/thin', stars: 200 }],
-    history: { 'o/thin': { first_seen: '2026-06-08', snapshots: [{ date: '2026-06-08', stars: 50 }, { date: '2026-06-15', stars: 200 }] } },
+    history: {
+      'o/thin': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 50 },
+          { date: '2026-06-15', stars: 200 },
+        ],
+      },
+    },
     feedItems: [],
     seen: new Set(),
     todayISO: '2026-06-15',

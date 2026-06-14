@@ -30,9 +30,11 @@ import './fetchers/providers/rsshub.js';
 
 import { fetchMinifluxEntries } from './fetchers/miniflux.js';
 import { runAll } from './fetchers/run-all.js';
+import { buildDiscoveries } from './lib/build-discoveries.js';
 import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
 import { loadFeedList } from './lib/feeds-opml.js';
+import { getRepoTree, makeOctokit } from './lib/github.js';
 import { minifluxConfigured } from './lib/miniflux-client.js';
 import { tagItemScope } from './lib/scope.js';
 import {
@@ -41,11 +43,13 @@ import {
   FEED_SECTIONS,
 } from './lib/section-condense.js';
 import { loadSectionMap } from './lib/section-map.js';
+import { loadSeenSet } from './lib/seen-repos.js';
 import { buildSnapshot } from './lib/snapshot.js';
 import { buildSourceDateMap, computeAges } from './lib/source-dates.js';
 import { resolveEffectiveSources } from './lib/sources.js';
-import { recordSnapshot as recordStarSnapshot } from './lib/star-history.js';
+import { loadStarHistory, recordSnapshot as recordStarSnapshot } from './lib/star-history.js';
 import { getCachedTheme } from './lib/theme.js';
+import { DiscoveriesStagingSchema } from './schemas/discoveries.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
 // Feed-type sources are exactly the RSS/Atom + Hacker News chains; everything
@@ -169,6 +173,48 @@ async function main() {
   ];
   const starSnap = recordStarSnapshot(githubItems, date);
   banner(`star-history: recorded ${starSnap.recorded} repos (${starSnap.repos} tracked)`);
+
+  // Phase 2c — run the excellence funnel over today's GitHub candidates and
+  // write data/staging/feeds-discoveries.json (observable; not yet rendered —
+  // Phase 3 consumes it). Tree fetches hit only velocity-gate survivors.
+  banner('building discoveries candidate pool');
+  const discoveryItems = [
+    ...(raw.trending.items ?? []),
+    ...(raw.search.items ?? []),
+    ...(raw.developers.items ?? []),
+    ...(raw.catalog?.items ?? []),
+  ];
+  try {
+    const octokit = makeOctokit();
+    const fetchTree = (item) => {
+      const [owner, name] = (item.full_name ?? '').split('/');
+      return owner && name
+        ? getRepoTree(octokit, owner, name, item.default_branch, 'discoveries')
+        : Promise.resolve([]);
+    };
+    const discoveries = await buildDiscoveries({
+      items: discoveryItems,
+      history: loadStarHistory(),
+      feedItems: raw.feeds.items ?? [],
+      seen: loadSeenSet(),
+      todayISO: date,
+      fetchTree,
+    });
+    discoveries.generated_at = new Date().toISOString();
+    DiscoveriesStagingSchema.parse(discoveries);
+    mkdirSync('data/staging', { recursive: true });
+    writeFileSync(
+      'data/staging/feeds-discoveries.json',
+      `${JSON.stringify(discoveries, null, 2)}\n`,
+    );
+    banner(
+      `discoveries: ${discoveries.stats.survivors} candidates, ${discoveries.stats.watchlisted} watchlisted (pool ${discoveries.stats.pool})`,
+    );
+  } catch (err) {
+    // Non-fatal: discoveries is an observability artifact in P2, not yet a
+    // report input. A funnel failure must not abort an otherwise-good collect.
+    banner(`discoveries funnel FAILED (non-fatal in P2): ${err.message}`);
+  }
 
   // Phase 3 — tag scope on RAW items BEFORE condense.
   // Items from global sources get ["global"]; items also matching the theme's

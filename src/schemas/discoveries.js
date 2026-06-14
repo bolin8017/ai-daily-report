@@ -9,7 +9,7 @@ export const DiscoveryCandidate = z
     velocity_per_day: z.number().nullable().optional(),
     repo_age_days: z.number().nullable().optional(),
     eng_score: z.number().nullable().optional(),
-    eng_signals: z.record(z.any()).optional(),
+    eng_signals: z.record(z.any()).nullable().optional(),
     validation_refs: z.array(z.string()).optional(),
     excellence_score: z.number().nullable().optional(),
     source: z.string().optional(),
@@ -21,5 +21,7 @@ export const DiscoveriesStagingSchema = z.object({
   generated_at: z.string(),
   candidates: z.array(DiscoveryCandidate),
   watchlist: z.array(DiscoveryCandidate),
-  stats: z.object({ pool: z.number(), survivors: z.number(), watchlisted: z.number() }).passthrough(),
+  stats: z
+    .object({ pool: z.number(), survivors: z.number(), watchlisted: z.number() })
+    .passthrough(),
 });
