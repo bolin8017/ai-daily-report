@@ -42,9 +42,9 @@ import {
 } from './lib/section-condense.js';
 import { loadSectionMap } from './lib/section-map.js';
 import { buildSnapshot } from './lib/snapshot.js';
-import { recordSnapshot as recordStarSnapshot } from './lib/star-history.js';
 import { buildSourceDateMap, computeAges } from './lib/source-dates.js';
 import { resolveEffectiveSources } from './lib/sources.js';
+import { recordSnapshot as recordStarSnapshot } from './lib/star-history.js';
 import { getCachedTheme } from './lib/theme.js';
 import { StagingMetadataSchema } from './schemas/staging.js';
 
