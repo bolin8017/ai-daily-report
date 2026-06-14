@@ -123,3 +123,53 @@ it('drops a pass-velocity repo that fails the engineering gate', async () => {
   });
   expect(out.candidates).toEqual([]);
 });
+
+const fastItem = { ...base, full_name: 'o/fast', url: 'https://github.com/o/fast', stars: 200 };
+const fastHistory = {
+  'o/fast': {
+    first_seen: '2026-06-08',
+    snapshots: [
+      { date: '2026-06-08', stars: 50 },
+      { date: '2026-06-15', stars: 200 },
+    ],
+  },
+};
+const baseDiscoveriesArgs = {
+  items: [fastItem],
+  history: fastHistory,
+  feedItems: [],
+  seen: new Set(),
+  todayISO: '2026-06-15',
+  fetchTree: async () => goodTree,
+};
+
+it('omitting the behavioral fetchers reproduces the P2 behavior exactly', async () => {
+  const out = await buildDiscoveries({ ...baseDiscoveriesArgs });
+  const c = out.candidates[0];
+  expect(c.full_name).toBe('o/fast');
+  expect(c.commit_continuity).toBeUndefined();
+  expect(c.contributor_diversity).toBeUndefined();
+  expect(c.downloads).toBeUndefined();
+});
+
+it('enriches the top survivors with behavioral signals and recomputes the score', async () => {
+  const p2 = await buildDiscoveries({ ...baseDiscoveriesArgs });
+  const p2Score = p2.candidates[0].excellence_score;
+
+  const out = await buildDiscoveries({
+    ...baseDiscoveriesArgs,
+    fetchCommits: async () => [{ login: 'a', date: '2026-06-14T00:00:00Z', message: 'feat: x' }],
+    fetchContributors: async () => [
+      { login: 'a', contributions: 5 },
+      { login: 'b', contributions: 4 },
+    ],
+    fetchDownloads: async () => 8000,
+  });
+  const c = out.candidates[0];
+  expect(c.full_name).toBe('o/fast');
+  expect(c.commit_continuity).toMatchObject({ daysWithCommits: 1, nonBotCommits: 1 });
+  expect(typeof c.contributor_diversity).toBe('number');
+  expect(c.contributor_diversity).toBeGreaterThan(0);
+  expect(c.downloads).toBe(8000);
+  expect(c.excellence_score).not.toBe(p2Score);
+});

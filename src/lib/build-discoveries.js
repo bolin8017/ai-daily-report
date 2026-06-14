@@ -7,6 +7,8 @@
 // Output shape matches DiscoveriesStagingSchema (src/schemas/discoveries.js).
 
 import {
+  commitContinuity,
+  contributorDiversity,
   engGatePass,
   engScore,
   engSignalsFromTree,
@@ -19,6 +21,10 @@ import {
 } from './excellence.js';
 import { canonicalRepoKey } from './repo-key.js';
 
+// How many top survivors (by the P2 excellence score) get the extra behavioral
+// fetches. Bounds the GitHub-core call budget: ~2 calls × N ≈ 50/day.
+const BEHAVIORAL_TOP_N = 25;
+
 /**
  * Build the discoveries candidate file from already-fetched data.
  *
@@ -29,6 +35,9 @@ import { canonicalRepoKey } from './repo-key.js';
  * @param {Set<string>} opts.seen - loadSeenSet() result
  * @param {string}   opts.todayISO - YYYY-MM-DD
  * @param {function} opts.fetchTree - (item) => Promise<string[]>
+ * @param {function} [opts.fetchCommits] - (item) => Promise<commit[]>; optional behavioral enrichment
+ * @param {function} [opts.fetchContributors] - (item) => Promise<contributor[]>; optional
+ * @param {function} [opts.fetchDownloads] - (item) => Promise<number|null>; optional
  * @param {string}   [opts.generatedAt=''] - ISO timestamp; caller stamps it
  * @returns {Promise<{ ok: boolean, generated_at: string, candidates: object[], watchlist: object[], stats: object }>}
  */
@@ -39,10 +48,16 @@ export async function buildDiscoveries({
   seen,
   todayISO,
   fetchTree,
+  fetchCommits,
+  fetchContributors,
+  fetchDownloads,
   generatedAt = '',
 }) {
   const candidates = [];
   const watchlist = [];
+  // Per-candidate enrichment context (full_name → { item, scoreInputs }), used
+  // by the optional behavioral pass to recompute excellence_score in place.
+  const enrichCtx = new Map();
   let pool = 0;
 
   // Deduplicate items by full_name (keep first occurrence)
@@ -121,14 +136,15 @@ export async function buildDiscoveries({
     }
 
     const eScore = engScore(signals);
-    const exScore = excellenceScore({
+    const scoreInputs = {
       perDay: vstats.perDay,
       engScore: eScore,
       validationCount: validationRefs.length,
       forkPerDay,
       readmeLen: (item.readme_excerpt ?? '').length,
       codeSubstance: signals.codeSubstance,
-    });
+    };
+    const exScore = excellenceScore(scoreInputs);
 
     candidates.push({
       full_name: fullName,
@@ -143,10 +159,55 @@ export async function buildDiscoveries({
       excellence_score: exScore,
       source: item.source ?? null,
     });
+    enrichCtx.set(fullName, { item, scoreInputs });
   }
 
   // Sort candidates by excellence_score descending
   candidates.sort((a, b) => (b.excellence_score ?? 0) - (a.excellence_score ?? 0));
+
+  // Behavioral enrichment (Phase 4): only when the caller injected the
+  // fetchers, and only for the top survivors by the P2 excellence score.
+  // Each signal is fetched fail-soft and defaults to 0, so absent fetchers
+  // reproduce the P2 behavior exactly. Recompute excellence_score in place,
+  // then re-sort.
+  if (
+    typeof fetchCommits === 'function' ||
+    typeof fetchContributors === 'function' ||
+    typeof fetchDownloads === 'function'
+  ) {
+    const top = candidates.slice(0, BEHAVIORAL_TOP_N);
+    await Promise.all(
+      top.map(async (candidate) => {
+        const ctx = enrichCtx.get(candidate.full_name);
+        if (!ctx) return;
+        const { item, scoreInputs } = ctx;
+
+        const [commits, contributors, downloads] = await Promise.all([
+          typeof fetchCommits === 'function' ? fetchCommits(item) : Promise.resolve([]),
+          typeof fetchContributors === 'function' ? fetchContributors(item) : Promise.resolve([]),
+          typeof fetchDownloads === 'function' ? fetchDownloads(item) : Promise.resolve(null),
+        ]);
+
+        const continuity = commitContinuity(commits ?? [], todayISO);
+        const diversity = contributorDiversity(contributors ?? [], candidate.repo_age_days);
+        const dl = typeof downloads === 'number' ? downloads : null;
+
+        const commitScore = Math.min(continuity.daysWithCommits / 5, 1);
+        const downloadScore = dl === null ? 0 : Math.min(dl / 5000, 1);
+
+        candidate.commit_continuity = continuity;
+        candidate.contributor_diversity = diversity;
+        candidate.downloads = dl;
+        candidate.excellence_score = excellenceScore({
+          ...scoreInputs,
+          commitScore,
+          contributorScore: diversity,
+          downloadScore,
+        });
+      }),
+    );
+    candidates.sort((a, b) => (b.excellence_score ?? 0) - (a.excellence_score ?? 0));
+  }
 
   return {
     ok: true,

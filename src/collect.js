@@ -33,8 +33,9 @@ import { buildDiscoveries } from './lib/build-discoveries.js';
 import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
 import { loadFeedList } from './lib/feeds-opml.js';
-import { getRepoTree, makeOctokit } from './lib/github.js';
+import { getContributors, getRecentCommits, getRepoTree, makeOctokit } from './lib/github.js';
 import { minifluxConfigured } from './lib/miniflux-client.js';
+import { fetchPackageDownloads } from './lib/registry-downloads.js';
 import { tagItemScope } from './lib/scope.js';
 import {
   buildSectionFeedSlices,
@@ -183,6 +184,26 @@ async function main() {
         ? getRepoTree(octokit, owner, name, item.default_branch, 'discoveries')
         : Promise.resolve([]);
     };
+    // Behavioral-signal closures (Phase 4) — only the top survivors hit these,
+    // so the extra ~2 GitHub-core calls/repo stay well inside the daily budget.
+    // npm downloads is public HTTP (no GitHub quota), keyed on the repo name as
+    // the package guess; all three are fail-soft.
+    const fetchCommits = (item) => {
+      const [owner, name] = (item.full_name ?? '').split('/');
+      return owner && name
+        ? getRecentCommits(octokit, owner, name, 30, 'discoveries')
+        : Promise.resolve([]);
+    };
+    const fetchContributors = (item) => {
+      const [owner, name] = (item.full_name ?? '').split('/');
+      return owner && name
+        ? getContributors(octokit, owner, name, 'discoveries')
+        : Promise.resolve([]);
+    };
+    const fetchDownloads = (item) => {
+      const [, name] = (item.full_name ?? '').split('/');
+      return fetchPackageDownloads(name);
+    };
     const discoveries = await buildDiscoveries({
       items: githubItems,
       history: loadStarHistory(),
@@ -190,6 +211,9 @@ async function main() {
       seen: loadSeenSet(),
       todayISO: date,
       fetchTree,
+      fetchCommits,
+      fetchContributors,
+      fetchDownloads,
     });
     discoveries.generated_at = new Date().toISOString();
     DiscoveriesStagingSchema.parse(discoveries);
