@@ -155,7 +155,9 @@ export function engSignalsFromTree(paths) {
   }
 
   // layout: >50% of NON-TEST source files live under a canonical layout dir
-  const nonTestSourceFiles = sourceFiles.filter((p) => !TEST_PATH_RE.test(p) && !TEST_FILE_RE.test(p));
+  const nonTestSourceFiles = sourceFiles.filter(
+    (p) => !TEST_PATH_RE.test(p) && !TEST_FILE_RE.test(p),
+  );
   let layout = false;
   if (nonTestSourceFiles.length > 0) {
     const underLayout = nonTestSourceFiles.filter((p) => {
@@ -165,9 +167,10 @@ export function engSignalsFromTree(paths) {
     layout = underLayout.length / nonTestSourceFiles.length > 0.5;
   }
 
-  // codeSubstance: >=5 source files, OR (>=3 AND tests)
+  // codeSubstance: >=5 non-test source files, OR (>=2 AND tests)
+  // Using nonTestSourceFiles prevents a test-only repo from wrongly passing.
   const count = sourceFiles.length;
-  const codeSubstance = count >= 5 || (count >= 3 && tests);
+  const codeSubstance = nonTestSourceFiles.length >= 5 || (nonTestSourceFiles.length >= 2 && tests);
 
   return { tests, ci, types, lint, lockfile, layout, docs, sourceFiles: count, codeSubstance };
 }
@@ -264,7 +267,8 @@ export function velocityGatePass(stats, { hasValidation }) {
   if (hasValidation) return 'pass';
 
   if (historyDays >= 7 && perDay >= 5 && totalStars >= 50 && !spike) return 'pass';
-  if (historyDays >= 4 && historyDays <= 6 && perDay >= 7 && totalStars >= 30 && !spike) return 'pass';
+  if (historyDays >= 4 && historyDays <= 6 && perDay >= 7 && totalStars >= 30 && !spike)
+    return 'pass';
 
   return 'fail';
 }
@@ -310,7 +314,14 @@ export function externalValidation(repoFullName, feedItems) {
  * @param {{ perDay: number, engScore: number, validationCount: number, forkPerDay: number, readmeLen: number, codeSubstance: boolean }} params
  * @returns {number}
  */
-export function excellenceScore({ perDay, engScore: eng, validationCount, forkPerDay, readmeLen, codeSubstance }) {
+export function excellenceScore({
+  perDay,
+  engScore: eng,
+  validationCount,
+  forkPerDay,
+  readmeLen,
+  codeSubstance,
+}) {
   const velocity = Math.min(perDay / 50, 1) * 0.3;
   const engComponent = (eng / 6) * 0.25;
   const validation = Math.min(validationCount / 2, 1) * 0.2;

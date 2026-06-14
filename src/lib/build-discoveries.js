@@ -17,6 +17,7 @@ import {
   velocityGatePass,
   velocityStats,
 } from './excellence.js';
+import { canonicalRepoKey } from './repo-key.js';
 
 /**
  * Build the discoveries candidate file from already-fetched data.
@@ -66,8 +67,10 @@ export async function buildDiscoveries({
     const gates = freeGates(item, { todayISO });
     if (!gates.pass) continue;
 
-    // Compute velocity from history; fall back to a single today-snapshot
-    const rec = history[fullName];
+    // Compute velocity from history; fall back to a single today-snapshot.
+    // Use canonicalRepoKey to match the ledger key format (strips .git/trailing slash).
+    const historyKey = canonicalRepoKey(item) ?? fullName;
+    const rec = history[historyKey];
     const snapshots =
       rec?.snapshots?.length > 0
         ? rec.snapshots
@@ -109,8 +112,7 @@ export async function buildDiscoveries({
     let forkPerDay = 0;
     if (rec?.snapshots?.length >= 2) {
       const sorted = [...rec.snapshots].sort((a, b) => (a.date < b.date ? -1 : 1));
-      const forksDelta =
-        (sorted[sorted.length - 1].forks ?? 0) - (sorted[0].forks ?? 0);
+      const forksDelta = (sorted[sorted.length - 1].forks ?? 0) - (sorted[0].forks ?? 0);
       const daySpan = Math.max(vstats.historyDays, 1);
       forkPerDay = forksDelta / daySpan;
     } else {

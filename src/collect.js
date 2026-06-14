@@ -178,12 +178,6 @@ async function main() {
   // write data/staging/feeds-discoveries.json (observable; not yet rendered —
   // Phase 3 consumes it). Tree fetches hit only velocity-gate survivors.
   banner('building discoveries candidate pool');
-  const discoveryItems = [
-    ...(raw.trending.items ?? []),
-    ...(raw.search.items ?? []),
-    ...(raw.developers.items ?? []),
-    ...(raw.catalog?.items ?? []),
-  ];
   try {
     const octokit = makeOctokit();
     const fetchTree = (item) => {
@@ -193,7 +187,7 @@ async function main() {
         : Promise.resolve([]);
     };
     const discoveries = await buildDiscoveries({
-      items: discoveryItems,
+      items: githubItems,
       history: loadStarHistory(),
       feedItems: raw.feeds.items ?? [],
       seen: loadSeenSet(),
