@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DiscoveriesCuratedSchema,
   MarketCuratedSchema,
   PulseCuratedSchema,
   ShippedCuratedSchema,
@@ -44,6 +45,10 @@ describe('Curated sub-schemas', () => {
       aidaptiv: [],
     });
     expect(parsed.vendor).toHaveLength(1);
+  });
+
+  it('DiscoveriesCuratedSchema parses 2 sub-groups', () => {
+    expect(() => DiscoveriesCuratedSchema.parse({ rising: [], dev_watch: [] })).not.toThrow();
   });
 
   it('ShippedCuratedSchema rejects missing sub-group', () => {

@@ -32,6 +32,24 @@ export const ShippedItem = ItemBase.extend({
   topic_match: z.array(z.string()).optional(),
 });
 
+export const ProjectItem = ItemBase.extend({
+  name: z.string(),
+  stars: z.number().nullable().optional(),
+  language: z.string().nullable().optional(),
+  relevance: z.string().optional(),
+  topic_match: z.array(z.string()).optional(),
+  novelty_strength: z.number().int().min(1).max(3).optional(),
+  stars_today: z.number().nullable().optional(),
+  velocity_per_day: z.number().nullable().optional(),
+  repo_age_days: z.number().nullable().optional(),
+  eng_score: z.number().nullable().optional(),
+  eng_signals: z.record(z.any()).nullable().optional(),
+  excellence_score: z.number().nullable().optional(),
+  validation_refs: z.array(z.string()).optional(),
+  provisional: z.boolean().optional(),
+  group: z.string().optional(),
+});
+
 export const CatalogItem = ItemBase.extend({
   name: z.string(),
   stars: z.number().nullable().optional(),

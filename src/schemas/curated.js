@@ -6,7 +6,7 @@
 // (templates iterate them) — item shapes are passthrough.
 
 import { z } from 'zod';
-import { CatalogItem, MarketItem, PulseItem, ShippedItem, TechItem } from './items.js';
+import { CatalogItem, MarketItem, ProjectItem, PulseItem, ShippedItem, TechItem } from './items.js';
 
 export const ShippedCuratedSchema = z.object({
   trending: z.array(ShippedItem),
@@ -37,4 +37,9 @@ export const TechCuratedSchema = z.object({
   models: z.array(TechItem),
   benchmarks: z.array(TechItem),
   aidaptiv: z.array(TechItem),
+});
+
+export const DiscoveriesCuratedSchema = z.object({
+  rising: z.array(ProjectItem),
+  dev_watch: z.array(ProjectItem),
 });
