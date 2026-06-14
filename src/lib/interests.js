@@ -38,14 +38,14 @@ function pickRotating(pool, n, seed) {
 
 // Core interests' github terms (every day) + a seeded daily sample of
 // rotating interests' github terms. Deduped; `off` excluded.
-export function githubTopicsForDate(reg, dateString) {
+export function githubTopicsForDate(reg, dateString, rotatingPerDay = reg.rotation.rotating_per_day) {
   const entries = Object.values(reg.interests);
   const core = entries.filter((e) => e.level === 'core');
   // Rotating entries with no github terms are pre-filtered from the pool so a
   // pick is never wasted on one; core entries with empty github resolve
   // harmlessly in the flatMap below (they contribute nothing).
   const rotating = entries.filter((e) => e.level === 'rotating' && (e.github?.length ?? 0) > 0);
-  const picks = pickRotating(rotating, reg.rotation.rotating_per_day, hashDate(dateString));
+  const picks = pickRotating(rotating, rotatingPerDay, hashDate(dateString));
   const terms = [...core, ...picks].flatMap((e) => e.github ?? []);
   return [...new Set(terms)];
 }
