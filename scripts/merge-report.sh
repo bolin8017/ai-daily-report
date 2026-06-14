@@ -45,6 +45,7 @@ import {readFileSync, writeFileSync, existsSync, readdirSync} from 'node:fs';
 import {composeReport} from './src/lib/merge.js';
 import {aggregateMeta} from './src/lib/report-meta.js';
 import {appendSeen} from './src/lib/seen-repos.js';
+import {canonicalRepoKey} from './src/lib/repo-key.js';
 
 const editorial = JSON.parse(readFileSync('$EDITORIAL_FILE', 'utf8'));
 const curated = {};
@@ -82,7 +83,7 @@ try {
   console.log('[merge-report] wrote $REPORT_FILE schema_version=' + report.schema_version + (meta ? ' meta=yes stages=' + Object.keys(meta.stages || {}).length : ' meta=no'));
   try {
     const picks = Array.isArray(report.catalog?.picks) ? report.catalog.picks : [];
-    const shown = picks.map((p) => ({ repo: p.name, stars: p.stars })).filter((p) => p.repo);
+    const shown = picks.map((p) => ({ repo: canonicalRepoKey(p) ?? p.name, stars: p.stars })).filter((p) => p.repo);
     if (shown.length) {
       const { added, total } = appendSeen(shown, '$DATE');
       console.log('[merge-report] seen-repos +' + added + ' (total ' + total + ')');
