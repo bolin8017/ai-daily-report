@@ -13,7 +13,6 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 // Side-effect imports — populate the provider registry for runAll
 import './fetchers/providers/arxiv-rss.js';
 import './fetchers/providers/firecrawl.js';
-import './fetchers/providers/github-catalog.js';
 import './fetchers/providers/github-developers-api.js';
 import './fetchers/providers/github-developers-html.js';
 import './fetchers/providers/github-search-api.js';
@@ -75,7 +74,6 @@ function mapResultsToLegacyShape(results, sources) {
   out.trending = results['github-trending'] ?? { ok: false, items: [] };
   out.search = results['github-search-topics'] ?? { ok: false, items: [] };
   out.developers = results['github-developers'] ?? { ok: false, items: [] };
-  out.catalog = results['github-catalog'] ?? { ok: false, items: [] };
   out.hf_trending = results['hf-trending'] ?? { ok: false, items: [] };
   out.mops = results['mops-disclosure'] ?? { ok: false, items: [] };
   out.arxiv = results['arxiv-cs-ai'] ?? { ok: false, items: [] };
@@ -169,7 +167,6 @@ async function main() {
     ...(raw.trending.items ?? []),
     ...(raw.search.items ?? []),
     ...(raw.developers.items ?? []),
-    ...(raw.catalog?.items ?? []),
   ];
   const starSnap = recordStarSnapshot(githubItems, date);
   banner(`star-history: recorded ${starSnap.recorded} repos (${starSnap.repos} tracked)`);
@@ -261,7 +258,6 @@ async function main() {
     'data/staging/feeds-market.json': sectionSlices.market,
     'data/staging/feeds-tech.json': sectionSlices.tech,
     'data/staging/feeds-shipped.json': shippedSlice,
-    'data/staging/feeds-catalog.json': raw.catalog ?? { ok: false, items: [] },
     // url→published map for the Stage 3.5 faithfulness guard. Built from raw
     // FEED items (GitHub excluded — repo dates ≠ "appeared today"). Captured
     // here because condense drops date fields before the curator/guard see them.
@@ -278,7 +274,6 @@ async function main() {
         trending: { ok: raw.trending.ok, count: raw.trending.items?.length ?? 0 },
         search: { ok: raw.search.ok, count: raw.search.items?.length ?? 0 },
         developers: { ok: raw.developers.ok, count: raw.developers.items?.length ?? 0 },
-        catalog: { ok: raw.catalog?.ok ?? false, count: raw.catalog?.items?.length ?? 0 },
         leaderboards: {
           ok: raw.leaderboards?.ok ?? false,
           count: raw.leaderboards?.items?.length ?? 0,
