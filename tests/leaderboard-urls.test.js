@@ -51,6 +51,15 @@ describe('benchOf', () => {
     expect(benchOf({ title: 'SWEbench-Live results out' })).toBe('swebench-live');
   });
 
+  it('resolves tau2 by explicit bench field', () => {
+    expect(benchOf({ bench: 'tau2' })).toBe('tau2');
+  });
+
+  it('resolves tau2 by title token', () => {
+    expect(benchOf({ title: 'tau2-bench: agent tool-use rankings updated' })).toBe('tau2');
+    expect(benchOf({ title: 'tau-bench new results' })).toBe('tau2');
+  });
+
   it('every known bench maps to a canonical https url', () => {
     expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
       'bfcl',
@@ -59,6 +68,7 @@ describe('benchOf', () => {
       'livebench',
       'lmarena',
       'swebench-live',
+      'tau2',
     ]);
     for (const url of Object.values(BENCH_LEADERBOARD_URL)) {
       expect(url).toMatch(/^https:\/\//);

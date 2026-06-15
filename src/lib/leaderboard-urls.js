@@ -15,6 +15,7 @@ export const BENCH_LEADERBOARD_URL = {
   lmarena: 'https://lmarena.ai/leaderboard',
   livebench: 'https://livebench.ai/',
   'swebench-live': 'https://swe-bench-live.github.io/',
+  tau2: 'https://github.com/sierra-research/tau2-bench',
 };
 
 // Identify which benchmark a curated tech.benchmarks item refers to. Prefer an
@@ -32,5 +33,6 @@ export function benchOf(item) {
   if (/swe-?bench[- ]?live/i.test(title)) return 'swebench-live';
   if (/gpqa/i.test(title)) return 'epoch-gpqa';
   if (/hle|humanity'?s last exam/i.test(title)) return 'epoch-hle';
+  if (/tau-?2|tau-?bench/i.test(title)) return 'tau2';
   return null;
 }

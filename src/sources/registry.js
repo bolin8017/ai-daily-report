@@ -413,4 +413,11 @@ export default [
     itemType: 'leaderboard-entry',
     chain: [{ provider: 'leaderboard-html', config: { parser: 'swebench-live' } }],
   },
+  {
+    id: 'leaderboard-tau2',
+    label: 'tau2-bench',
+    category: 'leaderboard',
+    itemType: 'leaderboard-entry',
+    chain: [{ provider: 'leaderboard-html', config: { parser: 'tau2' } }],
+  },
 ];
