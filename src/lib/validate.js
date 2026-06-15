@@ -9,13 +9,21 @@
 import { readFileSync } from 'node:fs';
 import { ConfigSchema } from '../schemas/config.js';
 import { FetchOutputSchema } from '../schemas/feed-item.js';
-import { ReportSchema } from '../schemas/report.js';
+import { resolveReportSchema } from '../schemas/report.js';
 
+// `report` is intentionally absent here: it is validated against the *dynamic*,
+// theme-composed schema (resolveReportSchema), the same one scripts/merge uses.
+// A hard-coded static report schema silently drifted from the active theme's
+// sections — the 新發現 cutover dropped `shipped` / added `discoveries`, but the
+// static schema still required `shipped`, so every post-cutover report failed
+// this gate (CI deploy + Hermes production runner). Resolving dynamically keeps
+// the gate in lockstep with the theme that actually composed the report.
 const SCHEMAS = {
   config: ConfigSchema,
-  report: ReportSchema,
   'feed-output': FetchOutputSchema,
 };
+
+const KINDS = ['config', 'report', 'feed-output'];
 
 const [, , kind, path] = process.argv;
 
@@ -24,9 +32,8 @@ if (!kind || !path) {
   process.exit(1);
 }
 
-const schema = SCHEMAS[kind];
-if (!schema) {
-  console.error(`Unknown schema: ${kind}. Choose from: ${Object.keys(SCHEMAS).join(', ')}`);
+if (!KINDS.includes(kind)) {
+  console.error(`Unknown schema: ${kind}. Choose from: ${KINDS.join(', ')}`);
   process.exit(1);
 }
 
@@ -54,6 +61,9 @@ if (kind === 'report' && !(data.schema_version >= 2)) {
   );
   process.exit(0);
 }
+
+// Report uses the dynamic theme-composed schema; everything else is static.
+const schema = kind === 'report' ? await resolveReportSchema() : SCHEMAS[kind];
 
 const result = schema.safeParse(data);
 if (!result.success) {
