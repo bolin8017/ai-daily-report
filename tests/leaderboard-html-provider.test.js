@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, expect, it, vi } from 'vitest';
 
 vi.mock('../src/fetchers/providers/leaderboards-parsers/_base.js', async (orig) => ({
   ...(await orig()),
@@ -15,6 +15,8 @@ vi.mock('../src/fetchers/providers/leaderboards-parsers/bfcl.js', () => ({
 
 import { leaderboardHtmlProvider } from '../src/fetchers/providers/leaderboard-html.js';
 import * as base from '../src/fetchers/providers/leaderboards-parsers/_base.js';
+
+beforeEach(() => vi.clearAllMocks());
 
 it('emits an item on a real rank change', async () => {
   base.loadPrevSnapshot.mockResolvedValue([
