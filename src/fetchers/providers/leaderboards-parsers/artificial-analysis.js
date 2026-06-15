@@ -1,4 +1,4 @@
-const URL = 'https://artificialanalysis.ai/api/v2/data/llms/models';
+const AA_URL = 'https://artificialanalysis.ai/api/v2/data/llms/models';
 
 // Pure: parse the API JSON response → [{ model_id, score, rank }] sorted by score desc,
 // with null-index models filtered out.
@@ -18,15 +18,25 @@ export function parseAa(json) {
 // This is intentional — the pipeline must never break because of a missing key.
 export async function fetchArtificialAnalysis() {
   const key = process.env.AA_API_KEY;
-  if (!key) return []; // fail-soft: no key → skip this board, pipeline unaffected
+  if (!key) {
+    console.info('[artificial-analysis] AA_API_KEY not set — board skipped');
+    return [];
+  }
   try {
-    const resp = await fetch(URL, {
+    // _base.fetchJson omitted: AA requires a custom x-api-key header it doesn't support
+    const resp = await fetch(AA_URL, {
       headers: { 'x-api-key': key },
       signal: AbortSignal.timeout(20000),
     });
-    if (!resp.ok) return []; // fail-soft on any API error
+    if (!resp.ok) {
+      console.warn(
+        `[artificial-analysis] HTTP ${resp.status} ${resp.statusText} — returning empty`,
+      );
+      return [];
+    }
     return parseAa(await resp.json());
-  } catch {
-    return []; // fail-soft on network / timeout errors
+  } catch (err) {
+    console.warn(`[artificial-analysis] fetch failed (${err.message}) — returning empty`);
+    return [];
   }
 }
