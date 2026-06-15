@@ -3,11 +3,11 @@
 // The leaderboard staging items carry only rankings (bench / top_5 / diffs) —
 // no url. The tech curator was nonetheless asked to supply a "link to
 // leaderboard" it had no source for, so it hallucinated a *different* (often
-// 404) url every day: OCRBench pointed at six different fabricated repos/Spaces
-// across one week; BFCL invented `huggingface.co/spaces/anybodys/BFCL`; only
-// SWE-bench happened to land on the right url. These hand-verified pages are the
-// only URLs that ever reach the rendered report — the provider stamps them onto
-// staging and merge enforces them (see cureBenchmarkUrls in merge.js).
+// 404) url every day — e.g. BFCL invented `huggingface.co/spaces/anybodys/BFCL`.
+// (The now-removed OCRBench board pointed at six different fabricated
+// repos/Spaces across one week before it was dropped.) These hand-verified pages
+// are the only URLs that ever reach the rendered report — the provider stamps
+// them onto staging and merge enforces them (see cureBenchmarkUrls in merge.js).
 export const BENCH_LEADERBOARD_URL = {
   bfcl: 'https://gorilla.cs.berkeley.edu/leaderboard.html',
 };
