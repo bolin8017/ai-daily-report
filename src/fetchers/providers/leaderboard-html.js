@@ -2,6 +2,7 @@ import { BENCH_LEADERBOARD_URL } from '../../lib/leaderboard-urls.js';
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
+import { fetchLmarena } from './leaderboards-parsers/lmarena.js';
 
 // mteb + pinchbench dropped 2026-05-25: MTEB no longer publishes a precomputed
 // ranking (the leaderboard is computed client-side by the mteb package), and
@@ -11,6 +12,7 @@ import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
 // replaced incrementally by the leaderboard-redesign branch.
 const FETCHERS = {
   bfcl: fetchBfcl,
+  lmarena: fetchLmarena,
 };
 
 export async function leaderboardHtmlProvider(cfg, _ctx) {

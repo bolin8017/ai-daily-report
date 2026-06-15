@@ -355,7 +355,7 @@ export default [
     chain: [{ provider: 'mops-twse-openapi', config: {} }],
   },
 
-  // === Leaderboards (1) ===
+  // === Leaderboards (2) ===
   // Read each board's official machine-readable export (CSV / results JSON /
   // YAML), not the JS-rendered leaderboard HTML. mteb + pinchbench removed
   // 2026-05-25 (no stable precomputed-ranking source — see leaderboard-html.js).
@@ -367,5 +367,12 @@ export default [
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
     chain: [{ provider: 'leaderboard-html', config: { parser: 'bfcl' } }],
+  },
+  {
+    id: 'leaderboard-lmarena',
+    label: 'LMArena',
+    category: 'leaderboard',
+    itemType: 'leaderboard-entry',
+    chain: [{ provider: 'leaderboard-html', config: { parser: 'lmarena' } }],
   },
 ];
