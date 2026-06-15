@@ -10,6 +10,7 @@
 // them onto staging and merge enforces them (see cureBenchmarkUrls in merge.js).
 export const BENCH_LEADERBOARD_URL = {
   bfcl: 'https://gorilla.cs.berkeley.edu/leaderboard.html',
+  lmarena: 'https://lmarena.ai/leaderboard',
 };
 
 // Identify which benchmark a curated tech.benchmarks item refers to. Prefer an
@@ -21,6 +22,7 @@ export function benchOf(item) {
   const bench = item?.bench;
   if (typeof bench === 'string' && bench in BENCH_LEADERBOARD_URL) return bench;
   const title = item?.title ?? '';
+  if (/lmarena|chatbot arena/i.test(title)) return 'lmarena';
   if (/bfcl/i.test(title)) return 'bfcl';
   return null;
 }
