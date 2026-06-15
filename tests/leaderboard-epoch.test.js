@@ -18,4 +18,17 @@ describe('parseEpoch', () => {
   it('returns [] for an unknown benchmark', () => {
     expect(parseEpoch(csv, 'NoSuchBench')).toEqual([]);
   });
+  it('keeps highest score when same model appears twice for same benchmark', () => {
+    const dup = [
+      'model_id,benchmark_id,performance,benchmark,model,Model',
+      'm1,b1,0.5,GPQA diamond,ModelA,ModelA',
+      'm2,b1,0.8,GPQA diamond,ModelA,ModelA',
+      'm3,b1,0.6,GPQA diamond,ModelB,ModelB',
+    ].join('\n');
+    const out = parseEpoch(dup, 'GPQA diamond');
+    expect(out).toHaveLength(2);
+    expect(out[0].model_id).toBe('ModelA');
+    expect(out[0].score).toBe(0.8);
+    expect(out[0].rank).toBe(1);
+  });
 });

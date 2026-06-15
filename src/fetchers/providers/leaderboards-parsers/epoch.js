@@ -19,7 +19,14 @@ export function parseEpoch(csvText, benchmark) {
 
 let _csvPromise = null; // memoize the single download across both sub-boards in one run
 async function epochCsv() {
-  if (!_csvPromise) _csvPromise = fetchText(CSV_URL);
+  if (!_csvPromise) {
+    // Clear the cache on rejection so a failed download doesn't stick and starve
+    // the second board — it can retry instead of replaying the same failure.
+    _csvPromise = fetchText(CSV_URL).catch((e) => {
+      _csvPromise = null;
+      throw e;
+    });
+  }
   return _csvPromise;
 }
 
