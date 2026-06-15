@@ -11,6 +11,7 @@
 export const BENCH_LEADERBOARD_URL = {
   bfcl: 'https://gorilla.cs.berkeley.edu/leaderboard.html',
   lmarena: 'https://lmarena.ai/leaderboard',
+  livebench: 'https://livebench.ai/',
 };
 
 // Identify which benchmark a curated tech.benchmarks item refers to. Prefer an
@@ -24,5 +25,6 @@ export function benchOf(item) {
   const title = item?.title ?? '';
   if (/lmarena|chatbot arena/i.test(title)) return 'lmarena';
   if (/bfcl/i.test(title)) return 'bfcl';
+  if (/livebench/i.test(title)) return 'livebench';
   return null;
 }
