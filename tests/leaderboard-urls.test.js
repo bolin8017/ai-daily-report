@@ -2,18 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { BENCH_LEADERBOARD_URL, benchOf } from '../src/lib/leaderboard-urls.js';
 
 describe('benchOf', () => {
-  it('resolves by explicit bench field', () => {
+  it('resolves bfcl by explicit bench field', () => {
     expect(benchOf({ bench: 'bfcl' })).toBe('bfcl');
-    expect(benchOf({ bench: 'swebench' })).toBe('swebench');
-    expect(benchOf({ bench: 'ocrbench' })).toBe('ocrbench');
   });
 
-  it('resolves by the title token when bench is absent', () => {
-    expect(benchOf({ title: 'OCRBench: Nemotron Nano VL 8B leads' })).toBe('ocrbench');
+  it('resolves bfcl by the title token when bench is absent', () => {
     expect(benchOf({ title: 'BFCL: function-calling parity across vendors' })).toBe('bfcl');
-    expect(benchOf({ title: 'SWE-Bench Verified: Opus 4.5 #1' })).toBe('swebench');
-    expect(benchOf({ title: 'SWEbench: collapsed spelling still matches' })).toBe('swebench');
-    expect(benchOf({ title: 'Aider polyglot: Opus 4.5 tops code editing' })).toBe('aider');
   });
 
   it('returns null for an unknown / ghost benchmark', () => {
@@ -22,18 +16,23 @@ describe('benchOf', () => {
     expect(benchOf({})).toBeNull();
   });
 
+  it('returns null for removed boards (swebench / ocrbench / aider)', () => {
+    // These were removed 2026-06-15; curator items for them get URL stripped by merge
+    expect(benchOf({ bench: 'swebench' })).toBeNull();
+    expect(benchOf({ bench: 'ocrbench' })).toBeNull();
+    expect(benchOf({ bench: 'aider' })).toBeNull();
+    expect(benchOf({ title: 'OCRBench: Nemotron Nano VL 8B leads' })).toBeNull();
+    expect(benchOf({ title: 'SWE-Bench Verified: Opus 4.5 #1' })).toBeNull();
+    expect(benchOf({ title: 'Aider polyglot: Opus 4.5 tops code editing' })).toBeNull();
+  });
+
   it('ignores an unknown explicit bench, falling back to the title token', () => {
-    expect(benchOf({ bench: 'mteb', title: 'OCRBench: x' })).toBe('ocrbench');
+    expect(benchOf({ bench: 'mteb', title: 'BFCL: x' })).toBe('bfcl');
     expect(benchOf({ bench: 'mteb', title: 'no recognizable token' })).toBeNull();
   });
 
   it('every known bench maps to a canonical https url', () => {
-    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
-      'aider',
-      'bfcl',
-      'ocrbench',
-      'swebench',
-    ]);
+    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual(['bfcl']);
     for (const url of Object.values(BENCH_LEADERBOARD_URL)) {
       expect(url).toMatch(/^https:\/\//);
     }

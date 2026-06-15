@@ -50,10 +50,10 @@ For each item: `id`, `title`, `url`, `audience`, `takeaway`, `companies` (model 
 Source: leaderboards.json (per-bench snapshots + diff fields: `new_top_5`, `rank_changes`, `top_5_today`).
 
 - **Include:** new top-5 entries, rank changes affecting top-10, new benchmark releases, third-party independent eval blog posts.
-- **Active benchmarks:** BFCL, SWE-bench Verified, OCRBench, Aider polyglot — these are the ONLY benches in leaderboards.json. Emit an item only for a bench actually present there; never invent a benchmark or its rankings (e.g. do NOT add MTEB / PinchBench — they are not collected).
+- **Active benchmarks:** BFCL (more added incrementally) — emit an item only for a bench actually present in leaderboards.json; never invent one. `leaderboards.json` contains ONLY boards that changed today; if a bench is absent, emit nothing for it — never write a 'maintains lead' / 'still #1' non-event.
 - **Exclude:** internal-only benchmarks, vendor-self-reported numbers without independent replication.
 
-For each item: `id`, `title` (e.g. "SWE-bench Verified: <model> enters top-5"), `audience`, `takeaway`, `benchmark_changes: { new_top_5: [...], rank_changes: [...] }`. Do NOT emit a `url` — the official leaderboard link is attached deterministically by the system; never construct, copy, or guess one.
+For each item: `id`, `title` (e.g. "BFCL: <model> enters top-5"), `audience`, `takeaway`, `benchmark_changes: { new_top_5: [...], rank_changes: [...] }`. Do NOT emit a `url` — the official leaderboard link is attached deterministically by the system; never construct, copy, or guess one.
 
 ### aidaptiv (cap 6) — aiDAPTIV 相關
 
