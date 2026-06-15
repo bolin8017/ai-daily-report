@@ -1,19 +1,11 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-
-const CACHE_DIR = 'data/staging/leaderboards/.cache';
+import { getPrev, saveSnapshot as saveLedgerSnapshot } from '../../../lib/leaderboard-snapshots.js';
 
 export async function loadPrevSnapshot(bench) {
-  try {
-    const raw = await readFile(`${CACHE_DIR}/${bench}.json`, 'utf8');
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+  return getPrev(bench);
 }
 
 export async function saveSnapshot(bench, snapshot) {
-  await mkdir(CACHE_DIR, { recursive: true });
-  await writeFile(`${CACHE_DIR}/${bench}.json`, JSON.stringify(snapshot, null, 2));
+  saveLedgerSnapshot(bench, snapshot);
 }
 
 export function diffSnapshots(prev, curr) {
