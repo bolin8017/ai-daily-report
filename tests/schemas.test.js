@@ -5,7 +5,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ConfigSchema } from '../src/schemas/config.js';
 import { FeedItemSchema } from '../src/schemas/feed-item.js';
-import { ReportSchema } from '../src/schemas/report.js';
+import { ReportSchema, resolveReportSchema } from '../src/schemas/report.js';
 import { StagingMetadataSchema } from '../src/schemas/staging.js';
 
 const json = (p) => JSON.parse(readFileSync(p, 'utf8'));
@@ -27,12 +27,17 @@ describe('schemas', () => {
     expect(result.success).toBe(true);
   });
 
-  it.skipIf(!latestReport())('latest report passes ReportSchema (v2 only)', () => {
+  it.skipIf(!latestReport())('latest report passes the active-theme schema', async () => {
     const r = json(latestReport());
-    // v1.x reports (no schema_version) predate the v2 schema and use legacy templates;
-    // they are not expected to validate against the strict v2 ReportSchema.
-    if (r.schema_version !== 2) return;
-    const result = ReportSchema.safeParse(r);
+    // v1.x reports (no schema_version / < 2) predate the v2 IA and render via
+    // legacy templates; they aren't expected to validate against the v2 schema.
+    // Use `>= 2` (not `!== 2`): the old check silently skipped every 2.1 report,
+    // turning this guard into a no-op — which is how the post-cutover section
+    // drift (shipped→discoveries) slipped past CI. Validate against the same
+    // dynamic, theme-composed schema the real gate (validate.js) uses.
+    if (!(r.schema_version >= 2)) return;
+    const schema = await resolveReportSchema();
+    const result = schema.safeParse(r);
     if (!result.success) console.error(result.error.issues);
     expect(result.success).toBe(true);
   });

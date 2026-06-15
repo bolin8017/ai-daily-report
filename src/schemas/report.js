@@ -91,21 +91,28 @@ const TechSection = z.object({
   aidaptiv: z.array(TechItem).optional(),
 });
 
+// Static, theme-agnostic structural smoke-schema. NOT the authoritative report
+// gate any more — validate.js and merge.js both use the dynamic, theme-composed
+// buildReportSchema()/resolveReportSchema() below, which enforce the *active
+// theme's* sections. Section blocks are therefore optional here: hard-requiring
+// fixed section names is exactly what drifted (the 新發現 cutover dropped
+// `shipped` / added `discoveries`, but this schema still required `shipped`,
+// failing every post-cutover report). Only the always-present skeleton
+// (schema_version / date / lead / signals) is required; sections that are
+// present are still shape-checked.
 export const ReportSchema = z
   .object({
     // Accept both 2 (v2.0) and 2.1 (post-2026-05-24 editorial/merge split).
-    // Must stay in sync with buildReportSchema() below — validate.js uses
-    // this static schema, merge.js uses the dynamic one; a literal(2) here
-    // silently rejected every 2.1 report once validate.js stopped skipping it.
     schema_version: z.union([z.literal(2), z.literal(2.1)]),
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     meta: ReportMetaSchema.optional(),
     lead: z.object({ html: z.string() }),
     signals: SignalsSection,
-    shipped: ShippedSection,
-    pulse: PulseSection,
-    market: MarketSection,
-    tech: TechSection,
+    shipped: ShippedSection.optional(),
+    pulse: PulseSection.optional(),
+    market: MarketSection.optional(),
+    tech: TechSection.optional(),
+    discoveries: z.object({}).passthrough().optional(),
   })
   .passthrough();
 
