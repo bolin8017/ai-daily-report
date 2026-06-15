@@ -78,10 +78,11 @@ function mapResultsToLegacyShape(results, sources) {
   out.hf_trending = results['hf-trending'] ?? { ok: false, items: [] };
   out.mops = results['mops-disclosure'] ?? { ok: false, items: [] };
   out.arxiv = results['arxiv-cs-ai'] ?? { ok: false, items: [] };
+  const leaderboardIds = sources.filter((s) => s.itemType === 'leaderboard-entry').map((s) => s.id);
   out.leaderboards = {
     ok: true,
-    items: ['bfcl', 'mteb', 'swebench', 'ocrbench', 'pinchbench']
-      .map((name) => results[`leaderboard-${name}`])
+    items: leaderboardIds
+      .map((id) => results[id])
       .filter((r) => r?.ok)
       .flatMap((r) => r.items ?? []),
   };

@@ -355,36 +355,17 @@ export default [
     chain: [{ provider: 'mops-twse-openapi', config: {} }],
   },
 
-  // === Leaderboards (4) ===
+  // === Leaderboards (1) ===
   // Read each board's official machine-readable export (CSV / results JSON /
   // YAML), not the JS-rendered leaderboard HTML. mteb + pinchbench removed
   // 2026-05-25 (no stable precomputed-ranking source — see leaderboard-html.js).
+  // ocrbench + aider + swebench removed 2026-06-15 (unreliable / low signal —
+  // replaced incrementally by the leaderboard-redesign branch).
   {
     id: 'leaderboard-bfcl',
     label: 'BFCL Leaderboard',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
     chain: [{ provider: 'leaderboard-html', config: { parser: 'bfcl' } }],
-  },
-  {
-    id: 'leaderboard-swebench',
-    label: 'SWE-Bench Leaderboard',
-    category: 'leaderboard',
-    itemType: 'leaderboard-entry',
-    chain: [{ provider: 'leaderboard-html', config: { parser: 'swebench' } }],
-  },
-  {
-    id: 'leaderboard-ocrbench',
-    label: 'OCRBench Leaderboard',
-    category: 'leaderboard',
-    itemType: 'leaderboard-entry',
-    chain: [{ provider: 'leaderboard-html', config: { parser: 'ocrbench' } }],
-  },
-  {
-    id: 'leaderboard-aider',
-    label: 'Aider Polyglot Leaderboard',
-    category: 'leaderboard',
-    itemType: 'leaderboard-entry',
-    chain: [{ provider: 'leaderboard-html', config: { parser: 'aider' } }],
   },
 ];

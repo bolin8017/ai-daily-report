@@ -138,6 +138,11 @@ jobs:
           else
             echo "::warning::data/star-history.json absent on data branch — velocity ranking stays cold until it accrues"
           fi
+          if git checkout origin/data -- data/leaderboard-snapshots.json 2>/dev/null; then
+            echo "leaderboard-snapshots.json hydrated"
+          else
+            echo "::warning::data/leaderboard-snapshots.json absent on data branch — leaderboards surface once then settle"
+          fi
 
       - name: Hydrate cold archive from Releases
         # Phase 3 pipeline redesign — once FEATURE_ARCHIVE_HOT_COLD=1 is in

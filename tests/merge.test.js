@@ -370,29 +370,15 @@ describe('composeReport benchmark URL cure', () => {
       editorial: emptyEditorial,
       curated: curatedWithBenchmarks([
         {
-          id: 'tech.benchmarks.0:ocrbench',
-          title: 'OCRBench: Nemotron Nano VL 8B leads object-text understanding',
-          url: 'https://github.com/Yuliang-Liu/Multimodal-OCR', // 404 the user hit
-          audience: 'work',
-        },
-        {
-          id: 'tech.benchmarks.1:bfcl',
+          id: 'tech.benchmarks.0:bfcl',
           title: 'BFCL: function-calling parity across vendors',
           url: 'https://huggingface.co/spaces/anybodys/BFCL', // fabricated
-          audience: 'work',
-        },
-        {
-          id: 'tech.benchmarks.2:swebench',
-          title: 'SWE-Bench Verified: Live-SWE-agent + Opus 4.5 #1',
-          url: 'https://www.swebench.com/', // happened to be correct
           audience: 'work',
         },
       ]),
       themeName: 'ai-builder',
     });
-    expect(report.tech.benchmarks[0].url).toBe(BENCH_LEADERBOARD_URL.ocrbench);
-    expect(report.tech.benchmarks[1].url).toBe(BENCH_LEADERBOARD_URL.bfcl);
-    expect(report.tech.benchmarks[2].url).toBe(BENCH_LEADERBOARD_URL.swebench);
+    expect(report.tech.benchmarks[0].url).toBe(BENCH_LEADERBOARD_URL.bfcl);
   });
 
   it('strips the url from a ghost benchmark with no backing leaderboard', async () => {
@@ -411,17 +397,48 @@ describe('composeReport benchmark URL cure', () => {
     expect(report.tech.benchmarks[0].url).toBeUndefined();
   });
 
+  it('strips the url from a removed bench no longer in the registry (swebench / ocrbench / aider)', async () => {
+    const report = await composeReport({
+      editorial: emptyEditorial,
+      curated: curatedWithBenchmarks([
+        {
+          id: 'tech.benchmarks.0:swebench',
+          title: 'SWE-Bench Verified: some model #1',
+          url: 'https://www.swebench.com/',
+          audience: 'work',
+        },
+        {
+          id: 'tech.benchmarks.1:ocrbench',
+          title: 'OCRBench: Nemotron Nano VL 8B leads',
+          url: 'https://github.com/Yuliang-Liu/Multimodal-OCR',
+          audience: 'work',
+        },
+        {
+          id: 'tech.benchmarks.2:aider',
+          title: 'Aider polyglot: model tops code editing',
+          url: 'https://aider.chat/docs/leaderboards/',
+          audience: 'work',
+        },
+      ]),
+      themeName: 'ai-builder',
+    });
+    // Removed boards are not in BENCH_LEADERBOARD_URL → benchOf returns null → URL stripped
+    expect(report.tech.benchmarks[0].url).toBeUndefined();
+    expect(report.tech.benchmarks[1].url).toBeUndefined();
+    expect(report.tech.benchmarks[2].url).toBeUndefined();
+  });
+
   it('does not mutate the caller-supplied curated benchmarks', async () => {
     const curated = curatedWithBenchmarks([
       {
-        id: 'tech.benchmarks.0:ocrbench',
-        title: 'OCRBench: leader',
-        url: 'https://github.com/fake/ocrbench',
+        id: 'tech.benchmarks.0:bfcl',
+        title: 'BFCL: leader',
+        url: 'https://github.com/fake/bfcl',
         audience: 'work',
       },
     ]);
     await composeReport({ editorial: emptyEditorial, curated, themeName: 'ai-builder' });
-    expect(curated.tech.benchmarks[0].url).toBe('https://github.com/fake/ocrbench');
+    expect(curated.tech.benchmarks[0].url).toBe('https://github.com/fake/bfcl');
   });
 });
 
