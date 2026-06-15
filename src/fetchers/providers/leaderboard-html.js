@@ -2,6 +2,10 @@ import { BENCH_LEADERBOARD_URL } from '../../lib/leaderboard-urls.js';
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
+import { fetchEpoch } from './leaderboards-parsers/epoch.js';
+import { fetchLivebench } from './leaderboards-parsers/livebench.js';
+import { fetchLmarena } from './leaderboards-parsers/lmarena.js';
+import { fetchSwebenchLive } from './leaderboards-parsers/swebench-live.js';
 
 // mteb + pinchbench dropped 2026-05-25: MTEB no longer publishes a precomputed
 // ranking (the leaderboard is computed client-side by the mteb package), and
@@ -11,6 +15,10 @@ import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
 // replaced incrementally by the leaderboard-redesign branch.
 const FETCHERS = {
   bfcl: fetchBfcl,
+  epoch: (cfg) => fetchEpoch(cfg.benchmark),
+  lmarena: fetchLmarena,
+  livebench: fetchLivebench,
+  'swebench-live': fetchSwebenchLive,
 };
 
 export async function leaderboardHtmlProvider(cfg, _ctx) {
@@ -18,13 +26,17 @@ export async function leaderboardHtmlProvider(cfg, _ctx) {
   if (!fetcher) {
     return { ok: false, items: [], error: `unknown leaderboard parser: ${cfg.parser}` };
   }
+  // cfg.bench lets multiple boards share the same parser (e.g. epoch) while
+  // keeping distinct snapshot keys and output bench fields. Single-board parsers
+  // omit cfg.bench and fall back to cfg.parser — fully backward compatible.
+  const benchKey = cfg.bench ?? cfg.parser;
   try {
     const ranking = await fetcher(cfg);
     if (!ranking || ranking.length === 0) {
       return { ok: false, items: [], error: 'no rankings parsed' };
     }
-    const prev = await loadPrevSnapshot(cfg.parser);
-    await saveSnapshot(cfg.parser, ranking);
+    const prev = await loadPrevSnapshot(benchKey);
+    await saveSnapshot(benchKey, ranking);
     const d = diffSnapshots(prev, ranking);
 
     // Event-driven: a board with no new top-5 entrant and no rank movement is a
@@ -39,10 +51,10 @@ export async function leaderboardHtmlProvider(cfg, _ctx) {
       ok: true,
       items: [
         {
-          bench: cfg.parser,
+          bench: benchKey,
           // Canonical leaderboard link, stamped from the single source of truth
           // so the curator never has to (and never should) invent one.
-          url: BENCH_LEADERBOARD_URL[cfg.parser],
+          url: BENCH_LEADERBOARD_URL[benchKey],
           fetched_at: new Date().toISOString(),
           ...d,
         },

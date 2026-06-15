@@ -10,6 +10,15 @@ describe('benchOf', () => {
     expect(benchOf({ title: 'BFCL: function-calling parity across vendors' })).toBe('bfcl');
   });
 
+  it('resolves lmarena by explicit bench field', () => {
+    expect(benchOf({ bench: 'lmarena' })).toBe('lmarena');
+  });
+
+  it('resolves lmarena by title token', () => {
+    expect(benchOf({ title: 'LMArena: Claude Fable 5 reclaims top spot' })).toBe('lmarena');
+    expect(benchOf({ title: 'Chatbot Arena: new rankings out' })).toBe('lmarena');
+  });
+
   it('returns null for an unknown / ghost benchmark', () => {
     expect(benchOf({ title: 'MTEB Leaderboard: Claude models dominate embeddings' })).toBeNull();
     expect(benchOf({ title: 'Some unrelated tech headline' })).toBeNull();
@@ -31,8 +40,26 @@ describe('benchOf', () => {
     expect(benchOf({ bench: 'mteb', title: 'no recognizable token' })).toBeNull();
   });
 
+  it('resolves swebench-live by explicit bench field', () => {
+    expect(benchOf({ bench: 'swebench-live' })).toBe('swebench-live');
+  });
+
+  it('resolves swebench-live by title token', () => {
+    expect(benchOf({ title: 'SWE-bench Live: GPT-5.5 leads verified split' })).toBe(
+      'swebench-live',
+    );
+    expect(benchOf({ title: 'SWEbench-Live results out' })).toBe('swebench-live');
+  });
+
   it('every known bench maps to a canonical https url', () => {
-    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual(['bfcl']);
+    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
+      'bfcl',
+      'epoch-gpqa',
+      'epoch-hle',
+      'livebench',
+      'lmarena',
+      'swebench-live',
+    ]);
     for (const url of Object.values(BENCH_LEADERBOARD_URL)) {
       expect(url).toMatch(/^https:\/\//);
     }
