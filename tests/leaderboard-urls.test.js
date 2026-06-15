@@ -51,14 +51,47 @@ describe('benchOf', () => {
     expect(benchOf({ title: 'SWEbench-Live results out' })).toBe('swebench-live');
   });
 
+  it('resolves tau2 by explicit bench field', () => {
+    expect(benchOf({ bench: 'tau2' })).toBe('tau2');
+  });
+
+  it('resolves tau2 by title token', () => {
+    expect(benchOf({ title: 'tau2-bench: agent tool-use rankings updated' })).toBe('tau2');
+    expect(benchOf({ title: 'tau-bench new results' })).toBe('tau2');
+  });
+
+  it('resolves gaia by explicit bench field', () => {
+    expect(benchOf({ bench: 'gaia' })).toBe('gaia');
+  });
+
+  it('resolves gaia by title token', () => {
+    expect(benchOf({ title: 'GAIA: agent benchmark rankings updated' })).toBe('gaia');
+  });
+
+  it('resolves artificial-analysis by explicit bench field', () => {
+    expect(benchOf({ bench: 'artificial-analysis' })).toBe('artificial-analysis');
+  });
+
+  it('resolves artificial-analysis by title token', () => {
+    expect(benchOf({ title: 'Artificial Analysis Intelligence Index: Claude Fable 5 leads' })).toBe(
+      'artificial-analysis',
+    );
+    expect(benchOf({ title: 'Intelligence Index: new rankings from Artificial Analysis' })).toBe(
+      'artificial-analysis',
+    );
+  });
+
   it('every known bench maps to a canonical https url', () => {
     expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
+      'artificial-analysis',
       'bfcl',
       'epoch-gpqa',
       'epoch-hle',
+      'gaia',
       'livebench',
       'lmarena',
       'swebench-live',
+      'tau2',
     ]);
     for (const url of Object.values(BENCH_LEADERBOARD_URL)) {
       expect(url).toMatch(/^https:\/\//);

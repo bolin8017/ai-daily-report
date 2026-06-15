@@ -9,12 +9,15 @@
 // are the only URLs that ever reach the rendered report — the provider stamps
 // them onto staging and merge enforces them (see cureBenchmarkUrls in merge.js).
 export const BENCH_LEADERBOARD_URL = {
+  'artificial-analysis': 'https://artificialanalysis.ai/',
   bfcl: 'https://gorilla.cs.berkeley.edu/leaderboard.html',
   'epoch-gpqa': 'https://epoch.ai/benchmarks/gpqa-diamond',
   'epoch-hle': 'https://epoch.ai/benchmarks/hle',
+  gaia: 'https://huggingface.co/spaces/gaia-benchmark/leaderboard',
   lmarena: 'https://lmarena.ai/leaderboard',
   livebench: 'https://livebench.ai/',
   'swebench-live': 'https://swe-bench-live.github.io/',
+  tau2: 'https://taubench.com/',
 };
 
 // Identify which benchmark a curated tech.benchmarks item refers to. Prefer an
@@ -32,5 +35,8 @@ export function benchOf(item) {
   if (/swe-?bench[- ]?live/i.test(title)) return 'swebench-live';
   if (/gpqa/i.test(title)) return 'epoch-gpqa';
   if (/hle|humanity'?s last exam/i.test(title)) return 'epoch-hle';
+  if (/tau-?2|tau-?bench/i.test(title)) return 'tau2';
+  if (/gaia/i.test(title)) return 'gaia';
+  if (/artificial analysis|intelligence index/i.test(title)) return 'artificial-analysis';
   return null;
 }

@@ -1,11 +1,14 @@
 import { BENCH_LEADERBOARD_URL } from '../../lib/leaderboard-urls.js';
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
+import { fetchArtificialAnalysis } from './leaderboards-parsers/artificial-analysis.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
 import { fetchEpoch } from './leaderboards-parsers/epoch.js';
+import { fetchGaia } from './leaderboards-parsers/gaia.js';
 import { fetchLivebench } from './leaderboards-parsers/livebench.js';
 import { fetchLmarena } from './leaderboards-parsers/lmarena.js';
 import { fetchSwebenchLive } from './leaderboards-parsers/swebench-live.js';
+import { fetchTau2 } from './leaderboards-parsers/tau2.js';
 
 // mteb + pinchbench dropped 2026-05-25: MTEB no longer publishes a precomputed
 // ranking (the leaderboard is computed client-side by the mteb package), and
@@ -14,11 +17,14 @@ import { fetchSwebenchLive } from './leaderboards-parsers/swebench-live.js';
 // ocrbench + aider + swebench dropped 2026-06-15: unreliable / low signal;
 // replaced incrementally by the leaderboard-redesign branch.
 const FETCHERS = {
+  'artificial-analysis': fetchArtificialAnalysis,
   bfcl: fetchBfcl,
   epoch: (cfg) => fetchEpoch(cfg.benchmark),
   lmarena: fetchLmarena,
   livebench: fetchLivebench,
   'swebench-live': fetchSwebenchLive,
+  tau2: fetchTau2,
+  gaia: fetchGaia,
 };
 
 export async function leaderboardHtmlProvider(cfg, _ctx) {
