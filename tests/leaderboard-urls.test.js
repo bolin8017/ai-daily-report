@@ -40,8 +40,24 @@ describe('benchOf', () => {
     expect(benchOf({ bench: 'mteb', title: 'no recognizable token' })).toBeNull();
   });
 
+  it('resolves swebench-live by explicit bench field', () => {
+    expect(benchOf({ bench: 'swebench-live' })).toBe('swebench-live');
+  });
+
+  it('resolves swebench-live by title token', () => {
+    expect(benchOf({ title: 'SWE-bench Live: GPT-5.5 leads verified split' })).toBe(
+      'swebench-live',
+    );
+    expect(benchOf({ title: 'SWEbench-Live results out' })).toBe('swebench-live');
+  });
+
   it('every known bench maps to a canonical https url', () => {
-    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual(['bfcl', 'livebench', 'lmarena']);
+    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
+      'bfcl',
+      'livebench',
+      'lmarena',
+      'swebench-live',
+    ]);
     for (const url of Object.values(BENCH_LEADERBOARD_URL)) {
       expect(url).toMatch(/^https:\/\//);
     }

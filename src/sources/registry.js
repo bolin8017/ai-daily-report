@@ -382,4 +382,11 @@ export default [
     itemType: 'leaderboard-entry',
     chain: [{ provider: 'leaderboard-html', config: { parser: 'livebench' } }],
   },
+  {
+    id: 'leaderboard-swebench-live',
+    label: 'SWE-bench-Live',
+    category: 'leaderboard',
+    itemType: 'leaderboard-entry',
+    chain: [{ provider: 'leaderboard-html', config: { parser: 'swebench-live' } }],
+  },
 ];
