@@ -5,7 +5,7 @@ export async function loadPrevSnapshot(bench) {
 }
 
 export async function saveSnapshot(bench, snapshot) {
-  saveLedgerSnapshot(bench, snapshot);
+  return saveLedgerSnapshot(bench, snapshot);
 }
 
 export function diffSnapshots(prev, curr) {
