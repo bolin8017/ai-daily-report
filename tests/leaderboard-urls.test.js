@@ -41,7 +41,7 @@ describe('benchOf', () => {
   });
 
   it('every known bench maps to a canonical https url', () => {
-    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual(['bfcl', 'lmarena']);
+    expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual(['bfcl', 'livebench', 'lmarena']);
     for (const url of Object.values(BENCH_LEADERBOARD_URL)) {
       expect(url).toMatch(/^https:\/\//);
     }

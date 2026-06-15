@@ -2,6 +2,7 @@ import { BENCH_LEADERBOARD_URL } from '../../lib/leaderboard-urls.js';
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
+import { fetchLivebench } from './leaderboards-parsers/livebench.js';
 import { fetchLmarena } from './leaderboards-parsers/lmarena.js';
 
 // mteb + pinchbench dropped 2026-05-25: MTEB no longer publishes a precomputed
@@ -13,6 +14,7 @@ import { fetchLmarena } from './leaderboards-parsers/lmarena.js';
 const FETCHERS = {
   bfcl: fetchBfcl,
   lmarena: fetchLmarena,
+  livebench: fetchLivebench,
 };
 
 export async function leaderboardHtmlProvider(cfg, _ctx) {
