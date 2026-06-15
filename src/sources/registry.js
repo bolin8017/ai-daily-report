@@ -355,7 +355,7 @@ export default [
     chain: [{ provider: 'mops-twse-openapi', config: {} }],
   },
 
-  // === Leaderboards (3) ===
+  // === Leaderboards (5) ===
   // Read each board's official machine-readable export (CSV / results JSON /
   // YAML), not the JS-rendered leaderboard HTML. mteb + pinchbench removed
   // 2026-05-25 (no stable precomputed-ranking source — see leaderboard-html.js).
@@ -367,6 +367,30 @@ export default [
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
     chain: [{ provider: 'leaderboard-html', config: { parser: 'bfcl' } }],
+  },
+  {
+    id: 'leaderboard-epoch-gpqa',
+    label: 'GPQA Diamond (Epoch)',
+    category: 'leaderboard',
+    itemType: 'leaderboard-entry',
+    chain: [
+      {
+        provider: 'leaderboard-html',
+        config: { parser: 'epoch', bench: 'epoch-gpqa', benchmark: 'GPQA diamond' },
+      },
+    ],
+  },
+  {
+    id: 'leaderboard-epoch-hle',
+    label: "Humanity's Last Exam (Epoch)",
+    category: 'leaderboard',
+    itemType: 'leaderboard-entry',
+    chain: [
+      {
+        provider: 'leaderboard-html',
+        config: { parser: 'epoch', bench: 'epoch-hle', benchmark: 'HLE' },
+      },
+    ],
   },
   {
     id: 'leaderboard-lmarena',

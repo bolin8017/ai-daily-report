@@ -54,6 +54,8 @@ describe('benchOf', () => {
   it('every known bench maps to a canonical https url', () => {
     expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
       'bfcl',
+      'epoch-gpqa',
+      'epoch-hle',
       'livebench',
       'lmarena',
       'swebench-live',
