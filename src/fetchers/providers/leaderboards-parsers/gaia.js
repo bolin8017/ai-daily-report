@@ -7,7 +7,7 @@ export function rankGaia(rows) {
   const best = new Map();
   for (const r of rows) {
     const name = (r.model || '').trim();
-    if (r.score == null) continue;
+    if (r.score == null) continue; // parquet nulls: Number(null) === 0 would slip past isFinite
     const score = Number(r.score);
     if (!name || !Number.isFinite(score)) continue;
     if (!best.has(name) || score > best.get(name)) best.set(name, score);
