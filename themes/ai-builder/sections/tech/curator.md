@@ -50,7 +50,19 @@ For each item: `id`, `title`, `url`, `audience`, `takeaway`, `companies` (model 
 Source: leaderboards.json (per-bench snapshots + diff fields: `new_top_5`, `rank_changes`, `top_5_today`).
 
 - **Include:** new top-5 entries, rank changes affecting top-10, new benchmark releases, third-party independent eval blog posts.
-- **Active benchmarks:** BFCL (more added incrementally) — emit an item only for a bench actually present in leaderboards.json; never invent one. `leaderboards.json` contains ONLY boards that changed today; if a bench is absent, emit nothing for it — never write a 'maintains lead' / 'still #1' non-event.
+- **Active benchmarks — the COMPLETE list (no others are valid):**
+  - `BFCL` — function calling / tool-use accuracy
+  - `LMArena` — overall LLM capability (human-preference Elo)
+  - `LiveBench` — overall, contamination-free
+  - `SWE-bench-Live` — coding agent (live GitHub issues)
+  - `GPQA Diamond (Epoch)` — hard science reasoning
+  - `HLE (Epoch)` — Humanity's Last Exam, frontier reasoning
+  - `tau2-bench` — agent tool-use
+  - `GAIA` — general assistant / agents
+  - `Artificial Analysis Intelligence Index` — composite score (only present when API key configured)
+- **Event-driven rule:** `leaderboards.json` contains ONLY boards that changed today — frozen/unchanged boards emit nothing. Emit exactly one item per board that IS present in the file; if a board is absent, emit nothing for it — never write a "maintains lead" / "still #1" / "holds position" non-event.
+- **Never invent a benchmark name.** If the board name in the file is not in the list above, treat it as an unknown source and skip it.
+- **Titling guidance:** title each item by WHAT CHANGED, not the current standing. Good: "BFCL: <model> enters top-5", "LMArena: <model> rises to #3", "SWE-bench-Live: new #1 as <model> displaces <prior leader>". Avoid static "X leads Y benchmark" phrasing — that reads as a non-event.
 - **Exclude:** internal-only benchmarks, vendor-self-reported numbers without independent replication.
 
 For each item: `id`, `title` (e.g. "BFCL: <model> enters top-5"), `audience`, `takeaway`, `benchmark_changes: { new_top_5: [...], rank_changes: [...] }`. Do NOT emit a `url` — the official leaderboard link is attached deterministically by the system; never construct, copy, or guess one.
