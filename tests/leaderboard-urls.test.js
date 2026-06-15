@@ -60,11 +60,20 @@ describe('benchOf', () => {
     expect(benchOf({ title: 'tau-bench new results' })).toBe('tau2');
   });
 
+  it('resolves gaia by explicit bench field', () => {
+    expect(benchOf({ bench: 'gaia' })).toBe('gaia');
+  });
+
+  it('resolves gaia by title token', () => {
+    expect(benchOf({ title: 'GAIA: agent benchmark rankings updated' })).toBe('gaia');
+  });
+
   it('every known bench maps to a canonical https url', () => {
     expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
       'bfcl',
       'epoch-gpqa',
       'epoch-hle',
+      'gaia',
       'livebench',
       'lmarena',
       'swebench-live',

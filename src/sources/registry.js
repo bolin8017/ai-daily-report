@@ -420,4 +420,11 @@ export default [
     itemType: 'leaderboard-entry',
     chain: [{ provider: 'leaderboard-html', config: { parser: 'tau2' } }],
   },
+  {
+    id: 'leaderboard-gaia',
+    label: 'GAIA',
+    category: 'leaderboard',
+    itemType: 'leaderboard-entry',
+    chain: [{ provider: 'leaderboard-html', config: { parser: 'gaia' } }],
+  },
 ];

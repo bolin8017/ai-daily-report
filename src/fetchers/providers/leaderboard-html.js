@@ -3,6 +3,7 @@ import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
 import { fetchEpoch } from './leaderboards-parsers/epoch.js';
+import { fetchGaia } from './leaderboards-parsers/gaia.js';
 import { fetchLivebench } from './leaderboards-parsers/livebench.js';
 import { fetchLmarena } from './leaderboards-parsers/lmarena.js';
 import { fetchSwebenchLive } from './leaderboards-parsers/swebench-live.js';
@@ -21,6 +22,7 @@ const FETCHERS = {
   livebench: fetchLivebench,
   'swebench-live': fetchSwebenchLive,
   tau2: fetchTau2,
+  gaia: fetchGaia,
 };
 
 export async function leaderboardHtmlProvider(cfg, _ctx) {
