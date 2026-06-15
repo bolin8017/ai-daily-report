@@ -1,5 +1,5 @@
 // tests/leaderboard-snapshots.test.js
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -31,5 +31,10 @@ describe('leaderboard-snapshots', () => {
     saveSnapshot('lmarena', [{ model_id: 'X', rank: 1, score: 1 }], path);
     expect(loadSnapshots(path)).toHaveProperty('bfcl');
     expect(loadSnapshots(path)).toHaveProperty('lmarena');
+  });
+
+  it('returns {} for a corrupt file (and does not throw)', () => {
+    writeFileSync(path, '{ not valid json');
+    expect(loadSnapshots(path)).toEqual({});
   });
 });

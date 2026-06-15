@@ -15,7 +15,8 @@ export function loadSnapshots(path = DEFAULT_SNAPSHOTS_PATH) {
   if (!existsSync(path)) return {};
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
-  } catch {
+  } catch (err) {
+    console.error(`[leaderboard-snapshots] file unreadable (${err.message}) — treating as empty`);
     return {};
   }
 }
@@ -29,5 +30,5 @@ export function saveSnapshot(bench, ranking, path = DEFAULT_SNAPSHOTS_PATH) {
   const all = loadSnapshots(path);
   all[bench] = ranking;
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, JSON.stringify(all, null, 2));
+  writeFileSync(path, `${JSON.stringify(all, null, 2)}\n`);
 }
