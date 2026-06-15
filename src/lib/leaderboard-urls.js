@@ -15,7 +15,7 @@ export const BENCH_LEADERBOARD_URL = {
   lmarena: 'https://lmarena.ai/leaderboard',
   livebench: 'https://livebench.ai/',
   'swebench-live': 'https://swe-bench-live.github.io/',
-  tau2: 'https://github.com/sierra-research/tau2-bench',
+  tau2: 'https://taubench.com/',
 };
 
 // Identify which benchmark a curated tech.benchmarks item refers to. Prefer an

@@ -13,6 +13,7 @@ describe('aggregateTau2', () => {
     expect(out[0].rank).toBe(1);
     expect(out[0].score).toBeGreaterThanOrEqual(out[1].score);
     expect(typeof out[0].model_id).toBe('string');
+    expect(out[0].model_id).toBe('Claude Opus 4.5');
   });
   it('averages only finite pass_1 values, ignoring null domains', () => {
     const subs = [

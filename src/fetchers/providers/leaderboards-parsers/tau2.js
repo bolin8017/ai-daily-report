@@ -27,5 +27,9 @@ export async function fetchTau2() {
   const subs = await Promise.all(
     ids.map((id) => fetchJson(`${BASE}/${id}/submission.json`).catch(() => null)),
   );
-  return aggregateTau2(subs.filter(Boolean));
+  const alive = subs.filter(Boolean);
+  if (alive.length < ids.length) {
+    console.warn(`[tau2] ${ids.length - alive.length}/${ids.length} submissions failed to fetch`);
+  }
+  return aggregateTau2(alive);
 }
