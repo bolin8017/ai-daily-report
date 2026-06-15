@@ -12,4 +12,8 @@ describe('parseLmarena', () => {
     expect(typeof out[0].score).toBe('number');
     expect(out[0].rank).toBeLessThan(out[1].rank);
   });
+
+  it('returns [] when there are no models', () => {
+    expect(parseLmarena('{}')).toEqual([]);
+  });
 });

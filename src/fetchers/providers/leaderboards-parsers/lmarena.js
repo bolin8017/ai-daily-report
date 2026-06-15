@@ -13,5 +13,6 @@ export function parseLmarena(jsonText) {
 
 export async function fetchLmarena() {
   const ptr = await fetchJson(`${BASE}/latest.json`); // { date, path }
+  if (!ptr?.path) throw new Error('lmarena latest.json missing .path');
   return parseLmarena(await fetchText(`${BASE}/${ptr.path}/text.json`));
 }
