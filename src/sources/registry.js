@@ -355,7 +355,7 @@ export default [
     chain: [{ provider: 'mops-twse-openapi', config: {} }],
   },
 
-  // === Leaderboards (5) ===
+  // === Leaderboards (9) === threshold:0 because event-driven boards routinely emit 0 items when unchanged
   // Read each board's official machine-readable export (CSV / results JSON /
   // YAML), not the JS-rendered leaderboard HTML. mteb + pinchbench removed
   // 2026-05-25 (no stable precomputed-ranking source — see leaderboard-html.js).
@@ -366,6 +366,7 @@ export default [
     label: 'BFCL Leaderboard',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [{ provider: 'leaderboard-html', config: { parser: 'bfcl' } }],
   },
   {
@@ -373,6 +374,7 @@ export default [
     label: 'GPQA Diamond (Epoch)',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [
       {
         provider: 'leaderboard-html',
@@ -385,6 +387,7 @@ export default [
     label: "Humanity's Last Exam (Epoch)",
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [
       {
         provider: 'leaderboard-html',
@@ -397,6 +400,7 @@ export default [
     label: 'LMArena',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [{ provider: 'leaderboard-html', config: { parser: 'lmarena' } }],
   },
   {
@@ -404,6 +408,7 @@ export default [
     label: 'LiveBench',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [{ provider: 'leaderboard-html', config: { parser: 'livebench' } }],
   },
   {
@@ -411,6 +416,7 @@ export default [
     label: 'SWE-bench-Live',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [{ provider: 'leaderboard-html', config: { parser: 'swebench-live' } }],
   },
   {
@@ -418,6 +424,7 @@ export default [
     label: 'tau2-bench',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [{ provider: 'leaderboard-html', config: { parser: 'tau2' } }],
   },
   {
@@ -425,6 +432,7 @@ export default [
     label: 'GAIA',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [{ provider: 'leaderboard-html', config: { parser: 'gaia' } }],
   },
   {
@@ -432,6 +440,7 @@ export default [
     label: 'Artificial Analysis Intelligence Index',
     category: 'leaderboard',
     itemType: 'leaderboard-entry',
+    threshold: 0,
     chain: [{ provider: 'leaderboard-html', config: { parser: 'artificial-analysis' } }],
   },
 ];
