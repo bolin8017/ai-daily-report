@@ -9,7 +9,8 @@ export function parseSwebenchLive(jsonl, preferred = 'verified', fallback = 'lit
     .filter(Boolean)
     .map((l) => JSON.parse(l));
   const pick = (set) => rows.filter((r) => r.set === set && r.total > 0);
-  const chosen = pick(preferred).length ? pick(preferred) : pick(fallback);
+  const preferredRows = pick(preferred);
+  const chosen = preferredRows.length ? preferredRows : pick(fallback);
   return chosen
     .map((r) => ({ model_id: r.name, score: (r.resolved / r.total) * 100 }))
     .filter((e) => e.model_id && Number.isFinite(e.score))
