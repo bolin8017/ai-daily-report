@@ -1,6 +1,7 @@
 import { BENCH_LEADERBOARD_URL } from '../../lib/leaderboard-urls.js';
 import { defineProvider } from './_registry.js';
 import { diffSnapshots, loadPrevSnapshot, saveSnapshot } from './leaderboards-parsers/_base.js';
+import { fetchArtificialAnalysis } from './leaderboards-parsers/artificial-analysis.js';
 import { fetchBfcl } from './leaderboards-parsers/bfcl.js';
 import { fetchEpoch } from './leaderboards-parsers/epoch.js';
 import { fetchGaia } from './leaderboards-parsers/gaia.js';
@@ -16,6 +17,7 @@ import { fetchTau2 } from './leaderboards-parsers/tau2.js';
 // ocrbench + aider + swebench dropped 2026-06-15: unreliable / low signal;
 // replaced incrementally by the leaderboard-redesign branch.
 const FETCHERS = {
+  'artificial-analysis': fetchArtificialAnalysis,
   bfcl: fetchBfcl,
   epoch: (cfg) => fetchEpoch(cfg.benchmark),
   lmarena: fetchLmarena,

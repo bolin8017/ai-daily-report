@@ -68,8 +68,22 @@ describe('benchOf', () => {
     expect(benchOf({ title: 'GAIA: agent benchmark rankings updated' })).toBe('gaia');
   });
 
+  it('resolves artificial-analysis by explicit bench field', () => {
+    expect(benchOf({ bench: 'artificial-analysis' })).toBe('artificial-analysis');
+  });
+
+  it('resolves artificial-analysis by title token', () => {
+    expect(benchOf({ title: 'Artificial Analysis Intelligence Index: Claude Fable 5 leads' })).toBe(
+      'artificial-analysis',
+    );
+    expect(benchOf({ title: 'Intelligence Index: new rankings from Artificial Analysis' })).toBe(
+      'artificial-analysis',
+    );
+  });
+
   it('every known bench maps to a canonical https url', () => {
     expect(Object.keys(BENCH_LEADERBOARD_URL).sort()).toEqual([
+      'artificial-analysis',
       'bfcl',
       'epoch-gpqa',
       'epoch-hle',

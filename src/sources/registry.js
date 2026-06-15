@@ -427,4 +427,11 @@ export default [
     itemType: 'leaderboard-entry',
     chain: [{ provider: 'leaderboard-html', config: { parser: 'gaia' } }],
   },
+  {
+    id: 'leaderboard-artificial-analysis',
+    label: 'Artificial Analysis Intelligence Index',
+    category: 'leaderboard',
+    itemType: 'leaderboard-entry',
+    chain: [{ provider: 'leaderboard-html', config: { parser: 'artificial-analysis' } }],
+  },
 ];
