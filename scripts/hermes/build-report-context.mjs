@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const DEFAULT_SECTIONS = ['shipped', 'pulse', 'market', 'tech'];
+const DEFAULT_SECTIONS = ['discoveries', 'pulse', 'market', 'tech'];
 const DEFAULT_MAX_ITEMS_PER_SECTION = 8;
 const DEFAULT_MAX_TRACKING_ITEMS = 6;
 const DEFAULT_MAX_PREDICTIONS = 6;

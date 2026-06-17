@@ -1,6 +1,6 @@
 // Per-section sub-schemas for Stage 2 Curate output.
 //
-// Each curator (shipped/pulse/market/tech) writes a JSON file at
+// Each curator (discoveries/pulse/market/tech) writes a JSON file at
 // data/staging/curated/<section>.json validated against the matching schema
 // before Stage 3 reads it. These schemas are strict on sub-group names
 // (templates iterate them) — item shapes are passthrough.

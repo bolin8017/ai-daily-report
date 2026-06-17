@@ -59,7 +59,7 @@ export function stableId(opts) {
  * Read and concatenate the shared voice rules + a per-section curator
  * prompt from the active theme bundle.
  *
- * @param {string} section 'shipped' | 'pulse' | 'market' | 'tech'
+ * @param {string} section 'discoveries' | 'pulse' | 'market' | 'tech'
  * @returns {Promise<string>}
  */
 export async function mergePrompts(section) {

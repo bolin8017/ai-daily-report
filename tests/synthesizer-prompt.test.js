@@ -63,6 +63,11 @@ describe('build-synthesizer-prompt', () => {
     expect(prompt).not.toContain('"schema_version": 2');
     expect(prompt).not.toContain('shipped / pulse / market / tech sections copied verbatim');
     expect(prompt).not.toContain('"shipped": <copied verbatim');
+    // Post-2026-06-15 新發現 cutover: the synthesizer cites the live `discoveries`
+    // section, never the retired `shipped` (whose ids merge can no longer resolve).
+    expect(prompt).toContain('discoveries.rising.0:vllm-project/vllm');
+    expect(prompt).not.toContain('shipped.trending');
+    expect(prompt).not.toContain('curated/shipped.json');
   });
 
   it('writes the assembled prompt to disk', async () => {

@@ -42,7 +42,7 @@ Three recurring real failure modes, all instances of the above:
 ## Inputs (read via Read tool)
 
 Curated outputs from Stage 2:
-- `data/staging/curated/shipped.json`
+- `data/staging/curated/discoveries.json`
 - `data/staging/curated/pulse.json`
 - `data/staging/curated/market.json`
 - `data/staging/curated/tech.json`
@@ -72,9 +72,9 @@ Recency (computed in code — do NOT do date math yourself):
 - `lead`: `{html: string}` — the editorial lead block
 - `signals`: `{focus, sleeper, contrarian, predictions, prediction_updates}`
 
-**You MUST NOT include `shipped`, `pulse`, `market`, `tech` sections** in editorial.json. Those are mechanically merged in from `data/staging/curated/*.json` by the post-synth merge step. Re-emitting curated items here is the bug that caused the 32K output-token cap incident on 2026-05-24.
+**You MUST NOT include `discoveries`, `pulse`, `market`, `tech` sections** in editorial.json. Those are mechanically merged in from `data/staging/curated/*.json` by the post-synth merge step. Re-emitting curated items here is the bug that caused the 32K output-token cap incident on 2026-05-24.
 
-**Source links must reference stable ids copied verbatim from curated/*.json.** Read the ids from `data/staging/curated/shipped.json`, `pulse.json`, `market.json`, `tech.json` and cite items by those **exact** ids in `source_links[]` arrays. Never reconstruct or guess an id — if you didn't read it from a file this run, you don't have it. If a claim has no grounded curated source, use an empty `source_links: []` rather than inventing one. The merge step silently drops any id it can't resolve, so a wrong id won't crash the run — it just becomes a dead cross-tab link the reader clicks into nowhere. The discipline is entirely on you.
+**Source links must reference stable ids copied verbatim from curated/*.json.** Read the ids from `data/staging/curated/discoveries.json`, `pulse.json`, `market.json`, `tech.json` and cite items by those **exact** ids in `source_links[]` arrays. Never reconstruct or guess an id — if you didn't read it from a file this run, you don't have it. If a claim has no grounded curated source, use an empty `source_links: []` rather than inventing one. The merge step silently drops any id it can't resolve, so a wrong id won't crash the run — it just becomes a dead cross-tab link the reader clicks into nowhere. The discipline is entirely on you.
 
 ### Output JSON shape
 
@@ -145,7 +145,7 @@ Do not update persistent memory in this stage. Cross-day state is maintained by 
 
 ## Stable id discipline
 
-`source_links` arrays MUST contain only stable ids that exist in the curated/*.json input you read. Do not invent ids. Cross-tab linking in the UI depends on this — `source_links: ["shipped.trending.0:vllm-project/vllm"]` only works if that exact id is in `data/staging/curated/shipped.json`. When you have no real source id for an item, leave `source_links` empty (`[]`) — never pad it with a guessed id to look well-cited.
+`source_links` arrays MUST contain only stable ids that exist in the curated/*.json input you read. Do not invent ids. Cross-tab linking in the UI depends on this — `source_links: ["discoveries.rising.0:vllm-project/vllm"]` only works if that exact id is in `data/staging/curated/discoveries.json`. When you have no real source id for an item, leave `source_links` empty (`[]`) — never pad it with a guessed id to look well-cited.
 
 ## Self-check before write
 
@@ -154,4 +154,4 @@ Do not update persistent memory in this stage. Cross-day state is maintained by 
 - [ ] Every signals.focus entry has `mechanism` + `product_opportunity` + ≥2 source_links; thin day → fewer signals, not welded ones
 - [ ] Every prediction has ISO `resolution_date` (YYYY-MM-DD) and a strict-enum `status`
 - [ ] lead.html passes the `quality.md` slop test (delete-test on every sentence); reader is the builder, not their boss
-- [ ] editorial.json excludes shipped / pulse / market / tech sections; `schema_version: "2.1-editorial"`; `date` matches metadata.json
+- [ ] editorial.json excludes discoveries / pulse / market / tech sections; `schema_version: "2.1-editorial"`; `date` matches metadata.json

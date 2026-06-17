@@ -39,13 +39,13 @@ Read the synthesizer prompt first (job, reader, grounding contract, per-section 
 - `.signals[].title` / `.signals[].body` / `.signals[].evidence` / `.signals[].product_opportunity` ← **上一版 v2 iteration 在 `.signals[].body` 漏掉了這條規則**
 - `.contrarian.body` / `.contrarian.rationale` / `.contrarian.claim`
 - `.sleeper.description` / `.sleeper.body` / `.sleeper.why_asymmetric` / `.sleeper.commercial_path`
-- `.shipped[].desc` / `.shipped[].name`
-- `.dev_watch.taiwan[].local_context` / `.dev_watch.*.description`
+- `.discoveries.rising[].name` / `.discoveries.rising[].relevance`
+- `.discoveries.dev_watch[].name` / `.discoveries.dev_watch[].relevance`
 - `.predictions[].text`
 
 **哪些欄位算 "metadata"（允許 kebab-case slug）**：
 - `.predictions[].id` — 預測自己的 id
-- `source_links` 裡引用 curated 項目用的 stable id（如 `shipped.trending.0:...`）— 只在 source_links 用，不進 prose
+- `source_links` 裡引用 curated 項目用的 stable id（如 `discoveries.rising.0:...`）— 只在 source_links 用，不進 prose
 
 **具體 v2 失敗案例**：上一版 iteration v2 的某個 signal body 寫了：
 > 「昨天 arc-platform-deplatforming 剛 emerging，今天升到 episode 2...」
