@@ -32,7 +32,7 @@ Generate stable, deterministic ids. Index `<i>` resets per sub-group, starts at 
 
 | Source type | Pattern | Example |
 |---|---|---|
-| GitHub repo | `<section>.<sub>.<i>:<owner>/<repo>` | `shipped.trending.0:vllm-project/vllm` |
+| GitHub repo | `<section>.<sub>.<i>:<owner>/<repo>` | `discoveries.rising.0:vllm-project/vllm` |
 | HN item | `pulse.hn.<i>:hn-<id>` | `pulse.hn.3:hn-39827361` |
 | Lobsters story | `pulse.lobsters.<i>:lobsters-<short>` | `pulse.lobsters.2:lobsters-abc123` |
 | MOPS / TWSE disclosure | `market.taiwan.<i>:mops-<ticker>-<YYYYMMDD>` | `market.taiwan.1:mops-8299-20260522` |

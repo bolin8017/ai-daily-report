@@ -69,15 +69,15 @@ day's evidence genuinely supports them — never an empty placeholder to fill a 
 is one of the four allowed enum values. See the per-section specs above.
 
 <exclude>
-Do NOT put \`shipped\`, \`pulse\`, \`market\`, or \`tech\` in this file — a later mechanical step
+Do NOT put \`discoveries\`, \`pulse\`, \`market\`, or \`tech\` in this file — a later mechanical step
 merges those from \`data/staging/curated/*.json\`. Re-emitting them is what blew the 32K
 output-token cap on 2026-05-24.
 </exclude>
 
 <source_links>
 Every id in a \`source_links\` array must be COPIED VERBATIM from a curated file you read this
-run — \`data/staging/curated/{shipped,pulse,market,tech}.json\`. The format is
-\`<section>.<subgroup>.<index>:<slug>\`, e.g. \`shipped.trending.0:vllm-project/vllm\`.
+run — \`data/staging/curated/{discoveries,pulse,market,tech}.json\`. The format is
+\`<section>.<subgroup>.<index>:<slug>\`, e.g. \`discoveries.rising.0:vllm-project/vllm\`.
 - Never reconstruct, renumber, abbreviate, or guess an id. If you did not read it from a
   file this run, you do not have it.
 - No grounded curated source for a claim? Use \`[]\`. An empty array is always valid; an

@@ -35,17 +35,15 @@ async function fixtureRoot() {
     'utf8',
   );
 
-  await writeJson(path.join(curatedDir, 'shipped.json'), {
-    trending: [
+  await writeJson(path.join(curatedDir, 'discoveries.json'), {
+    rising: [
       {
-        id: 'shipped.trending.0:local-llm-app',
+        id: 'discoveries.rising.0:local-llm-app',
         name: 'Local LLM App',
         takeaway: 'A desktop AI app added offline local inference mode for 7B models.',
       },
     ],
-    topic_discovery: [],
-    dev_watch_taiwan: [],
-    dev_watch_global: [],
+    dev_watch: [],
   });
   await writeJson(path.join(curatedDir, 'pulse.json'), {
     hn: [
@@ -78,7 +76,7 @@ async function fixtureRoot() {
     aidaptiv: [],
   });
   await writeJson(path.join(stagingDir, 'source-ages.json'), {
-    'shipped.trending.0:local-llm-app': 1,
+    'discoveries.rising.0:local-llm-app': 1,
     'pulse.hn.0:agent-thread': 2,
     'tech.models.0:tiny-model': 3,
   });
@@ -94,7 +92,7 @@ describe('build-report-context', () => {
 
     expect(markdown).toContain('# Report Context for 2026-06-03');
     expect(markdown).toContain('## Curated evidence snapshot');
-    expect(markdown).toContain('shipped.trending.0:local-llm-app');
+    expect(markdown).toContain('discoveries.rising.0:local-llm-app');
     expect(markdown).toContain('offline local inference mode');
     expect(markdown).toContain('## Selected tracking items');
     expect(markdown).toContain('track-local-inference');

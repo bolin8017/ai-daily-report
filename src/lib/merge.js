@@ -60,7 +60,7 @@ function* iterSourceLinks(editorial) {
 /**
  * Walk all curated sections + sub-groups and collect every item id into a Set.
  *
- * @param {object} curated  { shipped: {...}, pulse: {...}, market: {...}, tech: {...} }
+ * @param {object} curated  { discoveries: {...}, pulse: {...}, market: {...}, tech: {...} }
  * @returns {Set<string>}
  */
 export function extractIdSpace(curated) {

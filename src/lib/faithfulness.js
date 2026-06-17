@@ -77,7 +77,7 @@ export function resolveSourceDate(url, sidecar = {}) {
 /**
  * Index curated items by id-prefix (same resolution as merge's dangling check)
  * and keep a flat list for the lead's entity-match path.
- * @param {object} curated  { shipped:{...}, pulse:{...}, market:{...}, tech:{...} }
+ * @param {object} curated  { discoveries:{...}, pulse:{...}, market:{...}, tech:{...} }
  * @returns {{ byPrefix: Map<string, object>, items: object[] }}
  */
 export function buildCuratedIndex(curated) {

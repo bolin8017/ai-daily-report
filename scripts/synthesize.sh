@@ -41,7 +41,7 @@ QUALITY_FILE_PATH="themes/${ACTIVE_THEME}/quality.md"
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR" "data/reports"
 
-for sec in shipped pulse; do
+for sec in discoveries pulse; do
   if [ ! -f "$CURATED_DIR/$sec.json" ]; then
     echo "[synthesize.sh] Missing critical $sec.json — aborting" >&2
     exit 3
