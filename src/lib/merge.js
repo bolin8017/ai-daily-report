@@ -349,11 +349,15 @@ export async function composeReport({
     }
   }
 
-  // Deterministic report-level confidence band (no LLM, fail-soft). Always
-  // attached so the signal is present even on a meta-less run; observability
-  // only, never gating. idSpace was built in step 2 above.
-  const confidence = computeConfidence(composed, idSpace);
-  composed.meta = { ...(composed.meta ?? {}), confidence };
+  // Deterministic report-level confidence band (no LLM). Observability only —
+  // wrapped so a malformed input can never abort the report (cure-don't-abort,
+  // like the dangling-link / benchmark-url cures above). idSpace from step 2.
+  try {
+    const confidence = computeConfidence(composed, idSpace);
+    composed.meta = { ...(composed.meta ?? {}), confidence };
+  } catch (e) {
+    console.warn(`[merge] confidence band skipped (non-fatal): ${e.message}`);
+  }
 
   // 5. Validate composed report
   const reportSchema = await buildReportSchema(themeName);

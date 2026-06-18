@@ -56,7 +56,7 @@
     {% if report.meta and report.meta.confidence and report.meta.confidence.band %}
     {% set conf = report.meta.confidence %}
     <div class="confidence-badge {{ conf.band }}"
-         {% if conf.cited_signals %}title="{{ conf.cited_signals }} 訊號有出處"{% endif %}>
+         {% if conf.cited_signals != null %}title="{{ conf.cited_signals }} 訊號有出處"{% endif %}>
       {% if conf.band == 'reliable' %}來源紮實{% elif conf.band == 'moderate' %}來源中等{% else %}今日訊號偏少{% endif %}
       {% if conf.unique_domains %} · {{ conf.unique_domains }} 域名{% endif %}
       {% if conf.citation_coverage != null %} · {{ (conf.citation_coverage * 100) | round }}% 判斷有出處{% endif %}

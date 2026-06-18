@@ -96,6 +96,9 @@ function* iterItems(report) {
  * @returns {{band: string|null, citation_coverage: number|null, cited_signals?: string, unique_domains: number, source_tier?: number}}
  */
 export function computeConfidence(report, idSpace) {
+  if (!report || typeof report !== 'object') {
+    return { band: null, citation_coverage: null, unique_domains: 0 };
+  }
   const prefixSpace = new Set();
   for (const id of idSpace ?? []) prefixSpace.add(idPrefix(id));
 
@@ -134,7 +137,7 @@ export function computeConfidence(report, idSpace) {
   }
 
   const result = { band, citation_coverage: coverage, unique_domains: uniqueDomains };
-  if (citedStr) result.cited_signals = citedStr;
+  if (citedStr !== undefined) result.cited_signals = citedStr;
   if (sourceTier !== null) result.source_tier = sourceTier;
   return result;
 }

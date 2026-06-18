@@ -99,6 +99,13 @@ describe('computeConfidence — source_tier', () => {
   });
 });
 
+describe('computeConfidence — null/garbage input guard', () => {
+  it('returns a null band and does not throw on a null/garbage report', () => {
+    expect(() => computeConfidence(null, new Set())).not.toThrow();
+    expect(computeConfidence(null, new Set()).band).toBeNull();
+  });
+});
+
 describe('computeConfidence — band', () => {
   it('reliable: coverage >= 0.7 and domains >= 10', () => {
     const r = report({ focus: [sig('f', ['discoveries.rising.0:foo/bar'])], pulse: domainsN(10) });
