@@ -337,6 +337,40 @@ describe('composeReport', () => {
     expect(report.meta.confidence.unique_domains).toBeTypeOf('number');
   });
 
+  it('always attaches meta.lint, and flows a slug leak through to a finding', async () => {
+    const editorial = fixtureEditorial({
+      signals: {
+        focus: [
+          {
+            id: 'sig.focus.0',
+            title: 's',
+            body: '見 arc-anthropic-vertical-integration 的脈絡',
+            audience: 'general',
+            source_links: ['discoveries.rising.0:foo/bar'],
+          },
+        ],
+        predictions: [],
+      },
+    });
+    const report = await composeReport({
+      editorial,
+      curated: fixtureCurated(),
+      themeName: 'ai-builder',
+    });
+    expect(report.meta.lint).toBeDefined();
+    expect(report.meta.lint.findings.some((f) => f.check === 'slug_leak')).toBe(true);
+    expect(report.meta.lint.counts.slug_leak).toBeGreaterThanOrEqual(1);
+  });
+
+  it('attaches meta.lint with no findings for clean editorial', async () => {
+    const report = await composeReport({
+      editorial: fixtureEditorial(),
+      curated: fixtureCurated(),
+      themeName: 'ai-builder',
+    });
+    expect(report.meta.lint.findings).toEqual([]);
+  });
+
   it('composes the discoveries section, re-attaching funnel signals from staging', async () => {
     const curated = fixtureCurated();
     curated.discoveries = {
