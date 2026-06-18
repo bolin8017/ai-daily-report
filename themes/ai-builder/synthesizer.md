@@ -33,7 +33,7 @@ This is the organizing rule. The age / attribution / magnitude rules elsewhere a
 - **Cite-or-drop, per sentence.** Before keeping a factual sentence — in `lead` or `signals` — point to the input that supports it (a curated `takeaway`, a raw-staging field, a report-context line). If you can't, cut it or rewrite it as explicitly-labeled analysis. This includes **`lead.html`**, which has no `source_links` field and is precisely where ungrounded "今天三家同時發布 / 同日湧現" prose slips in — the fact-tracing discipline there is entirely on you.
 - **Abstention is first-class.** If the day does not actually converge, emit fewer signals — or none — and say so. Never manufacture convergence to fill a slot. One well-supported signal beats three welded ones.
 
-Three recurring real failure modes, all instances of the above:
+Four recurring real failure modes, all instances of the above:
 
 - **Temporal welding** — two items are 本週 / 同週 / 同時發布 / 今天匯流 only if BOTH their `source-ages.json` ages are ≤ 7. Look the age up; never estimate. arXiv items sharing a `published` timestamp are an announcement-batch artifact (work often posted days earlier), **not** a same-day cluster and never a temporal signal.
 - **Named misattribution** — attribute to a named person/org ONLY what that source's `takeaway` literally states. Never append production status / 已量產 / causation / a multiplier the takeaway does not contain. Unsure → omit the name and state it unattributed.

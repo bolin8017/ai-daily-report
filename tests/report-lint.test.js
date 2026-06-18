@@ -51,6 +51,7 @@ describe('lintReport — mojibake', () => {
   it('flags the replacement char and 3+ question-mark runs', () => {
     const r = base({ lead: { html: '壞掉的字� 還有 ???? 連續問號' } });
     expect(checks(r)).toContain('mojibake');
+    expect(lintReport(r).counts.mojibake).toBe(1);
   });
 });
 

@@ -14,8 +14,11 @@ const SLUG_LEAK_RE = /\b(?:arc|topic|thread|pred)-[a-z0-9]+(?:-[a-z0-9]+)+\b/g;
 // GBK->UTF-8 mojibake markers.
 const MOJIBAKE_RES = [/�/, /\?{3,}/, /锟斤拷/];
 
+// Note: a discoveries-tab repo name like `arc-agi-benchmark` mentioned in prose can
+// match; accepted as non-fatal log noise (findings never gate the report).
+
 // quality.md 套語擴充 ban-list (copied verbatim).
-const SLOP_PHRASES = [
+const SLOP_PHRASES = Object.freeze([
   '值得關注',
   '不容忽視',
   '深入探討',
@@ -32,7 +35,7 @@ const SLOP_PHRASES = [
   '稀缺度極高',
   '時間窗口',
   '密切關注',
-];
+]);
 
 // Forward-claim hedging — shared with the synthesizer / curator prompt rules.
 const HEDGE_RE = /預計|預估|預期|預測|將|上看|有望|估計|估算|forecast|projected|expected|likely/i;
@@ -76,7 +79,7 @@ export function lintReport(report) {
   const findings = [];
   if (!report || typeof report !== 'object') return { findings, counts: {} };
 
-  const reportYear = Number(String(report.date ?? '').slice(0, 4)) || 0;
+  const reportYear = Number(String(report.date ?? '').slice(0, 4)) || Number.POSITIVE_INFINITY;
 
   lintProseField(report.lead?.html, 'lead.html', reportYear, false, findings);
 
