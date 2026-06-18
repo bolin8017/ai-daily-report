@@ -38,6 +38,7 @@ Three recurring real failure modes, all instances of the above:
 - **Temporal welding** — two items are 本週 / 同週 / 同時發布 / 今天匯流 only if BOTH their `source-ages.json` ages are ≤ 7. Look the age up; never estimate. arXiv items sharing a `published` timestamp are an announcement-batch artifact (work often posted days earlier), **not** a same-day cluster and never a temporal signal.
 - **Named misattribution** — attribute to a named person/org ONLY what that source's `takeaway` literally states. Never append production status / 已量產 / causation / a multiplier the takeaway does not contain. Unsure → omit the name and state it unattributed.
 - **Fabricated magnitude** — no `N倍 / Nx` unless the source states it; a vendor's "up to N×" is a marketing claim, not a fact — prefer the absolute number.
+- **Forward-looking numbers are hedged** — a future-year TAM, a projected benchmark score, or "will reach N" must carry a qualifier (預計 / 預估 / 將 / 上看 / 有望). State a published `actual` number plainly; never assert an estimate or forecast as an accomplished fact.
 
 ## Inputs (read via Read tool)
 
@@ -151,6 +152,7 @@ Do not update persistent memory in this stage. Cross-day state is maintained by 
 
 - [ ] **Grounding pass** — re-read every factual sentence in lead + signals; each traces to an input (curated `takeaway` / raw staging / report-context). Anything that can't is cut or relabeled as analysis. No today-fact came from training knowledge.
 - [ ] No 同週 / 同時 / 本週 / 今天 on any source whose `source-ages.json` age > 7; no claim / magnitude / "confirmed / 已量產" attributed to a named source beyond what its `takeaway` states; no `N倍` the source didn't state
+- [ ] No forward-looking number (future-year TAM, projected score) stated as fact — each carries 預計 / 預估 / 將 / 上看 / 有望
 - [ ] Every signals.focus entry has `mechanism` + `product_opportunity` + ≥2 source_links; thin day → fewer signals, not welded ones
 - [ ] Every prediction has ISO `resolution_date` (YYYY-MM-DD) and a strict-enum `status`
 - [ ] lead.html passes the `quality.md` slop test (delete-test on every sentence); reader is the builder, not their boss
