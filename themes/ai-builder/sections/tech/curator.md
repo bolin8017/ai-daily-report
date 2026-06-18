@@ -82,7 +82,7 @@ If an item from `aidaptiv` ALSO appears as a candidate in `vendor` (e.g. NVIDIA 
 
 ### Numeric magnitude discipline
 
-Do NOT put a multiplier (`N 倍` / `Nx` / "6x bandwidth") in a `takeaway` unless the source text explicitly states it AND it is plausible for the claim type. Prefer absolute figures (TB/s, GB, %, tokens/s). Treat vendor "up to N×" marketing as a claim, not a fact — paraphrase as "vendor claims up to N×", never assert it. (A wrong multiplier copied into a takeaway becomes a faithfulness-invisible error downstream — the synthesizer will faithfully repeat it.)
+Do NOT put a multiplier (`N 倍` / `Nx` / "6x bandwidth") in a `takeaway` unless the source text explicitly states it AND it is plausible for the claim type. Prefer absolute figures (TB/s, GB, %, tokens/s). Treat vendor "up to N×" marketing as a claim, not a fact — paraphrase as "vendor claims up to N×", never assert it. (A wrong multiplier copied into a takeaway becomes a faithfulness-invisible error downstream — the synthesizer will faithfully repeat it.) Forward-looking figures (next-year TAM, projected scores, "will reach N") must be hedged in the `takeaway` (預計 / 預估 / 將 / 上看 / 有望) — never state a projection as an accomplished number.
 
 ## Validation
 

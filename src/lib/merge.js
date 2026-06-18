@@ -14,6 +14,7 @@ import { buildReportSchema } from '../schemas/report.js';
 import { BENCH_LEADERBOARD_URL, benchOf } from './leaderboard-urls.js';
 import { canonicalRepoKey } from './repo-key.js';
 import { computeConfidence } from './report-confidence.js';
+import { lintReport } from './report-lint.js';
 import { listActiveSections } from './theme.js';
 
 /**
@@ -357,6 +358,23 @@ export async function composeReport({
     composed.meta = { ...(composed.meta ?? {}), confidence };
   } catch (e) {
     console.warn(`[merge] confidence band skipped (non-fatal): ${e.message}`);
+  }
+
+  // Deterministic prose linter (no LLM). Observability only; wrapped so a
+  // finding or malformed input can never abort compose. Findings → meta.lint
+  // plus one summary warn line.
+  try {
+    const lint = lintReport(composed);
+    composed.meta = { ...(composed.meta ?? {}), lint };
+    const total = Object.values(lint.counts).reduce((a, b) => a + b, 0);
+    if (total > 0) {
+      const summary = Object.entries(lint.counts)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ');
+      console.warn(`[merge] lint findings: ${summary}`);
+    }
+  } catch (e) {
+    console.warn(`[merge] report lint skipped (non-fatal): ${e.message}`);
   }
 
   // 5. Validate composed report

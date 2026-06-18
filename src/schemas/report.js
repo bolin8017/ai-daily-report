@@ -63,6 +63,15 @@ const ReportMetaSchema = z
       })
       .passthrough()
       .optional(),
+    lint: z
+      .object({
+        findings: z
+          .array(z.object({ check: z.string(), path: z.string(), snippet: z.string() }))
+          .optional(),
+        counts: z.record(z.string(), z.number().int().nonnegative()).optional(),
+      })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 
