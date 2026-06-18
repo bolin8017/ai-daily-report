@@ -53,6 +53,16 @@ const ReportMetaSchema = z
     stages: z.record(z.string(), StageUsageSchema).optional(),
     total_cost_usd: z.number().nonnegative().optional(),
     total_tokens: z.number().int().nonnegative().optional(),
+    confidence: z
+      .object({
+        band: z.enum(['reliable', 'moderate', 'thin']).nullable().optional(),
+        citation_coverage: z.number().nullable().optional(),
+        cited_signals: z.string().optional(),
+        unique_domains: z.number().int().nonnegative().optional(),
+        source_tier: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 

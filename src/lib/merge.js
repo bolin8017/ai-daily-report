@@ -13,6 +13,7 @@ import { EditorialSchema } from '../schemas/editorial.js';
 import { buildReportSchema } from '../schemas/report.js';
 import { BENCH_LEADERBOARD_URL, benchOf } from './leaderboard-urls.js';
 import { canonicalRepoKey } from './repo-key.js';
+import { computeConfidence } from './report-confidence.js';
 import { listActiveSections } from './theme.js';
 
 /**
@@ -346,6 +347,16 @@ export async function composeReport({
     if (!(k in composed) && k !== 'schema_version' && k !== 'theme') {
       composed[k] = v;
     }
+  }
+
+  // Deterministic report-level confidence band (no LLM). Observability only —
+  // wrapped so a malformed input can never abort the report (cure-don't-abort,
+  // like the dangling-link / benchmark-url cures above). idSpace from step 2.
+  try {
+    const confidence = computeConfidence(composed, idSpace);
+    composed.meta = { ...(composed.meta ?? {}), confidence };
+  } catch (e) {
+    console.warn(`[merge] confidence band skipped (non-fatal): ${e.message}`);
   }
 
   // 5. Validate composed report
