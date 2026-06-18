@@ -13,6 +13,7 @@ import { EditorialSchema } from '../schemas/editorial.js';
 import { buildReportSchema } from '../schemas/report.js';
 import { BENCH_LEADERBOARD_URL, benchOf } from './leaderboard-urls.js';
 import { canonicalRepoKey } from './repo-key.js';
+import { computeConfidence } from './report-confidence.js';
 import { listActiveSections } from './theme.js';
 
 /**
@@ -347,6 +348,12 @@ export async function composeReport({
       composed[k] = v;
     }
   }
+
+  // Deterministic report-level confidence band (no LLM, fail-soft). Always
+  // attached so the signal is present even on a meta-less run; observability
+  // only, never gating. idSpace was built in step 2 above.
+  const confidence = computeConfidence(composed, idSpace);
+  composed.meta = { ...(composed.meta ?? {}), confidence };
 
   // 5. Validate composed report
   const reportSchema = await buildReportSchema(themeName);

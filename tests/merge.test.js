@@ -310,13 +310,31 @@ describe('composeReport', () => {
     expect(report.meta.stages.synthesize.num_turns).toBe(9);
   });
 
-  it('omits meta entirely when none is provided', async () => {
+  it('always attaches meta.confidence, even when no usage meta is provided', async () => {
     const report = await composeReport({
       editorial: fixtureEditorial(),
       curated: fixtureCurated(),
       themeName: 'ai-builder',
     });
-    expect(report.meta).toBeUndefined();
+    expect(report.meta).toBeDefined();
+    expect(report.meta.confidence).toBeDefined();
+    // The fixture has one focus signal citing a real curated id → fully cited.
+    expect(report.meta.confidence.cited_signals).toBe('1/1');
+    // No usage meta was supplied, so cost/stages stay absent.
+    expect(report.meta.total_cost_usd).toBeUndefined();
+    expect(report.meta.stages).toBeUndefined();
+  });
+
+  it('attaches confidence alongside a provided usage meta block', async () => {
+    const report = await composeReport({
+      editorial: fixtureEditorial(),
+      curated: fixtureCurated(),
+      themeName: 'ai-builder',
+      meta: { model: 'claude-sonnet-4-6', total_cost_usd: 0.42 },
+    });
+    expect(report.meta.total_cost_usd).toBeCloseTo(0.42);
+    expect(['reliable', 'moderate', 'thin', null]).toContain(report.meta.confidence.band);
+    expect(report.meta.confidence.unique_domains).toBeTypeOf('number');
   });
 
   it('composes the discoveries section, re-attaching funnel signals from staging', async () => {
