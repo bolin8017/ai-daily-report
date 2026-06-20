@@ -67,8 +67,19 @@ export function satisfied(
       return { satisfied: true, reason: 'ok' };
     }
     case 'editorial-audited': {
-      const editorial = readJson(path.join(stagingDir, 'editorial.json'));
+      const p = path.join(stagingDir, 'editorial.json');
+      const editorial = readJson(p);
       if (editorial === undefined) return { satisfied: false, reason: 'missing' };
+      // Staleness anchor (mirrors report-for-day): a leftover editorial from a
+      // PRIOR run still carries its faithfulness key, but THIS run's synthesize
+      // will overwrite it un-audited. Without anchoring to the run's metadata
+      // mtime, content-presence alone wrongly marks faithfulness satisfied — so
+      // it gets skipped every other day and ships an un-audited editorial.
+      const anchorMtime = mtimeMs(anchor);
+      const m = mtimeMs(p);
+      if (anchorMtime !== null && m !== null && m < anchorMtime) {
+        return { satisfied: false, reason: 'stale' };
+      }
       return editorial.faithfulness != null
         ? { satisfied: true, reason: 'ok' }
         : { satisfied: false, reason: 'unaudited' };

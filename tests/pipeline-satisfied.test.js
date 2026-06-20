@@ -84,6 +84,27 @@ describe('satisfied — faithfulness (editorial-audited)', () => {
     );
     expect(satisfied('faithfulness', opts())).toEqual({ satisfied: true, reason: 'ok' });
   });
+  it('ok when audit exists and editorial is newer than metadata', () => {
+    meta(1000);
+    writeAt(
+      path.join(staging, 'editorial.json'),
+      JSON.stringify({ faithfulness: { flagged: [] } }),
+      2000,
+    );
+    expect(satisfied('faithfulness', opts())).toEqual({ satisfied: true, reason: 'ok' });
+  });
+  it('stale when a prior-run editorial carries an audit but predates this run', () => {
+    // A leftover editorial from yesterday still has its faithfulness key, but
+    // this run's synthesize will overwrite it un-audited. The audit must re-run,
+    // so editorial older than the metadata anchor counts as unsatisfied.
+    meta(2000);
+    writeAt(
+      path.join(staging, 'editorial.json'),
+      JSON.stringify({ faithfulness: { flagged: [] } }),
+      1000,
+    );
+    expect(satisfied('faithfulness', opts())).toEqual({ satisfied: false, reason: 'stale' });
+  });
   it('unaudited when editorial lacks the audit block', () => {
     writeFileSync(path.join(staging, 'editorial.json'), JSON.stringify({ lead: {} }));
     expect(satisfied('faithfulness', opts())).toEqual({ satisfied: false, reason: 'unaudited' });
