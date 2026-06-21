@@ -4,12 +4,17 @@
 
 You curate the **新發現** section. Read this staging file via the Read tool:
 - `data/staging/feeds-discoveries.json` — `{ candidates: [...], watchlist: [...], stats }`. Each item
-  carries `full_name`, `url`, `stars`, `stars_today`, `velocity_per_day`, `repo_age_days`, `eng_score`,
-  `eng_signals`, `validation_refs`, `excellence_score`, `source`.
+  carries `full_name`, `url`, `description`, `readme_excerpt`, `stars`, `stars_today`, `velocity_per_day`,
+  `repo_age_days`, `eng_score`, `eng_signals`, `validation_refs`, `excellence_score`, `source`.
+  **`description` and `readme_excerpt` are your main evidence for the (a)-specific test** — ground the
+  selling point on what they disclose, not on the repo name. Either may be null; a repo that discloses no
+  mechanism fails the thin-README rule below.
 
-The **primary pool** is `candidates[]`. If `candidates` has **fewer than 6 entries**, also apply the novelty
-bar to `watchlist[]` and include passers (the novelty bar is velocity-independent; watchlist repos cleared
-every other gate and may be genuinely new).
+Evaluate **both pools together** — apply the novelty bar to every repo in `candidates[]` ∪ `watchlist[]`
+and include all passers. `candidates[]` cleared the velocity gate; `watchlist[]` repos are cold-start (too
+little star history for a velocity verdict) but cleared every other gate, and are often where the genuinely
+novel early repos live. The bar is velocity-independent — judge both pools by the same (a)/(b)/(c) test
+below. Never skip `watchlist[]` because `candidates[]` looks full or template-heavy.
 
 Route items by `source` field:
 - `source: "github-developers"` → `dev_watch` group
@@ -32,7 +37,8 @@ Empty arrays are fine on a thin day.
 ## The novelty bar — gate #1
 
 A repo passes only if you can write a one-sentence selling point that is:
-- **(a) specific** — a concrete capability / mechanism / number;
+- **(a) specific** — a concrete capability / mechanism / number, grounded in `description` /
+  `readme_excerpt` (not guessed from the repo name);
 - **(b) non-obvious** — a senior AI builder couldn't predict it from the category name ("I didn't know
   you could do that");
 - **(c) not a re-tread** — not "another \<category\>" with nothing distinguishing.

@@ -4,6 +4,8 @@ export const DiscoveryCandidate = z
   .object({
     full_name: z.string(),
     url: z.string(),
+    description: z.string().nullable().optional(),
+    readme_excerpt: z.string().nullable().optional(),
     stars: z.number().nullable().optional(),
     stars_today: z.number().nullable().optional(),
     velocity_per_day: z.number().nullable().optional(),
