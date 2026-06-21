@@ -44,7 +44,7 @@ async function getFollowerCount(octokit, login) {
   }
 }
 
-async function processUser(octokit, cutoffMs, login, region) {
+export async function processUser(octokit, cutoffMs, login, region) {
   const repo = await getNewestRepo(octokit, login);
   if (!repo?.created_at) return null;
 
@@ -68,6 +68,7 @@ async function processUser(octokit, cutoffMs, login, region) {
     language: repo.language || null,
     stars: repo.stargazers_count || 0,
     created_at: repo.created_at,
+    pushed_at: repo.pushed_at,
     created_hours_ago: Math.floor((Date.now() - repoMs) / (60 * 60 * 1000)),
     readme_excerpt: readmeExcerpt,
     forks: repo.forks_count ?? 0,
