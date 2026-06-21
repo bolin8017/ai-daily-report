@@ -104,6 +104,8 @@ export async function buildDiscoveries({
       watchlist.push({
         full_name: fullName,
         url: item.url ?? `https://github.com/${fullName}`,
+        description: item.description ?? null,
+        readme_excerpt: item.readme_excerpt ?? null,
         stars: item.stars ?? null,
         stars_today: item.stars_today ?? null,
         velocity_per_day: vstats.perDay,
@@ -151,6 +153,8 @@ export async function buildDiscoveries({
     candidates.push({
       full_name: fullName,
       url: item.url ?? `https://github.com/${fullName}`,
+      description: item.description ?? null,
+      readme_excerpt: item.readme_excerpt ?? null,
       stars: item.stars ?? null,
       stars_today: item.stars_today ?? null,
       velocity_per_day: vstats.perDay,

@@ -173,3 +173,53 @@ it('enriches the top survivors with behavioral signals and recomputes the score'
   expect(c.downloads).toBe(8000);
   expect(c.excellence_score).not.toBe(p2Score);
 });
+
+it('carries description and readme_excerpt onto candidates and watchlist for the novelty judge', async () => {
+  const out = await buildDiscoveries({
+    items: [
+      {
+        ...base,
+        full_name: 'o/fast',
+        url: 'https://github.com/o/fast',
+        stars: 200,
+        description: 'signs every MCP tool call against a capability manifest',
+        readme_excerpt: 'detailed mechanism writeup',
+      },
+      {
+        ...base,
+        full_name: 'o/new',
+        url: 'https://github.com/o/new',
+        stars: 40,
+        description: 'brand-new constrained-decoding KG extractor',
+        readme_excerpt: 'early readme',
+      },
+    ],
+    history: {
+      'o/fast': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 50 },
+          { date: '2026-06-15', stars: 200 },
+        ],
+      },
+      'o/new': {
+        first_seen: '2026-06-14',
+        snapshots: [
+          { date: '2026-06-14', stars: 30 },
+          { date: '2026-06-15', stars: 40 },
+        ],
+      },
+    },
+    feedItems: [],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+
+  const fast = out.candidates.find((c) => c.full_name === 'o/fast');
+  expect(fast.description).toBe('signs every MCP tool call against a capability manifest');
+  expect(fast.readme_excerpt).toBe('detailed mechanism writeup');
+
+  const fresh = out.watchlist.find((w) => w.full_name === 'o/new');
+  expect(fresh.description).toBe('brand-new constrained-decoding KG extractor');
+});
