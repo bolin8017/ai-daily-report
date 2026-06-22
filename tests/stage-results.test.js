@@ -67,10 +67,34 @@ describe('summarizeStages', () => {
     );
     const s = summarizeStages(records);
     expect(s.retried).toEqual(['curate.market']);
+    expect(s.attempted).toEqual(['curate.market']); // attempted ⊇ retried
     expect(s.failed).toEqual([]); // latest curate.market is ok
     expect(s.byStage['curate.market'].status).toBe('ok');
     // total cost sums ALL attempts including the failed first one
     expect(s.totalCostUsd).toBeCloseTo(0.53);
+  });
+
+  it('flags a retry that was attempted but never recovered (failed twice)', () => {
+    // The 2026-06-22 shape: synthesize failed, auto-recover retried, failed again.
+    const records = parseStageResults(
+      [
+        line('synthesize', 'failed'),
+        line('synthesize', 'failed'), // the one auto-recover retry, also failed
+        line('merge', 'blocked'),
+      ].join('\n'),
+    );
+    const s = summarizeStages(records);
+    expect(s.attempted).toEqual(['synthesize']); // the retry WAS attempted
+    expect(s.retried).toEqual([]); // ...but it never recovered
+    expect(s.failed).toContain('synthesize');
+  });
+
+  it('does not flag a single failure (no retry) as attempted', () => {
+    const records = parseStageResults(
+      [line('synthesize', 'failed'), line('merge', 'blocked')].join('\n'),
+    );
+    const s = summarizeStages(records);
+    expect(s.attempted).toEqual([]);
   });
 });
 
@@ -84,5 +108,16 @@ describe('formatStageSummary', () => {
     expect(text).toMatch(/✗ curate\.market: failed — boom/);
     expect(text).toMatch(/· collect: ok/);
     expect(text).toMatch(/total: \$0\.0000/);
+  });
+
+  it('notes a retry that was attempted but failed (distinct from recovered)', () => {
+    const records = parseStageResults(
+      [line('synthesize', 'failed'), line('synthesize', 'failed'), line('merge', 'blocked')].join(
+        '\n',
+      ),
+    );
+    const text = formatStageSummary(summarizeStages(records));
+    expect(text).toMatch(/retry attempted \(failed\): synthesize/);
+    expect(text).not.toMatch(/auto-recovered:/); // it never recovered
   });
 });

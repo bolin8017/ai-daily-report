@@ -105,6 +105,12 @@ export function renderFailure(latest) {
     latest.recovery?.retried?.length
       ? `auto-recovered: ${latest.recovery.retried.join(', ')}`
       : null,
+    (() => {
+      const failedRetries = (latest.recovery?.attempted ?? []).filter(
+        (s) => !(latest.recovery?.retried ?? []).includes(s),
+      );
+      return failedRetries.length ? `retry attempted (failed): ${failedRetries.join(', ')}` : null;
+    })(),
     `log: ${latest.log_file ?? '?'}`,
     '--- stage summary ---',
     renderStages(latest.stages),
@@ -311,7 +317,7 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
     log_file: logFile,
     skip_push: Boolean(skipPush),
     stages: {},
-    recovery: { retried: [] },
+    recovery: { attempted: [], retried: [] },
     publish: { attempted: false, report_present_remote: null, dispatch_rc: null },
     rc: { run: null, validate: null, remote: null, dispatch: null, final: null },
   };
@@ -327,6 +333,7 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
   // Parse what the sequencer emitted for observability.
   const summary = summarizeStages(parseStageResults(readFileSync(logFile, 'utf8')));
   base.stages = summary.byStage;
+  base.recovery.attempted = summary.attempted;
   base.recovery.retried = summary.retried;
   base.repo_run_id = summary.runId;
   base.rc.run = runRc;

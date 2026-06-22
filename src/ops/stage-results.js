@@ -42,18 +42,27 @@ const RECOVERED = new Set(['ok', 'degraded', 'suspicious-empty', 'skipped']);
 
 /**
  * Summarize parsed records: the latest status per stage, totals, and which
- * stages failed / degraded / were auto-recovered (failed earlier, fine later).
+ * stages failed / degraded / had a retry attempted / were auto-recovered.
+ *
+ * `attempted` = a stage that failed at least once and then has any later record
+ * (the auto-recover retry ran, regardless of outcome). `retried` ⊆ `attempted`
+ * and narrows to the ones that recovered (failed earlier, fine later). The split
+ * matters for triage: a doomed retry (failed twice, like the 2026-06-22 529)
+ * shows in `attempted` but not `retried`, so the state file reveals the one
+ * retry was already spent without grepping the run log.
  *
  * @param {Array<object>} records  output of parseStageResults
  * @returns {{byStage: object, order: string[], failed: string[], degraded: string[],
- *   retried: string[], totalCostUsd: number, totalTokens: number, runId: string|null,
- *   lastStage: string|null}}
+ *   attempted: string[], retried: string[], totalCostUsd: number, totalTokens: number,
+ *   runId: string|null, lastStage: string|null}}
  */
 export function summarizeStages(records) {
   const latest = new Map();
   let totalCostUsd = 0;
   let totalTokens = 0;
   const seenFailed = new Set();
+  const everFailed = new Set();
+  const attempted = new Set();
   const retried = new Set();
   for (const r of records) {
     latest.set(r.stage, r);
@@ -61,8 +70,13 @@ export function summarizeStages(records) {
     // included in total spend, not just its final attempt.
     totalCostUsd += typeof r.cost_usd === 'number' ? r.cost_usd : 0;
     totalTokens += typeof r.tokens === 'number' ? r.tokens : 0;
-    if (r.status === 'failed') seenFailed.add(r.stage);
-    else if (seenFailed.has(r.stage) && RECOVERED.has(r.status)) {
+    // A record for a stage that already failed on a PRIOR record means the
+    // auto-recover retry ran — count it regardless of this record's outcome.
+    if (everFailed.has(r.stage)) attempted.add(r.stage);
+    if (r.status === 'failed') {
+      everFailed.add(r.stage);
+      seenFailed.add(r.stage);
+    } else if (seenFailed.has(r.stage) && RECOVERED.has(r.status)) {
       retried.add(r.stage);
       seenFailed.delete(r.stage);
     }
@@ -86,6 +100,7 @@ export function summarizeStages(records) {
     order: [...latest.keys()],
     failed,
     degraded,
+    attempted: [...attempted],
     retried: [...retried],
     totalCostUsd,
     totalTokens,
@@ -104,6 +119,8 @@ export function formatStageSummary(summary) {
   const lines = [];
   if (summary.runId) lines.push(`repo_run_id: ${summary.runId}`);
   if (summary.retried.length) lines.push(`auto-recovered: ${summary.retried.join(', ')}`);
+  const failedRetries = (summary.attempted ?? []).filter((s) => !summary.retried.includes(s));
+  if (failedRetries.length) lines.push(`retry attempted (failed): ${failedRetries.join(', ')}`);
   for (const stage of summary.order) {
     const s = summary.byStage[stage];
     const mark = BAD.has(s.status) ? '✗' : WARN.has(s.status) ? '!' : '·';

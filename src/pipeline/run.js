@@ -121,6 +121,17 @@ function classify(stage, res, { rawSatisfied, stagingDir, dryRun }) {
 
 // ---- orchestration core (pure; runStage/satisfiedFn/emit injectable) ------
 
+// Default wait before the single auto-recover retry. A transient API overload
+// (e.g. synthesize 529) routinely outlasts an immediate back-to-back retry, so
+// the one retry is more useful after a pause. Tunable via env (minutes); tests
+// inject retryDelayMs/sleep to stay instant.
+const DEFAULT_RETRY_DELAY_MS = 30 * 60_000;
+function resolveRetryDelayMs() {
+  const min = Number(process.env.AUTORECOVER_RETRY_DELAY_MIN);
+  return Number.isFinite(min) && min >= 0 ? min * 60_000 : DEFAULT_RETRY_DELAY_MS;
+}
+const realSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function runPipeline({
   today,
   stagingDir = 'data/staging',
@@ -131,6 +142,8 @@ export async function runPipeline({
   acceptMissing = [],
   dryRun = false,
   autoRecover = false,
+  retryDelayMs = resolveRetryDelayMs(),
+  sleep = realSleep,
   runStage = spawnStage,
   satisfiedFn = defaultSatisfied,
   emit = emitLine,
@@ -263,6 +276,12 @@ export async function runPipeline({
       }
       for (const id of toReset) {
         if (UNAVAILABLE.has(state.get(id))) state.set(id, 'pending');
+      }
+      if (retryDelayMs > 0) {
+        console.error(
+          `[run.js] auto-recover: waiting ${Math.round(retryDelayMs / 60_000)}m before retry`,
+        );
+        await sleep(retryDelayMs);
       }
       console.error(`[run.js] auto-recover: retrying ${targets.join(', ')} (+ downstream)`);
       await settle();
