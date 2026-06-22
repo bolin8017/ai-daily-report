@@ -202,6 +202,7 @@ Optional:
 - `HOT_DAYS` — default `60`. Reports newer than this stay on the `data` branch; older ones archive monthly to GitHub Releases.
 - `HYDRATE_MONTHS` — default `12`. How many months of archived reports the CI build pulls back from Releases.
 - `AA_API_KEY` — Artificial Analysis Intelligence Index API key (free tier, ~100 req/day). Sent as `x-api-key` by the leaderboard fetcher. Leave empty to skip that board (fail-soft; all other leaderboards need no key).
+- `AUTORECOVER_RETRY_DELAY_MIN` — default `30`. Minutes the sequencer (`src/pipeline/run.js --auto-recover`) waits before its single retry of a failed retryable stage (e.g. synthesize). A transient API 529/overload usually outlasts an immediate back-to-back retry, so the one retry waits this long first (in-process). Set `0` to retry immediately (pre-2026-06-22 behavior). Retry count is unchanged — still at most one.
 
 See `.env.example` for all variables.
 

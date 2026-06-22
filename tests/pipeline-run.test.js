@@ -224,6 +224,7 @@ function recoverHarness({ failTimes = {}, alwaysFail = [] } = {}) {
         runStage,
         satisfiedFn: (id) => ({ satisfied: sat.has(id) }),
         emit: (r) => emitted.push(r),
+        retryDelayMs: 0, // keep the retry instant in tests unless a case overrides
         ...opts,
       }),
   };
@@ -267,6 +268,49 @@ describe('runPipeline — auto-recover', () => {
     expect(ok).toBe(false);
     expect(h.counts['curate.market']).toBe(1);
     expect(recovery.attempted).toBe(false);
+  });
+
+  it('waits the configured delay once before the single retry', async () => {
+    const h = recoverHarness({ alwaysFail: ['synthesize'] });
+    const slept = [];
+    const sleep = (ms) => {
+      slept.push(ms);
+      return Promise.resolve();
+    };
+    const { recovery } = await h.run({ autoRecover: true, retryDelayMs: 90_000, sleep });
+    expect(recovery.attempted).toBe(true);
+    expect(h.counts.synthesize).toBe(2); // delay does not change the one-retry bound
+    expect(slept).toEqual([90_000]); // slept exactly once, with the configured delay
+  });
+
+  it('does not sleep when there is nothing to retry', async () => {
+    const h = recoverHarness({ failTimes: {} }); // everything succeeds first try
+    const slept = [];
+    const sleep = (ms) => {
+      slept.push(ms);
+      return Promise.resolve();
+    };
+    await h.run({ autoRecover: true, retryDelayMs: 90_000, sleep });
+    expect(slept).toEqual([]);
+  });
+
+  it('resolves the retry delay from AUTORECOVER_RETRY_DELAY_MIN when not passed', async () => {
+    const prev = process.env.AUTORECOVER_RETRY_DELAY_MIN;
+    process.env.AUTORECOVER_RETRY_DELAY_MIN = '7';
+    try {
+      const h = recoverHarness({ alwaysFail: ['synthesize'] });
+      const slept = [];
+      const sleep = (ms) => {
+        slept.push(ms);
+        return Promise.resolve();
+      };
+      // retryDelayMs: undefined → runPipeline falls back to the env-derived default
+      await h.run({ autoRecover: true, retryDelayMs: undefined, sleep });
+      expect(slept).toEqual([7 * 60_000]);
+    } finally {
+      if (prev === undefined) delete process.env.AUTORECOVER_RETRY_DELAY_MIN;
+      else process.env.AUTORECOVER_RETRY_DELAY_MIN = prev;
+    }
   });
 });
 
