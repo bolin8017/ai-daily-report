@@ -132,6 +132,19 @@ describe('renderFailure', () => {
     expect(text).toMatch(/✗ curate\.market: failed — boom/);
     expect(text).toMatch(/· collect: ok/);
   });
+
+  it('shows the single retry was spent when it was attempted but failed (529 shape)', () => {
+    const text = renderFailure({
+      run_id: 'r1',
+      report_date: '2026-06-22',
+      rc: { final: 1, run: 1 },
+      recovery: { attempted: ['synthesize'], retried: [] },
+      log_file: '/var/log/x.log',
+      stages: { synthesize: { status: 'failed' }, merge: { status: 'blocked' } },
+    });
+    expect(text).toMatch(/retry attempted \(failed\): synthesize/);
+    expect(text).not.toMatch(/auto-recovered:/);
+  });
 });
 
 describe('renderSuccess', () => {
