@@ -1,0 +1,644 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-07-14",
+  "meta": {
+    "run_id": "5c1bf011-2371-48e3-a740-83db3354e07a",
+    "pipeline_version": "10c9ae5",
+    "generated_at": "2026-07-14T00:45:55.297Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 1033
+      },
+      "trending": {
+        "ok": true,
+        "count": 10
+      },
+      "search": {
+        "ok": true,
+        "count": 226
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 5
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 55,
+      "market": 1,
+      "tech": 4,
+      "shipped": 50
+    },
+    "degraded_sources": [
+      "lobsters"
+    ],
+    "stages": {
+      "curate.catalog": {
+        "cost_usd": 0.1254036,
+        "duration_ms": 33261,
+        "num_turns": 5,
+        "input_tokens": 31,
+        "output_tokens": 3323,
+        "cache_read_tokens": 154251,
+        "cache_creation_tokens": 74666,
+        "is_error": false,
+        "session_id": "a0306da9-e42d-47c5-a688-d48fc405c374"
+      },
+      "curate.discoveries": {
+        "cost_usd": 0.19712159999999998,
+        "duration_ms": 85983,
+        "num_turns": 5,
+        "input_tokens": 32,
+        "output_tokens": 6965,
+        "cache_read_tokens": 153126,
+        "cache_creation_tokens": 73476,
+        "is_error": false,
+        "session_id": "63b38337-280e-4c0d-84ea-fb401a59de0a"
+      },
+      "faithfulness": {
+        "cost_usd": 0.16288829999999999,
+        "duration_ms": 39731,
+        "num_turns": 1,
+        "input_tokens": 3,
+        "output_tokens": 2376,
+        "cache_read_tokens": 2131,
+        "cache_creation_tokens": 21100,
+        "is_error": false,
+        "session_id": "7a22c33a-4d8c-4665-bab2-547195911253"
+      },
+      "curate.market": {
+        "cost_usd": 0.1985473,
+        "duration_ms": 44321,
+        "num_turns": 12,
+        "input_tokens": 73,
+        "output_tokens": 2911,
+        "cache_read_tokens": 299673,
+        "cache_creation_tokens": 76976,
+        "is_error": false,
+        "session_id": "3cea266d-31c4-4a16-bd04-0539db01324e"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.17274679999999998,
+        "duration_ms": 45785,
+        "num_turns": 6,
+        "input_tokens": 42,
+        "output_tokens": 3385,
+        "cache_read_tokens": 146238,
+        "cache_creation_tokens": 70578,
+        "is_error": false,
+        "session_id": "5337a85c-fa3c-443f-a42c-bdc198e35565"
+      },
+      "curate.shipped": {
+        "cost_usd": 0.16727825000000002,
+        "duration_ms": 93973,
+        "num_turns": 6,
+        "input_tokens": 37,
+        "output_tokens": 11119,
+        "cache_read_tokens": 171975,
+        "cache_creation_tokens": 75559,
+        "is_error": false,
+        "session_id": "e0b5de0c-9650-46de-9cd2-2432ca014665"
+      },
+      "synthesize": {
+        "cost_usd": 1.3616955,
+        "duration_ms": 687140,
+        "num_turns": 14,
+        "input_tokens": 9,
+        "output_tokens": 34690,
+        "cache_read_tokens": 557095,
+        "cache_creation_tokens": 112365,
+        "is_error": false,
+        "session_id": "1456205c-bda9-4e5f-b77b-270a3a1d7012"
+      },
+      "curate.tech": {
+        "cost_usd": 0.17528699999999997,
+        "duration_ms": 66643,
+        "num_turns": 11,
+        "input_tokens": 53,
+        "output_tokens": 5312,
+        "cache_read_tokens": 282240,
+        "cache_creation_tokens": 60225,
+        "is_error": false,
+        "session_id": "cd78fdca-1aa8-49fa-831e-7852a33d05a1"
+      }
+    },
+    "total_cost_usd": 2.5609683499999996,
+    "total_tokens": 70361,
+    "confidence": {
+      "band": "moderate",
+      "citation_coverage": 1,
+      "cited_signals": "6/6",
+      "unique_domains": 8,
+      "source_tier": 0.07692307692307693
+    },
+    "lint": {
+      "findings": [
+        {
+          "check": "slop_phrase",
+          "path": "signals.focus[3].product_opportunity",
+          "snippet": "時間窗口"
+        }
+      ],
+      "counts": {
+        "slop_phrase": 1
+      }
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-07-14 — 今日重點</h3>\n<h4>Agent 記憶是生產障礙，不是優化項</h4>\n<p>三個獨立信號指向同一缺口：Cyrene-Agent 的 L0/L1/L2 分層記憶引擎、agent-memory-vault 用 Git 為真實來源管理跨 session 狀態，以及一篇近期 arXiv 預印本提出跨會話選擇性持久化機制，保留配置決策與工具使用模式、降低 token 耗用。三個專案解決的是同一件事：無狀態 LLM 呼叫讓 agent 在 demo 可行，在生產環境因失憶而瓦解。現在就挑一個記憶架構植入你的 agent pipeline；等模型廠商原生解決這個問題不是策略。</p>\n<h4>隔離先於 Agent 系統層操作權限</h4>\n<p>HN 172 分、46 則評論的 Clawk 說得直接：「給 coding agent 一個可拋棄的 Linux VM，不是你的筆電。」評論區高票討論的是沙箱在 CI 流程裡的整合方式，不是要不要用沙箱。elder-plinius/T3MP3ST 已積累 4633 星，自動化多智能體紅隊攻擊協調。兩個信號的共同前提：agent 在拿到系統層操作權之前，隔離環境是工程先決條件，不是可選的安全功能。</p>\n<h4>Apple SpeechAnalyzer 追平 Whisper：成本結構才是正題</h4>\n<p>HN 428 分、41 則評論的 Apple SpeechAnalyzer API 對比 Whisper 測試結論是效能基本持平。iOS 開發者的語音推理成本結構改了：系統原生 API 免費，準確率追平開源最優解。現在在 iOS 上使用商業語音 API 的應用，需要重新評估付費理由。</p>\n<h4>台灣 AI 供應鏈投資傳導至封測層</h4>\n<p>台積今天公告 2026 年 6 月營收新台幣 4,426 億 8,000 萬元，年增 67.9%。同日，矽品精密（日月光旗下）宣佈廠務工程合約新台幣 199 億元、設備採購新台幣 110.6 億元。AI 晶片需求已從晶圓製造傳導至封測基礎設施層；先進封裝供應的結構性擴充正在推進，是未來 12–18 個月硬體可用性風險降低的先行指標。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-agent-memory",
+        "title": "Agent 生產部署的核心障礙在記憶層，不在模型能力",
+        "body": "RAG / agent pipeline 的 demo-to-production 失敗，大部分不是模型能力問題，而是跨 session 狀態消失問題。Cyrene-Agent 的分層記憶引擎、agent-memory-vault 的 Git 真實來源設計、以及一篇近期 arXiv 預印本的選擇性持久化機制，三個獨立解法收斂到同一個診斷：無狀態 LLM 呼叫設計假設每次任務從零開始，但生產 agent 不是。",
+        "mechanism": "LLM API 的無狀態設計讓每次呼叫後工具偏好、配置決策、失敗歷史全部消失；下一次 session 必須重建上下文，導致 token 浪費和錯誤累積。外部記憶層把這個狀態持久化在 LLM 外部，讓 agent 跨 session 保持連貫性而不依賴單一超長 context window。",
+        "evidence": "Cyrene-Agent L0/L1/L2 分層記憶（148 星）；agent-memory-vault Markdown + SQLite 索引（146 星）；arXiv 2607.09493 跨 session 選擇性持久化。三個獨立方向都在解決同一層問題。",
+        "product_opportunity": "在你的 agent 工具呼叫層和 session 入口之間插入記憶適配器：記錄配置決策、工具成功率、失敗原因；下次呼叫注入摘要取代靜態系統提示。Git 作為真實來源是最低摩擦的起點，agent-memory-vault 的 Markdown + SQLite 設計可直接移植。",
+        "source_links": [
+          "discoveries.rising.1:Playa-0v0/Cyrene-Agent",
+          "discoveries.rising.4:mcncarl/agent-memory-vault",
+          "tech.models.4:arxiv-2607.09493"
+        ]
+      },
+      {
+        "id": "focus-agent-sandbox",
+        "title": "Coding agent 的信任問題本質上是隔離工程問題",
+        "body": "Clawk（HN 172 分、46 則評論）把問題說清楚：coding agent 運行在開發者本機，文件系統和 git 操作直接影響真實狀態。沙箱把風險邊界推至可拋棄的 VM，讓 agent 執行範圍從「可能搞壞你的環境」縮小到「最多搞壞這個沙箱」。T3MP3ST 4633 星的自動化紅隊協調說明這個問題的另一面：隔離環境也是安全測試的前提，不只是防護措施。",
+        "mechanism": "Agent 獲得系統層操作權是能力問題；在隔離環境裡運行是信任工程問題。兩者解耦之後，操作權限可以在沙箱內提升到最高，但爆炸半徑被限制在沙箱邊界內。這個分離讓安全審查變得有範圍可界定，不再是「要不要信任 AI」的哲學問題。",
+        "evidence": "Clawk：HN 172 分、46 則評論，高票回應討論沙箱在 CI 裡的整合方式。T3MP3ST：4633 星，自動化多智能體紅隊攻擊協調平台。",
+        "product_opportunity": "如果你的 agent pipeline 現在執行 shell 命令，立刻套一層 rootless container：Docker --network=none --cap-drop=ALL 是最小特權的零成本起點。CI 環境裡用 ephemeral VM 替代 agent 本機執行；Clawk 的設計可以直接參考。",
+        "source_links": [
+          "pulse.hn.2:hn-39862955",
+          "discoveries.rising.0:elder-plinius/T3MP3ST"
+        ]
+      },
+      {
+        "id": "focus-tool-use-benchmark",
+        "title": "Tool-use 評測正在取代語言品質成為模型選型主軸",
+        "body": "GPT-5.2 在 tau2-bench 從第 10 名躍升至第 3 名；GLM-5.2 在同一榜單進入頂級梯隊。tau2 評測的設計核心是工具呼叫序列的準確性，不是語言生成品質。Agora 論文同步提出拍賣機制為多模型 agent 分配工具，指向同一方向：tool-use reliability 是生產 agent pipeline 的關鍵瓶頸，這個維度的競爭正在加速。",
+        "mechanism": "RAG / multi-agent pipeline 的推理鏈瓶頸在工具呼叫序列的準確性，不在生成文字的流暢度。模型在複雜工具使用場景的失誤率決定整個 pipeline 的可靠性上限；語言品質評測對此沒有預測力。tau2 榜單高度動態（GPT-5.2 從 #10 跳至 #3）說明這個競爭維度還未固化，開源和閉源模型都在快速移動。",
+        "evidence": "tau2-bench：GPT-5.2 #10 → #3；GLM-5.2 進入頂級梯隊；arXiv 2607.09600 提出多模型拍賣機制，相比粗粒度函數匹配提升推理性能與成本效率。",
+        "product_opportunity": "在 multi-agent 架構裡用 tau2 評分路由工具呼叫：精確工具序列任務優先派給 tau2 高分模型，摘要和生成任務留給成本更低的選項。GLM-5.2 是開源替代方案的 tool-use 壓測起點，評估是否能在你的工具集上替換昂貴的閉源選項。",
+        "source_links": [
+          "tech.benchmarks.0:tau2-GPT-5.2",
+          "tech.models.1:zai-glm-5-2",
+          "tech.models.5:arxiv-2607.09600"
+        ]
+      },
+      {
+        "id": "focus-taiwan-capex",
+        "title": "AI 晶片需求已傳導至封測基礎設施層",
+        "body": "台積今天公告 6 月單月營收新台幣 4,426 億 8,000 萬元，年增 67.9%。同一天，矽品精密宣佈廠務工程合約 199 億元、設備採購 110.6 億元，合計 309.6 億元資本支出。供應鏈投資從晶圓代工傳導到封測層，意味著晶圓製造產能的擴增正在轉換成封裝瓶頸的解除進程，這是 AI 硬體供應結構改善的先行指標，不是同步指標。",
+        "mechanism": "AI 晶片需求先拉動晶圓代工（台積），再傳導至先進封測（CoWoS / SoIC）。封測是 HBM 堆疊和 chiplet 整合的結構性瓶頸；矽品此次投資預示封測產能將在 12–18 個月後開始增加，有助於緩解先進封裝對 AI 硬體供應的約束。",
+        "evidence": "台積 6 月 NT$4,426.8 億元年增 67.9%（MOPS 今日公告）；矽品廠務合約 NT$199 億元 + 設備採購 NT$110.6 億元（MOPS 今日公告）。",
+        "product_opportunity": "aiDAPTIV+ 的 on-device 推論路線圖依賴 DRAM / NAND 供給成本下降。封測產能擴充是這個成本曲線往下走的先行指標。現在規劃硬體採購時間窗口：12–18 個月後的採購可能比現在有更好的可用性，設定評估節點避免過早鎖定高價庫存。",
+        "source_links": [
+          "market.taiwan.0:mops-2330-20260714",
+          "market.taiwan.1:mops-3711-20260714-a",
+          "market.taiwan.2:mops-3711-20260714-b"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-apple-speech-market",
+      "title": "Apple SpeechAnalyzer 是商業語音 API 的殺手信號，不是追趕故事",
+      "body": "HN 428 分的標題是技術對比，商業信號是：Apple 系統原生語音 API 追平 Whisper 之後，iOS 開發者在商業語音 API 上的支付理由消失了核心一條。「比 Apple 原生更準確」是商業語音 API 在 iOS 上的主要差異化；這個護城河在這次測試裡縮小了。AssemblyAI、Deepgram 這類廠商的 iOS-heavy 客戶正進入一個重評窗口。",
+      "mechanism": "蘋果原生 API 免費、低延遲、無網路傳輸（隱私合規優勢）。一旦準確率追平 Whisper，對 iOS-heavy 應用來說，切換的理由從「性能」變成「省成本 + 更簡單」。商業語音 API 的 iOS 客戶流失從大客戶重評開始，以新 app 不採用結束。這個過程不需要 Apple 正式宣告，只需要開發者社群自行驗證。",
+      "evidence": "HN 428 分、41 則評論：Apple SpeechAnalyzer API 對比 Whisper 效能追平。",
+      "product_opportunity": "如果你的 iOS 應用現在使用 Whisper 或商業語音 API：立刻在測試環境跑 SpeechAnalyzer 對比，確認是否可替換。可以的話設定 feature flag，等 SpeechAnalyzer 正式 GA 時直接切換——每月節省的 API 費用是直接的 margin 改善，不需要等競爭對手的反應。",
+      "source_links": [
+        "pulse.hn.0:hn-39856782"
+      ]
+    },
+    "contrarian": {
+      "id": "contrarian-chinese-models-tool-use",
+      "title": "中文開源 MoE 將在 12 個月內拿下 tau2 前三，市場低估了這條路線的速度",
+      "body": "共識是 Claude、GPT 系列主導 agent 工具使用評測。反向觀點：GLM-5.2 已進入 tau2 頂級梯隊，而 tau2 的榜單設計讓 tool-use fine-tuning 投入比 pretraining 規模更決定結果。中文開源 MoE 在這條路線上的速度比市場估計的快，且 tau2 本身高度動態（GPT-5.2 從 #10 躍至 #3 就是先例）。",
+      "mechanism": "Tool-use fine-tuning 對計算規模的依賴明顯低於 pretraining；能夠大量收集和標記工具呼叫軌跡的團隊，可以在算力規模差距未消除的情況下達到近前沿效果。這個路線對資源約束更友善，比語言理解和推理能力追趕更快。",
+      "evidence": "GLM-5.2 在 tau2 工具使用評測進入頂級梯隊；GPT-5.2 從 #10 躍至 #3 顯示 tau2 榜單位置非固化，提供了開源模型的進入空間。",
+      "source_links": [
+        "tech.models.1:zai-glm-5-2",
+        "tech.benchmarks.0:tau2-GPT-5.2"
+      ],
+      "resolution_date": "2027-01-14",
+      "verification": "2027-01-14 前，至少一個中文開源模型（GLM / Qwen / DeepSeek 任一系列）在 tau2-bench 保持前三位置連續 ≥30 天，即為此觀點成立。"
+    },
+    "predictions": [
+      {
+        "id": "pred-20260714-1",
+        "text": "GPT-5.2 在 tau2-bench 保持前三名位置超過 90 天，至 2026-10-14 仍在前三。",
+        "resolution_date": "2026-10-14",
+        "status": "pending",
+        "rationale": "從 #10 躍至 #3 是顯著進步，但 tau2 榜單高度動態；90 天是合理的穩定性測試視窗。"
+      },
+      {
+        "id": "pred-20260714-2",
+        "text": "Apple 將在 2026 年底前讓 SpeechAnalyzer API 支援一般第三方 iOS 開發者無需特殊資格申請即可存取。",
+        "resolution_date": "2027-01-01",
+        "status": "pending",
+        "rationale": "基準表現已追平 Whisper；公開 GA 是商業邏輯的自然延伸，但 Apple 習慣分階段開放，時間點有不確定性。"
+      },
+      {
+        "id": "pred-20260714-3",
+        "text": "AWS、Azure、GCP 或 Anthropic 中至少一家，將在 2026 年底前宣布托管式多 agent 持久記憶服務的正式 GA，含跨 session 狀態 API。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "記憶缺口已形成三個獨立開源解法；超大型雲服務商通常在開源方案成熟後 6–12 個月推出托管版本。"
+      },
+      {
+        "id": "pred-20260714-4",
+        "text": "台積 FY2026 全年合併營收預計將超過新台幣 5 兆元。",
+        "resolution_date": "2027-03-31",
+        "status": "pending",
+        "rationale": "6 月單月 NT$4,426.8 億元年增 67.9%；按此速率年化約 NT$5.3 兆元，超過 NT$5 兆元有相當緩衝。待 2027 年 Q1 全年財報公告時驗證。"
+      },
+      {
+        "id": "pred-20260714-5",
+        "text": "2027-01-01 前，至少一個中文開源模型（GLM / Qwen / DeepSeek 任一系列）在 tau2-bench 保持前三位置連續 ≥30 天。",
+        "resolution_date": "2027-01-01",
+        "status": "pending",
+        "rationale": "GLM-5.2 已進入 tau2 頂級梯隊；tool-use fine-tuning 對計算規模依賴低，中文開源團隊在這條路線的進展速度超出市場預期。"
+      },
+      {
+        "id": "pred-20260714-6",
+        "text": "2027-01-01 前，VS Code、JetBrains 或 Cursor 中至少一個主要 IDE 將原生整合沙箱化 coding agent，支援隔離 VM 或 ephemeral container 執行，無需手動設定。",
+        "resolution_date": "2027-01-01",
+        "status": "pending",
+        "rationale": "Clawk 的 HN 高分（172 分、46 則）顯示開發者對沙箱 agent 的需求已足夠強烈；IDE 廠商通常在工具熱度達到這個層級後 6–12 個月跟進原生支援。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:elder-plinius/T3MP3ST",
+        "audience": "work",
+        "url": "https://github.com/elder-plinius/T3MP3ST",
+        "name": "elder-plinius/T3MP3ST",
+        "stars": 4633,
+        "language": null,
+        "relevance": "自主化紅隊攻擊協調平台，多智能體對抗機制可直接用於滲透測試自動化。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 374.75,
+        "repo_age_days": 11,
+        "eng_score": 5,
+        "excellence_score": 0.7366666666666666,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.1:Playa-0v0/Cyrene-Agent",
+        "audience": "both",
+        "url": "https://github.com/Playa-0v0/Cyrene-Agent",
+        "name": "Playa-0v0/Cyrene-Agent",
+        "stars": 148,
+        "language": null,
+        "relevance": "L0/L1/L2 分層記憶引擎 + DMAE Worldbook，桌面 AI 智能體記憶架構可移植到其他應用。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 21,
+        "repo_age_days": 7,
+        "eng_score": 5,
+        "excellence_score": 0.4171666666666667,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.7:Sahir619/fable-method",
+        "audience": "work",
+        "url": "https://github.com/Sahir619/fable-method",
+        "name": "Sahir619/fable-method",
+        "stars": 347,
+        "language": null,
+        "relevance": "Fable Workflow 的 think-act-prove 結構可移植，內含評估環節讓任何模型執行驗證邏輯。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 62.333333333333336,
+        "repo_age_days": 7,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:Moore-developers/moore-wechat-article-downloader",
+        "audience": "general",
+        "url": "https://github.com/Moore-developers/moore-wechat-article-downloader",
+        "name": "Moore-developers/moore-wechat-article-downloader",
+        "stars": 253,
+        "language": null,
+        "relevance": "本地優先的微信公眾號文章庫，自動提取精選評論和互動信號供 Claude Code 內容分析。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 5.666666666666667,
+        "repo_age_days": 5,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.6:herry2059/project-os-for-codex",
+        "audience": "work",
+        "url": "https://github.com/herry2059/project-os-for-codex",
+        "name": "herry2059/project-os-for-codex",
+        "stars": 83,
+        "language": null,
+        "relevance": "Codex 專用控制平面：Git 為脈絡、可見進度、MCP 权限隔離，讓多人交接工作重新可恢復。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 4,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.4:mcncarl/agent-memory-vault",
+        "audience": "work",
+        "url": "https://github.com/mcncarl/agent-memory-vault",
+        "name": "mcncarl/agent-memory-vault",
+        "stars": 146,
+        "language": null,
+        "relevance": "Git 為真實源的多智能體共享長期記憶，Markdown + SQLite 索引架構簡化跨會話狀態管理。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 1,
+        "repo_age_days": 23,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:deer-flow/llm-space",
+        "audience": "work",
+        "url": "https://github.com/deer-flow/llm-space",
+        "name": "deer-flow/llm-space",
+        "stars": 86,
+        "language": null,
+        "relevance": "逐步檢驗智能體執行路徑、可重播失敗場景的桌面調試工具，比日誌分析深一層。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 5.333333333333333,
+        "repo_age_days": 15,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.8:shure-dev/small-vlm-sop-check",
+        "audience": "both",
+        "url": "https://github.com/shure-dev/small-vlm-sop-check",
+        "name": "shure-dev/small-vlm-sop-check",
+        "stars": 42,
+        "language": null,
+        "relevance": "本地 VLM 逐幀檢驗工廠影片是否遵守 SOP，完全離線流式化，突破雲端檢測的延遲。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:awdr74100/figwright",
+        "audience": "work",
+        "url": "https://github.com/awdr74100/figwright",
+        "name": "awdr74100/figwright",
+        "stars": 105,
+        "language": null,
+        "relevance": "雙向 Figma ↔ 程式碼同步的 MCP 伺服器，設計稿變更能同步回程式碼，打破單向碼生成流程。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 25,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.9:ciddwd/overlay-translator",
+        "audience": "general",
+        "url": "https://github.com/ciddwd/overlay-translator",
+        "name": "ciddwd/overlay-translator",
+        "stars": 43,
+        "language": null,
+        "relevance": "多 OCR 引擎降級 (ML Kit/PaddleOCR/百度/騰訊) + LLM 翻譯的浮窗疊加，遊戲和視覺小說的即時翻譯解決方案。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 2,
+        "repo_age_days": 21,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": []
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-39856782",
+        "audience": "general",
+        "url": "https://get-inscribe.com/blog/apple-speech-api-benchmark.html",
+        "title": "Apple's new SpeechAnalyzer API, benchmarked against Whisper and its predecessor",
+        "score": 428,
+        "comments": 41,
+        "takeaway": "Apple 內建語音 API 效能追平開源 Whisper，推進端設備 AI 應用邊界。"
+      },
+      {
+        "id": "pulse.hn.1:hn-39850391",
+        "audience": "general",
+        "url": "https://scottwillsey.com/building-and-shipping-mac-and-ios-apps-without-ever-opening-xcode/",
+        "title": "Building and shipping Mac and iOS apps without ever opening Xcode",
+        "score": 263,
+        "comments": 45,
+        "takeaway": "AI 驅動工具改變 iOS/macOS 原生開發流程，工程師不再依賴 IDE 重型工具。"
+      },
+      {
+        "id": "pulse.hn.2:hn-39862955",
+        "audience": "work",
+        "url": "https://github.com/clawkwork/clawk",
+        "title": "Show HN: Clawk – Give coding agents a disposable Linux VM, not your laptop",
+        "score": 172,
+        "comments": 46,
+        "takeaway": "Agent 沙箱隔離方案解決安全顧慮，讓工程師安心賦予 AI 系統層操作權。"
+      },
+      {
+        "id": "pulse.hn.3:hn-39856244",
+        "audience": "general",
+        "url": "https://nobie.com/",
+        "title": "Show HN: Nobie – an Excel-compatible runtime for agents and humans",
+        "score": 73,
+        "comments": 15,
+        "takeaway": "Agent 與人類共享 Excel 介面，降低協作系統認知負擔。"
+      },
+      {
+        "id": "pulse.hn.4:hn-39850847",
+        "audience": "general",
+        "url": "https://github.com/xqlsystems/xarray-sql/blob/claude/xarray-sql-mnist-demo/benchmarks/nn.py",
+        "title": "Show HN: I implemented a neural network in SQL",
+        "score": 50,
+        "comments": 7,
+        "takeaway": "SQL 即可編譯神經網路，挑戰推理邊界條件下架構約束。"
+      },
+      {
+        "id": "pulse.hn.5:hn-39851432",
+        "audience": "work",
+        "url": "https://github.com/jbwinters/jacquard-lang",
+        "title": "Show HN: Jacquard, a programming language for AI-written, human-reviewed code",
+        "score": 39,
+        "comments": 5,
+        "takeaway": "AI 生成程式的可驗証語言，在人類審查門檻與自動化速度間平衡。"
+      }
+    ],
+    "lobsters": [],
+    "chinese_community": [],
+    "ai_bloggers": []
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-2330-20260714",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2330",
+        "title": "台積公司2026年6月營收報告",
+        "takeaway": "2026年6月營收新台幣4,426億8,000萬元，年增67.9%，反映AI晶片代工需求持續強勁。",
+        "amount": "4426.8",
+        "companies": [
+          "台灣積體電路製造股份有限公司"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-3711-20260714-a",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "矽品精密取得廠務工程合約新台幣199億元",
+        "takeaway": "日月光旗下矽品進行廠務工程投資，預示AI伺服器封測產能擴增的基礎設施準備。",
+        "amount": "199",
+        "companies": [
+          "矽品精密工業"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:mops-3711-20260714-b",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "矽品精密取得營業用機器設備新台幣110億元",
+        "takeaway": "矽品採購高階機器設備以應對AI伺服器對先進封測技術的需求成長。",
+        "amount": "110.6",
+        "companies": [
+          "矽品精密工業"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [],
+    "models": [
+      {
+        "id": "tech.models.0:tencent-hy3",
+        "audience": "general",
+        "url": "https://huggingface.co/tencent/Hy3",
+        "title": "Tencent Hy3: HunyuanVideo Evolution to Text-Generation MoE",
+        "takeaway": "Tencent 持續推進混合專家架構在通用語言模型上的應用,新一代 MoE 支援評測環境。",
+        "companies": "Tencent"
+      },
+      {
+        "id": "tech.models.1:zai-glm-5-2",
+        "audience": "general",
+        "url": "https://huggingface.co/zai-org/GLM-5.2",
+        "title": "GLM-5.2: Top-Tier MoE Model with Dual arXiv Backing",
+        "takeaway": "智谱 GLM-5.2 混合專家模型在 tau2 等工具使用基準測試進入頂級梯隊,論文支持持續積累。",
+        "companies": "Zhipu AI"
+      },
+      {
+        "id": "tech.models.2:baidu-unlimited-ocr",
+        "audience": "general",
+        "url": "https://huggingface.co/baidu/Unlimited-OCR",
+        "title": "Baidu Unlimited-OCR: Vision-Language Breakthrough in Document Understanding",
+        "takeaway": "百度無限 OCR 多語言文本識別引入視覺-語言統一表示,論文證實端到端架構優勢。",
+        "companies": "Baidu"
+      },
+      {
+        "id": "tech.models.3:nvidia-audex-30b-a3b",
+        "audience": "both",
+        "url": "https://huggingface.co/nvidia/Nemotron-Labs-Audex-30B-A3B",
+        "title": "NVIDIA Nemotron Labs Audex: Speech-Language Unified Reasoning",
+        "takeaway": "NVIDIA 推出統一音頻-語言推理模型,支援語音識別、翻譯、合成,A3B 稀疏激活降低推理成本。",
+        "companies": "NVIDIA"
+      },
+      {
+        "id": "tech.models.4:arxiv-2607.09493",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2607.09493v1",
+        "title": "Shared Selective Persistent Memory for Agentic LLM Systems",
+        "takeaway": "多輪工具使用的 AI agent 系統提出跨 session 持久化記憶機制,保留配置與工具使用模式降低 token 耗用。",
+        "companies": "Research"
+      },
+      {
+        "id": "tech.models.5:arxiv-2607.09600",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2607.09600v1",
+        "title": "Agora: Auction-Based Task Allocation for LLM Agent Reasoning",
+        "takeaway": "提出拍賣機制分配多專家模型與工具給 LLM agent,相比粗粒度函數匹配提升推理性能與成本效率。",
+        "companies": "Research"
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-GPT-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 Enters Top-5 at #3",
+        "takeaway": "GPT-5.2 在 tau2 agent 工具使用評測中從第 10 名躍升至第 3 名,進入頂級梯隊。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #3 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": []
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-07-14",
+    "flagged": [],
+    "repaired": 0
+  }
+}
