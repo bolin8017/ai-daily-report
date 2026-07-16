@@ -1,0 +1,770 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-07-16",
+  "meta": {
+    "run_id": "c619342d-65ff-4732-8c8c-6ac2168a4e0b",
+    "pipeline_version": "10c9ae5",
+    "generated_at": "2026-07-16T00:44:04.808Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 608
+      },
+      "trending": {
+        "ok": true,
+        "count": 13
+      },
+      "search": {
+        "ok": true,
+        "count": 246
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 2
+      },
+      "mops": {
+        "ok": true,
+        "count": 6
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 77,
+      "market": 0,
+      "tech": 2,
+      "shipped": 52
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.catalog": {
+        "cost_usd": 0.1254036,
+        "duration_ms": 33261,
+        "num_turns": 5,
+        "input_tokens": 31,
+        "output_tokens": 3323,
+        "cache_read_tokens": 154251,
+        "cache_creation_tokens": 74666,
+        "is_error": false,
+        "session_id": "a0306da9-e42d-47c5-a688-d48fc405c374"
+      },
+      "curate.discoveries": {
+        "cost_usd": 0.28114269999999997,
+        "duration_ms": 115901,
+        "num_turns": 9,
+        "input_tokens": 62,
+        "output_tokens": 9331,
+        "cache_read_tokens": 330417,
+        "cache_creation_tokens": 100692,
+        "is_error": false,
+        "session_id": "57ea3256-239b-4ca0-ae3e-d82e18897a2c"
+      },
+      "faithfulness": {
+        "cost_usd": 0.19912829999999998,
+        "duration_ms": 68585,
+        "num_turns": 1,
+        "input_tokens": 3,
+        "output_tokens": 4792,
+        "cache_read_tokens": 2131,
+        "cache_creation_tokens": 21100,
+        "is_error": false,
+        "session_id": "dfaa3705-cf3d-4920-9fac-60ffdfedd75c"
+      },
+      "curate.market": {
+        "cost_usd": 0.1597393,
+        "duration_ms": 31945,
+        "num_turns": 10,
+        "input_tokens": 57,
+        "output_tokens": 1227,
+        "cache_read_tokens": 291013,
+        "cache_creation_tokens": 62223,
+        "is_error": false,
+        "session_id": "19130d6c-3170-4751-b275-b78df432c05c"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.20607590000000003,
+        "duration_ms": 78475,
+        "num_turns": 10,
+        "input_tokens": 113,
+        "output_tokens": 7939,
+        "cache_read_tokens": 295179,
+        "cache_creation_tokens": 68375,
+        "is_error": false,
+        "session_id": "40654ac8-9a32-4126-9f1d-000c627f8dc7"
+      },
+      "curate.shipped": {
+        "cost_usd": 0.16727825000000002,
+        "duration_ms": 93973,
+        "num_turns": 6,
+        "input_tokens": 37,
+        "output_tokens": 11119,
+        "cache_read_tokens": 171975,
+        "cache_creation_tokens": 75559,
+        "is_error": false,
+        "session_id": "e0b5de0c-9650-46de-9cd2-2432ca014665"
+      },
+      "synthesize": {
+        "cost_usd": 1.1819739,
+        "duration_ms": 541423,
+        "num_turns": 12,
+        "input_tokens": 7,
+        "output_tokens": 30691,
+        "cache_read_tokens": 362153,
+        "cache_creation_tokens": 102157,
+        "is_error": false,
+        "session_id": "0186a03d-2ef6-49fc-9e28-b0d713522e7f"
+      },
+      "curate.tech": {
+        "cost_usd": 0.16140089999999999,
+        "duration_ms": 45893,
+        "num_turns": 8,
+        "input_tokens": 33,
+        "output_tokens": 3564,
+        "cache_read_tokens": 135459,
+        "cache_creation_tokens": 65001,
+        "is_error": false,
+        "session_id": "a3ce4214-ac87-4bc5-842e-661135a08936"
+      }
+    },
+    "total_cost_usd": 2.4821428500000002,
+    "total_tokens": 72329,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "5/5",
+      "unique_domains": 18,
+      "source_tier": 0.09090909090909091
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-07-16 — 今日重點</h3>\n<h4>量化研究越過「夠用」天花板</h4>\n<p>Prism ML 的 Ternary-Bonsai-27B 把 27B 模型壓進 32GB RAM（2-bit 三值量化）；Bonsai-27B 把 1-bit 極端量化推到同樣規模。HN 221 分的示範文章在 2013 年出廠 Xeon 上跑 Gemma 4 26B 達 5 tokens/sec，無 GPU。PalmClaw（arXiv）把同樣的推論工作流推往行動裝置。機制：memory bandwidth 是端側推論的真正上限——2-bit/1-bit 量化降低的不只是儲存空間，而是每次推理所需的 memory read 量。對 builder：32GB DRAM 設備跑量化 27B 已有多組獨立驗證，Ternary-Bonsai 值得在 aiDAPTIV+ 推論路徑上做基準測試。</p>\n<h4>tau2-bench 工具使用排行：GPT-5.2 飛升，開源 GLM-5.2 跟進</h4>\n<p>GPT-5.2 在 tau2-bench 工具使用評測從第 10 名跳到第 3 名。同一排行，Zhipu AI 的 GLM-5.2 MoE（開源，HuggingFace 489K 下載）也擠進前 5。挑 agent 後端時，tau2-bench 比 MMLU 更能預測實際工具調用成功率——那個評測針對指令遵循精確度，不是通用推理。GLM-5.2 開源意味著這個能力可以本機部署，不必付 API 費用。</p>\n<h4>Agent 狀態管理從工具問題升格為基礎設施問題</h4>\n<p>deja-vu（195 stars）把 MCP 記憶召回、機密自動掩蓋、跨流程上下文注入做成零依賴工具；Cogeto 讓 EU 主機 AI 記憶的每筆操作帶 cryptographic 簽名收據和可證明刪除。HN「Designing APIs for Agents」（40 分）指出：現有 REST API 假設無狀態調用，在多步 agent 長任務中是根本性設計衝突。狀態遺失的代價已從「使用者不方便」升級到「燒掉實際 API 費用的工作白做」。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-quantization-memory-floor",
+        "title": "端側推論的 memory 天花板往上推了一檔",
+        "body": "Prism ML Ternary-Bonsai-27B（2-bit 三值量化，32GB RAM 可運行）和 Bonsai-27B（1-bit 極端量化）從不同角度攻擊相同問題。HN 221 分文章示範 2013 年出廠 Xeon 跑 Gemma 4 26B 達 5 tokens/sec（無 GPU）。PalmClaw（arXiv）把推理工作流推往行動裝置端。四個來源跨 HuggingFace、arXiv、HN 社群，指向同一個轉折點。",
+        "mechanism": "Memory bandwidth 是端側推論的真正上限，不是算力。2-bit/1-bit 量化壓縮的不只是模型大小，更是每次推理所需的 memory read 量。在沒有 HBM 的設備上，這是讓推論速度從不可用到可用的關鍵變數。",
+        "product_opportunity": "把 Ternary-Bonsai-27B 加進 aiDAPTIV+ 的推論評估矩陣：32GB DRAM 統一記憶體架構設備跑量化 27B 已有多組驗證，值得對比當前後端做 latency / throughput 基準測試。",
+        "source_links": [
+          "tech.aidaptiv.0:huggingface-prism-ml/Ternary-Bonsai-27B",
+          "tech.aidaptiv.1:huggingface-prism-ml/Bonsai-27B",
+          "pulse.hn.2:hn-39826874",
+          "tech.models.1:arxiv-2607.13027v1"
+        ]
+      },
+      {
+        "id": "focus-tool-use-leaderboard-shift",
+        "title": "tau2-bench 工具使用排行雙洗牌：GPT-5.2 飛升、GLM-5.2 開源打進前五",
+        "body": "GPT-5.2 在 tau2-bench 工具使用排行從第 10 名跳到第 3 名。同一排行，GLM-5.2 MoE（開源，HuggingFace 489K 下載）也擠進前 5。兩個訊號從閉源和開源兩側同時收斂：tool-use 優化正在成為 model lab 的主要戰場。",
+        "mechanism": "Tool-use 性能的驅動因素是輸出格式的指令遵循精確度，不是語言理解能力。這是針對性微調可以複製的能力，不需要更大模型——這解釋了為何 GLM-5.2 MoE 開源模型能和 GPT-5.2 出現在同一前五榜上。",
+        "product_opportunity": "選 agent pipeline 後端時用 tau2-bench 排名取代 MMLU。GLM-5.2 MoE 開源且在前 5，代表高工具使用成功率的本機部署路徑已存在，值得評估是否取代部分昂貴的 API 調用。",
+        "source_links": [
+          "tech.benchmarks.0:tau2-GPT-5.2",
+          "tech.models.0:huggingface-zai-org/GLM-5.2"
+        ]
+      },
+      {
+        "id": "focus-agent-state-infrastructure",
+        "title": "Agent 狀態管理：從工具問題升格為基礎設施問題",
+        "body": "deja-vu（195 stars）把 MCP 記憶召回、機密掩蓋、跨流程上下文注入做成零依賴工具；Cogeto 給 EU 主機 AI 記憶的每筆操作加上 cryptographic 簽名收據和可證明刪除。HN「Designing APIs for Agents」（40 分）的論點：現有 REST API 假設無狀態調用，在 agent 長任務中是根本性設計衝突。三個來源從工具層、信任模型、架構三個維度收斂。",
+        "mechanism": "Agent 任務週期拉長（多輪推理、跨 session 累積），狀態遺失的代價從「使用者不方便」升級到「燒掉實際 API 費用的工作白做」。記憶管理從 product feature 變成保護運算成本的基礎設施。",
+        "product_opportunity": "在任何多步 agent pipeline 前加一層 MCP 記憶層：中斷後可恢復、相同查詢不重跑、機密不洩漏。比從頭重建 agent 框架便宜得多。",
+        "source_links": [
+          "discoveries.rising.5:vshulcz/deja-vu",
+          "discoveries.rising.7:Cogeto/cogeto",
+          "pulse.hn.3:hn-39828457"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-adaptive-cost-routing",
+      "title": "成本感知模型路由：主要 API 提供商還沒做、但每個生產 AI 團隊都需要的功能",
+      "body": "dot-loom（168 stars）在推論成本超過設定天花板或品質低於閾值時自動升級到更昂貴的模型——Sakana Fugu 風格的自適應選型。目前沒有任何主要 LLM API 提供商把這個邏輯做成 native 功能。",
+      "source_links": [
+        "discoveries.rising.4:usedotai/dot-loom"
+      ],
+      "why_asymmetric": "成本感知路由是每個在生產環境跑 AI 的工程師都會遇到的問題，但市場上沒有佔主導地位的解決方案。Anthropic、OpenAI 沒有動機優先做這個——把用戶路由到便宜模型等於降低自己的收入。這個結構性空缺在大廠填補之前是真實的市場機會，進入門檻低：包裝現有 API 加上 config 層即可。",
+      "commercial_path": "最快路徑：pip 套件包裝現有 API，加 cost ceiling 和 quality threshold config，賣 managed routing 給月花 $10K 以上在 LLM API 的工程團隊。"
+    },
+    "contrarian": {
+      "id": "contrarian-oss-tool-use-parity",
+      "source_links": [
+        "tech.benchmarks.0:tau2-GPT-5.2",
+        "tech.models.0:huggingface-zai-org/GLM-5.2"
+      ],
+      "claim": "GLM-5.2 MoE（開源）進入 tau2-bench 前 5 是趨勢訊號，不是意外。到 2026 年底，至少一個開源模型將持續保有 tau2-bench 前 3 位置。",
+      "rationale": "Tool-use 性能的驅動因素是輸出格式精確度，這是針對性微調可以複製的能力，不需要前沿規模的訓練算力。GPT-5.2 從 #10 跳 #3 的機制相同——優化的結果，不是更大模型的自然湧現。開源社群有完整的 tau2-bench 評測數據可做針對性訓練，進入門檻比通用推理低得多。共識認為閉源前沿模型在 agentic 任務上有永久優勢——這個共識低估了微調的針對性。",
+      "resolution_date": "2026-12-31"
+    },
+    "predictions": [
+      {
+        "id": "pred-glm52-hf-1m",
+        "text": "GLM-5.2 在 HuggingFace 的下載量將在 2026-09-30 前突破 100 萬次（目前 489K）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "source_links": [
+          "tech.models.0:huggingface-zai-org/GLM-5.2"
+        ]
+      },
+      {
+        "id": "pred-gpt52-tau2-top5",
+        "text": "GPT-5.2 在 2026-08-31 時仍在 tau2-bench 前 5 名（不跌出第 5 以外）。",
+        "resolution_date": "2026-08-31",
+        "status": "pending",
+        "source_links": [
+          "tech.benchmarks.0:tau2-GPT-5.2"
+        ]
+      },
+      {
+        "id": "pred-bonsai-runtime",
+        "text": "Prism ML 的 Bonsai-27B 或 Ternary-Bonsai-27B 在 2026-10-31 前被整合進 llama.cpp 或 Ollama 的官方發行版（或 merge 進主線）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "source_links": [
+          "tech.aidaptiv.0:huggingface-prism-ml/Ternary-Bonsai-27B",
+          "tech.aidaptiv.1:huggingface-prism-ml/Bonsai-27B"
+        ]
+      },
+      {
+        "id": "pred-oss-tau2-top3",
+        "text": "至少一個非 Anthropic / OpenAI / Google 的開源模型在 2026-12-31 時持有 tau2-bench 前 3 席位。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "source_links": [
+          "tech.models.0:huggingface-zai-org/GLM-5.2",
+          "tech.benchmarks.0:tau2-GPT-5.2"
+        ]
+      },
+      {
+        "id": "pred-native-cost-routing",
+        "text": "Anthropic、OpenAI、Google 三者中至少一個在 2027-03-31 前提供 native 成本感知模型路由功能（cost ceiling 自動降級到較便宜模型），不需要第三方工具。",
+        "resolution_date": "2027-03-31",
+        "status": "pending",
+        "source_links": [
+          "discoveries.rising.4:usedotai/dot-loom"
+        ]
+      },
+      {
+        "id": "pred-palmclaw-app-store",
+        "text": "PalmClaw 風格的本機行動端 LLM agent（不依賴雲端 API）在 2026-12-31 前有至少一個上架於 iOS App Store 或 Google Play 的公開 app，下載超過 1 萬次。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "source_links": [
+          "tech.models.1:arxiv-2607.13027v1"
+        ]
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:SuperJJ007/CSSwitch",
+        "audience": "work",
+        "url": "https://github.com/SuperJJ007/CSSwitch",
+        "name": "SuperJJ007/CSSwitch",
+        "stars": 365,
+        "language": null,
+        "relevance": "Claude 一鍵接入國內外 LLM（DeepSeek、通義千問、GLM、Kimi），多端點自動容錯降成本。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 13.181818181818182,
+        "repo_age_days": 13,
+        "eng_score": 2,
+        "excellence_score": 0.3314393939393939,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.1:PKU-YuanGroup/OpenAI4S",
+        "audience": "work",
+        "url": "https://github.com/PKU-YuanGroup/OpenAI4S",
+        "name": "PKU-YuanGroup/OpenAI4S",
+        "stars": 111,
+        "language": null,
+        "relevance": "Claude Science 複製品，Kernel 常駐記憶，JSON 工具編排科研流程無沙箱冷啟。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 5.875,
+        "repo_age_days": 9,
+        "eng_score": 3,
+        "excellence_score": 0.30437500000000006,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.5:vshulcz/deja-vu",
+        "audience": "work",
+        "url": "https://github.com/vshulcz/deja-vu",
+        "name": "vshulcz/deja-vu",
+        "stars": 195,
+        "language": null,
+        "relevance": "代碼智能體會話記憶庫，MCP 召回 + 機密自動掩蓋 + 跨流程上下文注入零依賴。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 1,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.9:Skyvern-AI/rustwright",
+        "audience": "work",
+        "url": "https://github.com/Skyvern-AI/rustwright",
+        "name": "Skyvern-AI/rustwright",
+        "stars": 131,
+        "language": null,
+        "relevance": "Playwright Rust 重寫，無驅動進程記憶減 70%、速度增 2.55 倍，內置 CDP 引擎。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 8,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.7:Cogeto/cogeto",
+        "audience": "work",
+        "url": "https://github.com/Cogeto/cogeto",
+        "name": "Cogeto/cogeto",
+        "stars": 140,
+        "language": null,
+        "relevance": "私密 EU 主機 AI 記憶，可檢查驗證及可證明刪除，每筆簽名收據 vs 只誓言。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 14,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.4:usedotai/dot-loom",
+        "audience": "work",
+        "url": "https://github.com/usedotai/dot-loom",
+        "name": "usedotai/dot-loom",
+        "stars": 168,
+        "language": null,
+        "relevance": "推論成本天花板 + 品質閾值觸發昂貴驗證，自適應選型減成本 Sakana Fugu 風格。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 22,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:simonlin1212/investment-news",
+        "audience": "general",
+        "url": "https://github.com/simonlin1212/investment-news",
+        "name": "simonlin1212/investment-news",
+        "stars": 147,
+        "language": null,
+        "relevance": "A股 12 大賽道資訊看板，100+ 源頭即時合成中文要點，本機 AI 無 API key 成本。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 3,
+        "repo_age_days": 18,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:s0ld13rr/pentestcode",
+        "audience": "work",
+        "url": "https://github.com/s0ld13rr/pentestcode",
+        "name": "s0ld13rr/pentestcode",
+        "stars": 70,
+        "language": null,
+        "relevance": "多智能體滲透測試框架，持久化參與狀態 + 20+ LLM 供應商協調，平行自主操作。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 24,
+        "repo_age_days": 7,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.6:tristan666666/agent-island",
+        "audience": "work",
+        "url": "https://github.com/tristan666666/agent-island",
+        "name": "tristan666666/agent-island",
+        "stars": 54,
+        "language": null,
+        "relevance": "Claude Code / Codex 伴侶 app，實時會話狀態 + 輪到你時提醒，本地無遙測。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 13,
+        "repo_age_days": 28,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.8:NimaChu/agent-wiki",
+        "audience": "work",
+        "url": "https://github.com/NimaChu/agent-wiki",
+        "name": "NimaChu/agent-wiki",
+        "stars": 75,
+        "language": null,
+        "relevance": "檔案優先智能體知識庫，Markdown 本機存儲免費 + 圖表查詢無資料庫依賴。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 15,
+        "repo_age_days": 13,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:qazbnm456/diff-sentry",
+        "audience": "work",
+        "url": "https://github.com/qazbnm456/diff-sentry",
+        "name": "qazbnm456/diff-sentry",
+        "stars": 0,
+        "language": null,
+        "relevance": "RLM 智能體分類 GitHub 變更惡意意圖，untrusted diff 分析 + SIEM 信號發射。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-39850476",
+        "audience": "general",
+        "url": "https://thinkingmachines.ai/news/introducing-inkling/",
+        "title": "Inkling: Our Open-Weights Model",
+        "score": 604,
+        "comments": 44,
+        "takeaway": "開源模型廠商推出新一代 open-weights 解決方案，以 Thinking Machines 的推理能力為核心。"
+      },
+      {
+        "id": "pulse.hn.1:hn-39831425",
+        "audience": "general",
+        "url": "https://github.com/xai-org/grok-build",
+        "title": "Grok Build is open source",
+        "score": 211,
+        "comments": 27,
+        "takeaway": "xAI 公開 Grok 建構工具，降低自研模型的工程門檻。"
+      },
+      {
+        "id": "pulse.hn.2:hn-39826874",
+        "audience": "both",
+        "url": "https://www.neomindlabs.com/2026/06/08/running-gemma-4-26b-at-5-tokens-sec-on-a-13-year-old-xeon-with-no-gpu/",
+        "title": "Running Gemma 4 26B at 5 tokens/sec on a 13-year-old Xeon with no GPU",
+        "score": 221,
+        "comments": 23,
+        "takeaway": "陳舊 CPU 硬體上實現高性能推理，凸顯高效量化的實際價值。"
+      },
+      {
+        "id": "pulse.hn.3:hn-39828457",
+        "audience": "general",
+        "url": "https://www.freestyle.sh/blog/opinion/designing-apis-for-agents",
+        "title": "Designing APIs for Agents",
+        "score": 40,
+        "comments": 7,
+        "takeaway": "Agent API 設計成為新的系統架構課題，應用層需改變介面契約。"
+      },
+      {
+        "id": "pulse.hn.4:hn-39834892",
+        "audience": "general",
+        "url": "https://github.com/cyrusNuevoDia/capn-hook",
+        "title": "Show HN: Capn-hook for coding agents – don't grep the same mystery twice",
+        "score": 26,
+        "comments": 3,
+        "takeaway": "開發者工具進化以適應 AI coding agent 工作流，避免重複查詢。"
+      },
+      {
+        "id": "pulse.hn.5:hn-39827361",
+        "audience": "general",
+        "url": "https://pullboard.dev/",
+        "title": "Show HN: Pullboard – a work queue for agents, built to run a quant desk",
+        "score": 2,
+        "comments": 0,
+        "takeaway": "Agent 工作佇列框架進入量化交易應用場景。"
+      },
+      {
+        "id": "pulse.hn.6:hn-39832456",
+        "audience": "general",
+        "url": "https://www.siegelendowment.org/wp-content/uploads/2026/07/fortune-david-siegel-open-source-ai.pdf",
+        "title": "Governments, companies, nonprofits should invest in free, open source AI [pdf]",
+        "score": 56,
+        "comments": 3,
+        "takeaway": "政策倡議強調開源 AI 的公共價值，資金流向重組進行中。"
+      },
+      {
+        "id": "pulse.hn.7:hn-39833209",
+        "audience": "both",
+        "url": "https://github.com/projectargus-cc/libargus.cc",
+        "title": "Show HN: Low-latency local LLM runner via OpenJDK Panama FFM (Java 22)",
+        "score": 26,
+        "comments": 2,
+        "takeaway": "Java 生態開始支援本地 LLM 推理，降低跨語言系統的整合成本。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-the-tower-keeps-rising",
+        "audience": "general",
+        "url": "https://lucumr.pocoo.org/2026/7/13/the-tower-keeps-rising/",
+        "title": "The Tower Keeps Rising",
+        "score": 32,
+        "takeaway": "Python 複雜度累積的長期觀察，語言進化與實用性間的張力。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-smart-appliances",
+        "audience": "general",
+        "url": "https://xeiaso.net/notes/2026/check-your-smart-tv/",
+        "title": "You should probably check on your smart appliances",
+        "score": 73,
+        "takeaway": "智慧裝置的隱私與安全風險催生新型運維責任。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-freebsd-gpl",
+        "audience": "general",
+        "url": "https://www.phoronix.com/news/FreeBSD-16-Goes-GPL-Free",
+        "title": "FreeBSD 16 Retires The Last Of Its GPL Code From Its Base System",
+        "score": 51,
+        "takeaway": "系統軟體許可策略調整，BSD 模型進一步鞏固。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-c-strings",
+        "audience": "general",
+        "url": "https://longtran2904.substack.com/p/c-strings-a-50-year-mistake",
+        "title": "C Strings: A 50-Year Mistake",
+        "score": 35,
+        "takeaway": "C 字串設計缺陷與現代語言改進的回顧。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-cpp-for-loop",
+        "audience": "general",
+        "url": "https://lzon.ca/posts/tips/cpp-for-range-init/",
+        "title": "How C++20 improved the for-loop syntax",
+        "score": 22,
+        "takeaway": "C++20 語法改進降低泛型迴圈的複雜性。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-inventing-eliza",
+        "audience": "general",
+        "url": "https://mitpress.mit.edu/9780262052481/inventing-eliza/",
+        "title": "Inventing ELIZA - How the First Chatbot Shaped the Future of AI",
+        "score": 9,
+        "takeaway": "AI 歷史追蹤，chatbot 範式的源頭與演進影響。"
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:dev-to-metrics-ai",
+        "audience": "general",
+        "url": "https://dev.to/he4rt/metricas-de-qualidade-de-software-na-era-da-ia-334o",
+        "title": "Métricas de qualidade de software na era da IA",
+        "takeaway": "AI 時代軟體品質指標的重新定義，自動化與人工檢查的平衡。"
+      },
+      {
+        "id": "pulse.chinese_community.1:dev-to-documentation",
+        "audience": "general",
+        "url": "https://dev.to/ben/the-myth-of-the-post-documentation-era-39al",
+        "title": "The Myth of the Post-Documentation Era",
+        "takeaway": "Agent 時代文件仍然關鍵，程式碼生成與可維護性需均衡。"
+      },
+      {
+        "id": "pulse.chinese_community.2:dev-to-graveyard",
+        "audience": "general",
+        "url": "https://dev.to/varshithvhegde/i-built-a-graveyard-for-my-dead-side-projects-with-ai-eulogies-a-3d-cemetery-5g0e",
+        "title": "I Built a Graveyard for My Dead Side Projects - With AI Eulogies & a 3D Cemetery",
+        "takeaway": "側專案管理的新文化形式，AI 輔助反思與整理。"
+      },
+      {
+        "id": "pulse.chinese_community.3:dev-to-youtube",
+        "audience": "general",
+        "url": "https://dev.to/sylwia-lask/8-things-developers-confidently-explain-after-watching-one-youtube-video-3jio",
+        "title": "8 Things Developers Confidently Explain After Watching One YouTube Video",
+        "takeaway": "開發者知識信心與實際深度的認知偏差，速成文化的影響。"
+      },
+      {
+        "id": "pulse.chinese_community.4:dev-to-opportunity",
+        "audience": "general",
+        "url": "https://dev.to/hemapriya_kanagala/i-finally-built-the-dev-opportunity-radar-website-1dpi",
+        "title": "I Finally Built the Dev Opportunity Radar Website ❤️",
+        "takeaway": "開發者職涯工具的自助化，市場信號聚合的新渠道。"
+      },
+      {
+        "id": "pulse.chinese_community.5:dev-to-events",
+        "audience": "general",
+        "url": "https://dev.to/he4rt/como-escolher-eventos-de-tecnologia-para-participar-55kf",
+        "title": "Como escolher eventos de tecnologia para participar",
+        "takeaway": "技術從業者參與 cost-benefit 分析，社群連結與學習成本的權衡。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:dev-to-documentation",
+        "audience": "general",
+        "url": "https://dev.to/ben/the-myth-of-the-post-documentation-era-39al",
+        "title": "The Myth of the Post-Documentation Era",
+        "takeaway": "代理驅動開發時代文件反而更重要，因為系統複雜度和隱含假設劇增。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:dev-to-graveyard",
+        "audience": "general",
+        "url": "https://dev.to/varshithvhegde/i-built-a-graveyard-for-my-dead-side-projects-with-ai-eulogies-a-3d-cemetery-5g0e",
+        "title": "I Built a Graveyard for My Dead Side Projects - With AI Eulogies & a 3D Cemetery",
+        "takeaway": "AI 輔助反思工具進入開發者日常，專案週期管理的新儀式。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:dev-to-metrics",
+        "audience": "general",
+        "url": "https://dev.to/he4rt/metricas-de-qualidade-de-software-na-era-da-ia-334o",
+        "title": "Métricas de qualidade de software na era da IA",
+        "takeaway": "AI 時代品質指標重新定義，傳統度量與新工具的適配。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:dev-to-opportunity",
+        "audience": "general",
+        "url": "https://dev.to/hemapriya_kanagala/i-finally-built-the-dev-opportunity-radar-website-1dpi",
+        "title": "I Finally Built the Dev Opportunity Radar Website ❤️",
+        "takeaway": "開發者自助工具的 weekend project，市場信號的去中介化。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:dev-to-summer-bugs",
+        "audience": "general",
+        "url": "https://dev.to/devteam/devs-big-summer-bug-smash-is-now-live-share-5000-in-cash-prizes-skateboards-and-more-across-57mk",
+        "title": "DEV's Big Summer Bug Smash is now LIVE! Share $5,000 in cash prizes, skateboards, and more across 20+ winners. 🐛🐞🪲",
+        "takeaway": "社群活動獎勵機制吸引開發者參與去中心化的品質檢測。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": []
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:anthropic-news-4a8f2c1b",
+        "audience": "general",
+        "url": "https://www.anthropic.com/news/claude-for-teachers",
+        "title": "Introducing Claude for Teachers",
+        "takeaway": "Anthropic 擴展 Claude 教育應用，為美國 K-12 教育工作者提供免費高級存取。",
+        "companies": "Anthropic"
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:huggingface-zai-org/GLM-5.2",
+        "audience": "work",
+        "url": "https://huggingface.co/zai-org/GLM-5.2",
+        "title": "GLM-5.2: Open-Source Mixture-of-Experts Model",
+        "takeaway": "GLM-5.2 MoE 開源模型在 tau2-bench 工具使用排行突破前 5，489K 下載信號顯示社群採納率高。",
+        "companies": "Zhipu AI"
+      },
+      {
+        "id": "tech.models.1:arxiv-2607.13027v1",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2607.13027v1",
+        "title": "PalmClaw: Native On-Device Agent Framework for Mobile Phones",
+        "takeaway": "行動 LLM 代理框架將推理工作流從伺服器轉向設備端，邊界計算的可行性展現新路徑。",
+        "companies": "Academia"
+      },
+      {
+        "id": "tech.models.2:huggingface-tencent/Hy3",
+        "audience": "general",
+        "url": "https://huggingface.co/tencent/Hy3",
+        "title": "Tencent Hy3: HunyuanVideo Evolution to Text-Generation MoE",
+        "takeaway": "Tencent 持續推進混合專家架構在通用語言模型上的應用，新一代 MoE 支援評測環境。",
+        "companies": "Tencent"
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-GPT-5.2",
+        "audience": "work",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 enters top-5 tool-use performance",
+        "takeaway": "GPT-5.2 在工具使用排行從 #10 飆升至 #3，反映大型模型代理能力的快速進展。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #3 ↑"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:lmarena-gemini-3.1",
+        "audience": "general",
+        "url": "https://lmarena.ai/leaderboard",
+        "title": "LMArena: Gemini 3.1 Pro advances to #8",
+        "takeaway": "Google Gemini 3.1 Pro 在綜合能力排行進階，反映大廠模型的持續迭代競速。",
+        "benchmark_changes": {
+          "new_top_5": [],
+          "rank_changes": [
+            "gemini-3.1-pro-preview: #10 → #8 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:huggingface-prism-ml/Ternary-Bonsai-27B",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf",
+        "title": "Ternary-Bonsai-27B: Extreme 2-bit Quantization for On-Device Inference",
+        "takeaway": "27B 模型 2-bit 三值量化方案，在 32GB 記憶體設備實現推理，邊界 AI 加速的突破。",
+        "companies": "Prism ML"
+      },
+      {
+        "id": "tech.aidaptiv.1:huggingface-prism-ml/Bonsai-27B",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Bonsai-27B-gguf",
+        "title": "Bonsai-27B: 1-bit Extreme Quantization",
+        "takeaway": "1-bit 極端量化在 27B 參數達成，記憶體頻寬與儲存需求的新下限。",
+        "companies": "Prism ML"
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-07-16",
+    "flagged": [],
+    "repaired": 0
+  }
+}
