@@ -1,0 +1,849 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-07-17",
+  "meta": {
+    "run_id": "8839dea2-e3fd-4cff-b768-c4836a4cc3f6",
+    "pipeline_version": "10c9ae5",
+    "generated_at": "2026-07-17T00:43:51.154Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 228
+      },
+      "trending": {
+        "ok": true,
+        "count": 17
+      },
+      "search": {
+        "ok": true,
+        "count": 240
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 2
+      },
+      "mops": {
+        "ok": true,
+        "count": 6
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 67,
+      "market": 0,
+      "tech": 2,
+      "shipped": 52
+    },
+    "degraded_sources": [
+      "lobsters"
+    ],
+    "stages": {
+      "curate.catalog": {
+        "cost_usd": 0.1254036,
+        "duration_ms": 33261,
+        "num_turns": 5,
+        "input_tokens": 31,
+        "output_tokens": 3323,
+        "cache_read_tokens": 154251,
+        "cache_creation_tokens": 74666,
+        "is_error": false,
+        "session_id": "a0306da9-e42d-47c5-a688-d48fc405c374"
+      },
+      "curate.discoveries": {
+        "cost_usd": 0.2070088,
+        "duration_ms": 105061,
+        "num_turns": 9,
+        "input_tokens": 59,
+        "output_tokens": 9879,
+        "cache_read_tokens": 324008,
+        "cache_creation_tokens": 62577,
+        "is_error": false,
+        "session_id": "c0026cfa-2af7-4a4a-a3ff-d1740fe4ca0b"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1733583,
+        "duration_ms": 40986,
+        "num_turns": 1,
+        "input_tokens": 3,
+        "output_tokens": 3074,
+        "cache_read_tokens": 2131,
+        "cache_creation_tokens": 21100,
+        "is_error": false,
+        "session_id": "fd2a61c7-f3ee-4165-98f6-84a126f63884"
+      },
+      "curate.market": {
+        "cost_usd": 0.17219449999999997,
+        "duration_ms": 37118,
+        "num_turns": 8,
+        "input_tokens": 49,
+        "output_tokens": 2827,
+        "cache_read_tokens": 187585,
+        "cache_creation_tokens": 69626,
+        "is_error": false,
+        "session_id": "fab57ce8-3f2f-4772-ad7b-84fbdb867e72"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.24197379999999996,
+        "duration_ms": 115348,
+        "num_turns": 16,
+        "input_tokens": 117,
+        "output_tokens": 9462,
+        "cache_read_tokens": 517948,
+        "cache_creation_tokens": 71376,
+        "is_error": false,
+        "session_id": "09d26491-1eb4-41e9-9677-d179f65da817"
+      },
+      "curate.shipped": {
+        "cost_usd": 0.16727825000000002,
+        "duration_ms": 93973,
+        "num_turns": 6,
+        "input_tokens": 37,
+        "output_tokens": 11119,
+        "cache_read_tokens": 171975,
+        "cache_creation_tokens": 75559,
+        "is_error": false,
+        "session_id": "e0b5de0c-9650-46de-9cd2-2432ca014665"
+      },
+      "synthesize": {
+        "cost_usd": 1.1031309,
+        "duration_ms": 567853,
+        "num_turns": 12,
+        "input_tokens": 7,
+        "output_tokens": 31063,
+        "cache_read_tokens": 313823,
+        "cache_creation_tokens": 90503,
+        "is_error": false,
+        "session_id": "47d7019c-fedd-4a39-aa11-560398a2712e"
+      },
+      "curate.tech": {
+        "cost_usd": 0.1769495,
+        "duration_ms": 61853,
+        "num_turns": 8,
+        "input_tokens": 33,
+        "output_tokens": 5434,
+        "cache_read_tokens": 139265,
+        "cache_creation_tokens": 67910,
+        "is_error": false,
+        "session_id": "de8b36a1-02a4-4f3a-8226-340f6fc37c11"
+      }
+    },
+    "total_cost_usd": 2.3672976500000003,
+    "total_tokens": 76517,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "5/5",
+      "unique_domains": 16,
+      "source_tier": 0.08888888888888889
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-07-17 — 今日重點</h3>\n<h4>開源工具使用能力收斂</h4>\n<p>GPT-5.2 在 tau2-bench 工具使用榜從 #10 飆至 #3，GLM-5.2 MoE 同榜擠入前 5 並累積 489K 下載，Kimi K3 首次進入 Artificial Analysis 綜合評測前 5。三個模型在同一評測框架內同步上移，背後機制是 MoE 稀疏路由在多步工具呼叫任務上的效率優勢開始被 benchmark 捕捉到。對 builder：如果代理管道的工具路由目前依賴 GPT-4o 等級，今天 GLM-5.2 MoE 的 489K 下載量說明社群已在實測，值得拉一個小型 A/B 驗證完成率與 token 成本。</p>\n<h4>27B 模型壓進 32GB DRAM</h4>\n<p>Prism ML 釋出 Ternary-Bonsai-27B（2-bit 三值量化）與 Bonsai-27B（1-bit 極端量化），兩者在 32GB 記憶體裝置上均可推論。量化位元數降至 1-2 bit 後，瓶頸從「DRAM 裝得下嗎」轉移到「計算吞吐量夠嗎」，這對 aiDAPTIV+ on-device 推論設計直接有關。今天的整合目標可以從 13B 基線上推到 27B 參數規模；GGUF 格式已可直接用 llama.cpp 部署，第一步是在目標硬體上 benchmark 推論吞吐量。</p>\n<h4>Agent 基礎設施開始分層</h4>\n<p>今日新發現中出現三類 agent 基礎設施工具：contextvc（agent context 版本控制，可接 CI gate）、mcptrustchecker（MCP 伺服器離線安全評分 A–F）、Agent-Span（52 通道 web access gateway）。這條分化軌跡與 2010-2015 年 web 框架和 DevOps 工具的分層幾乎同構。應用層夠忙之後，運維與安全工具自然浮現；下一個待填的空缺是 agent 可觀察性：structured trace 加 session replay。</p>\n<h4>台灣供應鏈兩端同步加碼</h4>\n<p>台積電 Q2 純益年增 77.4%（EPS NT$27.25），3nm 出貨佔比升至 30%，先進製程貢獻 77% 營收，2nm 快速爬坡護航 Q3 指引。同日，矽品精密揭露向 Camtek、Veeco 等採購近 5,000 億台幣設備，集中在先進封裝製程。晶圓廠增產、封裝廠擴設備同時出現，AI 推論硬體基礎設施週期確認進入加速段。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-open-model-tooluse-convergence",
+        "title": "開源工具使用能力收斂：tau2-bench 前 5 現三個非 OpenAI 模型",
+        "body": "GPT-5.2 從 tau2-bench #10 飆至 #3，GLM-5.2 MoE 同榜入前 5，Kimi K3 進入 Artificial Analysis 綜合前 5。三個模型在同一評測框架內同步上移，MoE 稀疏路由在工具呼叫這個維度的效率優勢正在被 benchmark 系統性捕捉到。",
+        "mechanism": "tau2-bench 測的是多步工具呼叫的完整任務完成率，而非生成品質。MoE 模型的稀疏啟動機制讓工具選擇的路由更精準，計算效率高於同規模的 dense 模型。GLM-5.2 MoE 和 Kimi K3 同時達到前 5 門檻，說明這個優勢已具規模可重複，而非個案。",
+        "evidence": "GLM-5.2 MoE 在 tau2-bench 破入前 5，489K 下載說明社群不只是觀望；Kimi K3 以 HN 1087 分的討論熱度進入 Artificial Analysis 前 5；GPT-5.2 的 #3 反映 OpenAI 自身工具使用能力加速，但同榜已有多個開源與中文模型並列前排。",
+        "product_opportunity": "如果代理管道的工具路由目前依賴 GPT-4o 以上等級，GLM-5.2 MoE 值得拉一個小型 A/B：選 3-5 個工具呼叫場景，對比任務完成率與 token 成本。開源選項的能力邊界已在 benchmark 上追上，差距在 production SLA 和支援，不在工具呼叫準確率。",
+        "source_links": [
+          "tech.benchmarks.0:tau2-GPT-5.2",
+          "tech.benchmarks.1:artificial-analysis-Kimi-K3",
+          "tech.models.0:huggingface-zai-org/GLM-5.2",
+          "pulse.hn.0:hn-48937175"
+        ]
+      },
+      {
+        "id": "focus-27b-32gb-edge-inference",
+        "title": "27B 模型進入 32GB DRAM：量化瓶頸從記憶體轉向算力",
+        "body": "Prism ML 同時發布 Ternary-Bonsai-27B（2-bit 三值量化）和 Bonsai-27B（1-bit 極端量化），兩者在 32GB 記憶體裝置可推論；Qwythos-9B GGUF 同期出現並支援 1M token context。邊緣推論的模型規模上限正在快速改寫。",
+        "mechanism": "1-2 bit 量化將 27B 模型的 DRAM 需求壓到 32GB 以下，記憶體容量不再是主瓶頸，限制轉移到計算吞吐量（tokens/sec）。這個轉移對 aiDAPTIV+ 場景的意義是：on-device 推論的參數上限從 13B 級別上移到 27B 級別，應用場景——長文件分析、多輪複雜對話——的可行性依據隨之出現。",
+        "evidence": "Prism ML 發布 Ternary-Bonsai-27B（2-bit 三值量化，32GB 裝置可推論）和 Bonsai-27B（1-bit，記憶體頻寬與儲存需求新下限）；Qwythos-9B GGUF 格式支援 1M token context，說明邊緣推論工具鏈正同步向高規格延伸。",
+        "product_opportunity": "以 aiDAPTIV+ 的 32GB DRAM 設備為目標，用 llama.cpp 測試 Ternary-Bonsai-27B 的推論吞吐量。確認實際 tokens/sec 後，27B 規模模型的應用場景就有了 on-device 的可行性依據；目前缺的是公開的吞吐量基準，這個空白值得填。",
+        "source_links": [
+          "tech.aidaptiv.0:huggingface-prism-ml/Ternary-Bonsai-27B",
+          "tech.aidaptiv.1:huggingface-prism-ml/Bonsai-27B",
+          "tech.aidaptiv.3:huggingface-empero-ai/Qwythos-9B-Claude-Mythos-5-1M-GGUF"
+        ]
+      },
+      {
+        "id": "focus-agent-infra-layering",
+        "title": "Agent 基礎設施出現分層：context 持久化、安全審查、網路閘道各自成工具",
+        "body": "今日新發現中，contextvc（agent context 版本控制，153 stars）、mcptrustchecker（MCP 安全評分，49 stars）、Agent-Span（web access gateway，42 stars）分別出現，解決不同層次的問題，卻都是 agent 應用層成熟後必然浮現的基礎設施補丁。",
+        "mechanism": "Agent 應用層快速成熟後，context drift、第三方 MCP 伺服器安全性、agent 網路存取可控性這三個問題同時浮現。2010-2015 年 web 框架成熟後 DevOps 工具爆發的路徑在這裡重演，週期壓縮到幾個月。三個工具均從工程師的真實痛點出發，stars 數低但問題清晰、路徑具體——早期基礎設施工具的典型特徵。",
+        "evidence": "contextvc 把 agent context 變成可 diff 的 git artifact，可接 CI gate；mcptrustchecker 對 MCP 伺服器做離線 A-F 安全評分，偵測提示注入與毒化；Agent-Span 提供 52 通道非同步 Rust web gateway 並支援自癒；ktsoator/or 在 Go 生態做 LLM routing，路徑規劃優於 if-then logic。",
+        "product_opportunity": "立即可執行的兩步：(1) 任何第三方 MCP 伺服器部署前跑 mcptrustchecker 掃描，把評分加入部署 checklist；(2) 用 contextvc 模式把 agent context snapshot 存入 git 並接 code review——context drift 的 debug 成本從幾小時降到幾分鐘。",
+        "source_links": [
+          "discoveries.rising.5:HaochengLu/contextvc",
+          "discoveries.rising.7:illiahaidar/mcptrustchecker",
+          "discoveries.rising.6:oxbshw/Agent-Span",
+          "discoveries.rising.2:ktsoator/or"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-compound-ai-experiment-design",
+      "title": "Cafe：複合 AI 系統的統計實驗設計平台，41 stars",
+      "body": "fabian-lu/Cafe 讓你對 RAG 或 agent 管道的每個技術選擇做統計顯著性測試，量化哪個調整實際推動了品質、哪個只是噪音。目前 41 stars，幾乎無人關注。",
+      "source_links": [
+        "discoveries.rising.11:fabian-lu/Cafe"
+      ],
+      "why_asymmetric": "現在絕大多數 compound AI 系統的調優靠 vibe：換個 prompt、感覺好一點、就上線。Cafe 把這個過程變成可重複的實驗設計，等同於把生信研究的統計驗證習慣帶進 AI 工程。這個缺口在 aiDAPTIV+ 應用層開發中每天都存在——你不知道是 re-ranking 還是 prompt 改動讓結果變好，而這個問題在沒有正確工具前幾乎無法回答。"
+    },
+    "contrarian": {
+      "id": "contrarian-contextvc-wrong-abstraction",
+      "title": "contextvc 選錯了抽象層：agent context 是事件流，不是 git diff",
+      "source_links": [
+        "discoveries.rising.5:HaochengLu/contextvc"
+      ],
+      "claim": "contextvc 把 agent context 當成可版本化的靜態快照管理，但生產環境中的 agent context 是持續演化的事件流——session state、tool call history、memory update 不斷疊加。用 git diff 語義管理它，在多工作階段、高並發場景下會失效。正確的抽象是 append-only event log，不是版本快照；contextvc 目前的架構假設在 production multi-session agent 場景下站不住腳。",
+      "resolution_date": "2026-12-31",
+      "verification": "到 2026-12-31，若 contextvc 未轉向 event-sourcing 或 append-only log 語義，且 GitHub stars 仍低於 1,000，且沒有公開的 production 部署案例文件，則此判斷成立。若 contextvc 轉向架構或出現知名生產採用記錄，則判斷有誤。"
+    },
+    "predictions": [
+      {
+        "id": "pred-2026-07-17-1",
+        "text": "Kimi K3 的模型權重將在 2026-09-30 前以開源形式發布（HuggingFace 或等效平台）。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-07-17",
+        "source_links": [
+          "pulse.hn.0:hn-48937175"
+        ]
+      },
+      {
+        "id": "pred-2026-07-17-2",
+        "text": "至少一份公開基準測試文件將在 2026-09-30 前確認：≥25B 參數量化模型在 ≤32GB 消費端 DRAM 硬體上達到 ≥10 tokens/sec 推論速度。",
+        "resolution_date": "2026-09-30",
+        "status": "pending",
+        "created": "2026-07-17",
+        "source_links": [
+          "tech.aidaptiv.0:huggingface-prism-ml/Ternary-Bonsai-27B",
+          "tech.aidaptiv.1:huggingface-prism-ml/Bonsai-27B"
+        ]
+      },
+      {
+        "id": "pred-2026-07-17-3",
+        "text": "至少一個非 OpenAI、非 Google 的開源模型將在 2026-10-31 前進入 tau2-bench 工具使用排行前 3，MoE 架構的工具呼叫效率優勢持續壓縮差距。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "created": "2026-07-17",
+        "source_links": [
+          "tech.benchmarks.0:tau2-GPT-5.2",
+          "tech.models.0:huggingface-zai-org/GLM-5.2"
+        ]
+      },
+      {
+        "id": "pred-2026-07-17-4",
+        "text": "至少一個 MCP 安全掃描工具（mcptrustchecker 或同類工具）將在 2026-12-31 前在 GitHub 達到 1,000 stars，反映 MCP 生態擴張後代理安全意識的快速提升。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-07-17",
+        "source_links": [
+          "discoveries.rising.7:illiahaidar/mcptrustchecker"
+        ]
+      },
+      {
+        "id": "pred-2026-07-17-5",
+        "text": "台積電將在 2026-10-17 Q3 法說會前公開提及至少 2 個 2nm 量產客戶名稱（Apple 除外），2nm 快速爬坡需要公開客戶名單以穩定市場預期。",
+        "resolution_date": "2026-10-17",
+        "status": "pending",
+        "created": "2026-07-17",
+        "source_links": [
+          "market.taiwan.0:mops-2330-20260716"
+        ]
+      },
+      {
+        "id": "pred-2026-07-17-6",
+        "text": "台灣至少一家先進封裝廠將在 2026-12-31 前宣布在美國或日本新增封裝產能，沿矽品精密近 5,000 億台幣設備採購所反映的產能擴張趨勢延伸。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-07-17",
+        "source_links": [
+          "market.taiwan.1:mops-3711-20260716"
+        ]
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:simonlin1212/Vibe-Research",
+        "audience": "work",
+        "url": "https://github.com/simonlin1212/Vibe-Research",
+        "name": "simonlin1212/Vibe-Research",
+        "stars": 867,
+        "language": null,
+        "relevance": "AI 驅動的投研系統集日報、數據、持倉追蹤於一界面，是 financial-agent 的體系化應用",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 70.6,
+        "repo_age_days": 11,
+        "eng_score": 3,
+        "excellence_score": 0.5896111111111111,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.5:HaochengLu/contextvc",
+        "audience": "work",
+        "url": "https://github.com/HaochengLu/contextvc",
+        "name": "HaochengLu/contextvc",
+        "stars": 153,
+        "language": null,
+        "relevance": "代理記憶變成代碼版本控制，agent context 成為可審查可 CI-gate 的基礎設施",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 11,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:aipoch/open-science",
+        "audience": "both",
+        "url": "https://github.com/aipoch/open-science",
+        "name": "aipoch/open-science",
+        "stars": 231,
+        "language": null,
+        "relevance": "model-agnostic 的科研 AI workbench，統一 LLM / VLM 的科研工作流",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 23,
+        "repo_age_days": 13,
+        "eng_score": 6,
+        "excellence_score": 0.5022,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.4:William-Lu-stack/Flawless",
+        "audience": "work",
+        "url": "https://github.com/William-Lu-stack/Flawless",
+        "name": "William-Lu-stack/Flawless",
+        "stars": 691,
+        "language": null,
+        "relevance": "Kubernetes 基礎設施的 AI SRE AgenticOps，端到端自癒的關鍵是故障決策優化",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 37.5,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:ktsoator/or",
+        "audience": "general",
+        "url": "https://github.com/ktsoator/or",
+        "name": "ktsoator/or",
+        "stars": 206,
+        "language": null,
+        "relevance": "Go 生態的 LLM routing 工具，路徑規劃勝過 if-then logic",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 28,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.9:YZGlobal/jonex",
+        "audience": "both",
+        "url": "https://github.com/YZGlobal/jonex",
+        "name": "YZGlobal/jonex",
+        "stars": 73,
+        "language": null,
+        "relevance": "多模態解析 + 本體知識圖譜，檢索前推理是 RAG 的新層次",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.12:AlephAITech/WorkBuddyGuide",
+        "audience": "work",
+        "url": "https://github.com/AlephAITech/WorkBuddyGuide",
+        "name": "AlephAITech/WorkBuddyGuide",
+        "stars": 986,
+        "language": null,
+        "relevance": "WorkBuddy 多智能體實戰藍皮書，從單任務到協作團隊的構築路徑",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 169,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.7:illiahaidar/mcptrustchecker",
+        "audience": "work",
+        "url": "https://github.com/illiahaidar/mcptrustchecker",
+        "name": "illiahaidar/mcptrustchecker",
+        "stars": 49,
+        "language": null,
+        "relevance": "MCP 伺服器安全掃描儀，離線 A–F 評級偵測毒化和提示注入",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 3,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.6:oxbshw/Agent-Span",
+        "audience": "general",
+        "url": "https://github.com/oxbshw/Agent-Span",
+        "name": "oxbshw/Agent-Span",
+        "stars": 42,
+        "language": null,
+        "relevance": "52 通道的 web access gateway for agents，非同步 Rust 架構支援自癒",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 1,
+        "repo_age_days": 17,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.11:fabian-lu/Cafe",
+        "audience": "work",
+        "url": "https://github.com/fabian-lu/Cafe",
+        "name": "fabian-lu/Cafe",
+        "stars": 41,
+        "language": null,
+        "relevance": "複合 AI 系統的實驗設計平台，統計驗證哪個技巧推動品質多少",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 22,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.8:QuantumByteOSS/quantumbyte",
+        "audience": "general",
+        "url": "https://github.com/QuantumByteOSS/quantumbyte",
+        "name": "QuantumByteOSS/quantumbyte",
+        "stars": 316,
+        "language": null,
+        "relevance": "意圖到可運行應用的開源應用引擎，每步輸出都對標商業需求",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 5,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.13:djfksjd/ir-search",
+        "audience": "general",
+        "url": "https://github.com/djfksjd/ir-search",
+        "name": "djfksjd/ir-search",
+        "stars": 180,
+        "language": null,
+        "relevance": "韓國政府補助案全數調查 agent 技能，爬蟲 + 資格驗證 + 三級分類",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 2,
+        "repo_age_days": 5,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:TencentCloud/Octop",
+        "audience": "general",
+        "url": "https://github.com/TencentCloud/Octop",
+        "name": "TencentCloud/Octop",
+        "stars": 141,
+        "language": null,
+        "relevance": "多用戶多智能體自託管助手，tencentcloud 開源的生產對標",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 17.333333333333332,
+        "repo_age_days": 8,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.10:xinhuangcs/agentmaker",
+        "audience": "general",
+        "url": "https://github.com/xinhuangcs/agentmaker",
+        "name": "xinhuangcs/agentmaker",
+        "stars": 59,
+        "language": null,
+        "relevance": "四行程式碼建立有記憶的 agent，通用 Python 框架降低多智能體入門",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 5.666666666666667,
+        "repo_age_days": 8,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:openai/redcard",
+        "audience": "general",
+        "url": "https://github.com/openai/redcard",
+        "name": "openai/redcard",
+        "stars": 19,
+        "language": null,
+        "relevance": "OpenAI 員工的 Codex 實驗技能，視訊會議按紅卡自動離線",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 9,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-48937175",
+        "audience": "general",
+        "url": "https://www.kimi.com/blog/kimi-k3",
+        "title": "Kimi K3: Open Frontier Intelligence",
+        "score": 1087,
+        "comments": 91,
+        "takeaway": "新型長內容推理模型進入開源競技場，對標 o1 家族的思考深度。"
+      },
+      {
+        "id": "pulse.hn.1:hn-48937187",
+        "audience": "general",
+        "url": "https://lmstudio.ai/blog/introducing-lm-studio-bionic",
+        "title": "LM Studio Bionic: the AI agent for open models",
+        "score": 132,
+        "comments": 8,
+        "takeaway": "本地 LLM 工作流增加 agent 框架，降低開源模型的集成門檻。"
+      },
+      {
+        "id": "pulse.hn.2:hn-48937165",
+        "audience": "general",
+        "url": "https://opensource.microsoft.com/blog/2026/07/16/microsoft-comic-chat-is-now-open-source/",
+        "title": "Microsoft Comic Chat is now open source",
+        "score": 501,
+        "comments": 45,
+        "takeaway": "90 年代經典對話系統成為開源，多模態 UI 探索的歷史價值。"
+      },
+      {
+        "id": "pulse.hn.3:hn-48937162",
+        "audience": "general",
+        "url": "https://blog.google/innovation-and-ai/products/gemini-notebook/notebooklm-gemini-notebook/",
+        "title": "NotebookLM is now Gemini Notebook",
+        "score": 219,
+        "comments": 31,
+        "takeaway": "Google 整合筆記 AI 入 Gemini，長內容 RAG 工作流邁向主流。"
+      },
+      {
+        "id": "pulse.hn.4:hn-48937203",
+        "audience": "general",
+        "url": "https://blog.lyc8503.net/en/post/llm-classifier/",
+        "title": "Detecting LLM-Generated Texts with \"Classical\" Machine Learning",
+        "score": 146,
+        "comments": 16,
+        "takeaway": "無需微調就能偵測 LLM 文本，統計特徵比深度學習模型更穩健。"
+      },
+      {
+        "id": "pulse.hn.5:hn-48937294",
+        "audience": "general",
+        "url": "https://www.theocharis.dev/blog/llm-critics-are-right-i-use-llms-anyway/",
+        "title": "The LLM Critics Are Right. I Use LLMs Anyway",
+        "score": 182,
+        "comments": 31,
+        "takeaway": "LLM 開發者坦誠侷限，卻選擇在風險內使用——工程現實主義的聲音。"
+      },
+      {
+        "id": "pulse.hn.6:hn-48937356",
+        "audience": "both",
+        "url": "https://www.zhinit.dev/blog/training-a-kick-drum-diffusion-model",
+        "title": "How to Train a Gen AI Kick Drum Model on Your Old Linux Desktop with 6GB VRAM",
+        "score": 90,
+        "comments": 14,
+        "takeaway": "低 VRAM 擴散模型訓練可行，邊緣推理應用的成本結構改變。"
+      },
+      {
+        "id": "pulse.hn.7:hn-48937493",
+        "audience": "general",
+        "url": "https://developer.puter.com/labs/firefox-wasm/",
+        "title": "Show HN: Firefox in WebAssembly",
+        "score": 241,
+        "comments": 37,
+        "takeaway": "完整瀏覽器移植到 WASM，推理系統的運行時邊界模糊化。"
+      }
+    ],
+    "lobsters": [],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:dev-to-top-d4e8f7a2",
+        "audience": "both",
+        "url": "https://dev.to/he4rt/metricas-de-qualidade-de-software-na-era-da-ia-334o",
+        "title": "Métricas de qualidade de software na era da IA",
+        "takeaway": "AI 時代軟體品質指標的重新定義——代碼生成下的測試策略轉變。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:dev-to-top-b1c2f9e1",
+        "audience": "both",
+        "url": "https://dev.to/ben/the-myth-of-the-post-documentation-era-39al",
+        "title": "The Myth of the Post-Documentation Era",
+        "takeaway": "agent 時代文件的角色未死，反而變成系統的可驗證契約基礎。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:dev-to-top-e7a3c6d9",
+        "audience": "general",
+        "url": "https://dev.to/dannwaneri/my-ai-coding-session-burns-more-power-than-the-average-nigerian-gets-all-day-3l87",
+        "title": "my ai coding session burns more power than the average nigerian gets all day.",
+        "takeaway": "AI 程式設計的算力成本可視化——推理供電在邊際開發者的成本影響。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:dev-to-top-f5b8a1c4",
+        "audience": "general",
+        "url": "https://dev.to/he4rt/produto-4-devs-pbp",
+        "title": "Produto 4 Devs",
+        "takeaway": "開發者必學產品思維——代碼只佔問題解決的 30%，系統思考成為必需。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:dev-to-top-c3d7e2b6",
+        "audience": "general",
+        "url": "https://dev.to/he4rt/produto-4-devs-pbp",
+        "title": "Produto 4 Devs",
+        "takeaway": "AI 開發涉及多層次決策——從技術選型到業務假設驗證的完整流程。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-2330-20260716",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2330",
+        "title": "台積電2026年第二季每股盈餘新台幣27.25元",
+        "takeaway": "台積電Q2營收年增36%、純益年增77.4%，先進製程(7nm以上)貢獻77%營收；3nm出貨增至30%、2nm快速產能提升將支撐Q3表現。",
+        "amount": "營收1兆2,703億8千萬元、稅後純益7,065億6千萬元",
+        "companies": [
+          "台積電"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-3711-20260716",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "日月光矽品精密取得營業用機器設備達新台幣4,991億元",
+        "takeaway": "矽品精密自Camtek、Veeco、弘塑、樂鑫等設備商取得約50億美元級機器，涵蓋晶片組裝、測試、材料等關鍵製程，投資規模創新高、反映先進封裝產能急速擴建。",
+        "amount": "新台幣4,991億元(4筆設備採購)",
+        "companies": [
+          "日月光",
+          "矽品精密"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:mops-3711-20260716",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "環旭電子認繳投資上海上策興融芯私募基金人民幣5,000萬元",
+        "takeaway": "環旭電子進入大陸AI晶片基金生態、認繳比例7.98%，標誌台灣代工廠對AI芯片設計投資加碼，佔總資產比例0.11%、屬戰略性布局。",
+        "amount": "人民幣5,000萬元(約新台幣2.35億元)",
+        "companies": [
+          "環旭電子"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:anthropic-news-4a8f2c1b",
+        "audience": "general",
+        "url": "https://www.anthropic.com/news/claude-for-teachers",
+        "title": "Introducing Claude for Teachers",
+        "takeaway": "Anthropic 擴展 Claude 教育應用，為美國 K-12 教育工作者提供免費高級存取。",
+        "companies": "Anthropic"
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:huggingface-zai-org/GLM-5.2",
+        "audience": "work",
+        "url": "https://huggingface.co/zai-org/GLM-5.2",
+        "title": "GLM-5.2: Open-Source Mixture-of-Experts Model",
+        "takeaway": "GLM-5.2 MoE 開源模型在 tau2-bench 工具使用排行突破前 5，489K 下載信號顯示社群採納率高。",
+        "companies": "Zhipu AI"
+      },
+      {
+        "id": "tech.models.1:huggingface-tencent/Hy3",
+        "audience": "general",
+        "url": "https://huggingface.co/tencent/Hy3",
+        "title": "Tencent Hy3: HunyuanVideo Evolution to Text-Generation MoE",
+        "takeaway": "Tencent 持續推進混合專家架構在通用語言模型上的應用，新一代 MoE 支援評測環境。",
+        "companies": "Tencent"
+      },
+      {
+        "id": "tech.models.2:arxiv-2607.14037",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2607.14037v1",
+        "title": "Early Adoption of Agentic Coding Tools by GitHub Projects",
+        "takeaway": "分析 GitHub 專案對智能代碼工具的採用現狀，揭示 AI 驅動的程式碼提交融合模式。",
+        "companies": "Academia"
+      },
+      {
+        "id": "tech.models.3:arxiv-2607.13921",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2607.13921v1",
+        "title": "Generative Compilation: On-the-Fly Compiler Feedback as AI Generates Code",
+        "takeaway": "研究在 Rust 等靜態型別語言中即時編譯器反饋指導 LLM 代碼生成的約束解碼方法。",
+        "companies": "Academia"
+      },
+      {
+        "id": "tech.models.4:huggingface-OpenMOSS-Team/MOSS-Transcribe-Diarize",
+        "audience": "general",
+        "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize",
+        "title": "MOSS-Transcribe-Diarize: Multimodal Speech Model",
+        "takeaway": "開源 MOSS 團隊發布音訊轉錄與說話人分割模型，支援長音訊處理與多語言應用。",
+        "companies": "OpenMOSS"
+      },
+      {
+        "id": "tech.models.5:huggingface-ATH-MaaS/OvisOCR2",
+        "audience": "general",
+        "url": "https://huggingface.co/ATH-MaaS/OvisOCR2",
+        "title": "OvisOCR2: Advanced Document Recognition Model",
+        "takeaway": "基於 Qwen3.5 的多模態文件解析模型，支援表格與公式識別，應用於企業文件處理。",
+        "companies": "ATH-MaaS"
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-GPT-5.2",
+        "audience": "work",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 enters top-3 tool-use performance",
+        "takeaway": "GPT-5.2 在工具使用排行從 #10 飆升至 #3，Gemini 3 Flash 也進入前 5，代理能力競爭加劇。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2",
+            "Gemini 3 Flash"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #3 ↑",
+            "Gemini 3 Flash: #6 → #5 ↑"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:artificial-analysis-Kimi-K3",
+        "audience": "general",
+        "url": "https://artificialanalysis.ai/",
+        "title": "Artificial Analysis: Kimi K3 enters top-5 composite scoring",
+        "takeaway": "Kimi K3 首次進入 Artificial Analysis 綜合評測前 5，中文模型能力競速持續升溫。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Kimi K3"
+          ],
+          "rank_changes": [
+            "GPT-5.6 Sol (high): #4 → #5 ↓",
+            "Claude Opus 4.8 (Adaptive Reasoning, Max Effort): #5 → #6 ↓"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:huggingface-prism-ml/Ternary-Bonsai-27B",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf",
+        "title": "Ternary-Bonsai-27B: Extreme 2-bit Quantization for On-Device Inference",
+        "takeaway": "27B 模型 2-bit 三值量化方案，在 32GB 記憶體設備實現推理，邊界 AI 加速的突破。",
+        "companies": "Prism ML"
+      },
+      {
+        "id": "tech.aidaptiv.1:huggingface-prism-ml/Bonsai-27B",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Bonsai-27B-gguf",
+        "title": "Bonsai-27B: 1-bit Extreme Quantization",
+        "takeaway": "1-bit 極端量化在 27B 參數達成，記憶體頻寬與儲存需求的新下限。",
+        "companies": "Prism ML"
+      },
+      {
+        "id": "tech.aidaptiv.2:arxiv-2607.13770",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2607.13770v1",
+        "title": "Kaleido: Algorithm-Hardware Co-Design for Video Diffusion Transformers",
+        "takeaway": "提出演算法與硬體協設計方法，通過開發潛在空間相關性最佳化視訊擴散模型計算瓶頸。",
+        "companies": "Academia"
+      },
+      {
+        "id": "tech.aidaptiv.3:huggingface-empero-ai/Qwythos-9B-Claude-Mythos-5-1M-GGUF",
+        "audience": "work",
+        "url": "https://huggingface.co/empero-ai/Qwythos-9B-Claude-Mythos-5-1M-GGUF",
+        "title": "Qwythos-9B: Long-Context Quantized Model (1M tokens)",
+        "takeaway": "9B 參數模型支援 1M context 長度的量化版本，GGUF 格式便於邊界推理部署。",
+        "companies": "Empero AI"
+      },
+      {
+        "id": "tech.aidaptiv.4:arxiv-2607.14049",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2607.14049v1",
+        "title": "Deep Interaction: Efficient Human-AI Interaction for Large Reasoning Models",
+        "takeaway": "提出互動式錯誤更正方法，在推理模型執行中動態調整思考過程，降低計算開銷。",
+        "companies": "Academia"
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-07-17",
+    "flagged": [],
+    "repaired": 0
+  }
+}
