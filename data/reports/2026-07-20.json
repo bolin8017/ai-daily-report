@@ -1,0 +1,761 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-07-20",
+  "meta": {
+    "run_id": "d1e7c465-b62c-4a4d-8a45-e275ca64ae57",
+    "pipeline_version": "10c9ae5",
+    "generated_at": "2026-07-20T01:05:56.536Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 110
+      },
+      "trending": {
+        "ok": true,
+        "count": 19
+      },
+      "search": {
+        "ok": true,
+        "count": 218
+      },
+      "developers": {
+        "ok": true,
+        "count": 12
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 0
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 75,
+      "market": 0,
+      "tech": 0,
+      "shipped": 49
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.catalog": {
+        "cost_usd": 0.1254036,
+        "duration_ms": 33261,
+        "num_turns": 5,
+        "input_tokens": 31,
+        "output_tokens": 3323,
+        "cache_read_tokens": 154251,
+        "cache_creation_tokens": 74666,
+        "is_error": false,
+        "session_id": "a0306da9-e42d-47c5-a688-d48fc405c374"
+      },
+      "curate.discoveries": {
+        "cost_usd": 0.166941,
+        "duration_ms": 53101,
+        "num_turns": 6,
+        "input_tokens": 42,
+        "output_tokens": 4047,
+        "cache_read_tokens": 139040,
+        "cache_creation_tokens": 66380,
+        "is_error": false,
+        "session_id": "53b6eb84-6584-49ea-adf8-c3a9946c63d3"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1711233,
+        "duration_ms": 51203,
+        "num_turns": 1,
+        "input_tokens": 3,
+        "output_tokens": 2925,
+        "cache_read_tokens": 2131,
+        "cache_creation_tokens": 21100,
+        "is_error": false,
+        "session_id": "597189ad-6e48-440f-991b-25d9238e4e62"
+      },
+      "curate.market": {
+        "cost_usd": 0.10974630000000002,
+        "duration_ms": 14540,
+        "num_turns": 6,
+        "input_tokens": 33,
+        "output_tokens": 739,
+        "cache_read_tokens": 94063,
+        "cache_creation_tokens": 48306,
+        "is_error": false,
+        "session_id": "c8dcb1e6-9a86-412a-8905-1bf6cd150000"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.2058702,
+        "duration_ms": 86061,
+        "num_turns": 10,
+        "input_tokens": 113,
+        "output_tokens": 7430,
+        "cache_read_tokens": 300532,
+        "cache_creation_tokens": 69277,
+        "is_error": false,
+        "session_id": "60bc34ed-7068-4bb8-9a8d-56df0c33c317"
+      },
+      "curate.shipped": {
+        "cost_usd": 0.16727825000000002,
+        "duration_ms": 93973,
+        "num_turns": 6,
+        "input_tokens": 37,
+        "output_tokens": 11119,
+        "cache_read_tokens": 171975,
+        "cache_creation_tokens": 75559,
+        "is_error": false,
+        "session_id": "e0b5de0c-9650-46de-9cd2-2432ca014665"
+      },
+      "synthesize": {
+        "cost_usd": 0.9096519,
+        "duration_ms": 434297,
+        "num_turns": 13,
+        "input_tokens": 7,
+        "output_tokens": 23220,
+        "cache_read_tokens": 283823,
+        "cache_creation_tokens": 79364,
+        "is_error": false,
+        "session_id": "99d54d4a-29aa-4c99-bddb-432bd8b58692"
+      },
+      "curate.tech": {
+        "cost_usd": 0.16658830000000002,
+        "duration_ms": 46020,
+        "num_turns": 8,
+        "input_tokens": 33,
+        "output_tokens": 4063,
+        "cache_read_tokens": 136223,
+        "cache_creation_tokens": 66309,
+        "is_error": false,
+        "session_id": "b108f035-7ea5-48e7-80db-344763bbc0d2"
+      }
+    },
+    "total_cost_usd": 2.0226028499999997,
+    "total_tokens": 57165,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "5/5",
+      "unique_domains": 14,
+      "source_tier": 0.020833333333333332
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-07-20 — 近期重點</h3>\n<h4>1-bit / 2-bit 27B 模型：邊緣推論的記憶體下限被重新定義</h4>\n<p>Prism ML 推出 Bonsai-27B（1-bit）與 Ternary-Bonsai-27B（2-bit）兩個量化方案，讓 27B 參數模型可在 32GB DRAM 裝置上推論。giannisanni/pulsar 從另一個角度出發，用 PCIe 頻寬實測決定消費卡 MoE 專家塊的位置——量化與路由兩個維度同步往下壓。對 aiDAPTIV+ builder：這批模型在哪個 task 類型上推論品質先崩潰，是你現在最值得系統性測量的問題。</p>\n<h4>多代理工廠取代單代理循環</h4>\n<p>VKirill/claude-lane-stack 把多個 Claude Code 代理排進流水線自動合併到 main；PromptPartner/agentsmith（308 stars）讓核心代理依任務類型自組裝。機制：單代理工具在 long-horizon task 的可靠性已撞頂，builder 開始在外層加正式的多代理編排。LoopGain（HN Show HN）直接用控制論取代 <code>max_iterations</code> 啟發式上限——這個轉型已進入工具層。</p>\n<h4>AI 建議讓人更不準確、更有自信：這是設計責任</h4>\n<p>研究人員量化出 AI 建議讓受試者準確率下降 3 倍、自信心上升 2 倍（HN 253 分）。Lobsters 出現「Reviewing AI Code Is Not A Viable Argument」（44 分），論點是 code review 無法解決 AI 生成代碼的根本問題。共同機制：AI 系統的錯誤不讓用戶察覺。對 builder：介面需要顯性的不確定性訊號，否則你是在放大認知偏差而非輔助判斷。</p>\n<h4>GPT-5.2 工具使用排行跳升 7 位；中國 LLM 服務端承壓</h4>\n<p>tau2-bench 顯示 GPT-5.2 從 #10 升至 #3，是近期最顯眼的單次跳升。Qwen 3.8（HN 775 分）與 Kimi K3 需求爆量，後者迫使 Moonshot 暫停新訂閱——中國 LLM 目前的瓶頸在服務端，不在模型能力本身。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "title": "極端量化壓縮正在重寫消費硬體的 27B 模型上限",
+        "body": "Prism ML 推出 Ternary-Bonsai-27B（2-bit 三值量化，基於 Qwen3.6）與 Bonsai-27B（1-bit），兩者 GGUF 格式可直接部署於 32GB 記憶體裝置。giannisanni/pulsar 用 PCIe 頻寬實測決定 MoE 專家塊的物理位置，讓消費卡跑巨型 MoE 成為可量化方案。Qwythos-9B 把 1M context 壓進量化 GGUF，GGUF 格式便於邊緣部署。",
+        "mechanism": "量化朝 1-bit 收斂的同時，MoE 路由層開始感知硬體拓撲（PCIe 頻寬而非假設均質記憶體）——兩者合力才能讓消費卡跑得動實際部署規模的模型。這不是兩條獨立研究線，是同一個問題的量化側和路由側。",
+        "evidence": "多個量化方案同步針對 32GB 邊緣裝置收斂，並出現 PCIe 感知路由這類硬體適配創新。",
+        "product_opportunity": "在 aiDAPTIV+ 平台對 Ternary-Bonsai-27B 做 task-specific 精度基準：找出 1-bit vs 2-bit 的品質斷崖在 RAG 抽取 vs 生成 vs 分類哪個類型先出現，這是向客戶報告硬體可行性最快的實驗設計。",
+        "source_links": [
+          "tech.aidaptiv.0:hf-prism-ml-ternary-bonsai-27b",
+          "tech.aidaptiv.1:hf-prism-ml-bonsai-27b",
+          "tech.aidaptiv.2:hf-empero-ai-qwythos-9b-claude-mythos-5-1m",
+          "discoveries.rising.8:giannisanni/pulsar"
+        ]
+      },
+      {
+        "title": "多代理 coding 工廠模式正在取代單代理循環",
+        "body": "VKirill/claude-lane-stack 把多個 Claude Code 代理排進持續交付流水線，自動合併到 main。PromptPartner/agentsmith（308 stars）依任務類型動態組裝代理核心，消除固定代理性格。inclusionAI/Avernet 提供分散代理協作加自進化能力。LoopGain（HN Show HN，26 分）用控制論取代 max_iterations，直接解決代理無限循環問題。",
+        "mechanism": "單代理工具在 long-horizon task（多步驟、多檔案、需跨 PR 協調）的可靠性已撞頂。builder 開始在外層加正式的編排層——不是再調教單一代理的 prompt，而是引入任務路由加控制理論加自動合併，把代理降格為工廠的一個元件。LoopGain 是這個轉型進入工具層的最直接訊號。",
+        "evidence": "四個獨立項目（三個 discoveries 加一個 HN Show HN）同時指向多代理編排加控制論工具，而非單代理改進。",
+        "product_opportunity": "用 agentsmith 風格的任務路由加 claude-lane-stack 風格的自動合併，在 aiDAPTIV+ demo 層建一個多代理 coding demo：比展示單個 Claude Code session 更有說服力，因為它展示的是流程可控性，不只是模型能力。",
+        "source_links": [
+          "discoveries.rising.4:VKirill/claude-lane-stack",
+          "discoveries.rising.6:PromptPartner/agentsmith",
+          "discoveries.rising.0:inclusionAI/Avernet",
+          "pulse.hn.6:hn-loopgain"
+        ]
+      },
+      {
+        "title": "AI 系統的過度自信設計缺陷正在被量化",
+        "body": "HN 253 分研究：AI 建議讓受試者答題準確率下降 3 倍、自信心上升 2 倍。Lobsters 44 分：「Reviewing AI Code Is Not A Viable Argument」——code review 無法解決 AI 生成代碼的根本問題，因為錯誤模式對人類 reviewer 不透明。Stratagems #15 記錄多租戶系統中 AI 的資訊洩漏，根因是系統邊界沒有和用戶的信任邊界對齊。",
+        "mechanism": "三個訊號共享同一個設計 bug：AI 系統以高度權威的語氣輸出，卻沒有同步輸出校正過的不確定性。用戶看到「AI 說 X」就信，不管 X 是已知事實還是統計猜測——這是介面設計問題，不是模型問題，patch 不在 RLHF 裡，在 UI 層。",
+        "evidence": "量化研究（3× 準確率下降 / 2× 自信上升）、code review 結構性失效、多租戶隔離失敗，三個獨立來源指向同一設計缺陷。",
+        "product_opportunity": "在你的 RAG 或 agent 介面加入外部可計算的信心訊號——用檢索命中率、來源數量、時間衰減計算一個信心分，顯示在 UI。不要依賴模型語言自說「我不確定」，那會被訓練掉。",
+        "source_links": [
+          "pulse.hn.1:hn-39827361",
+          "pulse.lobsters.1:lobsters-review-ai-code",
+          "pulse.chinese_community.2:devto-stratagems"
+        ]
+      }
+    ],
+    "sleeper": {
+      "title": "確定性螢幕記憶：不依賴 LLM 的代理記憶替代路徑",
+      "body": "nossa-y/activity-frames 用確定性方式捕捉螢幕狀態，透過 MCP 整合為代理記憶。主流做法是 RAG 加 LLM 摘要——代理用語言模型「記」自己看過什麼，引入幻覺風險。activity-frames 選擇直接記住畫面狀態，代理的視覺記憶是精確值，不是近似值。",
+      "source_links": [
+        "discoveries.rising.3:nossa-y/activity-frames"
+      ],
+      "why_asymmetric": "社群注意力集中在 RAG 優化與 LLM memory 架構；確定性捕捉幾乎沒人討論。但在需要精確 UI 交互記憶的 agent 場景（自動化測試、web agent、RPA 替代），確定性比「大概記得」重要得多——這個差距在 95% 任務上無感，在剩下 5% 上是致命的。",
+      "commercial_path": "把 activity-frames 接進 web agent demo：對比「LLM 記憶 vs 確定性捕捉」在 UI 導航任務的準確率，這個 A/B 結果本身就是客戶說明的具體數字。"
+    },
+    "contrarian": {
+      "body": "主流把 context 縮減解讀為節省成本的被迫妥協。但如果把它看成產品決策：OpenAI 判斷用戶在 100k 以上的 context 得到的增量價值不足以抵掉推論成本。這和實際用過長 context coding agent 的工程師直覺吻合——用戶塞進 300k token，agent 還是在前 50k 範圍內失敗。真正的競爭問題是：給定 100k context，完成多步驟任務的成功率是多少？",
+      "source_links": [
+        "pulse.hn.4:hn-codex-context"
+      ],
+      "claim": "OpenAI 把 Codex 上下文從 372k 縮到 272k 不是退步——是訊號：context 長度已不是 coding agent 的競爭軸，每 token 的任務完成率才是。",
+      "rationale": "如果這個判斷成立，3 個月內至少兩個主要 coding agent 提供商會跟進縮減 context 上限，同時公布任務完成率數字作為差異化指標。反例：如果 Cursor 或 Windsurf 接下來反向擴大 context 上限，這個 thesis 就錯了。",
+      "resolution_date": "2026-10-20"
+    },
+    "predictions": [
+      {
+        "id": "pred-extreme-quant-adoption-2027-01",
+        "text": "在 2027-01-20 前，至少 3 個不同組織發布基於 1-bit 或 2-bit 量化的 27B+ 參數開源模型，且 GGUF 格式可在 32GB 裝置推論。",
+        "resolution_date": "2027-01-20",
+        "status": "pending"
+      },
+      {
+        "id": "pred-moonshot-resume-2026-08",
+        "text": "Moonshot AI 在 2026-08-20 前恢復 Kimi K3 全球新訂閱，服務容量問題在 30 天內解決。",
+        "resolution_date": "2026-08-20",
+        "status": "pending"
+      },
+      {
+        "id": "pred-context-cap-below-300k-2026-10",
+        "text": "Windsurf、Cursor、或 GitHub Copilot 至少其中一家在 2026-10-20 前宣布將 agent 模式上下文上限設定在 300k tokens 以下。",
+        "resolution_date": "2026-10-20",
+        "status": "pending"
+      },
+      {
+        "id": "pred-multi-agent-native-tool-2027-01",
+        "text": "Cursor、Windsurf、或 Claude Code 至少其中一家在 2027-01-20 前原生支援多代理並行任務分配，無需用戶自建編排層。",
+        "resolution_date": "2027-01-20",
+        "status": "pending"
+      },
+      {
+        "id": "pred-tau2-top3-response-2026-09",
+        "text": "GPT-5.2 進入 tau2-bench 前 3 後，Anthropic 或 Google 發布的下一個主力模型在 2026-09-20 前將自身排名推進 tau2-bench 前 3。",
+        "resolution_date": "2026-09-20",
+        "status": "pending"
+      },
+      {
+        "id": "pred-ai-confidence-ui-2026-12",
+        "text": "在 2026-12-20 前，至少一個主流 AI coding 工具（GitHub Copilot、Cursor、或 Claude Code）推出顯示模型信心分的 UI 功能，而非僅依賴模型語言自我宣告。",
+        "resolution_date": "2026-12-20",
+        "status": "pending"
+      },
+      {
+        "id": "pred-pcie-moe-routing-2027-01",
+        "text": "llama.cpp 或 Ollama 在 2027-01-20 前合入 PCIe 頻寬感知的 MoE 路由功能，讓多 GPU 消費卡配置的推論效率可被量化優化。",
+        "resolution_date": "2027-01-20",
+        "status": "pending"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.8:giannisanni/pulsar",
+        "audience": "both",
+        "url": "https://github.com/giannisanni/pulsar",
+        "name": "giannisanni/pulsar",
+        "stars": 48,
+        "language": null,
+        "relevance": "自適應專家位置選擇基於 PCIe 頻寬測量，消費卡推論巨型 MoE。",
+        "novelty_strength": 3,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.6:PromptPartner/agentsmith",
+        "audience": "both",
+        "url": "https://github.com/PromptPartner/agentsmith",
+        "name": "PromptPartner/agentsmith",
+        "stars": 308,
+        "language": null,
+        "relevance": "工作類型驅動的代理核心自組配，消除單一固定代理性格。",
+        "novelty_strength": 2,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.7:thesysdev/appless",
+        "audience": "general",
+        "url": "https://github.com/thesysdev/appless",
+        "name": "thesysdev/appless",
+        "stars": 243,
+        "language": null,
+        "relevance": "動態生成原生 UI 流式渲染，重新定義行動介面交互。",
+        "novelty_strength": 2,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:CodeDrobe/skills",
+        "audience": "general",
+        "url": "https://github.com/CodeDrobe/skills",
+        "name": "CodeDrobe/skills",
+        "stars": 192,
+        "language": null,
+        "relevance": "可逆皮膚生成 + 自動修復迴圈，降低 AI 介面定制風險。",
+        "novelty_strength": 2,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.0:inclusionAI/Avernet",
+        "audience": "both",
+        "url": "https://github.com/inclusionAI/Avernet",
+        "name": "inclusionAI/Avernet",
+        "stars": 178,
+        "language": null,
+        "relevance": "分散代理協作平台支援自進化，突破單機編排限制。",
+        "novelty_strength": 2,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.9:liirAliu/Homekit",
+        "audience": "both",
+        "url": "https://github.com/liirAliu/Homekit",
+        "name": "liirAliu/Homekit",
+        "stars": 69,
+        "language": null,
+        "relevance": "AI 代理直接控制 Apple Home（燈、鎖、感測器），通過統一界面打開代理的物理世界應用。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 11,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:cynative/cynative",
+        "audience": "general",
+        "url": "https://github.com/cynative/cynative",
+        "name": "cynative/cynative",
+        "stars": 138,
+        "language": null,
+        "relevance": "基礎設施成為可查詢的讀唯一代理，安全稽核自動化。",
+        "novelty_strength": 2,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.4:VKirill/claude-lane-stack",
+        "audience": "both",
+        "url": "https://github.com/VKirill/claude-lane-stack",
+        "name": "VKirill/claude-lane-stack",
+        "stars": 126,
+        "language": null,
+        "relevance": "多代理編碼工廠自動合併到 main，構建持久交付管線。",
+        "novelty_strength": 2,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:1661169091kiwi/Knote",
+        "audience": "both",
+        "url": "https://github.com/1661169091kiwi/Knote",
+        "name": "1661169091kiwi/Knote",
+        "stars": 104,
+        "language": null,
+        "relevance": "本地優先編輯搭人工審改，規避 AI 編輯的不可逆風險。",
+        "novelty_strength": 2,
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:nossa-y/activity-frames",
+        "audience": "both",
+        "url": "https://github.com/nossa-y/activity-frames",
+        "name": "nossa-y/activity-frames",
+        "stars": 98,
+        "language": null,
+        "relevance": "不依賴 LLM 的確定性螢幕記憶框架，透過 MCP 整合記憶。",
+        "novelty_strength": 2,
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:qazbnm456/toolscout",
+        "audience": "both",
+        "url": "https://github.com/qazbnm456/toolscout",
+        "name": "qazbnm456/toolscout",
+        "stars": 0,
+        "language": null,
+        "relevance": "進階式 MCP 工具發現搭訓練軌跡導出，系統化代理擴展。",
+        "novelty_strength": 2
+      },
+      {
+        "id": "discoveries.dev_watch.1:microsoft/CrewMeal",
+        "audience": "work",
+        "url": "https://github.com/microsoft/CrewMeal",
+        "name": "microsoft/CrewMeal",
+        "stars": 0,
+        "language": null,
+        "relevance": "複雜企業文件（PPTX、PDF、HWP）透過視覺 LLM 結構化萃取，供 Copilot 連接器搜尋索引。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-48968606",
+        "audience": "general",
+        "url": "https://news.ycombinator.com/item?id=48968606",
+        "title": "Show HN: I replaced a $120k bowling center system with $1,600 in ESP32s",
+        "score": 1405,
+        "comments": 71,
+        "takeaway": "硬體工程師用微控制器快速迭代替代舊 legacy 系統的實例。"
+      },
+      {
+        "id": "pulse.hn.1:hn-39827361",
+        "audience": "general",
+        "url": "https://thenextweb.com/news/ai-advice-suppresses-critical-thinking-wrong-answers-study",
+        "title": "AI advice made people 3x less accurate but 2x confident, researchers found",
+        "score": 253,
+        "comments": 22,
+        "takeaway": "AI 輔助的盲目信任問題正在被量化，影響用戶決策品質。"
+      },
+      {
+        "id": "pulse.hn.2:hn-2078759124914098291",
+        "audience": "general",
+        "url": "https://twitter.com/Alibaba_Qwen/status/2078759124914098291",
+        "title": "Qwen 3.8",
+        "score": 775,
+        "comments": 57,
+        "takeaway": "阿里 Qwen 系列模型版本發布，國產 LLM 競爭加劇。"
+      },
+      {
+        "id": "pulse.hn.3:hn-simonwillison-bun",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Jul/19/claude-code-in-bun-in-rust/",
+        "title": "Claude Code uses Bun written in Rust now",
+        "score": 382,
+        "comments": 43,
+        "takeaway": "Claude Code 工具鏈改用 Rust 實現 Bun，性能與安全邊界優化。"
+      },
+      {
+        "id": "pulse.hn.4:hn-codex-context",
+        "audience": "work",
+        "url": "https://github.com/openai/codex/pull/33972/files",
+        "title": "OpenAI reduces Codex Model Context Size from 372k to 272k",
+        "score": 303,
+        "comments": 30,
+        "takeaway": "OpenAI Codex 縮減上下文長度，影響程式生成質量與成本結構。"
+      },
+      {
+        "id": "pulse.hn.5:hn-kimi-k3",
+        "audience": "general",
+        "url": "https://twitter.com/kimi_moonshot/status/2078855608565207130",
+        "title": "Moonshot AI suspends new subscriptions due to Kimi K3 demand",
+        "score": 211,
+        "comments": 17,
+        "takeaway": "月之暗面 Kimi K3 模型需求超預期，服務暫停新訂閱。"
+      },
+      {
+        "id": "pulse.hn.6:hn-loopgain",
+        "audience": "work",
+        "url": "https://github.com/loopgain-ai/loopgain",
+        "title": "Show HN: LoopGain – Stop agent loops with control theory, not max_iterations",
+        "score": 26,
+        "comments": 3,
+        "takeaway": "Agent 迴圈控制從啟發式參數切換到控制論架構。"
+      },
+      {
+        "id": "pulse.hn.7:hn-honeypot",
+        "audience": "general",
+        "url": "https://honeypotlive.cc/",
+        "title": "Show HN: Watch bots interact with an SSH honeypot in real time",
+        "score": 178,
+        "comments": 18,
+        "takeaway": "即時蜜罐互動展示網絡威脅偵測的實時動態。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-69mche",
+        "audience": "general",
+        "url": "https://lobste.rs/s/69mche",
+        "title": "What is your favorite blog to read recently?",
+        "score": 59,
+        "comments": null,
+        "takeaway": "技術部落格推薦討論反映社群高品質內容消費趨勢。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-review-ai-code",
+        "audience": "work",
+        "url": "https://softwaremaxims.com/blog/reviewing-ai-code",
+        "title": "Reviewing AI Code Is Not A Viable Argument",
+        "score": 44,
+        "comments": null,
+        "takeaway": "AI 生成代碼審查無法解決本質問題，需重新定義開發流程。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-canal-computer",
+        "audience": "general",
+        "url": "https://negroniventurestudios.com/2026/07/18/the-computer-at-the-bottom-of-a-canal/",
+        "title": "The computer at the bottom of a canal",
+        "score": 22,
+        "comments": null,
+        "takeaway": "硬體考古學故事揭示舊計算系統的持久性設計問題。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-gleam-tangled",
+        "audience": "general",
+        "url": "https://tangled.org/gleam.run/gleam",
+        "title": "Gleam has mirrored its source code on tangled (an AT-protocol based forge)",
+        "score": 34,
+        "comments": null,
+        "takeaway": "去中心化代碼倉庫實驗展示 AT 協議在開源的應用潛力。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-indieweb",
+        "audience": "general",
+        "url": "https://www.neatnik.net/hardcore-indieweb",
+        "title": "Hardcore IndieWeb: Run your own website 100% independently for only $0.01/day",
+        "score": 21,
+        "comments": null,
+        "takeaway": "開發者自主託管架構成本進一步降低，獨立性提升。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-codesizer",
+        "audience": "general",
+        "url": "https://github.com/Wren6991/CodeSizer",
+        "title": "CodeSizer: Why is that binary so big?",
+        "score": 7,
+        "comments": null,
+        "takeaway": "二進制體積分析工具簡化效能最佳化的第一步診斷。"
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:devto-typescript7",
+        "audience": "general",
+        "url": "https://dev.to/anthonymax/typescript-7-is-officially-released-4i7m",
+        "title": "TypeScript 7 is officially released! 🚨",
+        "score": null,
+        "comments": null,
+        "takeaway": "TypeScript 7 發布帶來工程工具鏈新功能，生態準備進行。"
+      },
+      {
+        "id": "pulse.chinese_community.1:devto-browser-agents",
+        "audience": "work",
+        "url": "https://dev.to/anthonymax/why-ai-agents-need-a-real-browser-layer-not-just-playwright-scripts-3mdf",
+        "title": "Why AI Agents Need a Real Browser Layer, Not Just Playwright Scripts",
+        "score": null,
+        "comments": null,
+        "takeaway": "Agent 瀏覽器交互需要實時 DOM 狀態，腳本自動化有根本限制。"
+      },
+      {
+        "id": "pulse.chinese_community.2:devto-stratagems",
+        "audience": "work",
+        "url": "https://dev.to/xulingfeng/stratagems-15-derek-and-alex-shared-one-server-acls-ai-was-listening-to-both-2j73",
+        "title": "Stratagems #15: Derek and Alex Shared One Server. ACL's AI Was Listening to Both.",
+        "score": null,
+        "comments": null,
+        "takeaway": "多租戶系統中 AI 隔離邊界的安全隱患案例研究。"
+      },
+      {
+        "id": "pulse.chinese_community.3:devto-metrics",
+        "audience": "work",
+        "url": "https://dev.to/he4rt/metricas-de-qualidade-de-software-na-era-da-ia-334o",
+        "title": "Métricas de qualidade de software na era da IA",
+        "score": null,
+        "comments": null,
+        "takeaway": "軟體品質衡量標準隨 AI 工作流變遷需要重新定義。"
+      },
+      {
+        "id": "pulse.chinese_community.4:devto-opportunities",
+        "audience": "general",
+        "url": "https://dev.to/devengers/dev-opportunity-radar-8-openai-build-week-aiaf-fellowship-the-residency-ai-dev-tools-zoomcamp-5bpc",
+        "title": "Dev Opportunity Radar #8: $100K OpenAI Build Week, $12K AI Fellowship, Founder Residency & Free AI Dev Course",
+        "score": null,
+        "comments": null,
+        "takeaway": "OpenAI 與社群構建培養機制，AI 開發者生涯路徑多元化。"
+      },
+      {
+        "id": "pulse.chinese_community.5:devto-quality",
+        "audience": "general",
+        "url": "https://dev.to/devengers/dev-opportunity-radar-8-openai-build-week-aiaf-fellowship-the-residency-ai-dev-tools-zoomcamp-5bpc",
+        "title": "Dev Opportunity Radar #8",
+        "score": null,
+        "comments": null,
+        "takeaway": "開發者機會聚集，社群組織培養計畫力度加大。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:devto-opportunities",
+        "audience": "general",
+        "url": "https://dev.to/devengers/dev-opportunity-radar-8-openai-build-week-aiaf-fellowship-the-residency-ai-dev-tools-zoomcamp-5bpc",
+        "title": "Dev Opportunity Radar #8: $100K OpenAI Build Week, $12K AI Fellowship, Founder Residency & Free AI Dev Course",
+        "score": null,
+        "comments": null,
+        "takeaway": "AI 開發者機會聚集，OpenAI 與社群構建培養管道。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:devto-browser-layer",
+        "audience": "work",
+        "url": "https://dev.to/anthonymax/why-ai-agents-need-a-real-browser-layer-not-just-playwright-scripts-3mdf",
+        "title": "Why AI Agents Need a Real Browser Layer, Not Just Playwright Scripts",
+        "score": null,
+        "comments": null,
+        "takeaway": "代理自動化必須跳脫腳本模擬層，真實瀏覽器是可靠推論基礎。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:devto-stratagems",
+        "audience": "work",
+        "url": "https://dev.to/xulingfeng/stratagems-15-derek-and-alex-shared-one-server-acls-ai-was-listening-to-both-2j73",
+        "title": "Stratagems #15: Derek and Alex Shared One Server. ACL's AI Was Listening to Both.",
+        "score": null,
+        "comments": null,
+        "takeaway": "共享基礎設施中的 AI 資訊洩漏風險，企業隔離策略重新檢視。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:devto-metricas",
+        "audience": "work",
+        "url": "https://dev.to/he4rt/metricas-de-qualidade-de-software-na-era-da-ia-334o",
+        "title": "Métricas de qualidade de software na era da IA",
+        "score": null,
+        "comments": null,
+        "takeaway": "AI 時代需重新定義代碼品質度量，傳統指標需與產能改進並衡。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:devto-typescript",
+        "audience": "general",
+        "url": "https://dev.to/anthonymax/typescript-7-is-officially-released-4i7m",
+        "title": "TypeScript 7 is officially released! 🚨",
+        "score": null,
+        "comments": null,
+        "takeaway": "TypeScript 7 重大功能更新，型別系統演進加速。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": []
+  },
+  "tech": {
+    "vendor": [],
+    "models": [
+      {
+        "id": "tech.models.0:hf-zai-org-glm-5-2",
+        "audience": "general",
+        "url": "https://huggingface.co/zai-org/GLM-5.2",
+        "title": "GLM-5.2: Open-Source Mixture-of-Experts Model",
+        "takeaway": "開源 MoE 模型展示強化的多模態與長序列能力。",
+        "companies": "Zhipu AI"
+      },
+      {
+        "id": "tech.models.1:hf-prism-ml-ternary-bonsai-27b",
+        "audience": "both",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf",
+        "title": "Ternary-Bonsai-27B: 2-bit Quantization on Qwen3.6",
+        "takeaway": "2-bit 量化結合混合注意力機制，在本地推理上大幅降低記憶體需求。",
+        "companies": "Prism ML"
+      },
+      {
+        "id": "tech.models.2:hf-prism-ml-bonsai-27b",
+        "audience": "both",
+        "url": "https://huggingface.co/prism-ml/Bonsai-27B-gguf",
+        "title": "Bonsai-27B: 1-bit Extreme Quantization",
+        "takeaway": "進一步激進的 1-bit 量化達成超低記憶體佔用，維持可用推理品質。",
+        "companies": "Prism ML"
+      },
+      {
+        "id": "tech.models.3:hf-tencent-hy3",
+        "audience": "general",
+        "url": "https://huggingface.co/AngelSlim/Hy3-GGUF",
+        "title": "Hy3: High-Performance Text Generation Model",
+        "takeaway": "騰訊開源 MoE 架構模型，多語言與長文本能力兼備。",
+        "companies": "Tencent"
+      },
+      {
+        "id": "tech.models.4:hf-openmos-moss-transcribe-diarize",
+        "audience": "general",
+        "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Transcribe-Diarize",
+        "title": "MOSS-Transcribe-Diarize: Multimodal Speech Model",
+        "takeaway": "開源 MOSS 團隊發布音訊轉錄與說話人分割模型，支援長音訊處理與多語言應用。",
+        "companies": "OpenMOSS"
+      },
+      {
+        "id": "tech.models.5:hf-ath-maas-ovisocr2",
+        "audience": "general",
+        "url": "https://huggingface.co/ATH-MaaS/OvisOCR2",
+        "title": "OvisOCR2: Advanced Document Recognition Model",
+        "takeaway": "基於 Qwen3.5 的多模態文件解析模型，支援表格與公式識別，應用於企業文件處理。",
+        "companies": "ATH-MaaS"
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-gpt-5-2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 enters top-3 tool-use performance",
+        "takeaway": "GPT-5.2 在工具使用排行從 #10 躍升至 #3，代理能力競爭加劇。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #3 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:hf-prism-ml-ternary-bonsai-27b",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-27B-gguf",
+        "title": "Ternary-Bonsai-27B: Extreme 2-bit Quantization for On-Device Inference",
+        "takeaway": "27B 模型 2-bit 三值量化方案，在 32GB 記憶體設備實現推理，邊界 AI 加速的突破。",
+        "companies": "Prism ML"
+      },
+      {
+        "id": "tech.aidaptiv.1:hf-prism-ml-bonsai-27b",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Bonsai-27B-gguf",
+        "title": "Bonsai-27B: 1-bit Extreme Quantization",
+        "takeaway": "1-bit 極端量化在 27B 參數達成，記憶體頻寬與儲存需求的新下限。",
+        "companies": "Prism ML"
+      },
+      {
+        "id": "tech.aidaptiv.2:hf-empero-ai-qwythos-9b-claude-mythos-5-1m",
+        "audience": "work",
+        "url": "https://huggingface.co/empero-ai/Qwythos-9B-Claude-Mythos-5-1M-GGUF",
+        "title": "Qwythos-9B: Long-Context Quantized Model (1M tokens)",
+        "takeaway": "9B 參數模型支援 1M context 長度的量化版本，GGUF 格式便於邊界推理部署。",
+        "companies": "Empero AI"
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": true,
+    "report_date": "2026-07-20",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "temporal",
+        "marker": "今日",
+        "ids": [
+          "pulse.lobsters.1:lobsters-review-ai-code"
+        ]
+      }
+    ],
+    "repaired": 1
+  }
+}
