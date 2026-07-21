@@ -123,7 +123,7 @@ Two long-lived branches with distinct roles:
 ├── docs/                         # Project documentation (architecture, data-sources, firewall, specs)
 ├── _site/                        # 11ty build output (gitignored — built in CI)
 ├── .github/workflows/deploy.yml  # CI: hydrate archive → build → deploy to GitHub Pages via OIDC
-├── config.json                   # Minimal: providers (firecrawl/jina tuning) + report rendering
+├── config.json                   # Empty placeholder (former providers/report fields were dead — removed 2026-07-21)
 ├── biome.json                    # Biome lint + format config
 └── eleventy.config.js            # 11ty build config (ESM) — loads active theme ui-strings + manifest
 ```
@@ -149,7 +149,7 @@ All data shapes are validated against Zod schemas in `src/schemas/`:
 
 | Schema | Validates | Used at |
 |---|---|---|
-| `ConfigSchema` | `config.json` (now just `providers` + `report`) | Startup, in `src/lib/config.js` |
+| `ConfigSchema` | `config.json` (empty placeholder; strict — rejects the removed `providers`/`report` fields) | Startup, in `src/lib/config.js` |
 | `StagingMetadataSchema` | `data/staging/metadata.json` | `src/collect.js` before writing (Stage 1 → Stage 2 contract) |
 | section `schema.js` (per theme section) | each `data/staging/curated/<section>.json` | Stage 2 curators after writing |
 | `EditorialSchema` | `data/staging/editorial.json` | `scripts/synthesize.sh` after Stage 3 |

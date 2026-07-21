@@ -1,6 +1,6 @@
 // Smoke tests for the config singleton + theme-sourced fetcher inputs.
-// After the theme bundle cutover, config.json only holds environment-level
-// tuning (cloud-fallback providers, report rendering). The persona / voice /
+// config.json is an empty placeholder since 2026-07-21 (the dead providers /
+// report fields were removed — review finding merge-3). The persona / voice /
 // source list lives in themes/<active>/sources.yaml, validated separately.
 
 import { describe, expect, it } from 'vitest';
@@ -8,10 +8,6 @@ import config from '../src/lib/config.js';
 import { getThemeSources } from '../src/lib/theme.js';
 
 describe('lib/config', () => {
-  it('exposes report section', () => {
-    expect(config).toHaveProperty('report');
-  });
-
   it('is frozen so no accidental mutation reaches fetchers', () => {
     expect(Object.isFrozen(config)).toBe(true);
     // In strict-mode ESM, assigning to a frozen property throws TypeError.
@@ -20,7 +16,9 @@ describe('lib/config', () => {
     }).toThrow(TypeError);
   });
 
-  it('no longer carries `sources` or `lenses` (moved to theme bundle)', () => {
+  it('no longer carries the removed dead fields (or the pre-cutover blocks)', () => {
+    expect(config).not.toHaveProperty('report');
+    expect(config).not.toHaveProperty('providers');
     expect(config).not.toHaveProperty('sources');
     expect(config).not.toHaveProperty('lenses');
   });

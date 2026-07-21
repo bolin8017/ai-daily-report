@@ -71,7 +71,7 @@ npm run serve          # 11ty dev server with live reload
 | Dev.to, Anthropic News, HuggingFace Papers | RSSHub |
 | Simon Willison, Karpathy, Google AI Blog, Phoronix, LWN, etc. | Native RSS |
 
-Full per-source breakdown (with URLs and categories): [docs/data-sources.md](./docs/data-sources.md). The source list lives in `themes/<theme>/sources.yaml` (`config.json` now holds only `providers` + `report`). Run `npm run check:sources` to verify the doc stays in sync.
+Full per-source breakdown (with URLs and categories): [docs/data-sources.md](./docs/data-sources.md). The source list lives in `themes/<theme>/sources.yaml` (`config.json` is now an empty placeholder). Run `npm run check:sources` to verify the doc stays in sync.
 
 ## Tech stack
 
