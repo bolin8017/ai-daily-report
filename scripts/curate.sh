@@ -28,6 +28,34 @@ mkdir -p "$CURATED_DIR"
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR"
 
+# ops-5 (2026-07-21 review): failure evidence lives at fixed per-section paths
+# and is overwritten by the next run — the 2026-07-08→12 malformed outputs were
+# gone before anyone could diagnose them. On failure (or a zero-item output),
+# copy the prompt/raw/output/error artifacts into a dated quarantine dir first.
+# A same-day re-run overwrites that day's copies, keeping the latest attempt.
+QUARANTINE_ROOT="$LOG_DIR/failures"
+find "$QUARANTINE_ROOT" -maxdepth 1 -type d -mtime +14 -exec rm -rf {} + 2>/dev/null || true
+
+quarantine_artifacts() {
+  local section="$1" reason="$2"
+  local qdir
+  qdir="$QUARANTINE_ROOT/$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%F)"
+  mkdir -p "$qdir"
+  local f
+  for f in \
+    "$LOG_DIR/$section.prompt.txt" \
+    "$LOG_DIR/$section.raw.json" \
+    "$LOG_DIR/$section.err.txt" \
+    "$LOG_DIR/$section.err.txt.validate" \
+    "$LOG_DIR/$section.err.txt.repair" \
+    "$LOG_DIR/$section.repair-prompt.txt" \
+    "$LOG_DIR/$section.repair-raw.json" \
+    "$CURATED_DIR/$section.json"; do
+    if [ -f "$f" ]; then cp -f "$f" "$qdir/" 2>/dev/null || true; fi
+  done
+  echo "[curate.sh] $section artifacts quarantined to $qdir ($reason)"
+}
+
 ALL_SECTIONS=(discoveries pulse market tech)
 CRITICAL=(discoveries pulse)
 
@@ -104,6 +132,7 @@ run_curator() {
   if [ "$claude_rc" -ne 0 ]; then
     echo "[curate.sh] $section FAILED (claude rc=$claude_rc)"
     cat "$err_file" >&2
+    quarantine_artifacts "$section" "claude rc=$claude_rc"
     return 1
   fi
 
@@ -119,47 +148,58 @@ run_curator() {
   # fails, one targeted LLM repair: feed the exact validation error back
   # instead of blind-retrying the whole curation — the 2026-07-08→12 outage
   # proved an identical retry fails identically (ops-1, 2026-07-21 review).
-  if ! node src/curators/validate-output.js "$section" "$out_file" 2> "$err_file.validate"; then
-    echo "[curate.sh] $section validation failed — attempting LLM repair (model=$FALLBACK_MODEL)"
-    cat "$err_file.validate" >&2
-    local repair_prompt="$LOG_DIR/$section.repair-prompt.txt"
-    {
-      printf 'The file `%s` was written by an automated curator but failed JSON validation with this error:\n\n' "$out_file"
-      cat "$err_file.validate"
-      printf '\nUse the Read tool to read that file, fix the malformed JSON syntax and/or the schema issues named above while preserving the existing content as faithfully as possible, and use the Write tool to write the corrected strict JSON back to the same path (`%s`).\n\n' "$out_file"
-      printf 'Do not output prose, acknowledgement, or explanation. Do not ask questions. Begin with a Read call. The final action is one Write call.\n'
-    } > "$repair_prompt"
-    (
-      claude -p \
-        --model "$FALLBACK_MODEL" \
-        --output-format json \
-        --tools "Read,Write" \
-        --allowed-tools Read Write \
-        --no-session-persistence \
-        "${LEAN_FLAGS[@]}" \
-        < "$repair_prompt" \
-        > "$LOG_DIR/$section.repair-raw.json" \
-        2> "$err_file.repair"
-    ) &
-    local repair_pid=$!
-    bash scripts/watchdog.sh "$repair_pid" > "$LOG_DIR/$section.repair-watchdog.log" 2>&1 &
-    local repair_watchdog_pid=$!
-    wait "$repair_pid"
-    local repair_rc=$?
-    kill "$repair_watchdog_pid" 2>/dev/null || true
-    node src/lib/claude-envelope.js sidecar "$LOG_DIR/$section.repair-raw.json" "$LOG_DIR/$section.repair.meta.json" "curate.$section.repair" 2>/dev/null || true
-    if [ "$repair_rc" -ne 0 ]; then
-      echo "[curate.sh] $section repair FAILED (claude rc=$repair_rc)"
-      cat "$err_file.repair" >&2
-      return 1
-    fi
-    if ! node src/curators/validate-output.js "$section" "$out_file"; then
-      echo "[curate.sh] $section VALIDATION FAILED"
-      return 2
-    fi
-    echo "[curate.sh] $section recovered via LLM repair"
+  local validate_log
+  if validate_log=$(node src/curators/validate-output.js "$section" "$out_file" 2> "$err_file.validate"); then
+    echo "$validate_log"
+    case "$validate_log" in
+      *'items=0'*) quarantine_artifacts "$section" "validated but empty" ;;
+    esac
+    return 0
   fi
-
+  echo "[curate.sh] $section validation failed — attempting LLM repair (model=$FALLBACK_MODEL)"
+  cat "$err_file.validate" >&2
+  local repair_prompt="$LOG_DIR/$section.repair-prompt.txt"
+  {
+    printf 'The file `%s` was written by an automated curator but failed JSON validation with this error:\n\n' "$out_file"
+    cat "$err_file.validate"
+    printf '\nUse the Read tool to read that file, fix the malformed JSON syntax and/or the schema issues named above while preserving the existing content as faithfully as possible, and use the Write tool to write the corrected strict JSON back to the same path (`%s`).\n\n' "$out_file"
+    printf 'Do not output prose, acknowledgement, or explanation. Do not ask questions. Begin with a Read call. The final action is one Write call.\n'
+  } > "$repair_prompt"
+  (
+    claude -p \
+      --model "$FALLBACK_MODEL" \
+      --output-format json \
+      --tools "Read,Write" \
+      --allowed-tools Read Write \
+      --no-session-persistence \
+      "${LEAN_FLAGS[@]}" \
+      < "$repair_prompt" \
+      > "$LOG_DIR/$section.repair-raw.json" \
+      2> "$err_file.repair"
+  ) &
+  local repair_pid=$!
+  bash scripts/watchdog.sh "$repair_pid" > "$LOG_DIR/$section.repair-watchdog.log" 2>&1 &
+  local repair_watchdog_pid=$!
+  wait "$repair_pid"
+  local repair_rc=$?
+  kill "$repair_watchdog_pid" 2>/dev/null || true
+  node src/lib/claude-envelope.js sidecar "$LOG_DIR/$section.repair-raw.json" "$LOG_DIR/$section.repair.meta.json" "curate.$section.repair" 2>/dev/null || true
+  if [ "$repair_rc" -ne 0 ]; then
+    echo "[curate.sh] $section repair FAILED (claude rc=$repair_rc)"
+    cat "$err_file.repair" >&2
+    quarantine_artifacts "$section" "repair claude rc=$repair_rc"
+    return 1
+  fi
+  if ! validate_log=$(node src/curators/validate-output.js "$section" "$out_file"); then
+    echo "[curate.sh] $section VALIDATION FAILED"
+    quarantine_artifacts "$section" "validation failed after LLM repair"
+    return 2
+  fi
+  echo "$validate_log"
+  echo "[curate.sh] $section recovered via LLM repair"
+  case "$validate_log" in
+    *'items=0'*) quarantine_artifacts "$section" "validated but empty" ;;
+  esac
   return 0
 }
 
