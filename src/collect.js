@@ -213,7 +213,9 @@ async function main() {
       items: githubItems,
       history: loadStarHistory(),
       feedItems: raw.feeds.items ?? [],
-      seen: loadSeenSet(),
+      // shownBefore: a completed day's full re-run must not treat today's own
+      // ledger entries as seen, or the regenerated 新發現 comes out empty.
+      seen: loadSeenSet(undefined, { shownBefore: date }),
       todayISO: date,
       fetchTree,
       fetchCommits,

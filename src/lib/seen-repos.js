@@ -50,10 +50,17 @@ export function loadSeenLedger(ledgerPath = DEFAULT_LEDGER_PATH) {
 
 /**
  * @param {string} [ledgerPath]
+ * @param {{shownBefore?: string}} [opts] - when set, entries first shown on or
+ *   after this YYYY-MM-DD date are excluded. A completed day's full re-run
+ *   passes today here so the ledger entries Stage 4 appended for today don't
+ *   filter today's own picks out of the candidate pool — that silently
+ *   emptied the regenerated report's discoveries sections.
  * @returns {Set<string>} set of "owner/name"
  */
-export function loadSeenSet(ledgerPath = DEFAULT_LEDGER_PATH) {
-  return new Set(loadSeenLedger(ledgerPath).map((e) => e.repo));
+export function loadSeenSet(ledgerPath = DEFAULT_LEDGER_PATH, { shownBefore } = {}) {
+  const entries = loadSeenLedger(ledgerPath);
+  const kept = shownBefore ? entries.filter((e) => e.first_shown < shownBefore) : entries;
+  return new Set(kept.map((e) => e.repo));
 }
 
 /**

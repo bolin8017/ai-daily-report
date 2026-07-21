@@ -73,8 +73,11 @@ export async function buildDiscoveries({
   for (const item of uniqueItems) {
     const fullName = item.full_name;
 
-    // Skip repos already shown in the 精選 catalog
-    if (seen.has(fullName)) continue;
+    // Skip repos already shown in past discoveries. Key by canonicalRepoKey —
+    // the same form appendSeen stores — so drift like a trailing ".git" in
+    // full_name can't dodge the dedup.
+    const repoKey = canonicalRepoKey(item) ?? fullName;
+    if (seen.has(repoKey)) continue;
 
     pool++;
 
@@ -83,9 +86,7 @@ export async function buildDiscoveries({
     if (!gates.pass) continue;
 
     // Compute velocity from history; fall back to a single today-snapshot.
-    // Use canonicalRepoKey to match the ledger key format (strips .git/trailing slash).
-    const historyKey = canonicalRepoKey(item) ?? fullName;
-    const rec = history[historyKey];
+    const rec = history[repoKey];
     const snapshots =
       rec?.snapshots?.length > 0
         ? rec.snapshots

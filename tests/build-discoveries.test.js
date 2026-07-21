@@ -81,6 +81,30 @@ it('drops a seen repo, a flat repo, and a fork; watchlists a brand-new one', asy
   expect(out.stats).toMatchObject({ survivors: 0, watchlisted: 1 });
 });
 
+// Review finding merge-4: the ledger stores canonicalRepoKey() forms, so the
+// exclusion must key the same way — a raw full_name with e.g. a trailing
+// ".git" would dodge the dedup and re-show a seen repo.
+it('excludes a seen repo via the canonical key, not the raw full_name', async () => {
+  const out = await buildDiscoveries({
+    items: [{ ...base, full_name: 'o/seen.git', url: 'https://github.com/o/seen', stars: 300 }],
+    history: {
+      'o/seen': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 50 },
+          { date: '2026-06-15', stars: 300 },
+        ],
+      },
+    },
+    seen: new Set(['o/seen']),
+    feedItems: [],
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+  expect(out.candidates).toEqual([]);
+  expect(out.watchlist).toEqual([]);
+});
+
 it('external validation rescues a flat repo past the velocity gate', async () => {
   const out = await buildDiscoveries({
     items: [{ ...base, full_name: 'o/niche', url: 'https://github.com/o/niche', stars: 50 }],

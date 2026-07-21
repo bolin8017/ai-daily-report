@@ -43,6 +43,21 @@ describe('loadSeenLedger / loadSeenSet', () => {
     expect(loadSeenSet(ledgerPath).has('pytorch/pytorch')).toBe(true);
   });
 
+  // Review finding merge-2: after a completed day, a full re-run of the same
+  // date must not treat today's own picks as "seen" — otherwise the
+  // regenerated report's discoveries sections come out empty.
+  it('excludes entries first shown on/after shownBefore (same-day regeneration)', () => {
+    writeFileSync(
+      ledgerPath,
+      JSON.stringify([
+        { repo: 'a/b', first_shown: '2026-07-20', stars_at_show: 10 },
+        { repo: 'c/d', first_shown: '2026-07-21', stars_at_show: 20 },
+      ]),
+    );
+    expect(loadSeenSet(ledgerPath, { shownBefore: '2026-07-21' })).toEqual(new Set(['a/b']));
+    expect(loadSeenSet(ledgerPath)).toEqual(new Set(['a/b', 'c/d']));
+  });
+
   it('falls back (returns []) when the local ledger is corrupt JSON', () => {
     writeFileSync(ledgerPath, '{ not valid json');
     expect(loadSeenLedger(ledgerPath)).toEqual([]);
