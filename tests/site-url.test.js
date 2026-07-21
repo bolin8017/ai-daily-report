@@ -54,4 +54,12 @@ describe('rfc822Date', () => {
     // 2026-01-01 is a Thursday
     expect(rfc822Date('2026-01-01')).toBe('Thu, 01 Jan 2026 08:00:00 +0800');
   });
+
+  it('returns an empty string for unparseable dates instead of NaN garbage', () => {
+    // "2026-99-99" passes the schema's YYYY-MM-DD regex but is not a real date;
+    // without a guard the feed would emit "undefined, NaN undefined NaN …".
+    expect(rfc822Date('2026-99-99')).toBe('');
+    expect(rfc822Date('not-a-date')).toBe('');
+    expect(rfc822Date(undefined)).toBe('');
+  });
 });
