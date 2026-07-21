@@ -1,7 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildRunArgs,
   decideNotice,
+  dispatchPages,
   parseArgs,
   renderFailure,
   renderOrphan,
@@ -144,6 +145,63 @@ describe('renderFailure', () => {
     });
     expect(text).toMatch(/retry attempted \(failed\): synthesize/);
     expect(text).not.toMatch(/auto-recovered:/);
+  });
+
+  it('flags a dispatch-only failure as published-but-undeployed (07-20 shape)', () => {
+    const text = renderFailure({
+      run_id: 'r1',
+      report_date: '2026-07-20',
+      rc: { final: 22, run: 0, validate: 0, remote: 0, dispatch: 22 },
+      log_file: '/var/log/x.log',
+      stages: {},
+    });
+    expect(text).toMatch(/report published .* Pages dispatch failed/);
+    expect(text).toMatch(/gh workflow run deploy\.yml/);
+  });
+
+  it('does not show the undeployed hint when the pipeline itself failed', () => {
+    const text = renderFailure({
+      run_id: 'r1',
+      report_date: '2026-06-30',
+      rc: { final: 1, run: 1, dispatch: null },
+      log_file: '/var/log/x.log',
+      stages: {},
+    });
+    expect(text).not.toMatch(/published/);
+  });
+});
+
+describe('dispatchPages retry', () => {
+  const noLog = -1;
+
+  it('retries on transient failure and succeeds (the 07-20 GitHub 503 case)', () => {
+    const curlFn = vi.fn().mockReturnValueOnce(22).mockReturnValueOnce(22).mockReturnValueOnce(0);
+    const sleepFn = vi.fn();
+    const rc = dispatchPages('tok', noLog, { curlFn, sleepFn });
+    expect(rc).toBe(0);
+    expect(curlFn).toHaveBeenCalledTimes(3);
+    expect(sleepFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns the last rc after exhausting attempts', () => {
+    const curlFn = vi.fn().mockReturnValue(22);
+    const rc = dispatchPages('tok', noLog, { curlFn, sleepFn: vi.fn(), attempts: 3 });
+    expect(rc).toBe(22);
+    expect(curlFn).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not sleep or retry after a first-attempt success', () => {
+    const curlFn = vi.fn().mockReturnValue(0);
+    const sleepFn = vi.fn();
+    expect(dispatchPages('tok', noLog, { curlFn, sleepFn })).toBe(0);
+    expect(curlFn).toHaveBeenCalledTimes(1);
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
+
+  it('fails immediately without a token', () => {
+    const curlFn = vi.fn();
+    expect(dispatchPages(undefined, noLog, { curlFn })).toBe(1);
+    expect(curlFn).not.toHaveBeenCalled();
   });
 });
 

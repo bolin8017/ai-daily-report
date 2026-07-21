@@ -111,6 +111,12 @@ export function renderFailure(latest) {
       );
       return failedRetries.length ? `retry attempted (failed): ${failedRetries.join(', ')}` : null;
     })(),
+    latest.rc?.run === 0 &&
+    latest.rc?.validate === 0 &&
+    latest.rc?.remote === 0 &&
+    latest.rc?.dispatch
+      ? 'report published to the data branch but the Pages dispatch failed — the site is stale until the next data push; trigger manually: gh workflow run deploy.yml'
+      : null,
     `log: ${latest.log_file ?? '?'}`,
     '--- stage summary ---',
     renderStages(latest.stages),
@@ -249,11 +255,7 @@ function remoteReportPresent(date, logFd) {
 
 // POST a repository_dispatch to trigger the Pages build. The token is passed via
 // an Authorization header arg; spawnSync does not echo argv to the log.
-function dispatchPages(token, logFd) {
-  if (!token) {
-    writeToFd(logFd, '[production] ERROR: GITHUB_TOKEN missing; cannot dispatch Pages deploy\n');
-    return 1;
-  }
+function curlDispatch(token, logFd) {
   const res = spawnSync(
     'curl',
     [
@@ -273,6 +275,38 @@ function dispatchPages(token, logFd) {
     { cwd: REPO_ROOT, stdio: ['ignore', 'ignore', logFd] },
   );
   return res.status ?? 1;
+}
+
+// Synchronous sleep — cmdRun is deliberately synchronous end to end.
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/**
+ * Dispatch the Pages build with a bounded retry. A single unretried curl let a
+ * routine GitHub API 503 mark the whole 2026-07-20 run failed and leave the
+ * published report undeployed for a day (ops-3, 2026-07-21 review). curlFn /
+ * sleepFn are injectable for tests only.
+ *
+ * @returns {number} 0 on success, else the last curl rc
+ */
+export function dispatchPages(token, logFd, opts = {}) {
+  const { attempts = 3, delayMs = 30_000, curlFn = curlDispatch, sleepFn = sleepSync } = opts;
+  if (!token) {
+    writeToFd(logFd, '[production] ERROR: GITHUB_TOKEN missing; cannot dispatch Pages deploy\n');
+    return 1;
+  }
+  let rc = 1;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    rc = curlFn(token, logFd);
+    if (rc === 0) return 0;
+    writeToFd(
+      logFd,
+      `[production] Pages dispatch attempt ${attempt}/${attempts} failed (rc=${rc})\n`,
+    );
+    if (attempt < attempts) sleepFn(delayMs);
+  }
+  return rc;
 }
 
 function writeToFd(fd, text) {
