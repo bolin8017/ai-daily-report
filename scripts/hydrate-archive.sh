@@ -47,7 +47,11 @@ trap "rm -rf '$WORK_DIR'" EXIT
 
 AUTH_HEADER=()
 if [ -n "${GITHUB_TOKEN:-}" ]; then
-  AUTH_HEADER=(-H "Authorization: token $GITHUB_TOKEN")
+  # Keep the token off curl argv (visible in /proc/<pid>/cmdline) — curl
+  # reads the header from a 0600 file instead.
+  AUTH_FILE="$WORK_DIR/auth-header"
+  (umask 077; printf 'Authorization: token %s\n' "$GITHUB_TOKEN" > "$AUTH_FILE")
+  AUTH_HEADER=(-H "@$AUTH_FILE")
 fi
 
 # Fetch release JSON for tag $1; emit asset download URLs (name<TAB>url) on stdout

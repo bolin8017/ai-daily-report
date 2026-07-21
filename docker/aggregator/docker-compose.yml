@@ -17,6 +17,9 @@ services:
       # Bind loopback only (127.0.0.1:1200): under host networking this keeps
       # RSSHub OFF the public interface. Only the pipeline (collect.js, same
       # host) consumes it, over localhost. Miniflux does NOT fetch via RSSHub.
+      # Verified on the host 2026-07-21: with this flag RSSHub binds
+      # 127.0.0.1:1200 only (`ss -ltn` shows no wildcard listener) — keep the
+      # flag when bumping the image and re-verify after upgrades.
       LISTEN_INADDR_ANY: "false"
 
   db:

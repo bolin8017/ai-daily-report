@@ -110,25 +110,26 @@ fi
 # than throwing away an expensive synthesis. With Hermes Wiki migration, legacy
 # memory is no longer an input; terse/unknown prediction updates are dropped
 # unless report-context supplied complete prediction details.
-node --input-type=module -e "
-  import { readFile, writeFile } from 'node:fs/promises';
-  import { repairEditorial } from './src/lib/repair-editorial.js';
-  const doc = JSON.parse(await readFile('$EDITORIAL_FILE', 'utf8'));
+SYNTH_EDITORIAL_FILE="$EDITORIAL_FILE" node --input-type=module -e '
+  import { readFile, writeFile } from "node:fs/promises";
+  import { repairEditorial } from "./src/lib/repair-editorial.js";
+  const EDITORIAL_FILE = process.env.SYNTH_EDITORIAL_FILE;
+  const doc = JSON.parse(await readFile(EDITORIAL_FILE, "utf8"));
   const r = repairEditorial(doc);
   if (r.statusCoerced || r.dropped) {
-    await writeFile('$EDITORIAL_FILE', JSON.stringify(doc, null, 2));
-    console.error('[synthesize.sh] repaired editorial: statusCoerced=' + r.statusCoerced + ' dropped=' + r.dropped);
+    await writeFile(EDITORIAL_FILE, JSON.stringify(doc, null, 2));
+    console.error("[synthesize.sh] repaired editorial: statusCoerced=" + r.statusCoerced + " dropped=" + r.dropped);
   }
-"
+'
 
-if ! node -e "
-  import('./src/schemas/editorial.js').then(async m => {
-    const fs = await import('node:fs/promises');
-    const doc = JSON.parse(await fs.readFile('$EDITORIAL_FILE','utf8'));
+if ! SYNTH_EDITORIAL_FILE="$EDITORIAL_FILE" node -e '
+  import("./src/schemas/editorial.js").then(async m => {
+    const fs = await import("node:fs/promises");
+    const doc = JSON.parse(await fs.readFile(process.env.SYNTH_EDITORIAL_FILE, "utf8"));
     m.EditorialSchema.parse(doc);
-    console.log('[synthesize.sh] editorial validates against EditorialSchema 2.1-editorial');
-  }).catch(e => { console.error('[synthesize.sh] EDITORIAL VALIDATION FAILED:', e.message); process.exit(2); });
-"; then
+    console.log("[synthesize.sh] editorial validates against EditorialSchema 2.1-editorial");
+  }).catch(e => { console.error("[synthesize.sh] EDITORIAL VALIDATION FAILED:", e.message); process.exit(2); });
+'; then
   exit 2
 fi
 
