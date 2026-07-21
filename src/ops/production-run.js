@@ -34,6 +34,7 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allStageIds } from '../pipeline/stages.js';
+import { DEFAULT_LOOKBACK_DAYS, findMissingReportDays, parseReportDates } from './report-gaps.js';
 import { parseStageResults, summarizeStages } from './stage-results.js';
 
 const STATE_SCHEMA_VERSION = 1;
@@ -117,6 +118,9 @@ export function renderFailure(latest) {
     latest.rc?.dispatch
       ? 'report published to the data branch but the Pages dispatch failed — the site is stale until the next data push; trigger manually: gh workflow run deploy.yml'
       : null,
+    latest.publish?.missing_days?.length
+      ? `missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${latest.publish.missing_days.join(', ')}`
+      : null,
     `log: ${latest.log_file ?? '?'}`,
     '--- stage summary ---',
     renderStages(latest.stages),
@@ -137,6 +141,9 @@ export function renderSuccess(latest) {
     durationMin ? `duration: ${durationMin} min` : null,
     latest.recovery?.retried?.length
       ? `auto-recovered: ${latest.recovery.retried.join(', ')}`
+      : null,
+    latest.publish?.missing_days?.length
+      ? `missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${latest.publish.missing_days.join(', ')}`
       : null,
     'report: https://bolin8017.github.io/ai-daily-report/',
   ]
@@ -242,15 +249,16 @@ function runToLog(cmd, args, logFd, extraEnv = {}) {
   return res.status ?? 1;
 }
 
-// Verify origin/data carries today's report. Returns true/false; never throws.
-function remoteReportPresent(date, logFd) {
+// Fetch origin/data and return the branch's full file listing (empty string on
+// failure). One listing serves both the today's-report check and the
+// missing-day gap scan.
+function remoteDataListing(logFd) {
   runToLog('git', ['fetch', 'origin', 'data', '--quiet'], logFd);
   const res = spawnSync('git', ['ls-tree', '--name-only', '-r', 'origin/data'], {
     cwd: REPO_ROOT,
     encoding: 'utf8',
   });
-  const want = `data/reports/${date}.json`;
-  return (res.stdout ?? '').split('\n').some((l) => l.trim() === want);
+  return res.stdout ?? '';
 }
 
 // POST a repository_dispatch to trigger the Pages build. The token is passed via
@@ -352,7 +360,12 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
     skip_push: Boolean(skipPush),
     stages: {},
     recovery: { attempted: [], retried: [] },
-    publish: { attempted: false, report_present_remote: null, dispatch_rc: null },
+    publish: {
+      attempted: false,
+      report_present_remote: null,
+      dispatch_rc: null,
+      missing_days: null,
+    },
     rc: { run: null, validate: null, remote: null, dispatch: null, final: null },
   };
   atomicWriteJson(path.join(stateDir, 'latest.json'), base);
@@ -380,7 +393,8 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
     validateRc = runToLog('npm', ['run', 'validate:report'], logFd);
     base.rc.validate = validateRc;
 
-    const present = remoteReportPresent(date, logFd);
+    const listing = remoteDataListing(logFd);
+    const present = listing.split('\n').some((l) => l.trim() === `data/reports/${date}.json`);
     base.publish.report_present_remote = present;
     remoteRc = present ? 0 : 1;
     base.rc.remote = remoteRc;
@@ -388,6 +402,22 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
       writeToFd(
         logFd,
         `[production:${runId}] ERROR: origin/data missing data/reports/${date}.json\n`,
+      );
+    }
+
+    // Gap scan (ops-2): surface recent calendar days with no published report
+    // — a missed cron day produces no run and no failure notice of its own,
+    // so this run's notice is where the hole becomes visible. Informational
+    // only; never fails the run.
+    const missingDays = findMissingReportDays({
+      presentDates: parseReportDates(listing),
+      today: date,
+    });
+    base.publish.missing_days = missingDays;
+    if (missingDays.length) {
+      writeToFd(
+        logFd,
+        `[production:${runId}] WARNING: missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${missingDays.join(', ')}\n`,
       );
     }
 
