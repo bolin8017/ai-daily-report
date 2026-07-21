@@ -131,13 +131,23 @@ describe('schemas', () => {
     expect(StagingMetadataSchema.safeParse(metadata).success).toBe(false);
   });
 
-  it('ConfigSchema accepts the minimal post-cutover shape (report + providers)', () => {
-    const minimal = {
-      report: { language: 'zh-TW', max_featured_items: 12, style: 'creative' },
-    };
-    const result = ConfigSchema.safeParse(minimal);
+  // Review finding merge-3: the providers/report fields were validated at
+  // import but read by no code — editing them changed nothing. The schema now
+  // accepts only an empty object and rejects the removed fields loudly, so a
+  // stale config.json fails at startup instead of silently doing nothing.
+  it('ConfigSchema accepts the empty post-cleanup shape', () => {
+    const result = ConfigSchema.safeParse({});
     if (!result.success) console.error(result.error.issues);
     expect(result.success).toBe(true);
+  });
+
+  it('ConfigSchema rejects the removed dead fields', () => {
+    expect(
+      ConfigSchema.safeParse({
+        report: { language: 'zh-TW', max_featured_items: 12, style: 'creative' },
+      }).success,
+    ).toBe(false);
+    expect(ConfigSchema.safeParse({ providers: {} }).success).toBe(false);
   });
 });
 

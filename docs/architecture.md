@@ -275,7 +275,7 @@ themes/ai-builder/
 
 The loader is `src/lib/theme.js` (`loadTheme` / `loadSection` / `listActiveSections`). The fetcher providers read their source list through `getThemeSources()` rather than `config.json`, the report schema is composed from the active sections' `schema.js` files, and 11ty discovers section partials by convention. The upshot: adding a section is `mkdir themes/ai-builder/sections/<id>` + four files + a line in `theme.yaml`; swapping the whole focus is `cp -r` the theme dir, edit, and set `ACTIVE_THEME`. No edits to `src/`, `scripts/`, or `eleventy.config.js`.
 
-**What stayed in `config.json`**: only cross-theme infrastructure tuning — the `providers` block (Firecrawl monthly cap, Jina Reader base URL) and `report` defaults (language, item caps). The `sources` and `lenses` blocks that used to live there moved into each theme's `sources.yaml`, because they *are* theme-specific.
+**What stayed in `config.json`**: nothing, as of 2026-07-21 — the `providers` / `report` fields that survived the cutover turned out to be read by no code (the firecrawl / jina providers hardcode their constants) and were removed; the file is an empty placeholder validated strictly at startup. The `sources` and `lenses` blocks that used to live there moved into each theme's `sources.yaml`, because they *are* theme-specific.
 
 ## Fetcher strategy
 
