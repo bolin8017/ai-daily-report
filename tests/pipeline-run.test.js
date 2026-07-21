@@ -377,6 +377,115 @@ describe('runPipeline — suspicious-empty (disk-backed)', () => {
     expect(ok).toBe(true);
     expect(emitted.find((e) => e.stage === 'curate.discoveries').status).toBe('suspicious-empty');
   });
+
+  // ops-4 (2026-07-21 operational reliability review): curate.market emitted 0
+  // items on 5 of 14 runs from ~170-item slices — curator behavior, not empty
+  // news days. Under --auto-recover an empty curation gets ONE immediate
+  // re-roll before dependents consume the empty file; a still-empty retry is
+  // accepted as before (day stays alive).
+  const emptyThenFull = (sat, callsPerStage) => async (stage) => {
+    callsPerStage[stage.id] = (callsPerStage[stage.id] ?? 0) + 1;
+    if (stage.id === 'curate.market') {
+      const empty = callsPerStage[stage.id] === 1;
+      writeFileSync(
+        path.join(staging, 'curated', 'market.json'),
+        JSON.stringify(
+          empty
+            ? { ma: [], funding: [], taiwan: [] }
+            : { ma: [{ id: 'x' }], funding: [], taiwan: [] },
+        ),
+      );
+    }
+    sat.add(stage.id);
+    return { exitCode: 0, duration_ms: 1, cost_usd: 0, tokens: 0 };
+  };
+
+  it('re-rolls an empty curation once under auto-recover, before dependents run', async () => {
+    const sat = new Set(['collect']);
+    const emitted = [];
+    const calls = [];
+    const callsPerStage = {};
+    const inner = emptyThenFull(sat, callsPerStage);
+    const slept = [];
+    const { ok } = await runPipeline({
+      today: TODAY,
+      stagingDir: staging,
+      reportsDir: reports,
+      autoRecover: true,
+      sleep: async (ms) => slept.push(ms),
+      runStage: async (stage, ctx) => {
+        calls.push(stage.id);
+        return inner(stage, ctx);
+      },
+      satisfiedFn: (id) => ({ satisfied: sat.has(id) }),
+      emit: (r) => emitted.push(r),
+    });
+    expect(ok).toBe(true);
+    expect(callsPerStage['curate.market']).toBe(2);
+    // the empty first attempt is recorded, the final status is ok
+    const marketRecords = emitted.filter((e) => e.stage === 'curate.market');
+    expect(marketRecords.map((r) => r.status)).toEqual(['suspicious-empty', 'ok']);
+    // dependents run only after the re-roll — no synthesize on the empty file
+    expect(calls.lastIndexOf('curate.market')).toBeLessThan(calls.indexOf('synthesize'));
+    // the re-roll is immediate: no auto-recover delay was spent on it
+    expect(slept).toEqual([]);
+  });
+
+  it('accepts a still-empty retry without further attempts', async () => {
+    const sat = new Set(['collect']);
+    const emitted = [];
+    const callsPerStage = {};
+    const runStage = async (stage) => {
+      callsPerStage[stage.id] = (callsPerStage[stage.id] ?? 0) + 1;
+      if (stage.id === 'curate.market') {
+        writeFileSync(
+          path.join(staging, 'curated', 'market.json'),
+          JSON.stringify({ ma: [], funding: [], taiwan: [] }),
+        );
+      }
+      sat.add(stage.id);
+      return { exitCode: 0, duration_ms: 1, cost_usd: 0, tokens: 0 };
+    };
+    const { ok } = await runPipeline({
+      today: TODAY,
+      stagingDir: staging,
+      reportsDir: reports,
+      autoRecover: true,
+      sleep: async () => {},
+      runStage,
+      satisfiedFn: (id) => ({ satisfied: sat.has(id) }),
+      emit: (r) => emitted.push(r),
+    });
+    expect(ok).toBe(true);
+    expect(callsPerStage['curate.market']).toBe(2);
+    const final = emitted.filter((e) => e.stage === 'curate.market').at(-1);
+    expect(final.status).toBe('suspicious-empty');
+  });
+
+  it('does not re-roll empty curations without auto-recover', async () => {
+    const sat = new Set(['collect']);
+    const callsPerStage = {};
+    const runStage = async (stage) => {
+      callsPerStage[stage.id] = (callsPerStage[stage.id] ?? 0) + 1;
+      if (stage.id === 'curate.market') {
+        writeFileSync(
+          path.join(staging, 'curated', 'market.json'),
+          JSON.stringify({ ma: [], funding: [], taiwan: [] }),
+        );
+      }
+      sat.add(stage.id);
+      return { exitCode: 0, duration_ms: 1, cost_usd: 0, tokens: 0 };
+    };
+    await runPipeline({
+      today: TODAY,
+      stagingDir: staging,
+      reportsDir: reports,
+      runStage,
+      satisfiedFn: (id) => ({ satisfied: sat.has(id) }),
+      emit: () => {},
+    });
+    expect(callsPerStage['curate.market']).toBe(1);
+  });
 });
 
 describe('downstreamOf', () => {
