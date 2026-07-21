@@ -196,7 +196,7 @@ Required:
 Optional:
 - `RSSHUB_URL` — env var override. Forces a single URL and **disables the fallback list** — intended for local debugging against a private instance. Production should leave this unset and let `sources.yaml` provide the ordered list.
 - `REPORT_TIMEZONE` — default `Asia/Taipei`.
-- `CLAUDE_MODEL` — override the model passed to `claude -p`; default `claude-opus-4-6`.
+- `CLAUDE_MODEL` — override the model for the Stage 3 synthesize `claude -p` call; default `claude-sonnet-4-6`. Stage 2 curators use `CURATE_MODEL` instead (default `claude-haiku-4-5`).
 - `SKIP_PUSH=1` — skip `git push` in both stages; also accessible as `--skip-push` CLI flag on `src/collect.js`.
 - `ACTIVE_THEME` — default `ai-builder`. Name of the theme directory under `themes/` to activate. See "Themes" section below.
 - `HOT_DAYS` — default `60`. Reports newer than this stay on the `data` branch; older ones archive monthly to GitHub Releases.
@@ -208,7 +208,7 @@ See `.env.example` for all variables.
 
 ## Themes
 
-The pipeline reads its persona, voice, anti-slop rules, source list, and section definitions from `themes/<ACTIVE_THEME>/`. The default theme is `ai-builder`. The structure is designed so that swapping focus (e.g., from "AI builder" to "ML researcher" or "Web3 developer") becomes a single-directory edit rather than touching 8+ files across the repo.
+The pipeline reads its persona, voice, anti-slop rules, source list, and section definitions from `themes/<ACTIVE_THEME>/`. The default theme is `ai-builder`. The structure is designed so that swapping focus (e.g., from "AI builder" to "ML researcher" or "Web3 developer") becomes a single-directory edit rather than touching 8+ files across the repo. Caveat: the swap currently covers the *pipeline* layer (sources, prompts, schemas, section partials); the site chrome does not yet read the theme's `ui-strings.yaml` — v2 tab labels and the site title are hardcoded in the templates (the `uiStrings`/`theme` 11ty globals are registered but unused), so a theme swap changes report content but not those labels.
 
 ### Theme structure
 
