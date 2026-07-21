@@ -9,7 +9,8 @@
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, realpathSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 // Side-effect imports — populate the provider registry for runAll
 import './fetchers/providers/arxiv-rss.js';
 import './fetchers/providers/firecrawl.js';
@@ -63,15 +64,18 @@ const FEED_ITEM_TYPES = new Set(['rss-post', 'hn-story']);
 // Map per-source chain results into the legacy `{feeds, trending, search,
 // developers, leaderboards, mops, hf_trending, arxiv}` shape so downstream
 // condense / snapshot / scope logic keeps working without per-source rewrite.
-function mapResultsToLegacyShape(results, sources) {
+// Exported for tests; the isMain guard below keeps the import side-effect-free.
+export function mapResultsToLegacyShape(results, sources) {
   const feedIds = new Set(sources.filter((s) => FEED_ITEM_TYPES.has(s.itemType)).map((s) => s.id));
   const out = {};
-  out.feeds = {
-    ok: true,
-    items: Object.entries(results)
-      .filter(([id]) => feedIds.has(id))
-      .flatMap(([, r]) => r.items ?? []),
-  };
+  const feedItems = Object.entries(results)
+    .filter(([id]) => feedIds.has(id))
+    .flatMap(([, r]) => r.items ?? []);
+  // ok must be derived, not asserted: a hardcoded true survived into
+  // metadata.sources.feeds → report.meta.source_health, rendering the feed
+  // half green on a day it collected nothing (the Miniflux merge later
+  // re-derives ok, but only when Miniflux is configured).
+  out.feeds = { ok: feedItems.length > 0, items: feedItems };
   out.trending = results['github-trending'] ?? { ok: false, items: [] };
   out.search = results['github-search-topics'] ?? { ok: false, items: [] };
   out.developers = results['github-developers'] ?? { ok: false, items: [] };
@@ -346,15 +350,27 @@ async function main() {
   banner('staging data is volume-only — nothing to commit at collect stage');
 }
 
-main().catch((err) => {
-  // Format ZodError issues for readable log output
-  if (err.issues) {
-    console.error('[collect] FATAL: schema validation failed:');
-    for (const issue of err.issues) {
-      console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
-    }
-  } else {
-    console.error(`[collect] FATAL: ${err.stack ?? err.message ?? String(err)}`);
+// Same CLI-detection idiom as src/lib/snapshot.js: run the pipeline only when
+// invoked as `node src/collect.js`, so tests can import the pure helpers.
+const isMain = (() => {
+  try {
+    return realpathSync(fileURLToPath(import.meta.url)) === realpathSync(process.argv[1] ?? '');
+  } catch {
+    return false;
   }
-  process.exit(1);
-});
+})();
+
+if (isMain) {
+  main().catch((err) => {
+    // Format ZodError issues for readable log output
+    if (err.issues) {
+      console.error('[collect] FATAL: schema validation failed:');
+      for (const issue of err.issues) {
+        console.error(`  - ${issue.path.join('.')}: ${issue.message}`);
+      }
+    } else {
+      console.error(`[collect] FATAL: ${err.stack ?? err.message ?? String(err)}`);
+    }
+    process.exit(1);
+  });
+}

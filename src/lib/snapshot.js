@@ -15,11 +15,19 @@ const MAX_PER_SOURCE = 15;
 
 /**
  * Build the committed feeds-snapshot from an in-memory unified-feeds object.
+ * On a zero-item day the write is skipped (returns null): Stage 4 commits this
+ * file, so overwriting it with an empty snapshot would publish empty footer
+ * source pills / feed lists until the next healthy run.
  * @param {object} feeds - the result of fetchFeeds() / raw.feeds from runFetchers()
+ * @param {string} [dst] - output path (parameterised for tests)
  */
-export function buildSnapshot(feeds) {
+export function buildSnapshot(feeds, dst = DST) {
   if (!Array.isArray(feeds?.items)) {
     throw new Error('[snapshot] feeds.items is not an array');
+  }
+  if (feeds.items.length === 0) {
+    console.error('[snapshot] WARN: zero feed items — keeping the previously committed snapshot');
+    return null;
   }
   if (!feeds.ok) {
     console.error(`[snapshot] WARN: feeds.ok=false (${feeds.items.length} items survived)`);
@@ -53,8 +61,8 @@ export function buildSnapshot(feeds) {
     by_source: bySource,
   };
 
-  writeFileSync(DST, `${JSON.stringify(snapshot, null, 2)}\n`);
-  console.error(`✓ ${DST} written: ${snapshot.sources} sources, ${snapshot.total_items} items`);
+  writeFileSync(dst, `${JSON.stringify(snapshot, null, 2)}\n`);
+  console.error(`✓ ${dst} written: ${snapshot.sources} sources, ${snapshot.total_items} items`);
   return snapshot;
 }
 
