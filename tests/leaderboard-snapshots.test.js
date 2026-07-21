@@ -1,5 +1,5 @@
 // tests/leaderboard-snapshots.test.js
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -36,5 +36,16 @@ describe('leaderboard-snapshots', () => {
   it('returns {} for a corrupt file (and does not throw)', () => {
     writeFileSync(path, '{ not valid json');
     expect(loadSnapshots(path)).toEqual({});
+  });
+
+  // Review finding collect-2/collect-6: a load-modify-write over a corrupt
+  // file must not rebuild the ledger from empty — that wipes every other
+  // board's baseline and every board then re-emits a spurious cold-start item.
+  it('refuses to overwrite an unreadable ledger (other benches survive)', () => {
+    writeFileSync(path, '{ not valid json');
+    const before = readFileSync(path, 'utf8');
+    const ok = saveSnapshot('bfcl', [{ model_id: 'A', rank: 1, score: 1 }], path);
+    expect(ok).toBe(false);
+    expect(readFileSync(path, 'utf8')).toBe(before);
   });
 });

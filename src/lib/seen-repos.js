@@ -10,8 +10,9 @@
 // tests never touch the real file or invoke git.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { z } from 'zod';
+import { atomicWriteFileSync } from './fs-atomic.js';
 
 export const DEFAULT_LEDGER_PATH = 'data/seen-repos.json';
 const DATA_BRANCH_REF = 'refs/remotes/origin/data';
@@ -77,6 +78,6 @@ export function appendSeen(repos, date, ledgerPath = DEFAULT_LEDGER_PATH) {
     ledger.push({ repo: key, first_shown: date, stars_at_show: r.stars ?? 0 });
     added++;
   }
-  if (added > 0) writeFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
+  if (added > 0) atomicWriteFileSync(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`);
   return { added, total: ledger.length };
 }

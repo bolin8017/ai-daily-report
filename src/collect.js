@@ -171,7 +171,11 @@ async function main() {
     ...(raw.developers.items ?? []),
   ];
   const starSnap = recordStarSnapshot(githubItems, date);
-  banner(`star-history: recorded ${starSnap.recorded} repos (${starSnap.repos} tracked)`);
+  banner(
+    starSnap.skipped
+      ? 'star-history: SKIPPED — prior ledger unreadable, nothing overwritten'
+      : `star-history: recorded ${starSnap.recorded} repos (${starSnap.repos} tracked)`,
+  );
 
   // Phase 2c — run the excellence funnel over today's GitHub candidates and
   // write data/staging/feeds-discoveries.json (observable; not yet rendered —

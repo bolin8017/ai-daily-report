@@ -10,8 +10,9 @@
 // → {}. Path is parameterised so tests never touch the real file or git.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { z } from 'zod';
+import { atomicWriteFileSync } from './fs-atomic.js';
 import { canonicalRepoKey } from './repo-key.js';
 
 export const DEFAULT_HISTORY_PATH = 'data/star-history.json';
@@ -36,12 +37,35 @@ export const StarHistorySchema = z.record(
     .passthrough(),
 );
 
-export function loadStarHistory(historyPath = DEFAULT_HISTORY_PATH) {
-  if (existsSync(historyPath)) {
+// Reads the ledger from the data branch. Returns { status: 'ok', raw } |
+// { status: 'absent' } (ref exists, no ledger in it — a genuine cold start) |
+// { status: 'error', detail } (ref missing or git failed — the prior state is
+// unknowable, NOT known-empty; a stale clone without the fetched data branch
+// lands here).
+function gitShowBranchFile(historyPath) {
+  try {
+    const raw = execFileSync('git', ['show', `${DATA_BRANCH_REF}:${historyPath}`], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    return { status: 'ok', raw };
+  } catch (err) {
+    const stderr = err?.stderr?.toString?.() ?? '';
+    if (/does not exist in|exists on disk, but not in/.test(stderr)) return { status: 'absent' };
+    return { status: 'error', detail: stderr.trim() || err.message };
+  }
+}
+
+// provenance: 'local' | 'branch' — a real ledger loaded; 'absent' — no ledger
+// exists anywhere (safe to start fresh); 'unavailable' — prior state exists
+// (or may exist) but could not be read — overwriting would destroy it.
+function loadStarHistoryWithProvenance(historyPath, branchRead) {
+  const localExists = existsSync(historyPath);
+  if (localExists) {
     try {
       const parsed = JSON.parse(readFileSync(historyPath, 'utf8'));
       const guarded = StarHistorySchema.safeParse(parsed);
-      if (guarded.success) return guarded.data;
+      if (guarded.success) return { history: guarded.data, provenance: 'local' };
       console.error(
         `[star-history] local file failed schema validation — trying data branch (${guarded.error.issues[0]?.message ?? 'invalid shape'})`,
       );
@@ -49,21 +73,27 @@ export function loadStarHistory(historyPath = DEFAULT_HISTORY_PATH) {
       console.error(`[star-history] local file unreadable (${err.message}) — trying data branch`);
     }
   }
-  try {
-    const raw = execFileSync('git', ['show', `${DATA_BRANCH_REF}:${historyPath}`], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    const parsed = JSON.parse(raw);
-    const guarded = StarHistorySchema.safeParse(parsed);
-    if (guarded.success) return guarded.data;
-    console.error(
-      `[star-history] data-branch file failed schema validation — using empty history (${guarded.error.issues[0]?.message ?? 'invalid shape'})`,
-    );
-    return {};
-  } catch {
-    return {};
+  const br = branchRead(historyPath);
+  if (br.status === 'ok') {
+    try {
+      const guarded = StarHistorySchema.safeParse(JSON.parse(br.raw));
+      if (guarded.success) return { history: guarded.data, provenance: 'branch' };
+      console.error('[star-history] data-branch file failed schema validation');
+    } catch (err) {
+      console.error(`[star-history] data-branch file unreadable (${err.message})`);
+    }
+    return { history: {}, provenance: 'unavailable' };
   }
+  if (br.status === 'error') {
+    console.error(`[star-history] data-branch read failed (${br.detail})`);
+    return { history: {}, provenance: 'unavailable' };
+  }
+  // branch says absent: only a cold start if no local file existed either
+  return { history: {}, provenance: localExists ? 'unavailable' : 'absent' };
+}
+
+export function loadStarHistory(historyPath = DEFAULT_HISTORY_PATH) {
+  return loadStarHistoryWithProvenance(historyPath, gitShowBranchFile).history;
 }
 
 function daysBetween(a, b) {
@@ -88,11 +118,26 @@ export function pruneStarHistory(history, today, days = RETENTION_DAYS) {
  * and a numeric star count. Idempotent on (repo, date). Prunes before writing.
  * @returns {{recorded:number, repos:number}}
  */
-export function recordSnapshot(items, date, historyPath = DEFAULT_HISTORY_PATH) {
+export function recordSnapshot(
+  items,
+  date,
+  historyPath = DEFAULT_HISTORY_PATH,
+  { branchRead = gitShowBranchFile } = {},
+) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     throw new Error(`[star-history] recordSnapshot: date must be YYYY-MM-DD, got "${date}"`);
   }
-  const history = loadStarHistory(historyPath);
+  const { history, provenance } = loadStarHistoryWithProvenance(historyPath, branchRead);
+  if (provenance === 'unavailable') {
+    // Writing a today-only ledger here would get committed by Stage 4 and
+    // destroy up to RETENTION_DAYS of accrued velocity series. Skipping loses
+    // one day of snapshots — the far cheaper side of the asymmetry.
+    console.error(
+      '[star-history] prior ledger could not be read — refusing to start fresh. ' +
+        'Restore the file or `git fetch origin data`, then re-run.',
+    );
+    return { recorded: 0, repos: 0, skipped: true };
+  }
   let recorded = 0;
   for (const item of items ?? []) {
     const repo = canonicalRepoKey(item);
@@ -112,6 +157,6 @@ export function recordSnapshot(items, date, historyPath = DEFAULT_HISTORY_PATH) 
     recorded++;
   }
   const pruned = pruneStarHistory(history, date);
-  writeFileSync(historyPath, `${JSON.stringify(pruned, null, 2)}\n`);
+  atomicWriteFileSync(historyPath, `${JSON.stringify(pruned, null, 2)}\n`);
   return { recorded, repos: Object.keys(pruned).length };
 }

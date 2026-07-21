@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -75,6 +75,50 @@ describe('recordSnapshot', () => {
     expect(() => recordSnapshot([{ full_name: 'a/b', stars: 1 }], '2026/06/15', path)).toThrow(
       /YYYY-MM-DD/,
     );
+  });
+});
+
+// Review finding collect-3: recordSnapshot must not commit a fresh today-only
+// ledger when the prior state exists but could not be read — that discards up
+// to 30 days of the velocity backbone on the next Stage 4 commit.
+describe('recordSnapshot with unreadable prior state', () => {
+  const item = [{ full_name: 'a/b', stars: 40 }];
+
+  it('refuses to overwrite a corrupt local ledger', () => {
+    writeFileSync(path, '{ not json');
+    const r = recordSnapshot(item, '2026-06-15', path);
+    expect(r.skipped).toBe(true);
+    expect(r.recorded).toBe(0);
+    expect(readFileSync(path, 'utf8')).toBe('{ not json');
+  });
+
+  it('refuses a fresh write when the data-branch ref is unavailable', () => {
+    const r = recordSnapshot(item, '2026-06-15', path, {
+      branchRead: () => ({ status: 'error', detail: 'refs/remotes/origin/data not present' }),
+    });
+    expect(r.skipped).toBe(true);
+    expect(existsSync(path)).toBe(false);
+  });
+
+  it('still writes on a genuine cold start (no local file, no branch ledger)', () => {
+    const r = recordSnapshot(item, '2026-06-15', path, {
+      branchRead: () => ({ status: 'absent' }),
+    });
+    expect(r).toEqual({ recorded: 1, repos: 1 });
+    expect(JSON.parse(readFileSync(path, 'utf8'))['a/b'].snapshots).toHaveLength(1);
+  });
+
+  it('recovers the ledger from the data branch when the local copy is corrupt', () => {
+    writeFileSync(path, '{ not json');
+    const branch = {
+      'a/b': { first_seen: '2026-06-01', snapshots: [{ date: '2026-06-14', stars: 30 }] },
+    };
+    const r = recordSnapshot(item, '2026-06-15', path, {
+      branchRead: () => ({ status: 'ok', raw: JSON.stringify(branch) }),
+    });
+    expect(r).toEqual({ recorded: 1, repos: 1 });
+    const h = JSON.parse(readFileSync(path, 'utf8'));
+    expect(h['a/b'].snapshots.map((s) => s.date)).toEqual(['2026-06-14', '2026-06-15']);
   });
 });
 
