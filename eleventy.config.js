@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import sanitizeHtml from 'sanitize-html';
 import YAML from 'yaml';
 import { loadSectionMap } from './src/lib/section-map.js';
+import { rfc822Date, scrubUrls } from './src/lib/site-url.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const reportsDir = path.join(__dirname, 'data', 'reports');
@@ -73,6 +74,10 @@ export default function (eleventyConfig) {
     return Number(num).toLocaleString();
   });
 
+  // RSS 2.0 pubDate (RFC-822) — ISO-8601 dates get dropped or rejected by
+  // strict aggregators.
+  eleventyConfig.addFilter('rfc822', rfc822Date);
+
   eleventyConfig.addFilter('hostname', (url) => {
     if (typeof url !== 'string') return '';
     try {
@@ -98,6 +103,9 @@ export default function (eleventyConfig) {
 
   function sanitizeReport(report) {
     if (!report || typeof report !== 'object') return report;
+    // url-named fields render into href= across the templates; drop any that
+    // aren't http(s) so a javascript: link never depends on CSP alone.
+    scrubUrls(report);
     const s = (v) => (typeof v === 'string' ? sanitizeHtml(v, SANITIZE_OPTS) : v);
 
     if (report.lead?.html) report.lead.html = s(report.lead.html);
