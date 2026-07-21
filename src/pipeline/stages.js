@@ -47,7 +47,10 @@ export const STAGES = [
     outputs: ['report-context.md'],
     satisfiedCheck: 'fresh-outputs',
     command: ['bash', 'scripts/context.sh'],
-    recovery: 'none', // deterministic context build; a re-run can't fix a real failure
+    // The context build is deterministic, but it does live Wiki filesystem IO
+    // (read + archive write) — a transient mount blip is exactly what one
+    // bounded retry fixes, and without it a required stage kills the day.
+    recovery: 'retry-self',
   },
   {
     id: 'synthesize',

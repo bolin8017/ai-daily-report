@@ -35,9 +35,17 @@ export async function runAll(sources, opts = {}) {
     }
 
     if (chainResult.ok && s.enrich) {
+      const enrichers = opts.enrichers ?? ENRICHERS;
       for (const enrichName of s.enrich) {
-        const fn = ENRICHERS[enrichName];
-        if (fn) await fn(chainResult.items);
+        const fn = enrichers[enrichName];
+        if (!fn) continue;
+        // Enrichment is best-effort: a throwing enricher degrades this
+        // source's enrichment, never the whole collection run.
+        try {
+          await fn(chainResult.items);
+        } catch (err) {
+          console.error(`[run-all] enricher ${enrichName} failed for ${s.id}: ${err.message}`);
+        }
       }
     }
 
