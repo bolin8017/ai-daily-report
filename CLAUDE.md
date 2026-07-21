@@ -275,7 +275,7 @@ Used by `src/curators/_base.js` (curator prompt resolution), `src/lib/sources.js
 
 GitHub Pages source: **GitHub Actions** (`build_type: workflow`). No legacy `gh-pages` branch.
 
-**Node 24 opt-in**: the workflow sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` at the top level so `actions/checkout`, `actions/setup-node`, `actions/upload-pages-artifact`, and `actions/deploy-pages` all run on Node 24. This is ahead of GitHub's 2026-06-02 forced migration (Node 20 removal from runners on 2026-09-16). Once all official action versions default to Node 24 (expected by June), the env var can be removed.
+**Node 24**: every pinned action natively declares `node24` as of 2026-07-21 (checkout v7 / setup-node v7 / deploy-pages v5 / upload-pages-artifact v5's inner upload-artifact v7), so the earlier `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24` opt-in has been removed as planned.
 
 ## Notes
 
