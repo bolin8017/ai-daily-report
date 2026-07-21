@@ -23,7 +23,9 @@ CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 EDITORIAL_FILE="${STAGING_DIR}/editorial.json"
 LOG_DIR="$CURATED_DIR/.logs"
 mkdir -p "$LOG_DIR"
-TODAY="$(TZ=Asia/Taipei date +%F)"
+# Same timezone source as the rest of the pipeline (run.sh / merge-report.sh),
+# so the temporal reference date matches the report being checked.
+TODAY="$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%F)"
 
 CLAIMS_FILE="$LOG_DIR/faithfulness.claims.json"
 PROMPT_FILE="$LOG_DIR/faithfulness.prompt.txt"
