@@ -58,6 +58,37 @@ describe('runAll', () => {
     delete process.env.FIRECRAWL_DISABLED;
   });
 
+  // collect-4: enrichment is best-effort — a throwing enricher must degrade
+  // that source's enrichment, never kill the whole Stage 1 collection.
+  it('survives a throwing enricher (enrichment is best-effort)', async () => {
+    defineProvider('p-ok', async () => ({ ok: true, items: [hn(1)] }));
+    const sources = [
+      {
+        id: 's1',
+        label: 'S1',
+        category: 'c',
+        itemType: 'hn-story',
+        enrich: ['boom'],
+        chain: [{ provider: 'p-ok', config: {} }],
+      },
+    ];
+    const dir = await mkdtemp(join(tmpdir(), 'ra-'));
+    process.env.FIRECRAWL_DISABLED = '1';
+    const result = await runAll(sources, {
+      telemetryDir: dir,
+      date: '2026-05-22',
+      minHealthy: 1,
+      enrichers: {
+        boom: () => {
+          throw new Error('enricher exploded');
+        },
+      },
+    });
+    expect(result.results.s1.ok).toBe(true);
+    expect(result.healthy).toEqual(['s1']);
+    delete process.env.FIRECRAWL_DISABLED;
+  });
+
   it('throws when healthy count below threshold', async () => {
     defineProvider('p-fail', async () => ({ ok: false, items: [] }));
     const sources = [
