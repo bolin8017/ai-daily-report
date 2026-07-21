@@ -53,6 +53,7 @@ export function scrubUrls(node) {
  */
 export function rfc822Date(dateStr) {
   const d = new Date(`${dateStr}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return '';
   const day = DAYS[d.getUTCDay()];
   const dom = String(d.getUTCDate()).padStart(2, '0');
   return `${day}, ${dom} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()} 08:00:00 +0800`;
