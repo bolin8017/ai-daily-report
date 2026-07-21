@@ -90,8 +90,13 @@ export function satisfied(
       if (m === null) return { satisfied: false, reason: 'missing' };
       if (readJson(p) === undefined) return { satisfied: false, reason: 'invalid' };
       const anchorMtime = mtimeMs(anchor);
-      // no anchor on disk = no stale evidence; trust the existing report
-      if (anchorMtime !== null && m < anchorMtime) return { satisfied: false, reason: 'stale' };
+      // No anchor on disk means staging was wiped or collect never ran this
+      // run — there is no evidence the report belongs to today's inputs.
+      // Trusting it let a bare --resume on a hydrated tree keep yesterday's
+      // report for today; not-satisfied re-runs the idempotent merge (or
+      // fails loudly on missing staging) instead of false success.
+      if (anchorMtime === null) return { satisfied: false, reason: 'no-anchor' };
+      if (m < anchorMtime) return { satisfied: false, reason: 'stale' };
       return { satisfied: true, reason: 'ok' };
     }
     default:
