@@ -82,19 +82,57 @@ trap "rm -rf '$WORK_DIR'" EXIT
 
 # --- GitHub API helpers (curl-based, no gh CLI needed) ---
 
-# Returns 0 if release with given tag exists, 1 if 404, other on error.
-release_exists() {
+# Looks up the release for tag $1. On 200 sets REL_ID and REL_ASSETS
+# (asset name<TAB>id per line). Returns 0 found, 1 not found (404), 2 API
+# error — callers must treat 2 as "state unknown", never as "absent".
+get_release() {
   local tag="$1"
-  local code
-  code=$(curl -sS -o /dev/null -w "%{http_code}" \
+  local resp code body
+  resp=$(curl -sS -w $'\n%{http_code}' \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Accept: application/vnd.github+json" \
-    "$API_BASE/releases/tags/$tag")
+    "$API_BASE/releases/tags/$tag") || {
+    echo "[archive-month] release-check curl failed for $tag" >&2
+    return 2
+  }
+  code="${resp##*$'\n'}"
+  body="${resp%$'\n'*}"
   case "$code" in
-    200) return 0 ;;
+    200)
+      REL_ID=$(echo "$body" | jq -r '.id // empty')
+      REL_ASSETS=$(echo "$body" | jq -r '.assets[]? | [.name, (.id | tostring)] | @tsv')
+      if [ -z "$REL_ID" ]; then
+        echo "[archive-month] release-check unparseable response for $tag" >&2
+        return 2
+      fi
+      return 0 ;;
     404) return 1 ;;
     *) echo "[archive-month] release-check unexpected HTTP $code for $tag" >&2; return 2 ;;
   esac
+}
+
+# True if the current REL_ASSETS list contains an asset named $1.
+have_asset() {
+  printf '%s\n' "$REL_ASSETS" | cut -f1 | grep -qxF "$1"
+}
+
+# Deletes every asset in REL_ASSETS. A partially-uploaded release's tarball
+# no longer matches the sha256 we are about to upload (gzip output differs
+# per run), so stale assets must go before re-uploading the pair.
+delete_stale_assets() {
+  local name id code
+  [ -z "$REL_ASSETS" ] && return 0
+  while IFS=$'\t' read -r name id; do
+    [ -z "$name" ] && continue
+    code=$(curl -sS -o /dev/null -w "%{http_code}" -X DELETE \
+      -H "Authorization: token $GITHUB_TOKEN" \
+      -H "Accept: application/vnd.github+json" \
+      "$API_BASE/releases/assets/$id")
+    if [ "$code" != "204" ]; then
+      echo "[archive-month] failed to delete stale asset $name (HTTP $code)" >&2
+      return 1
+    fi
+  done <<< "$REL_ASSETS"
 }
 
 # Creates a release; returns the release id on stdout.
@@ -120,22 +158,27 @@ create_release() {
   echo "$id"
 }
 
-# Uploads a file as a release asset.
+# Uploads a file as a release asset and verifies the stored size matches the
+# local file — an HTTP 2xx alone doesn't prove the asset arrived intact.
 upload_asset() {
   local rel_id="$1"
   local path="$2"
-  local name
+  local name resp size local_size
   name=$(basename "$path")
-  local code
-  code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+  resp=$(curl -sS -X POST \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/octet-stream" \
     --data-binary "@$path" \
-    "${UPLOADS_BASE}/releases/${rel_id}/assets?name=${name}")
-  case "$code" in
-    201|200) return 0 ;;
-    *) echo "[archive-month] upload_asset($name) failed HTTP $code" >&2; return 1 ;;
-  esac
+    "${UPLOADS_BASE}/releases/${rel_id}/assets?name=${name}") || {
+    echo "[archive-month] upload_asset($name) curl failed" >&2
+    return 1
+  }
+  size=$(echo "$resp" | jq -r '.size // empty')
+  local_size=$(wc -c < "$path")
+  if [ "$size" != "$local_size" ]; then
+    echo "[archive-month] upload_asset($name) size mismatch (remote=${size:-none} local=$local_size)" >&2
+    return 1
+  fi
 }
 
 PARTIAL_FAILURES=0
@@ -146,15 +189,39 @@ for ym in $MONTHS; do
   TARBALL="${WORK_DIR}/reports-${ym}.tar.gz"
   CHECKSUM="${WORK_DIR}/reports-${ym}.sha256"
 
-  if release_exists "$TAG"; then
-    echo "[archive-month] $TAG already exists on Releases — skipping"
+  REL_ID=""
+  REL_ASSETS=""
+  get_release "$TAG"
+  REL_RC=$?
+  if [ "$REL_RC" -eq 2 ]; then
+    PARTIAL_FAILURES=$((PARTIAL_FAILURES + 1))
     continue
+  fi
+  if [ "$REL_RC" -eq 0 ]; then
+    if have_asset "reports-${ym}.tar.gz" && have_asset "reports-${ym}.sha256"; then
+      echo "[archive-month] $TAG already archived (both assets present) — skipping"
+      continue
+    fi
+    echo "[archive-month] $TAG exists but is missing assets — completing it"
   fi
 
   MONTH_FILES=$(echo "$ARCHIVABLE" | grep "^${ym}-")
   if [ -z "$MONTH_FILES" ]; then continue; fi
 
-  (cd "$REPORTS_DIR" && tar -czf "$TARBALL" $MONTH_FILES)
+  if ! (cd "$REPORTS_DIR" && tar -czf "$TARBALL" $MONTH_FILES); then
+    echo "[archive-month] tar failed for $ym — skipping month (nothing uploaded or removed)" >&2
+    PARTIAL_FAILURES=$((PARTIAL_FAILURES + 1))
+    continue
+  fi
+  # Read the tarball back in full and compare members against what we meant
+  # to pack: the sha256 below is computed over the tarball itself, so it is
+  # self-consistent even for a truncated file — this check is the only thing
+  # standing between a corrupt tarball and the data-branch removal.
+  if [ "$(tar -tzf "$TARBALL" 2>/dev/null | sort)" != "$(echo "$MONTH_FILES" | sort)" ]; then
+    echo "[archive-month] tarball verification failed for $ym — skipping month" >&2
+    PARTIAL_FAILURES=$((PARTIAL_FAILURES + 1))
+    continue
+  fi
   (cd "$WORK_DIR" && sha256sum "reports-${ym}.tar.gz" > "reports-${ym}.sha256")
   echo "[archive-month] built $TARBALL ($(wc -c < "$TARBALL") bytes)"
 
@@ -177,8 +244,13 @@ data/reports/ so the static site continues to serve them.
 
 Integrity: sha256 attached as reports-${ym}.sha256."
 
-  REL_ID=$(create_release "$TAG" "Archive ${ym} (${ACTIVE_THEME})" "$NOTES")
   if [ -z "$REL_ID" ]; then
+    REL_ID=$(create_release "$TAG" "Archive ${ym} (${ACTIVE_THEME})" "$NOTES")
+    if [ -z "$REL_ID" ]; then
+      PARTIAL_FAILURES=$((PARTIAL_FAILURES + 1))
+      continue
+    fi
+  elif ! delete_stale_assets; then
     PARTIAL_FAILURES=$((PARTIAL_FAILURES + 1))
     continue
   fi

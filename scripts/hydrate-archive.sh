@@ -105,11 +105,32 @@ for ym in "${MONTHS[@]}"; do
     continue
   }
 
-  tar -xzf "${WORK_DIR}/reports-${ym}.tar.gz" -C "$REPORTS_DIR"
-  COUNT=$(find "$REPORTS_DIR" -maxdepth 1 -name "${ym}-*.json" | wc -l)
+  # Extract to a scratch dir first: a tarball that dies mid-extract must not
+  # leave a partial month in REPORTS_DIR (the already-has-reports check above
+  # would then skip re-hydrating it on the next build).
+  EXTRACT_DIR="${WORK_DIR}/extract-${ym}"
+  mkdir -p "$EXTRACT_DIR"
+  if ! tar -xzf "${WORK_DIR}/reports-${ym}.tar.gz" -C "$EXTRACT_DIR"; then
+    echo "[hydrate-archive] $TAG extraction failed (corrupt tarball?) — skipping" >&2
+    FAILED=$((FAILED + 1))
+    continue
+  fi
+  COUNT=$(find "$EXTRACT_DIR" -maxdepth 1 -name "${ym}-*.json" | wc -l)
+  if [ "$COUNT" -eq 0 ]; then
+    echo "[hydrate-archive] $TAG extracted no ${ym} reports — skipping" >&2
+    FAILED=$((FAILED + 1))
+    continue
+  fi
+  mv "$EXTRACT_DIR"/*.json "$REPORTS_DIR"/
   echo "[hydrate-archive] $ym hydrated ($COUNT files)"
   HYDRATED=$((HYDRATED + 1))
 done
 
 echo "[hydrate-archive] done: hydrated=$HYDRATED skipped=$SKIPPED failed=$FAILED"
+if [ "$FAILED" -gt 0 ]; then
+  # Hydrate stays best-effort by design (exit 0 — a missing cold month must
+  # not block the site build), but surface the gap in the Actions UI instead
+  # of a log line nobody reads.
+  echo "::warning title=hydrate-archive::$FAILED month(s) failed to hydrate — their archive pages will be missing from this build"
+fi
 exit 0
