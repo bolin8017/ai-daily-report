@@ -185,6 +185,7 @@ export async function runPipeline({
   // Seed state. Out-of-scope stages (e.g. collect under `--only curate.market`)
   // are treated as available so the operator's asserted upstream isn't re-run.
   const state = new Map();
+  const emptyRetried = new Set(); // per-run guard: one empty re-roll per curate stage
   for (const id of order) {
     if (!scope.has(id)) state.set(id, 'skipped');
     else if (initiallySatisfied(id)) state.set(id, 'satisfied');
@@ -248,7 +249,21 @@ export async function runPipeline({
           } else {
             res = await runStage(stage, { stagingDir, reportsDir, today, repoRoot });
           }
-          const status = classify(stage, res, { rawSatisfied, stagingDir, dryRun });
+          let status = classify(stage, res, { rawSatisfied, stagingDir, dryRun });
+          // A validated-but-empty curation is almost always curator behavior,
+          // not an empty news day (ops-4: market emitted 0 items on 5 of 14
+          // production runs from ~170-item slices). Under auto-recover it gets
+          // ONE immediate re-roll, here — before dependents consume the empty
+          // file — rather than in the recovery pass, which runs after
+          // synthesize has already spent a Sonnet call on the empty version.
+          // A still-empty retry is accepted exactly as before.
+          if (status === 'suspicious-empty' && autoRecover && !dryRun && !emptyRetried.has(id)) {
+            emptyRetried.add(id);
+            emit(buildResult(stage, status, { runId, ...res }));
+            console.error(`[run.js] ${id}: validated but empty — retrying once`);
+            res = await runStage(stage, { stagingDir, reportsDir, today, repoRoot });
+            status = classify(stage, res, { rawSatisfied, stagingDir, dryRun });
+          }
           state.set(id, status);
           emit(buildResult(stage, status, { runId, ...res }));
         }),
