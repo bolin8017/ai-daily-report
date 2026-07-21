@@ -114,18 +114,50 @@ run_curator() {
     node src/lib/claude-envelope.js result "$raw_file" > "$out_file"
   fi
 
-  if ! node -e "
-    import('./src/curators/${section}.js').then(async m => {
-      const fs = await import('node:fs/promises');
-      const raw = JSON.parse(await fs.readFile('$out_file', 'utf8'));
-      const parsed = m.validate(raw);
-      await fs.writeFile('$out_file', JSON.stringify(parsed, null, 2));
-      const total = Object.values(parsed).flat().length;
-      console.log('[curate.sh] $section validated, items=' + total);
-    }).catch(e => { console.error(e.message); process.exit(2); });
-  "; then
-    echo "[curate.sh] $section VALIDATION FAILED"
-    return 2
+  # Validate — the validator (src/curators/validate-output.js) already
+  # attempts a deterministic jsonrepair pass on malformed JSON. If it still
+  # fails, one targeted LLM repair: feed the exact validation error back
+  # instead of blind-retrying the whole curation — the 2026-07-08→12 outage
+  # proved an identical retry fails identically (ops-1, 2026-07-21 review).
+  if ! node src/curators/validate-output.js "$section" "$out_file" 2> "$err_file.validate"; then
+    echo "[curate.sh] $section validation failed — attempting LLM repair (model=$FALLBACK_MODEL)"
+    cat "$err_file.validate" >&2
+    local repair_prompt="$LOG_DIR/$section.repair-prompt.txt"
+    {
+      printf 'The file `%s` was written by an automated curator but failed JSON validation with this error:\n\n' "$out_file"
+      cat "$err_file.validate"
+      printf '\nUse the Read tool to read that file, fix the malformed JSON syntax and/or the schema issues named above while preserving the existing content as faithfully as possible, and use the Write tool to write the corrected strict JSON back to the same path (`%s`).\n\n' "$out_file"
+      printf 'Do not output prose, acknowledgement, or explanation. Do not ask questions. Begin with a Read call. The final action is one Write call.\n'
+    } > "$repair_prompt"
+    (
+      claude -p \
+        --model "$FALLBACK_MODEL" \
+        --output-format json \
+        --tools "Read,Write" \
+        --allowed-tools Read Write \
+        --no-session-persistence \
+        "${LEAN_FLAGS[@]}" \
+        < "$repair_prompt" \
+        > "$LOG_DIR/$section.repair-raw.json" \
+        2> "$err_file.repair"
+    ) &
+    local repair_pid=$!
+    bash scripts/watchdog.sh "$repair_pid" > "$LOG_DIR/$section.repair-watchdog.log" 2>&1 &
+    local repair_watchdog_pid=$!
+    wait "$repair_pid"
+    local repair_rc=$?
+    kill "$repair_watchdog_pid" 2>/dev/null || true
+    node src/lib/claude-envelope.js sidecar "$LOG_DIR/$section.repair-raw.json" "$LOG_DIR/$section.repair.meta.json" "curate.$section.repair" 2>/dev/null || true
+    if [ "$repair_rc" -ne 0 ]; then
+      echo "[curate.sh] $section repair FAILED (claude rc=$repair_rc)"
+      cat "$err_file.repair" >&2
+      return 1
+    fi
+    if ! node src/curators/validate-output.js "$section" "$out_file"; then
+      echo "[curate.sh] $section VALIDATION FAILED"
+      return 2
+    fi
+    echo "[curate.sh] $section recovered via LLM repair"
   fi
 
   return 0
