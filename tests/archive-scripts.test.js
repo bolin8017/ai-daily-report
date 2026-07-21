@@ -210,6 +210,27 @@ describe('archive-month.sh', () => {
     expect(r.status).toBe(2);
   });
 
+  // Review finding archive-2: the monthly cron's cutoff always lands
+  // mid-month, so archiving the cutoff month's early days creates a partial
+  // release that release_exists then skips forever — stranding the rest of
+  // that month on the hot branch permanently. Only fully-elapsed months
+  // (every day past the cutoff) may be archived.
+  it('leaves the partially-elapsed cutoff month alone (archive-2)', () => {
+    writeReport('2026-04-30');
+    writeReport('2026-05-01');
+    // --ref 2026-07-10, HOT_DAYS=60 → cutoff 2026-05-11: May 1 is archivable
+    // by age but May is not fully past the cutoff.
+    const r = runScript('archive-month.sh', ['--ref', '2026-07-10']);
+
+    const log = calls();
+    expect(log).not.toMatch(/archive-2026-05/);
+    expect(log).toMatch(/name=reports-2026-04\.tar\.gz/);
+    const removeLine = log.match(/^node .*--remove.*$/m)?.[0] ?? '';
+    expect(removeLine).toContain('data/reports/2026-04-30.json');
+    expect(removeLine).not.toContain('2026-05-01.json');
+    expect(r.status).toBe(0);
+  });
+
   it('archives and removes a clean month end-to-end', () => {
     writeReport('2026-04-01');
     writeReport('2026-04-02');

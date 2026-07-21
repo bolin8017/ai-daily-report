@@ -73,7 +73,19 @@ if [ -z "$ARCHIVABLE" ]; then
   exit 0
 fi
 
-MONTHS=$(echo "$ARCHIVABLE" | sed 's|\(....-..\)-..\.json|\1|' | sort -u)
+# Only fully-elapsed months are archivable. The cron runs on the 1st, so the
+# cutoff always lands mid-month; archiving the cutoff month's early days would
+# create a partial release that the already-archived skip then honors forever,
+# stranding that month's remaining days on the hot branch permanently. The
+# cutoff month (and anything later) stays hot until every one of its days is
+# past the cutoff on a later run.
+CUTOFF_MONTH="${CUTOFF%-*}"
+MONTHS=$(echo "$ARCHIVABLE" | sed 's|\(....-..\)-..\.json|\1|' | sort -u | awk -v cm="$CUTOFF_MONTH" '$1 < cm')
+
+if [ -z "$MONTHS" ]; then
+  echo "[archive-month] no fully-elapsed months before $CUTOFF_MONTH — nothing to do"
+  exit 0
+fi
 echo "[archive-month] candidate months:"
 echo "$MONTHS" | sed 's/^/  /'
 
