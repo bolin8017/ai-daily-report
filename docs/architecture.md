@@ -18,7 +18,7 @@ This is the **canonical system architecture reference** for the AI Daily Report 
 
 ```mermaid
 flowchart TD
-  Timer["Hermes cron @ 07:00 Asia/Taipei<br/>delivery: Telegram on failure/notable completion"] --> Host
+  Timer["Hermes cron @ 08:30 Asia/Taipei<br/>delivery: Telegram on failure/notable completion"] --> Host
 
   subgraph Host["Hermes host / local repo"]
     CronRun["Hermes job or operator wrapper<br/>loads repo env + Claude auth"]
@@ -87,7 +87,7 @@ flowchart TD
 
 | Concern | Where | Why |
 |---|---|---|
-| **Scheduling** | Hermes cron | Runs where Hermes already has Telegram delivery, session logs, tools, and local Wiki access. Daily target remains 07:00 Asia/Taipei. |
+| **Scheduling** | Hermes cron | Runs where Hermes already has Telegram delivery, session logs, tools, and local Wiki access. Daily target remains 08:30 Asia/Taipei. |
 | **LLM call** | `claude -p` from the repository pipeline | Uses Max subscription (no API billing). It remains the primary LLM subprocess for Stage 2/3; Hermes orchestrates, observes, and reports rather than replacing the curator/synthesizer roles. |
 | **Cross-day intelligence** | Hermes Wiki + bounded `report-context.md` | Keeps long-term tracking local-only and prevents public `data/memory.json` schema drift from constraining report quality. |
 | **Build (11ty)** | CI | Deterministic, no secrets needed, free hosted runner. |
@@ -121,7 +121,7 @@ sequenceDiagram
   participant GHA as GitHub Actions
   participant Pages
 
-  Timer->>CronRun: trigger (07:00 Asia/Taipei)
+  Timer->>CronRun: trigger (08:30 Asia/Taipei)
   CronRun->>CronRun: load env / secrets and set workdir
   CronRun->>Entry: run repository pipeline
   Entry->>Entry: git pull origin main when needed
@@ -356,7 +356,7 @@ The legacy `gh-pages` branch is no longer used. Build runs in CI via `actions/de
 
 ## Scheduled deployment via Hermes cron
 
-Production runs under **Hermes cron** at 07:00 Asia/Taipei, with Telegram delivery for failures or notable completion. The pipeline runs directly against a working copy of the repository on the Hermes host, which already has Claude Code auth, repo access, and the local Hermes Wiki — no container and no separate scheduler.
+Production runs under **Hermes cron** at 08:30 Asia/Taipei, with Telegram delivery for failures or notable completion. The pipeline runs directly against a working copy of the repository on the Hermes host, which already has Claude Code auth, repo access, and the local Hermes Wiki — no container and no separate scheduler.
 
 **Pipeline lifecycle:**
 
