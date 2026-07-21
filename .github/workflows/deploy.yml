@@ -51,6 +51,11 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'scripts/**'
+      # themes/** is a build input, not just prompts: report.js dynamically
+      # imports themes/<theme>/sections/*/schema.js for validation, and
+      # eleventy.config.js reads the theme YAML — a theme-only change must
+      # trigger validate + build + redeploy like any src change.
+      - 'themes/**'
       - 'eleventy.config.js'
       - 'package.json'
       - 'package-lock.json'
@@ -66,6 +71,7 @@ on:
       - 'src/**'
       - 'tests/**'
       - 'scripts/**'
+      - 'themes/**'
       - 'eleventy.config.js'
       - 'package.json'
       - 'package-lock.json'
@@ -170,6 +176,12 @@ jobs:
 
       - name: Tests
         run: npm test
+
+      # docs/data-sources.md is documented as kept in sync with the theme's
+      # sources.yaml by this check — without running it in CI the sync claim
+      # is unenforced and drift accumulates silently.
+      - name: Check data-sources doc sync
+        run: npm run check:sources
 
       - name: Validate data files against schemas
         run: |
