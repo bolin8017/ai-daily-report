@@ -164,6 +164,24 @@ describe('renderSuccess', () => {
     expect(text).toMatch(/auto-recovered: curate\.market/);
     expect(text).toMatch(/report: https:\/\/bolin8017\.github\.io\/ai-daily-report\//);
   });
+
+  it('surfaces missing report days when the gap check found holes', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-07-07',
+      publish: { missing_days: ['2026-07-02', '2026-07-03'] },
+    });
+    expect(text).toMatch(/missing reports \(last \d+ days\): 2026-07-02, 2026-07-03/);
+  });
+
+  it('omits the missing-days line when there are no gaps', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-07-07',
+      publish: { missing_days: [] },
+    });
+    expect(text).not.toMatch(/missing reports/);
+  });
 });
 
 describe('buildRunArgs', () => {
