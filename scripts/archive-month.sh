@@ -92,6 +92,12 @@ echo "$MONTHS" | sed 's/^/  /'
 WORK_DIR=$(mktemp -d -t archive-month.XXXXXX)
 trap "rm -rf '$WORK_DIR'" EXIT
 
+# Token stays off curl argv (argv is world-readable in /proc/<pid>/cmdline
+# while each curl runs); the header lives in a 0600 file curl reads via
+# -H @file — same hygiene as commit.js keeping the token out of argv.
+AUTH_FILE="$WORK_DIR/auth-header"
+(umask 077; printf 'Authorization: token %s\n' "$GITHUB_TOKEN" > "$AUTH_FILE")
+
 # --- GitHub API helpers (curl-based, no gh CLI needed) ---
 
 # Looks up the release for tag $1. On 200 sets REL_ID and REL_ASSETS
@@ -101,7 +107,7 @@ get_release() {
   local tag="$1"
   local resp code body
   resp=$(curl -sS -w $'\n%{http_code}' \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "@$AUTH_FILE" \
     -H "Accept: application/vnd.github+json" \
     "$API_BASE/releases/tags/$tag") || {
     echo "[archive-month] release-check curl failed for $tag" >&2
@@ -137,7 +143,7 @@ delete_stale_assets() {
   while IFS=$'\t' read -r name id; do
     [ -z "$name" ] && continue
     code=$(curl -sS -o /dev/null -w "%{http_code}" -X DELETE \
-      -H "Authorization: token $GITHUB_TOKEN" \
+      -H "@$AUTH_FILE" \
       -H "Accept: application/vnd.github+json" \
       "$API_BASE/releases/assets/$id")
     if [ "$code" != "204" ]; then
@@ -157,7 +163,7 @@ create_release() {
     '{tag_name: $tag, name: $title, body: $notes, draft: false, prerelease: false}')
   local resp
   resp=$(curl -sS -X POST \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "@$AUTH_FILE" \
     -H "Accept: application/vnd.github+json" \
     -d "$body" \
     "$API_BASE/releases")
@@ -178,7 +184,7 @@ upload_asset() {
   local name resp size local_size
   name=$(basename "$path")
   resp=$(curl -sS -X POST \
-    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "@$AUTH_FILE" \
     -H "Content-Type: application/octet-stream" \
     --data-binary "@$path" \
     "${UPLOADS_BASE}/releases/${rel_id}/assets?name=${name}") || {

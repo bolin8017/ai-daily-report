@@ -40,38 +40,54 @@ mkdir -p data/reports
 
 echo "[merge-report] composing date=$DATE theme=$ACTIVE_THEME"
 
-node --input-type=module -e "
-import {readFileSync, writeFileSync, existsSync, readdirSync} from 'node:fs';
-import {composeReport} from './src/lib/merge.js';
-import {aggregateMeta} from './src/lib/report-meta.js';
-import {appendSeen} from './src/lib/seen-repos.js';
-import {canonicalRepoKey} from './src/lib/repo-key.js';
+# All shell-derived values cross into JS via env vars (read with process.env),
+# never bash-interpolated into the program text — a quote in any of them would
+# otherwise break out of the JS string literal.
+MERGE_EDITORIAL_FILE="$EDITORIAL_FILE" \
+MERGE_CURATED_DIR="$CURATED_DIR" \
+MERGE_STAGING_DIR="$STAGING_DIR" \
+MERGE_THEME="$ACTIVE_THEME" \
+MERGE_REPORT_FILE="$REPORT_FILE" \
+MERGE_DATE="$DATE" \
+node --input-type=module -e '
+import {readFileSync, writeFileSync, existsSync, readdirSync} from "node:fs";
+import {composeReport} from "./src/lib/merge.js";
+import {aggregateMeta} from "./src/lib/report-meta.js";
+import {appendSeen} from "./src/lib/seen-repos.js";
+import {canonicalRepoKey} from "./src/lib/repo-key.js";
 
-const editorial = JSON.parse(readFileSync('$EDITORIAL_FILE', 'utf8'));
+const EDITORIAL_FILE = process.env.MERGE_EDITORIAL_FILE;
+const CURATED_DIR = process.env.MERGE_CURATED_DIR;
+const STAGING_DIR = process.env.MERGE_STAGING_DIR;
+const THEME = process.env.MERGE_THEME;
+const REPORT_FILE = process.env.MERGE_REPORT_FILE;
+const DATE = process.env.MERGE_DATE;
+
+const editorial = JSON.parse(readFileSync(EDITORIAL_FILE, "utf8"));
 const curated = {};
-for (const sec of ['discoveries', 'pulse', 'market', 'tech']) {
-  const p = '$CURATED_DIR/' + sec + '.json';
-  curated[sec] = existsSync(p) ? JSON.parse(readFileSync(p, 'utf8')) : {};
+for (const sec of ["discoveries", "pulse", "market", "tech"]) {
+  const p = CURATED_DIR + "/" + sec + ".json";
+  curated[sec] = existsSync(p) ? JSON.parse(readFileSync(p, "utf8")) : {};
 }
 
 // The discoveries funnel signals (excellence_score, velocity, eng) live in the
-// Stage-1 staging file; merge re-attaches them onto the curator's picks by repo
+// Stage-1 staging file; merge re-attaches them onto the curator picks by repo
 // key (never trusting the LLM to copy numbers). Best-effort: a missing/unparsable
 // staging file leaves every pick provisional (cold-start path in merge).
 let discoveriesStaging = null;
-try { discoveriesStaging = JSON.parse(readFileSync('$STAGING_DIR/feeds-discoveries.json', 'utf8')); } catch {}
+try { discoveriesStaging = JSON.parse(readFileSync(STAGING_DIR + "/feeds-discoveries.json", "utf8")); } catch {}
 
 // Observability: assemble report.meta from Stage-1 staging identity/health +
 // per-stage usage sidecars (written by claude-envelope.js after each claude -p
 // call). Entirely best-effort — any read failure leaves meta partial or null.
 let stagingMeta = {};
-try { stagingMeta = JSON.parse(readFileSync('$STAGING_DIR/metadata.json', 'utf8')); } catch {}
+try { stagingMeta = JSON.parse(readFileSync(STAGING_DIR + "/metadata.json", "utf8")); } catch {}
 const stages = {};
 try {
-  for (const f of readdirSync('$CURATED_DIR/.logs')) {
-    if (!f.endsWith('.meta.json')) continue;
+  for (const f of readdirSync(CURATED_DIR + "/.logs")) {
+    if (!f.endsWith(".meta.json")) continue;
     try {
-      const s = JSON.parse(readFileSync('$CURATED_DIR/.logs/' + f, 'utf8'));
+      const s = JSON.parse(readFileSync(CURATED_DIR + "/.logs/" + f, "utf8"));
       if (s && s.stage) { const {stage, ...rest} = s; stages[stage] = rest; }
     } catch {}
   }
@@ -85,37 +101,37 @@ const meta = aggregateMeta({
 });
 
 try {
-  const report = await composeReport({editorial, curated, themeName: '$ACTIVE_THEME', meta, discoveriesStaging});
-  writeFileSync('$REPORT_FILE', JSON.stringify(report, null, 2) + '\n');
-  console.log('[merge-report] wrote $REPORT_FILE schema_version=' + report.schema_version + (meta ? ' meta=yes stages=' + Object.keys(meta.stages || {}).length : ' meta=no'));
+  const report = await composeReport({editorial, curated, themeName: THEME, meta, discoveriesStaging});
+  writeFileSync(REPORT_FILE, JSON.stringify(report, null, 2) + "\n");
+  console.log("[merge-report] wrote " + REPORT_FILE + " schema_version=" + report.schema_version + (meta ? " meta=yes stages=" + Object.keys(meta.stages || {}).length : " meta=no"));
   try {
     const shown = [
       ...(report.discoveries?.rising ?? []),
       ...(report.discoveries?.dev_watch ?? []),
     ].map((p) => ({ repo: canonicalRepoKey(p), stars: p.stars ?? 0 })).filter((p) => p.repo);
     if (shown.length) {
-      const { added, total } = appendSeen(shown, '$DATE');
-      console.log('[merge-report] seen-repos +' + added + ' (total ' + total + ')');
+      const { added, total } = appendSeen(shown, DATE);
+      console.log("[merge-report] seen-repos +" + added + " (total " + total + ")");
     }
   } catch (e) {
-    console.error('[merge-report] WARN: seen-repos ledger update failed (report still written): ' + e.message);
+    console.error("[merge-report] WARN: seen-repos ledger update failed (report still written): " + e.message);
   }
 } catch (e) {
   if (/dangling source_link/.test(e.message)) {
-    console.error('[merge-report] ' + e.message);
+    console.error("[merge-report] " + e.message);
     process.exit(3);
   }
-  if (e.name === 'ZodError') {
-    console.error('[merge-report] schema validation failed:');
+  if (e.name === "ZodError") {
+    console.error("[merge-report] schema validation failed:");
     for (const iss of e.issues.slice(0, 10)) {
-      console.error('  - ' + iss.path.join('.') + ': ' + iss.message);
+      console.error("  - " + iss.path.join(".") + ": " + iss.message);
     }
     process.exit(4);
   }
-  console.error('[merge-report] ' + e.message);
+  console.error("[merge-report] " + e.message);
   process.exit(2);
 }
-"
+'
 RC=$?
 if [ "$RC" -ne 0 ]; then
   exit "$RC"

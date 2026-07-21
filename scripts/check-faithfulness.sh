@@ -37,28 +37,32 @@ if [ ! -f "$EDITORIAL_FILE" ]; then
 fi
 
 # 1. Detect: temporal flags (kept for the apply step) + attribution claims + judge prompt.
-node --input-type=module -e "
-  import { readFile, writeFile, readdir } from 'node:fs/promises';
-  import { buildCuratedIndex, detectTemporalFlags, detectAttributionClaims, buildJudgePrompt } from './src/lib/faithfulness.js';
-  const editorial = JSON.parse(await readFile('$EDITORIAL_FILE', 'utf8'));
+FAITH_EDITORIAL_FILE="$EDITORIAL_FILE" FAITH_CURATED_DIR="$CURATED_DIR" \
+FAITH_STAGING_DIR="$STAGING_DIR" FAITH_CLAIMS_FILE="$CLAIMS_FILE" \
+FAITH_PROMPT_FILE="$PROMPT_FILE" FAITH_TODAY="$TODAY" FAITH_TOL="$TOL" \
+node --input-type=module -e '
+  import { readFile, writeFile, readdir } from "node:fs/promises";
+  import { buildCuratedIndex, detectTemporalFlags, detectAttributionClaims, buildJudgePrompt } from "./src/lib/faithfulness.js";
+  const { FAITH_EDITORIAL_FILE, FAITH_CURATED_DIR, FAITH_STAGING_DIR, FAITH_CLAIMS_FILE, FAITH_PROMPT_FILE, FAITH_TODAY, FAITH_TOL } = process.env;
+  const editorial = JSON.parse(await readFile(FAITH_EDITORIAL_FILE, "utf8"));
   const curated = {};
-  for (const f of await readdir('$CURATED_DIR')) {
-    if (f.endsWith('.json')) {
-      const sec = f.replace(/\.json\$/, '');
-      try { curated[sec] = JSON.parse(await readFile('$CURATED_DIR/' + f, 'utf8')); } catch {}
+  for (const f of await readdir(FAITH_CURATED_DIR)) {
+    if (f.endsWith(".json")) {
+      const sec = f.replace(/\.json$/, "");
+      try { curated[sec] = JSON.parse(await readFile(FAITH_CURATED_DIR + "/" + f, "utf8")); } catch {}
     }
   }
   let sidecar = {};
-  try { sidecar = JSON.parse(await readFile('$STAGING_DIR/source-dates.json', 'utf8')); } catch {}
+  try { sidecar = JSON.parse(await readFile(FAITH_STAGING_DIR + "/source-dates.json", "utf8")); } catch {}
   const index = buildCuratedIndex(curated);
-  const temporalFlags = detectTemporalFlags(editorial, index, { reportDate: '$TODAY', toleranceDays: Number('$TOL'), sidecar });
+  const temporalFlags = detectTemporalFlags(editorial, index, { reportDate: FAITH_TODAY, toleranceDays: Number(FAITH_TOL), sidecar });
   const claims = detectAttributionClaims(editorial, index, { sidecar });
-  await writeFile('$CLAIMS_FILE', JSON.stringify({ temporalFlags, claims }, null, 2));
+  await writeFile(FAITH_CLAIMS_FILE, JSON.stringify({ temporalFlags, claims }, null, 2));
   if (claims.length > 0) {
-    await writeFile('$PROMPT_FILE', buildJudgePrompt(claims, '$TODAY'));
+    await writeFile(FAITH_PROMPT_FILE, buildJudgePrompt(claims, FAITH_TODAY));
   }
-  console.error('[check-faithfulness.sh] detected temporal=' + temporalFlags.length + ' attribution=' + claims.length);
-" || { echo '[check-faithfulness.sh] detection failed — skipping (never-abort)' >&2; exit 0; }
+  console.error("[check-faithfulness.sh] detected temporal=" + temporalFlags.length + " attribution=" + claims.length);
+' || { echo '[check-faithfulness.sh] detection failed — skipping (never-abort)' >&2; exit 0; }
 
 # 2. Judge (only if there are attribution claims).
 RAN_JUDGE=false
@@ -88,23 +92,28 @@ if [ -f "$PROMPT_FILE" ]; then
 fi
 
 # 3. Apply repairs + write editorial.json back + emit audit summary.
-node --input-type=module -e "
-  import { readFile, writeFile } from 'node:fs/promises';
-  import { parseJudgeVerdicts, applyRepairs } from './src/lib/faithfulness.js';
-  const editorial = JSON.parse(await readFile('$EDITORIAL_FILE', 'utf8'));
-  const { temporalFlags, claims } = JSON.parse(await readFile('$CLAIMS_FILE', 'utf8'));
+FAITH_EDITORIAL_FILE="$EDITORIAL_FILE" FAITH_CLAIMS_FILE="$CLAIMS_FILE" \
+FAITH_VERDICTS_RAW="$VERDICTS_FILE.raw" FAITH_TODAY="$TODAY" \
+FAITH_MODEL="$MODEL" FAITH_RAN_JUDGE="$RAN_JUDGE" \
+node --input-type=module -e '
+  import { readFile, writeFile } from "node:fs/promises";
+  import { parseJudgeVerdicts, applyRepairs } from "./src/lib/faithfulness.js";
+  const { FAITH_EDITORIAL_FILE, FAITH_CLAIMS_FILE, FAITH_VERDICTS_RAW, FAITH_TODAY, FAITH_MODEL } = process.env;
+  const RAN_JUDGE = process.env.FAITH_RAN_JUDGE === "true";
+  const editorial = JSON.parse(await readFile(FAITH_EDITORIAL_FILE, "utf8"));
+  const { temporalFlags, claims } = JSON.parse(await readFile(FAITH_CLAIMS_FILE, "utf8"));
   let attributionVerdicts = [];
-  if ($RAN_JUDGE) {
-    let verdictText = '';
+  if (RAN_JUDGE) {
+    let verdictText = "";
     try {
-      const env = JSON.parse(await readFile('$VERDICTS_FILE.raw', 'utf8'));
-      verdictText = typeof env.result === 'string' ? env.result : '';
+      const env = JSON.parse(await readFile(FAITH_VERDICTS_RAW, "utf8"));
+      verdictText = typeof env.result === "string" ? env.result : "";
     } catch {}
     attributionVerdicts = parseJudgeVerdicts(verdictText, claims);
   }
-  const { audit } = applyRepairs(editorial, { temporalFlags, attributionVerdicts }, { reportDate: '$TODAY', model: '$MODEL', ranJudge: $RAN_JUDGE });
-  await writeFile('$EDITORIAL_FILE', JSON.stringify(editorial, null, 2));
-  console.error('[check-faithfulness.sh] flagged=' + audit.flagged.length + ' repaired=' + audit.repaired + ' ran_judge=' + audit.ran_judge);
-" || { echo '[check-faithfulness.sh] apply failed — leaving editorial unchanged (never-abort)' >&2; exit 0; }
+  const { audit } = applyRepairs(editorial, { temporalFlags, attributionVerdicts }, { reportDate: FAITH_TODAY, model: FAITH_MODEL, ranJudge: RAN_JUDGE });
+  await writeFile(FAITH_EDITORIAL_FILE, JSON.stringify(editorial, null, 2));
+  console.error("[check-faithfulness.sh] flagged=" + audit.flagged.length + " repaired=" + audit.repaired + " ran_judge=" + audit.ran_judge);
+' || { echo '[check-faithfulness.sh] apply failed — leaving editorial unchanged (never-abort)' >&2; exit 0; }
 
 exit 0
