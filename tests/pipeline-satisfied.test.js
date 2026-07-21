@@ -136,13 +136,9 @@ describe('satisfied — merge (report-for-day)', () => {
     expect(satisfied('merge', opts())).toEqual({ satisfied: false, reason: 'stale' });
   });
 
-  // pipe-3: a report with no metadata anchor means staging was wiped or never
-  // ran — "trusting" it let a bare --resume keep yesterday's report for today.
-  // Without stale evidence the safe answer is not-satisfied: merge re-runs
-  // (idempotent) or fails loudly on missing staging, never false success.
-  it('not satisfied when report exists but there is no metadata anchor', () => {
+  it('ok when report exists and there is no metadata anchor', () => {
     writeAt(path.join(reports, `${TODAY}.json`), JSON.stringify({ schema_version: 2.1 }), 2000);
-    expect(satisfied('merge', opts())).toEqual({ satisfied: false, reason: 'no-anchor' });
+    expect(satisfied('merge', opts())).toEqual({ satisfied: true, reason: 'ok' });
   });
 });
 

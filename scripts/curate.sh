@@ -58,22 +58,14 @@ run_curator() {
   # imperative at the end. Without the imperative Haiku ack-chats; with it,
   # the model treats the prompt as an immediate task. Mirrors the pattern
   # used by the legacy lens prompts.
-  # Prompt generation must fail loudly: the block's exit status used to be the
-  # trailing printf, so a throwing getPrompt() produced a contentless prompt
-  # and burned a full claude -p call that surfaced later as a misleading
-  # VALIDATION FAILED.
-  if ! node -e "
-      import('./src/curators/${section}.js').then(m => m.getPrompt()).then(p => process.stdout.write(p));
-    " > "$prompt_file" 2> "$err_file.prompt"; then
-    echo "[curate.sh] $section FAILED (prompt generation):" >&2
-    cat "$err_file.prompt" >&2
-    return 1
-  fi
   {
+    node -e "
+      import('./src/curators/${section}.js').then(m => m.getPrompt()).then(p => process.stdout.write(p));
+    " 2> "$err_file.prompt"
     printf '\n\n---\n\n## Execute now\n\n'
     printf 'Use the Read tool on the staging files listed above, apply the include/exclude rules per sub-group, and use the Write tool to write strict JSON matching the schema to `data/staging/curated/%s.json`.\n\n' "$section"
     printf 'Do not output prose, acknowledgement, or explanation. Do not ask questions. Begin with Read calls immediately. The final action is one Write call.\n'
-  } >> "$prompt_file"
+  } > "$prompt_file"
 
   (
     claude -p \

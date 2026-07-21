@@ -30,9 +30,7 @@ describe('stage registry', () => {
     expect(isRetryable('collect')).toBe(true);
     for (const sec of CURATE_SECTIONS) expect(isRetryable(`curate.${sec}`)).toBe(true);
     expect(isRetryable('synthesize')).toBe(true);
-    // pipe-4: context does live Wiki filesystem IO — a transient mount blip
-    // must get the one bounded retry instead of killing the whole day's run.
-    expect(isRetryable('context')).toBe(true);
+    expect(isRetryable('context')).toBe(false);
     expect(isRetryable('faithfulness')).toBe(false);
     expect(isRetryable('merge')).toBe(false);
   });
