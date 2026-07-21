@@ -125,32 +125,41 @@ export function findDanglingSourceLinks(editorial, idSpace) {
  * integrity cure: a dangling reference (an id whose `group.subgroup.index`
  * prefix matches no curated item) degrades to a dropped link — the citing item
  * still renders, just without that dead cross-tab anchor — instead of aborting
- * the whole report. Slug-only drift is already tolerated by idPrefix, so only
- * genuinely wrong coordinates are dropped. Resolvable ids (incl. bare-prefix
- * references) are preserved verbatim.
+ * the whole report. Slug-only drift is tolerated by idPrefix, so only
+ * genuinely wrong coordinates are dropped. Resolvable references are rewritten
+ * to the canonical curated id: the rendered href must match the curated item's
+ * full DOM id exactly (the frontend resolves anchors via getElementById, no
+ * prefix fallback), so a bare-prefix or wrong-slug link kept verbatim would
+ * render as a silently dead citation.
  *
  * @param {object} editorial
  * @param {Set<string>} idSpace
- * @returns {{editorial: object, dropped: string[]}}
+ * @returns {{editorial: object, dropped: string[], rewritten: number}}
  */
 export function stripDanglingSourceLinks(editorial, idSpace) {
-  const prefixSpace = new Set();
-  for (const id of idSpace) prefixSpace.add(idPrefix(id));
+  const canonicalByPrefix = new Map();
+  for (const id of idSpace) canonicalByPrefix.set(idPrefix(id), id);
   const cleaned = structuredClone(editorial);
   const dropped = [];
+  let rewritten = 0;
   for (const [pathBase, items] of sourceLinkBlocks(cleaned)) {
     for (let idx = 0; idx < items.length; idx++) {
       const links = items[idx]?.source_links;
       if (!Array.isArray(links)) continue;
       const kept = [];
       for (const id of links) {
-        if (prefixSpace.has(idPrefix(id))) kept.push(id);
-        else dropped.push(`${pathBase}[${idx}].source_links: ${id}`);
+        const canonical = canonicalByPrefix.get(idPrefix(id));
+        if (canonical !== undefined) {
+          kept.push(canonical);
+          if (canonical !== id) rewritten++;
+        } else {
+          dropped.push(`${pathBase}[${idx}].source_links: ${id}`);
+        }
       }
-      if (kept.length !== links.length) items[idx].source_links = kept;
+      items[idx].source_links = kept;
     }
   }
-  return { editorial: cleaned, dropped };
+  return { editorial: cleaned, dropped, rewritten };
 }
 
 /**
@@ -302,11 +311,18 @@ export async function composeReport({
   // The synthesizer prompt is the primary defense (cite-or-empty, never invent);
   // this is the deterministic backstop for whatever still slips through.
   const idSpace = extractIdSpace(curated);
-  const { editorial: cured, dropped } = stripDanglingSourceLinks(editorialParsed, idSpace);
+  const {
+    editorial: cured,
+    dropped,
+    rewritten,
+  } = stripDanglingSourceLinks(editorialParsed, idSpace);
   if (dropped.length > 0) {
     console.warn(
       `[merge] dropped ${dropped.length} dangling source_link reference(s) — report still composed:\n  ${dropped.join('\n  ')}`,
     );
+  }
+  if (rewritten > 0) {
+    console.warn(`[merge] rewrote ${rewritten} source_link reference(s) to canonical curated ids`);
   }
 
   // 4. Compose

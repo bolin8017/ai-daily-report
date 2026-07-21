@@ -157,6 +157,36 @@ describe('stripDanglingSourceLinks', () => {
     expect(out.signals.focus[0].source_links).toEqual(['discoveries.rising.0:foo/bar']);
   });
 
+  // Review finding merge-1: a prefix-resolved link kept verbatim renders as
+  // href="#discoveries.rising.0" while the curated DOM id is the full
+  // "discoveries.rising.0:foo/bar" — the frontend resolves anchors by exact
+  // getElementById, so the citation link is silently dead. Resolving by
+  // prefix must therefore rewrite the link to the canonical curated id.
+  it('rewrites a prefix-resolved link to the full curated id', () => {
+    const editorial = fixtureEditorial({
+      signals: {
+        focus: [
+          {
+            id: 'sig.focus.0',
+            title: 's',
+            body: 'b',
+            audience: 'general',
+            source_links: ['discoveries.rising.0', 'pulse.hn.0:stale-slug'],
+          },
+        ],
+        predictions: [],
+      },
+    });
+    const idSpace = extractIdSpace(fixtureCurated());
+    const { editorial: out, dropped, rewritten } = stripDanglingSourceLinks(editorial, idSpace);
+    expect(dropped).toEqual([]);
+    expect(rewritten).toBe(2);
+    expect(out.signals.focus[0].source_links).toEqual([
+      'discoveries.rising.0:foo/bar',
+      'pulse.hn.0:hn-1',
+    ]);
+  });
+
   it('removes only the unresolvable ids and reports their paths, keeping resolvable ones', () => {
     const editorial = fixtureEditorial({
       signals: {
@@ -174,7 +204,7 @@ describe('stripDanglingSourceLinks', () => {
     });
     const idSpace = extractIdSpace(fixtureCurated());
     const { editorial: out, dropped } = stripDanglingSourceLinks(editorial, idSpace);
-    expect(out.signals.focus[0].source_links).toEqual(['discoveries.rising.0']);
+    expect(out.signals.focus[0].source_links).toEqual(['discoveries.rising.0:foo/bar']);
     expect(dropped).toHaveLength(2);
     expect(dropped.join('\n')).toMatch(/discoveries\.rising\.9/);
     expect(dropped.join('\n')).toMatch(/ghost\.id/);
@@ -257,7 +287,9 @@ describe('composeReport', () => {
 
   // The 2026-05-28 run aborted here: every source_link was a bare prefix
   // missing its :slug, so the merge reported 44 dangling references and the
-  // pipeline produced no report. Composing must now succeed.
+  // pipeline produced no report. Composing must now succeed — and the kept
+  // links must be the canonical curated ids, not the bare prefixes, or every
+  // rendered citation anchor is dead (review finding merge-1).
   it('composes when source_links use the bare prefix (no :slug)', async () => {
     const report = await composeReport({
       editorial: fixtureEditorial({
@@ -278,7 +310,10 @@ describe('composeReport', () => {
       themeName: 'ai-builder',
     });
     expect(report.schema_version).toBe(2.1);
-    expect(report.signals.focus[0].source_links).toEqual(['discoveries.rising.0', 'pulse.hn.0']);
+    expect(report.signals.focus[0].source_links).toEqual([
+      'discoveries.rising.0:foo/bar',
+      'pulse.hn.0:hn-1',
+    ]);
   });
 
   it('preserves editorial signals under the same name in the merged report', async () => {
