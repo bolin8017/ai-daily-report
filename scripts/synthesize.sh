@@ -22,7 +22,11 @@ FALLBACK_MODEL="${SYNTH_FALLBACK_MODEL:-sonnet}"
 # Lean-context flags: see curate.sh — --bare drops auth in our env, so use
 # --strict-mcp-config (keeps auth + Read/Write/Glob/Grep).
 LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
-TODAY="$(TZ=Asia/Taipei date +%F)"
+# Same timezone source as run.sh / merge-report.sh — the date the LLM writes
+# into editorial.date becomes report.date, while merge-report.sh names the
+# report file from REPORT_TIMEZONE; deriving them differently can split
+# filename and body date across midnight.
+TODAY="$(TZ="${REPORT_TIMEZONE:-Asia/Taipei}" date +%F)"
 REPORT_FILE="data/reports/${TODAY}.json"
 EDITORIAL_FILE="${STAGING_DIR}/editorial.json"
 REPORT_CONTEXT_FILE="${STAGING_DIR}/report-context.md"
