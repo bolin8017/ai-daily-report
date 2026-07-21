@@ -185,4 +185,76 @@ describe('commitAndPush — plumbing path against temp bare repo', () => {
       'data/reports/2026-04-14.json',
     );
   });
+
+  // Review finding docs-2: the removePaths / --remove mode is what the
+  // monthly archive job (scripts/archive-month.sh) runs UNATTENDED to delete
+  // archived reports from the data branch — previously zero coverage.
+  it('removes paths from the data branch, leaving other files and main untouched', async () => {
+    // Add a second report so the removal leaves a non-empty tree, like a
+    // real archive run (one month leaves, the hot window stays).
+    fs.mkdirSync(path.join(workingRepo, 'data', 'reports'), { recursive: true });
+    fs.writeFileSync(
+      path.join(workingRepo, 'data', 'reports', '2026-04-14.json'),
+      '{"date":"2026-04-14"}\n',
+    );
+    await commitAndPush({
+      date: '2026-04-14',
+      message: 'add hot report',
+      paths: ['data/reports/2026-04-14.json'],
+    });
+
+    const headBefore = git(['rev-parse', 'HEAD'], workingRepo);
+    const indexBefore = git(['ls-files', '--stage'], workingRepo);
+
+    const result = await commitAndPush({
+      date: '2026-04-14',
+      message: 'archive: move 2026-01 reports to Releases',
+      removePaths: ['data/reports/2026-01-01.json'],
+    });
+    expect(result.pushed).toBe(true);
+
+    git(['fetch', 'origin', 'data'], workingRepo);
+    const tree = git(['ls-tree', '-r', 'origin/data'], workingRepo);
+    expect(tree).not.toContain('data/reports/2026-01-01.json');
+    expect(tree).toContain('data/reports/2026-04-14.json');
+
+    // Remove-only mode must not stage the default add paths as a side effect,
+    // and main's HEAD / index / checkout stay untouched.
+    expect(git(['rev-parse', 'HEAD'], workingRepo)).toBe(headBefore);
+    expect(git(['ls-files', '--stage'], workingRepo)).toBe(indexBefore);
+    expect(git(['rev-parse', '--abbrev-ref', 'HEAD'], workingRepo)).toBe('main');
+  });
+
+  it('re-running a removal is a no-op push (archive rerun after partial success)', async () => {
+    const first = await commitAndPush({
+      date: '2026-04-14',
+      message: 'archive: remove seed',
+      removePaths: ['data/reports/2026-01-01.json'],
+    });
+    expect(first.pushed).toBe(true);
+    git(['fetch', 'origin', 'data'], workingRepo);
+    const tipAfterFirst = git(['rev-parse', 'origin/data'], workingRepo);
+
+    const second = await commitAndPush({
+      date: '2026-04-14',
+      message: 'archive: remove seed again',
+      removePaths: ['data/reports/2026-01-01.json'],
+    });
+    expect(second.pushed).toBe(false);
+    git(['fetch', 'origin', 'data'], workingRepo);
+    expect(git(['rev-parse', 'origin/data'], workingRepo)).toBe(tipAfterFirst);
+  });
+
+  it('CLI --remove form (the exact archive-month.sh invocation) removes the path', () => {
+    const commitJs = path.resolve(import.meta.dirname, '..', 'src', 'lib', 'commit.js');
+    execFileSync(
+      'node',
+      [commitJs, '2026-04-14', 'archive: cli remove', '--remove', 'data/reports/2026-01-01.json'],
+      { cwd: workingRepo, encoding: 'utf8', env: { ...process.env, GITHUB_TOKEN: '' } },
+    );
+    git(['fetch', 'origin', 'data'], workingRepo);
+    expect(git(['ls-tree', '-r', 'origin/data'], workingRepo)).not.toContain(
+      'data/reports/2026-01-01.json',
+    );
+  });
 });
