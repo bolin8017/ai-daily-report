@@ -88,6 +88,10 @@ async function main() {
   console.error(
     `done: +${plan.createCategories.length} categories, +${created} feeds, ${failures.length} failed`,
   );
+  // Partial provisioning failure must not exit 0 (unc-4, 2026-07-22 review):
+  // an operator chaining `miniflux-sync && ...` would proceed as if every feed
+  // landed. Individual failures are already logged above.
+  if (failures.length) process.exitCode = 1;
 }
 
 main().catch((e) => {
