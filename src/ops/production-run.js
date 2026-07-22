@@ -112,6 +112,9 @@ export function renderFailure(latest) {
       );
       return failedRetries.length ? `retry attempted (failed): ${failedRetries.join(', ')}` : null;
     })(),
+    latest.recovery?.rerolled?.length
+      ? `empty re-rolled: ${latest.recovery.rerolled.join(', ')}`
+      : null,
     latest.rc?.run === 0 &&
     latest.rc?.validate === 0 &&
     latest.rc?.remote === 0 &&
@@ -141,6 +144,9 @@ export function renderSuccess(latest) {
     durationMin ? `duration: ${durationMin} min` : null,
     latest.recovery?.retried?.length
       ? `auto-recovered: ${latest.recovery.retried.join(', ')}`
+      : null,
+    latest.recovery?.rerolled?.length
+      ? `empty re-rolled: ${latest.recovery.rerolled.join(', ')}`
       : null,
     latest.publish?.missing_days?.length
       ? `missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${latest.publish.missing_days.join(', ')}`
@@ -359,7 +365,7 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
     log_file: logFile,
     skip_push: Boolean(skipPush),
     stages: {},
-    recovery: { attempted: [], retried: [] },
+    recovery: { attempted: [], retried: [], rerolled: [] },
     publish: {
       attempted: false,
       report_present_remote: null,
@@ -382,6 +388,7 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
   base.stages = summary.byStage;
   base.recovery.attempted = summary.attempted;
   base.recovery.retried = summary.retried;
+  base.recovery.rerolled = summary.rerolled;
   base.repo_run_id = summary.runId;
   base.rc.run = runRc;
 
