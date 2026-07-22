@@ -232,6 +232,15 @@ describe('renderSuccess', () => {
     expect(text).toMatch(/missing reports \(last \d+ days\): 2026-07-02, 2026-07-03/);
   });
 
+  it('surfaces an empty re-roll so the trend stays visible (dr-6)', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-07-22',
+      recovery: { rerolled: ['curate.market'] },
+    });
+    expect(text).toMatch(/empty re-rolled: curate\.market/);
+  });
+
   it('omits the missing-days line when there are no gaps', () => {
     const text = renderSuccess({
       run_id: 'r1',

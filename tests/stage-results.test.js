@@ -96,6 +96,34 @@ describe('summarizeStages', () => {
     const s = summarizeStages(records);
     expect(s.attempted).toEqual([]);
   });
+
+  // dr-6 (2026-07-22 review): the empty re-roll emits suspicious-empty then the
+  // final status — neither is `failed`, so it was invisible in the retry
+  // accounting and the notices. It gets its own `rerolled` list.
+  it('lists an empty re-roll in rerolled without touching retried (dr-6)', () => {
+    const records = parseStageResults(
+      [
+        line('curate.market', 'suspicious-empty', { cost_usd: 0.01 }),
+        line('curate.market', 'ok', { cost_usd: 0.02 }), // the re-roll, recovered
+        line('curate.tech', 'suspicious-empty'), // single record — no re-roll ran
+      ].join('\n'),
+    );
+    const s = summarizeStages(records);
+    expect(s.rerolled).toEqual(['curate.market']);
+    expect(s.retried).toEqual([]); // a re-roll is not an auto-recover retry
+    expect(s.attempted).toEqual([]);
+    expect(s.totalCostUsd).toBeCloseTo(0.03); // both attempts still summed
+  });
+
+  it('lists a still-empty re-roll in rerolled too', () => {
+    const records = parseStageResults(
+      [
+        line('curate.market', 'suspicious-empty'),
+        line('curate.market', 'suspicious-empty'), // re-roll ran, still empty
+      ].join('\n'),
+    );
+    expect(summarizeStages(records).rerolled).toEqual(['curate.market']);
+  });
 });
 
 describe('formatStageSummary', () => {

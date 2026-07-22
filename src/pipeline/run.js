@@ -257,6 +257,13 @@ export async function runPipeline({
           // file — rather than in the recovery pass, which runs after
           // synthesize has already spent a Sonnet call on the empty version.
           // A still-empty retry is accepted exactly as before.
+          // NB (dr-1, 2026-07-22 review): this budget is deliberately
+          // independent of the recovery pass's — if the re-roll itself
+          // hard-fails, the stage becomes `failed` and still gets the one
+          // delayed recovery retry (empty → re-roll → recovery = at most 3
+          // invocations). The two retries target different failure classes
+          // (output loss vs API transients); dropping the recovery retry here
+          // would trade a whole publishing day for one saved curate call.
           if (status === 'suspicious-empty' && autoRecover && !dryRun && !emptyRetried.has(id)) {
             emptyRetried.add(id);
             emit(buildResult(stage, status, { runId, ...res }));
