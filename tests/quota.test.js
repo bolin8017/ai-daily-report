@@ -70,6 +70,23 @@ describe('firecrawl quota', () => {
     expect(data.firecrawl.used).toBe(1);
   });
 
+  // unc-3 (2026-07-22 review): concurrent chain fallbacks each call record()
+  // via Promise.allSettled, and the read-modify-write used to interleave —
+  // lost increments undercount the month and can blow past the cap.
+  it('concurrent record() calls do not lose increments', async () => {
+    const q = createFirecrawlQuota({ file, monthlyCap: 500 });
+    await Promise.all([q.record(1), q.record(1), q.record(1), q.record(2)]);
+    const data = JSON.parse(await readFile(file, 'utf8'));
+    expect(data.firecrawl.used).toBe(5);
+  });
+
+  it('record() leaves no temp file behind (atomic write)', async () => {
+    const q = createFirecrawlQuota({ file, monthlyCap: 500 });
+    await q.record(1);
+    const { readdir } = await import('node:fs/promises');
+    expect(await readdir(dir)).toEqual(['quota.json']);
+  });
+
   it('returns 0 remaining when local counter exhausted', async () => {
     delete process.env.FIRECRAWL_API_KEY;
     const month = new Date().toISOString().slice(0, 7);

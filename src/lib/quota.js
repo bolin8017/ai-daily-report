@@ -1,4 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import { atomicWriteFileSync } from './fs-atomic.js';
 
 const FIRECRAWL_USAGE_URL = 'https://api.firecrawl.dev/v1/team/credit-usage';
 
@@ -16,6 +17,11 @@ async function readLocal(file) {
 
 export function createFirecrawlQuota({ file = 'data/quota.json', monthlyCap = 500 } = {}) {
   let initial = null;
+  // record() serialization: concurrent chain fallbacks (Promise.allSettled in
+  // run-all.js) each read-modify-write the same file; without a queue the
+  // interleaved writes lose increments and undercount the month (unc-3,
+  // 2026-07-22 review).
+  let recordQueue = Promise.resolve();
 
   async function canSpend() {
     if (process.env.FIRECRAWL_DISABLED === '1') {
@@ -46,12 +52,15 @@ export function createFirecrawlQuota({ file = 'data/quota.json', monthlyCap = 50
     return { allowed: remaining > 0, source: 'local', remaining };
   }
 
-  async function record(n = 1) {
-    const data = await readLocal(file);
-    const month = currentMonth();
-    if (data.firecrawl?.month !== month) data.firecrawl = { month, used: 0 };
-    data.firecrawl.used += n;
-    await writeFile(file, JSON.stringify(data, null, 2));
+  function record(n = 1) {
+    recordQueue = recordQueue.then(async () => {
+      const data = await readLocal(file);
+      const month = currentMonth();
+      if (data.firecrawl?.month !== month) data.firecrawl = { month, used: 0 };
+      data.firecrawl.used += n;
+      atomicWriteFileSync(file, JSON.stringify(data, null, 2));
+    });
+    return recordQueue;
   }
 
   async function snapshot() {
