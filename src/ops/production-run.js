@@ -34,7 +34,7 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allStageIds } from '../pipeline/stages.js';
-import { DEFAULT_LOOKBACK_DAYS, findMissingReportDays, parseReportDates } from './report-gaps.js';
+import { DEFAULT_LOOKBACK_DAYS, scanReportGaps } from './report-gaps.js';
 import { parseStageResults, summarizeStages } from './stage-results.js';
 
 const STATE_SCHEMA_VERSION = 1;
@@ -249,8 +249,10 @@ function runToLog(cmd, args, logFd, extraEnv = {}) {
   return res.status ?? 1;
 }
 
-// Fetch origin/data and return the branch's full file listing (empty string on
-// failure). One listing serves both the today's-report check and the
+// Fetch origin/data and return the branch's full file listing, or null when
+// the listing itself failed (dr-2: an empty string here is indistinguishable
+// from an empty branch and made the gap scan report the whole window
+// missing). One listing serves both the today's-report check and the
 // missing-day gap scan.
 function remoteDataListing(logFd) {
   runToLog('git', ['fetch', 'origin', 'data', '--quiet'], logFd);
@@ -258,16 +260,24 @@ function remoteDataListing(logFd) {
     cwd: REPO_ROOT,
     encoding: 'utf8',
   });
+  if (res.status !== 0) return null;
   return res.stdout ?? '';
 }
 
 // POST a repository_dispatch to trigger the Pages build. The token is passed via
 // an Authorization header arg; spawnSync does not echo argv to the log.
+// Returns { rc, httpCode } so the retry loop can tell a permanent 4xx (bad
+// token / bad repo — retrying cannot help) from the transient 5xx it targets
+// (dr-3: `-f` alone collapses both into rc=22).
 function curlDispatch(token, logFd) {
   const res = spawnSync(
     'curl',
     [
-      '-fsS',
+      '-sS',
+      '-o',
+      '/dev/null',
+      '-w',
+      '%{http_code}',
       '-X',
       'POST',
       '-H',
@@ -280,9 +290,14 @@ function curlDispatch(token, logFd) {
       '-d',
       '{"event_type":"data-committed"}',
     ],
-    { cwd: REPO_ROOT, stdio: ['ignore', 'ignore', logFd] },
+    { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', logFd] },
   );
-  return res.status ?? 1;
+  const httpCode = Number.parseInt(res.stdout ?? '', 10) || null;
+  const ok = res.status === 0 && httpCode !== null && httpCode < 400;
+  // 22 mirrors curl's own `-f` exit code for HTTP >= 400, keeping rc semantics
+  // stable for the run state and notices.
+  const rc = ok ? 0 : res.status || 22;
+  return { rc, httpCode };
 }
 
 // Synchronous sleep — cmdRun is deliberately synchronous end to end.
@@ -306,12 +321,18 @@ export function dispatchPages(token, logFd, opts = {}) {
   }
   let rc = 1;
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    rc = curlFn(token, logFd);
+    const out = curlFn(token, logFd);
+    const { rc: curlRc, httpCode } = typeof out === 'number' ? { rc: out, httpCode: null } : out;
+    rc = curlRc;
     if (rc === 0) return 0;
     writeToFd(
       logFd,
-      `[production] Pages dispatch attempt ${attempt}/${attempts} failed (rc=${rc})\n`,
+      `[production] Pages dispatch attempt ${attempt}/${attempts} failed (rc=${rc}${httpCode ? `, http=${httpCode}` : ''})\n`,
     );
+    if (httpCode !== null && httpCode >= 400 && httpCode < 500) {
+      writeToFd(logFd, `[production] Pages dispatch got ${httpCode} — not retryable, giving up\n`);
+      return rc;
+    }
     if (attempt < attempts) sleepFn(delayMs);
   }
   return rc;
@@ -394,7 +415,9 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
     base.rc.validate = validateRc;
 
     const listing = remoteDataListing(logFd);
-    const present = listing.split('\n').some((l) => l.trim() === `data/reports/${date}.json`);
+    const present = (listing ?? '')
+      .split('\n')
+      .some((l) => l.trim() === `data/reports/${date}.json`);
     base.publish.report_present_remote = present;
     remoteRc = present ? 0 : 1;
     base.rc.remote = remoteRc;
@@ -409,15 +432,14 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
     // — a missed cron day produces no run and no failure notice of its own,
     // so this run's notice is where the hole becomes visible. Informational
     // only; never fails the run.
-    const missingDays = findMissingReportDays({
-      presentDates: parseReportDates(listing),
-      today: date,
-    });
-    base.publish.missing_days = missingDays;
-    if (missingDays.length) {
+    const gaps = scanReportGaps({ listing, today: date });
+    base.publish.missing_days = gaps.missingDays;
+    if (gaps.skipped) {
+      writeToFd(logFd, `[production:${runId}] gap scan skipped: origin/data listing unavailable\n`);
+    } else if (gaps.missingDays.length) {
       writeToFd(
         logFd,
-        `[production:${runId}] WARNING: missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${missingDays.join(', ')}\n`,
+        `[production:${runId}] WARNING: missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${gaps.missingDays.join(', ')}\n`,
       );
     }
 

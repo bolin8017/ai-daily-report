@@ -5,7 +5,7 @@
 // the run state + delivery notices.
 
 import { describe, expect, it } from 'vitest';
-import { findMissingReportDays, parseReportDates } from '../src/ops/report-gaps.js';
+import { findMissingReportDays, parseReportDates, scanReportGaps } from '../src/ops/report-gaps.js';
 
 describe('parseReportDates', () => {
   it('extracts dates from git ls-tree output, ignoring non-report paths', () => {
@@ -55,5 +55,31 @@ describe('findMissingReportDays', () => {
     expect(
       findMissingReportDays({ presentDates: [], today: '2026-07-01', lookbackDays: 2 }),
     ).toEqual(['2026-06-29', '2026-06-30']);
+  });
+});
+
+describe('scanReportGaps', () => {
+  it('skips the scan when the listing is unavailable (git failure)', () => {
+    // dr-2 (2026-07-22 review): a failed fetch/ls-tree used to look like an
+    // empty branch, flooding the notice with all 14 lookback days "missing".
+    expect(scanReportGaps({ listing: null, today: '2026-07-22' })).toEqual({
+      skipped: true,
+      missingDays: null,
+    });
+  });
+
+  it('scans normally on a real listing', () => {
+    const listing = ['data/reports/2026-07-20.json', 'data/reports/2026-07-22.json'].join('\n');
+    expect(scanReportGaps({ listing, today: '2026-07-22', lookbackDays: 2 })).toEqual({
+      skipped: false,
+      missingDays: ['2026-07-21'],
+    });
+  });
+
+  it('still scans an empty-but-successful listing (bootstrap data branch)', () => {
+    expect(scanReportGaps({ listing: '', today: '2026-07-22', lookbackDays: 1 })).toEqual({
+      skipped: false,
+      missingDays: ['2026-07-21'],
+    });
   });
 });
