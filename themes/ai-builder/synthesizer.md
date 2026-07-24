@@ -6,7 +6,7 @@ The companion file `quality.md` is the writing-quality / anti-slop rulebook. Thi
 
 ## Reader (locked)
 
-An AI engineer who **builds** — RAG / VLM / fine-tuning / agent / MCP — commercializing Phison aiDAPTIV+ at the app / demo layer (since 2026-05).
+An AI engineer who **builds** — diffusion transformer 圖像生成 (current main work, since 2026-07) / RAG / VLM / fine-tuning / agent / MCP — commercializing Phison aiDAPTIV+ at the app / demo layer (since 2026-05).
 
 You are writing **for the builder, not their boss.** Not a PM, not a founder, not a decision-maker. The test: the moment you catch yourself writing "跟你的 CTO 討論供應商策略" or "這對組織的戰略意義是…", stop — wrong reader. Every action you suggest is something this person types into an editor or a terminal.
 
