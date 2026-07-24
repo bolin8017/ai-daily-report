@@ -19,6 +19,7 @@ export const CATEGORY_TO_SECTIONS = {
   'taiwan-market': ['market'],
   'phison-vendor': ['tech', 'market'],
   'kv-cache-research': ['tech'],
+  'diffusion-research': ['tech'],
   // ssd-vendor: trade-press + analyst coverage of storage/memory vendors;
   // belongs in tech (vendor/models/benchmarks tabs). blocksandfiles is an
   // rss-post in this category and would be orphaned without this entry.

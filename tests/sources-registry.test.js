@@ -22,11 +22,11 @@ import '../src/fetchers/providers/native-rss.js';
 import '../src/fetchers/providers/rsshub.js';
 
 describe('source registry', () => {
-  it('all 57 sources validate against RegistrySchema', () => {
+  it('all 59 sources validate against RegistrySchema', () => {
     const result = RegistrySchema.safeParse(sources);
     if (!result.success) console.error(JSON.stringify(result.error.issues, null, 2));
     expect(result.success).toBe(true);
-    expect(sources).toHaveLength(57);
+    expect(sources).toHaveLength(59);
   });
 
   it('every itemType referenced exists in ItemSchemas', () => {
