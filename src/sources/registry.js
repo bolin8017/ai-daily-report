@@ -126,9 +126,15 @@ export default [
       }).slice(1),
     ],
   },
-  rss('google-ai-blog', 'Google AI Blog', 'AI 公司', 'https://blog.google/technology/ai/rss', {
-    homepageUrl: 'https://blog.google/technology/ai/',
-  }),
+  rss(
+    'google-ai-blog',
+    'Google AI Blog',
+    'AI 公司',
+    'https://blog.google/innovation-and-ai/technology/ai/rss/',
+    {
+      homepageUrl: 'https://blog.google/technology/ai/',
+    },
+  ),
   rss('openai', 'OpenAI', '大廠技術', 'https://openai.com/news/rss.xml', {
     homepageUrl: 'https://openai.com/news/',
   }),
@@ -171,9 +177,15 @@ export default [
       homepageUrl: 'https://news.samsung.com/global/',
     },
   ),
-  rss('blocksandfiles', 'BlocksAndFiles', 'aidaptiv', 'https://blocksandfiles.com/feed', {
-    homepageUrl: 'https://blocksandfiles.com/',
-  }),
+  rss(
+    'blocksandfiles',
+    'BlocksAndFiles',
+    'aidaptiv',
+    'https://www.blocksandfiles.com/?lab_viewport=rss',
+    {
+      homepageUrl: 'https://blocksandfiles.com/',
+    },
+  ),
   rss(
     'vllm-releases',
     'vLLM Releases',
@@ -244,7 +256,7 @@ export default [
   rss('inside', 'Inside', '台灣媒體', 'https://www.inside.com.tw/feed/rss', {
     homepageUrl: 'https://www.inside.com.tw/',
   }),
-  rss('techorange', 'TechOrange', '台灣媒體', 'https://buzzorange.com/techorange/feed/', {
+  rss('techorange', 'TechOrange', '台灣媒體', 'https://techorange.com/feed/', {
     homepageUrl: 'https://buzzorange.com/techorange/',
   }),
   rss('technews-tw', 'TechNews', '台灣媒體', 'https://technews.tw/feed/', {
