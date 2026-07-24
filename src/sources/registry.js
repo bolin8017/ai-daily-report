@@ -201,6 +201,26 @@ export default [
       homepageUrl: 'https://github.com/aiDAPTIV-Phison/aiDAPTIV/releases',
     },
   ),
+
+  // === 圖像生成 / Diffusion (2) — operator's main work since 2026-07 ===
+  rss(
+    'diffusers-releases',
+    'Diffusers Releases',
+    'diffusion-research',
+    'https://github.com/huggingface/diffusers/releases.atom',
+    {
+      homepageUrl: 'https://github.com/huggingface/diffusers/releases',
+    },
+  ),
+  rss(
+    'comfyui-releases',
+    'ComfyUI Releases',
+    'diffusion-research',
+    'https://github.com/Comfy-Org/ComfyUI/releases.atom',
+    {
+      homepageUrl: 'https://github.com/Comfy-Org/ComfyUI/releases',
+    },
+  ),
   rss('phoronix', 'Phoronix', '系統/底層', 'https://www.phoronix.com/rss.php', {
     homepageUrl: 'https://www.phoronix.com/',
   }),
