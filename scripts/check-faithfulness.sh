@@ -6,13 +6,13 @@
 # the caller invokes it as `... || true` as a second belt.
 #
 # Env:
-#   FAITHFULNESS_MODEL                    judge model (default: claude-sonnet-4-6)
+#   FAITHFULNESS_MODEL                    judge model (default: claude-sonnet-5)
 #   FAITHFULNESS_TEMPORAL_TOLERANCE_DAYS  same-day tolerance (default: 1)
 #   STAGING_DIR / CURATED_DIR             paths (match synthesize.sh defaults)
 
 set -uo pipefail
 
-MODEL="${FAITHFULNESS_MODEL:-claude-sonnet-4-6}"
+MODEL="${FAITHFULNESS_MODEL:-claude-sonnet-5}"
 TOL="${FAITHFULNESS_TEMPORAL_TOLERANCE_DAYS:-1}"
 FALLBACK_MODEL="${FAITHFULNESS_FALLBACK_MODEL:-sonnet}"
 # Lean-context flags: see curate.sh (--bare drops auth in our env). The judge

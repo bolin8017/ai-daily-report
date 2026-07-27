@@ -6,7 +6,7 @@
 # curated/*; the synthesizer never re-emits curated content or writes legacy memory.
 #
 # Env:
-#   CLAUDE_MODEL — model (default: claude-sonnet-4-6)
+#   CLAUDE_MODEL — model (default: claude-sonnet-5)
 #   STAGING_DIR  — input (default: data/staging)
 #   CURATED_DIR  — curated input dir (default: <STAGING_DIR>/curated)
 #   CLAUDE_CODE_MAX_OUTPUT_TOKENS — output cap (default: 64000)
@@ -15,7 +15,7 @@
 
 set -uo pipefail
 
-MODEL="${CLAUDE_MODEL:-claude-sonnet-4-6}"
+MODEL="${CLAUDE_MODEL:-claude-sonnet-5}"
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 FALLBACK_MODEL="${SYNTH_FALLBACK_MODEL:-sonnet}"
