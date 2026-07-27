@@ -69,6 +69,23 @@ describe('buildSectionFeedSlices', () => {
     expect(ids).toContain('it1');
     expect(ids).not.toContain('it2');
   });
+  it('honors the wider window for low-cadence release feeds', () => {
+    const releaseMap = {
+      sourcesForSection: (s) => (s === 'tech' ? ['comfyui-releases', 'diffusers-releases'] : []),
+    };
+    const releases = [
+      item({ id: 'comfy-fresh', src: 'comfyui-releases', pub: '2026-05-31T00:00:00Z' }), // 5d
+      item({ id: 'comfy-stale', src: 'comfyui-releases', pub: '2026-05-20T00:00:00Z' }), // 16d
+      item({ id: 'diff-fresh', src: 'diffusers-releases', pub: '2026-05-24T00:00:00Z' }), // 12d
+      item({ id: 'diff-stale', src: 'diffusers-releases', pub: '2026-05-10T00:00:00Z' }), // 26d
+    ];
+    const s = buildSectionFeedSlices(releases, { sectionMap: releaseMap, date: DATE });
+    const ids = s.tech.items.map((i) => i.title);
+    expect(ids).toContain('comfy-fresh');
+    expect(ids).toContain('diff-fresh');
+    expect(ids).not.toContain('comfy-stale');
+    expect(ids).not.toContain('diff-stale');
+  });
   it('keeps published + signal; envelope always valid incl. degraded; empty section valid', () => {
     const s = buildSectionFeedSlices(feed, { sectionMap, date: DATE });
     expect(s.pulse.ok).toBe(true);
