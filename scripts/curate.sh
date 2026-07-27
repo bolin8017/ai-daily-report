@@ -50,6 +50,7 @@ quarantine_artifacts() {
     "$LOG_DIR/$section.err.txt.repair" \
     "$LOG_DIR/$section.repair-prompt.txt" \
     "$LOG_DIR/$section.repair-raw.json" \
+    "$LOG_DIR/$section.original.json" \
     "$CURATED_DIR/$section.json"; do
     if [ -f "$f" ]; then cp -f "$f" "$qdir/" 2>/dev/null || true; fi
   done
@@ -158,6 +159,11 @@ run_curator() {
   fi
   echo "[curate.sh] $section validation failed — attempting LLM repair (model=$FALLBACK_MODEL)"
   cat "$err_file.validate" >&2
+  # Snapshot the curator's original output before the repair model overwrites
+  # $out_file in place — otherwise a failed repair quarantines the
+  # repaired-but-still-broken file and the artifact ops-5 exists to post-mortem
+  # is gone (dr-4, 2026-07-22 review).
+  cp -f "$out_file" "$LOG_DIR/$section.original.json" 2>/dev/null || true
   local repair_prompt="$LOG_DIR/$section.repair-prompt.txt"
   {
     printf 'The file `%s` was written by an automated curator but failed JSON validation with this error:\n\n' "$out_file"
