@@ -198,6 +198,26 @@ describe('dispatchPages retry', () => {
     expect(sleepFn).not.toHaveBeenCalled();
   });
 
+  it('stops after the first attempt on a 4xx http code (bad token / bad repo)', () => {
+    const curlFn = vi.fn().mockReturnValue({ rc: 22, httpCode: 404 });
+    const sleepFn = vi.fn();
+    const rc = dispatchPages('tok', noLog, { curlFn, sleepFn, attempts: 3 });
+    expect(rc).toBe(22);
+    expect(curlFn).toHaveBeenCalledTimes(1);
+    expect(sleepFn).not.toHaveBeenCalled();
+  });
+
+  it('keeps retrying on a 5xx http code', () => {
+    const curlFn = vi
+      .fn()
+      .mockReturnValueOnce({ rc: 22, httpCode: 503 })
+      .mockReturnValueOnce({ rc: 0, httpCode: 204 });
+    const sleepFn = vi.fn();
+    expect(dispatchPages('tok', noLog, { curlFn, sleepFn, attempts: 3 })).toBe(0);
+    expect(curlFn).toHaveBeenCalledTimes(2);
+    expect(sleepFn).toHaveBeenCalledTimes(1);
+  });
+
   it('fails immediately without a token', () => {
     const curlFn = vi.fn();
     expect(dispatchPages(undefined, noLog, { curlFn })).toBe(1);

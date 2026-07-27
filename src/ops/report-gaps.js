@@ -35,6 +35,31 @@ export function parseReportDates(lsTreeOutput) {
  * @param {number} [opts.lookbackDays]
  * @returns {string[]} missing YYYY-MM-DD, ascending
  */
+/**
+ * Gap scan over a raw `git ls-tree` listing, `null`-aware: a `null` listing
+ * means the listing itself could not be produced (git fetch/ls-tree failed),
+ * which is indistinguishable from "every day missing" if scanned — so the
+ * scan is skipped instead of flooding the notice with the whole window.
+ * An empty-but-successful listing (bootstrap data branch) still scans.
+ *
+ * @param {object} opts
+ * @param {string|null} opts.listing ls-tree output, or null on git failure
+ * @param {string} opts.today YYYY-MM-DD (report timezone)
+ * @param {number} [opts.lookbackDays]
+ * @returns {{skipped: boolean, missingDays: string[]|null}}
+ */
+export function scanReportGaps({ listing, today, lookbackDays = DEFAULT_LOOKBACK_DAYS }) {
+  if (listing == null) return { skipped: true, missingDays: null };
+  return {
+    skipped: false,
+    missingDays: findMissingReportDays({
+      presentDates: parseReportDates(listing),
+      today,
+      lookbackDays,
+    }),
+  };
+}
+
 export function findMissingReportDays({
   presentDates,
   today,
