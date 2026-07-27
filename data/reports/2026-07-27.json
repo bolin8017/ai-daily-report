@@ -1,0 +1,961 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-07-27",
+  "meta": {
+    "run_id": "f62ea59b-1c8d-49c5-954e-5574912bbbeb",
+    "pipeline_version": "c9e2ffa",
+    "generated_at": "2026-07-27T00:48:06.644Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 2140
+      },
+      "trending": {
+        "ok": true,
+        "count": 17
+      },
+      "search": {
+        "ok": true,
+        "count": 239
+      },
+      "developers": {
+        "ok": true,
+        "count": 13
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 0
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 254,
+      "market": 224,
+      "tech": 29,
+      "shipped": 50
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.1898795,
+        "duration_ms": 68480,
+        "num_turns": 10,
+        "input_tokens": 62,
+        "output_tokens": 4825,
+        "cache_read_tokens": 343365,
+        "cache_creation_tokens": 65678,
+        "is_error": false,
+        "session_id": "cf9285a3-0268-4dad-9261-b84f75abacf6"
+      },
+      "curate.market": {
+        "cost_usd": 0.29400509999999996,
+        "duration_ms": 101185,
+        "num_turns": 13,
+        "input_tokens": 64,
+        "output_tokens": 8031,
+        "cache_read_tokens": 553101,
+        "cache_creation_tokens": 99238,
+        "is_error": false,
+        "session_id": "dedbaf90-a342-48f1-b1c1-990259b0621d"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.4986488,
+        "duration_ms": 110354,
+        "num_turns": 10,
+        "input_tokens": 63,
+        "output_tokens": 8553,
+        "cache_read_tokens": 507768,
+        "cache_creation_tokens": 202522,
+        "is_error": false,
+        "session_id": "e3b1e617-6557-4103-94d5-f60d4cc71b1d"
+      },
+      "synthesize": {
+        "cost_usd": 1.6708037999999998,
+        "duration_ms": 852290,
+        "num_turns": 16,
+        "input_tokens": 11,
+        "output_tokens": 44285,
+        "cache_read_tokens": 785786,
+        "cache_creation_tokens": 128460,
+        "is_error": false,
+        "session_id": "02dc7690-857c-46cc-adc3-12e925091ee3"
+      },
+      "curate.tech": {
+        "cost_usd": 0.2087086,
+        "duration_ms": 105594,
+        "num_turns": 10,
+        "input_tokens": 46,
+        "output_tokens": 8921,
+        "cache_read_tokens": 268356,
+        "cache_creation_tokens": 68611,
+        "is_error": false,
+        "session_id": "975ba9c6-b0a2-44ba-a1ba-ca9eaf59a154"
+      }
+    },
+    "total_cost_usd": 2.8620457999999998,
+    "total_tokens": 74861,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "6/6",
+      "unique_domains": 35,
+      "source_tier": 0.06060606060606061
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-07-27 — 今日重點</h3>\n<h4>Frontier 成本正在多向量同時壓縮</h4>\n<p>Anthropic 推出 Claude Opus 5，定位是以 Fable 5 同等品質換取一半成本。HN 近期高分的 Echo 專案（474 分）聲稱以 Fable 三分之一成本達到接近效果；tau2-bench 工具使用排行榜上 GPT-5.2 從第 10 名直跳第 3 名。這不是一家廠商的單次突破——閉源、開源、benchmark 三條線同時在壓縮成本，cost floor 還在往下走。</p>\n<h4>Agent 生產化工具在追多年的債</h4>\n<p>AWS 發布三篇生產 agent 文件：靜默失敗診斷（儀表板綠燈但 agent 已失效）、Motorway 日拍賣 8000 輛車的約束優先評估框架、以及跨 PDF 與語音記錄的多源代理檢索。中文社群從成本角度得到同一個結論：AI 編程 agent 91% 的 token 花在讀取程式碼，CodeBuddy NPC 透過批次改寫把消耗壓低 90% 以上。兩條線同時出現，說明大規模 agent 部署早於評估框架存在，工具化是在還債。</p>\n<h4>記憶體供應鏈從四個截面同步收緊</h4>\n<p>NVIDIA 將 Vera Rubin 單顆 LPDRAM 容量砍半，應對 2027 年初的產能缺口。三星 V9/V10 NAND 全力轉向供應 NVIDIA AI SSD，消費級 SSD 開始受到排擠。GenAI 手機佔全球出貨 45%，但記憶體供應緊張讓全球出貨量倒退 13.9%。台積電傳 2027 年漲價最高 10%。這四則新聞的 upstream 是同一個 AI 供應鏈瓶頸：特殊記憶體的需求吸附速度超過產能擴張。</p>\n<h4>DiT 量化工具與新基礎模型近期密集出現</h4>\n<p>KroQuant 以 Kronecker 結構化變換解決 DiT 推論的異常值問題，使 W4A4 量化在擴散 Transformer 上可行，邊端部署的記憶體門檻因此下移。Black Forest Labs FLUX 3 原生整合音視頻並附帶動作機器人模型，Microsoft Mage-Flow 以修正流（rectified-flow）架構 MIT 開源。對正在做 DiT 圖像生成的 builder：量化上限剛有實質移動，值得把 KroQuant 跑在現有 checkpoint 上確認 W4A4 品質損失是否可接受。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-agent-production-reliability",
+        "title": "Agent 靜默失敗是生產最大地雷",
+        "body": "AWS 把一個具體 bug pattern 公開化：agent 框架外部 API 全部回傳 200，但 agent 在任務層已陷入無效循環。Motorway 8000 車/日的案例給出唯一能在生產環境存活的評估哲學：先定義不能做什麼（約束），再測試 agent 在邊界外的行為，不是用探索式測試期待它通關。中文社群的「91% token 花在讀檔案」從成本角度說同一件事：agent 大多數時候不在做有效工作，在燒預算找材料。CodeBuddy NPC 的 90% 以上 token 削減說明問題是可以工程解的——但你得先承認問題存在。",
+        "mechanism": "Production agent 架構的表面 API 健康度與任務層有效性完全解耦：HTTP 層正常不代表 agent 在完成你期望的事。這個設計空洞在規模小時不明顯，流量放大後轉為隱形成本炸彈，且沒有標準監控工具可以直接偵測。",
+        "product_opportunity": "在你的 agent pipeline 加上任務層 assertion：定義完成條件而非依賴模型自己判斷，每個 step 後驗證 constraint，輸出 token 消耗的分類帳（讀檔案 vs 生成內容），讓 SLA 從 HTTP 200 改成任務達成率。",
+        "source_links": [
+          "tech.vendor.2:aws-bedrock-silent-failures",
+          "tech.vendor.3:aws-agent-evaluation",
+          "pulse.chinese_community.4:oschina-context-cost",
+          "pulse.chinese_community.0:oschina-codebuddy"
+        ]
+      },
+      {
+        "id": "focus-model-cost-inversion",
+        "title": "閉源 frontier 成本護城河正在瓦解",
+        "body": "Opus 5 以 Fable 5 品質減半成本發布。HN 的 Echo（474 分）聲稱以三分之一成本達到接近效果。tau2-bench 上 GPT-5.2 從工具使用第 10 名跳到第 3 名，說明排名位移不需要很長時間。三個數據點指向同一個結論：frontier 模型的成本與能力已無法作為差異化護城河，差異化已移往評估能力、infrastructure 整合深度、特定任務 fine-tuning 品質。",
+        "mechanism": "閉源模型的定價壓力來自兩個方向：更強的開源替代（Echo、GLM-5.2 82 萬次下載、MIT 授權）讓 capability 門檻下移，廠商間的 benchmark 競爭（tau2 快速位移）壓縮差異化空間。兩者合力，成本護城河的半衰期在縮短。",
+        "product_opportunity": "現在是重建模型路由策略的時機：開源模型負責 retrieval、分類、格式化等高頻低推理任務，閉源 frontier 只在需要 multi-step reasoning 或高 context 整合時觸發；這個拆分在今天的成本差下，可以刪減 60-70% 的推論費用。",
+        "source_links": [
+          "tech.vendor.0:anthropic-opus5",
+          "pulse.hn.0:hn-49026810",
+          "tech.benchmarks.0:tau2-gpt52",
+          "tech.models.3:hf-glm52"
+        ]
+      },
+      {
+        "id": "focus-memory-supply-crunch",
+        "title": "AI 記憶體瓶頸將在 2027 年轉為實際成本壓力",
+        "body": "NVIDIA 砍半 Vera Rubin LPDRAM 規格，是廠商在供應限制下主動調降產品規格的訊號——不是選擇，是被迫。三星 NAND 全線轉向 AI SSD，代表消費端和 AI 端在競爭同一塊產能。GenAI 手機 45% 滲透率同時帶來全球出貨 -13.9%，是瓶頸在消費電子的直接顯現。台積電 2027 年漲價傳言加上 AMD-Anthropic 數百億美元鎖單，說明供應鏈上游在長期保供而非競價——話語權正在從買方移向賣方。",
+        "mechanism": "AI 訓練與推論對 HBM、LPDRAM、AI SSD 的需求增長速度超過產能擴張速度，而 fab 建設週期（18-24 個月）讓這個缺口在 2027 年前無法靠新產能解決。瓶頸從 DRAM、NAND、晶圓廠到成品晶片同步發生而非線性傳遞——任何一層收緊都會在整條鏈放大。",
+        "product_opportunity": "如果你的 2027 推論基礎設施計劃建立在今天的 GPU memory 規格和報價上，現在要打九折：Vera Rubin 可用記憶體將比規格少，AI SSD 優先供應大客戶的溢價會放大；KV cache offload 和量化方案現在就應該進入技術儲備，不是等缺口出現才評估。",
+        "source_links": [
+          "market.taiwan.1:lpdram-shortage",
+          "market.taiwan.5:samsung-v10-nand",
+          "market.taiwan.0:genai-smartphone",
+          "market.funding.2:tsmc-2027-price-hike"
+        ]
+      },
+      {
+        "id": "focus-dit-toolchain-sprint",
+        "title": "DiT W4A4 量化突破打開邊端部署窗口",
+        "body": "KroQuant 解決了阻礙 DiT 邊端部署的一個具體問題：standard PTQ 在 DiT 注意力層邊界碰到異常值（outliers），per-channel calibration 失效，W4A4 品質無法接受。Kronecker 結構化變換繞過這個問題，不需要 per-channel tuning，把 W4A4 量化可行性推進到擴散 Transformer。FLUX 3 同時引入音視頻原生多模態並附帶動作機器人模型，Mage-Flow 帶進修正流（rectified-flow）架構並 MIT 開源。量化工具和新架構同期出現，DiT 的部署工程邊界正在移動。",
+        "mechanism": "DiT 推論成本卡在兩個地方：模型尺寸（B 級參數）和生成步數（每步完整 forward pass）。量化解模型尺寸問題，flow matching 的步數減少解生成效率問題。KroQuant 的 W4A4 如果能站住，模型尺寸等效縮小 4 倍，邊端部署的記憶體門檻隨之下降，對需要 on-device 推論的場景（邊端 demo 部署、離線推論裝置）有直接影響。",
+        "product_opportunity": "把 KroQuant 跑在手上的 DiT checkpoint，確認 W4A4 的 FID 損失是否可接受；如果通過，同樣的 checkpoint 在 edge GPU 上的批次大小和延遲都會改善，邊端部署的記憶體需求顯著降低。",
+        "source_links": [
+          "tech.models.0:arxiv-kroquant",
+          "pulse.ai_bloggers.2:latent-space-flux3",
+          "tech.models.5:hf-mageflow"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-token-relay-market",
+      "title": "LLM Token 黑市：你的 API key 可能已在流通",
+      "body": "Simon Willison 報導的 token relay 市場深度調查揭露一個已成規模的地下生態：被盜或洩漏的 API key 在 relay 市場以折扣價轉售，讓買家用別人的 quota 跑推論。HN 討論（146 分）顯示工程師社群對這個生態的認知遠落後於它的規模。按量計費的模式讓洩漏的全部成本落在 key 擁有者身上——受害者往往在月結帳單出現前完全不知情。廠商目前的防禦措施主要靠 builder 自己的 key 衛生，不是系統性偵測，這是市場得以存在的結構性原因。",
+      "source_links": [
+        "pulse.ai_bloggers.3:simon-relay-market",
+        "pulse.hn.4:hn-49023456"
+      ],
+      "why_asymmetric": "討論量遠低於實際風險面：洩漏一個 key 的成本可以是幾千到幾萬美元帳單，防禦成本卻很低（key rotation 架構、使用量警報）。大多數 builder 的 API key 衛生在開發環境和 CI/CD 管線之間存在空白，這是 relay 市場的主要進入點。"
+    },
+    "contrarian": {
+      "id": "contrarian-amd-anthropic-supply-guarantee",
+      "body": "市場把 AMD 首次投資 Anthropic 並鎖定「數百億美元」晶片訂單解讀為 AMD 正在逼近 NVIDIA。我的判斷是反過來的：這個結構顯示 AMD 需要一個 flagship AI 客戶建立信用，Anthropic 需要供應鏈選項維持談判籌碼。AMD MI400 硬體規格有競爭力（TSMC 2nm），但 ROCm 軟體生態仍是 CUDA 的二等公民：vLLM、TRT-LLM 的 AMD 路徑需要額外維護，主要 inference benchmark 的 AMD 優化版本落後 NVIDIA 數個月。真正追趕的替代者不需要用投資換訂單——有機的開發者需求就能帶動市場。AMD 的份額提升會來自採購合約，不來自開發者生態的自然選擇。判斷標準：2027 年 6 月 30 日前 AMD Instinct 在三大公雲 AI 推論實例市佔若超過 NVIDIA 的 20%，則追趕論點成立。",
+      "source_links": [
+        "market.ma.1:amd-anthropic-chip-deal",
+        "market.taiwan.3:amd-mi400-epyc"
+      ],
+      "claim": "AMD-Anthropic 合作是採購保證，不是 NVIDIA 追趕的訊號，軟體生態差距在 2027 年中前不會消失",
+      "resolution_date": "2027-06-30"
+    },
+    "predictions": [
+      {
+        "id": "pred-vera-rubin-delay-2027h2",
+        "text": "NVIDIA Vera Rubin 量產出貨將滑至 2027 年下半年（原定 H1 2027），LPDRAM 產能為主因。判斷標準：2027 年 6 月 30 日前若無大規模量產出貨公告，視為成立。",
+        "resolution_date": "2027-06-30",
+        "status": "pending",
+        "created": "2026-07-27"
+      },
+      {
+        "id": "pred-opus5-price-drop-6m",
+        "text": "Claude Opus 5 API 計費單價在發布後 6 個月內（2027 年 1 月 27 日前）將下調至少 20%，由開源競爭壓力和多雲託管壓力驅動。",
+        "resolution_date": "2027-01-27",
+        "status": "pending",
+        "created": "2026-07-27"
+      },
+      {
+        "id": "pred-relay-market-vendor-response",
+        "text": "至少一家主要 LLM API 廠商（Anthropic、OpenAI、Google DeepMind）將在 90 天內（2026 年 10 月 27 日前）推出 API key 異常使用偵測或強制輪換功能，作為對 token relay 市場的系統性回應。",
+        "resolution_date": "2026-10-27",
+        "status": "pending",
+        "created": "2026-07-27"
+      },
+      {
+        "id": "pred-tsmc-2027-hike-confirmed",
+        "text": "台積電 2027 年漲價（傳最高 10%）將在 2026 年 Q4 得到至少兩家主要客戶財報或公告的間接確認（成本預警或訂單重新議價消息）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "created": "2026-07-27"
+      },
+      {
+        "id": "pred-flux3-comfyui-90days",
+        "text": "FLUX 3 將在 90 天內（2026 年 10 月 25 日前）獲得 ComfyUI 官方或社群主要 node pack 的原生支援，成為 AI 圖像生成 builder 的標準選項之一。",
+        "resolution_date": "2026-10-25",
+        "status": "pending",
+        "created": "2026-07-27"
+      },
+      {
+        "id": "pred-amd-cloud-share-2027",
+        "text": "AMD Instinct GPU 在三大公雲（AWS、GCP、Azure）的 AI 推論實例市佔率，到 2027 年 6 月 30 日仍低於 NVIDIA 的 20%。超過 20% 代表技術追趕論點成立；未達代表當前合作以採購保證為主。",
+        "resolution_date": "2027-06-30",
+        "status": "pending",
+        "created": "2026-07-27"
+      },
+      {
+        "id": "pred-agent-silent-failure-postmortem",
+        "text": "2027 年 1 月 27 日前，至少一家主要企業或雲端廠商將公開發布事後檢討（postmortem）或案例研究，明確指出 agent 靜默失敗（silent agent failure）為影響生產收益的事件，確認工具化需求是實質問題而非理論性的。",
+        "resolution_date": "2027-01-27",
+        "status": "pending",
+        "created": "2026-07-27"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:ShenSeanChen/waku-agent",
+        "audience": "both",
+        "url": "https://github.com/ShenSeanChen/waku-agent",
+        "name": "ShenSeanChen/waku-agent",
+        "stars": 535,
+        "language": null,
+        "relevance": "分離式記憶架構（語義+情節+程序記憶）把複雜 agent 狀態管理從黑箱框架剝離回 SQLite。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 16,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:deerwork-ai/deer-workflow",
+        "audience": "general",
+        "url": "https://github.com/deerwork-ai/deer-workflow",
+        "name": "deerwork-ai/deer-workflow",
+        "stars": 80,
+        "language": null,
+        "relevance": "TypeScript 保留編排邏輯，語義工作委派給可替換 agent 執行時，分層架構打破框架套牢。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:cocofhu/approving",
+        "audience": "general",
+        "url": "https://github.com/cocofhu/approving",
+        "name": "cocofhu/approving",
+        "stars": 73,
+        "language": null,
+        "relevance": "Coding agent 工作流在關鍵節點前置人類確認門檻，加上沙箱執行與可回滾設計。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.4:arizqi/cpubrrr",
+        "audience": "both",
+        "url": "https://github.com/arizqi/cpubrrr",
+        "name": "arizqi/cpubrrr",
+        "stars": 46,
+        "language": null,
+        "relevance": "M4 Max CPU 上跑 frontier MoE 模型 110 tok/s，自製 NEON/SME Rust 內核速度 7.5x llama.cpp。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 22,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:sagawrr/react-native-nitro-vision-kit",
+        "audience": "both",
+        "url": "https://github.com/sagawrr/react-native-nitro-vision-kit",
+        "name": "sagawrr/react-native-nitro-vision-kit",
+        "stars": 47,
+        "language": null,
+        "relevance": "統一的 Nitro 模組層通往 iOS Vision + Android ML Kit，省去平臺適配膠水。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 25,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": []
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-49026810",
+        "audience": "work",
+        "url": "https://news.ycombinator.com/item?id=49026810",
+        "title": "Show HN: Echo – Fable-level results at 1/3 the cost using open-weight models",
+        "score": 474,
+        "comments": 55,
+        "takeaway": "開源模型已能在成本優勢上與閉源商用模型抗衡，改變 AI 應用成本結構。"
+      },
+      {
+        "id": "pulse.hn.1:hn-39968736",
+        "audience": "both",
+        "url": "https://www.rickmanelius.com/p/the-new-ai-superpowers-focus-and",
+        "title": "The New AI Superpowers: Focus and Followthrough",
+        "score": 128,
+        "comments": 13,
+        "takeaway": "AI 編碼已從補全工具進化到獨立規劃與執行任務的代理系統，改變工程師工作流。"
+      },
+      {
+        "id": "pulse.hn.2:hn-49017463",
+        "audience": "general",
+        "url": "https://discuss.grapheneos.org/d/40700-grapheneos-protections-against-data-extraction-from-locked-devices",
+        "title": "GrapheneOS protections against data extraction from locked devices",
+        "score": 376,
+        "comments": 11,
+        "takeaway": "GrapheneOS 針對鎖定設備的資料提取防護代表行動安全領域的新技術進展。"
+      },
+      {
+        "id": "pulse.hn.3:hn-39957624",
+        "audience": "general",
+        "url": "https://stephango.com/design-is-compromise",
+        "title": "Design is compromise",
+        "score": 178,
+        "comments": 26,
+        "takeaway": "優秀的設計源自對權衡的深刻理解與執行，而非完美主義。"
+      },
+      {
+        "id": "pulse.hn.4:hn-49023456",
+        "audience": "both",
+        "url": "https://vectoral.com/blog/token-relay-market",
+        "title": "The relay market powering token resellers and fraud",
+        "score": 146,
+        "comments": 27,
+        "takeaway": "LLM token 轉售市場的興起與風險暴露，反映按量計費模式下的成本套利與安全漏洞。"
+      },
+      {
+        "id": "pulse.hn.5:hn-49023457",
+        "audience": "general",
+        "url": "https://pkg.go.dev/golang.org/x/tools/go/analysis",
+        "title": "Go Analysis Framework: modular static analysis by go team",
+        "score": 174,
+        "comments": 7,
+        "takeaway": "Go 官方提供的模組化靜態分析框架標準化了檢驗工具的構築方式。"
+      },
+      {
+        "id": "pulse.hn.6:hn-49022578",
+        "audience": "general",
+        "url": "https://killthecookiebanner.eu/",
+        "title": "Kill The Cookie Banner",
+        "score": 785,
+        "comments": 60,
+        "takeaway": "使用者工具已能在浏覽器層級自動化隱私保護，對網站廣告模式的威脅逐漸顯現。"
+      },
+      {
+        "id": "pulse.hn.7:hn-49030895",
+        "audience": "work",
+        "url": "https://astgrep.com/blog/tree-sitter-rust-rewrite",
+        "title": "How AST-grep Rewrote Tree-sitter in Rust and Made It 30% Faster",
+        "score": 48,
+        "comments": 3,
+        "takeaway": "用 Rust 重寫效能關鍵元件已成為 JavaScript 工具鏈優化的慣用路徑。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-microkernels",
+        "audience": "general",
+        "url": "https://notes.hella.cheap/maybe-we-should-revisit-microkernels.html",
+        "title": "Maybe we should revisit microkernels",
+        "score": 47,
+        "takeaway": "微核心架構在硬體隔離與容器化技術進展下重獲實踐價值，打破長期的宏核心主導。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-shell-colon",
+        "audience": "general",
+        "url": "https://refp.se/articles/your-shell-and-the-magic-colon",
+        "title": "A shell colon does nothing. Use it anyway",
+        "score": 98,
+        "takeaway": "Shell 無操作符的隱性用途闡明了 Unix 哲學中「保持沉默」的工程價值。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-memory-safety",
+        "audience": "general",
+        "url": "https://itsallaboutthebit.com/memory-safety-absolutists/",
+        "title": "Memory Safety Absolutists",
+        "score": 50,
+        "takeaway": "記憶體安全的實踐路徑需要務實權衡，而非絕對教條。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-sqlite-wal",
+        "audience": "work",
+        "url": "https://hynek.me/til/sqlite-read-only-wal-locked/",
+        "title": "SQLite WAL Mode Can Lock Short-Lived Readers",
+        "score": 4,
+        "takeaway": "SQLite WAL 模式在短生命週期讀取器下的鎖定行為是隱藏的效能陷阱。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-leroy",
+        "audience": "general",
+        "url": "https://www.youtube.com/watch?v=9Cswiqrq6So",
+        "title": "Xavier Leroy on programming, languages and formal verification",
+        "score": 11,
+        "takeaway": "形式化驗證先驅對程式語言設計與可靠性的長期觀點指導產業方向。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-staff-eng",
+        "audience": "general",
+        "url": "https://lalitm.com/post/find-problems-staff-engineer/",
+        "title": "How I Find Problems to Solve as a Staff Engineer",
+        "score": 31,
+        "takeaway": "資深工程師的價值在於主動識別與定義問題，而非被動執行任務。"
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:oschina-codebuddy",
+        "audience": "both",
+        "url": "https://www.oschina.net/news/477664",
+        "title": "腾讯云发布云端智能体 CodeBuddy NPC",
+        "takeaway": "騰訊雲代理系統將 Token 消耗降低 90% 以上，標誌著中文企業 AI Agent 應用進入效率競爭階段。"
+      },
+      {
+        "id": "pulse.chinese_community.1:oschina-rag",
+        "audience": "work",
+        "url": "https://my.oschina.net/u/5783135/blog/19726047",
+        "title": "RAG 核心概念与原理：Chunking、Embedding、相似度、HNSW 与多路召回",
+        "takeaway": "RAG 架構的深度剖析涵蓋分塊、向量相似度與多路召回的工程細節，建立中文社區的最佳實踐。"
+      },
+      {
+        "id": "pulse.chinese_community.2:oschina-skills",
+        "audience": "both",
+        "url": "https://www.oschina.net/news/477812",
+        "title": "Skills 模块上线！qKnow 开源版 v2.3.0 让 Agent 能力快速复用，提升智能体构建效率！",
+        "takeaway": "代理系統技能模組化讓提示詞與指令從個人資產轉變為可管理的組織能力。"
+      },
+      {
+        "id": "pulse.chinese_community.3:oschina-agent-engineering",
+        "audience": "both",
+        "url": "https://my.oschina.net/vivotech/blog/19726101",
+        "title": "Agent 工程思考：从 ReAct 到 Agent Harness",
+        "takeaway": "Agent 工程從模型循環演進到狀態協議與 UI 邊界的共享框架，實現可交互、可控制的產品能力。"
+      },
+      {
+        "id": "pulse.chinese_community.4:oschina-context-cost",
+        "audience": "work",
+        "url": "https://www.oschina.net/news/478278",
+        "title": "91% 的 Token 花在读代码上，这套上下文交接术把成本砍掉了四成",
+        "takeaway": "AI 編程代理的成本瓶頸在於檔案讀取而非程式生成，優化上下文傳遞能大幅降低 Token 消耗。"
+      },
+      {
+        "id": "pulse.chinese_community.5:oschina-zgi",
+        "audience": "both",
+        "url": "https://www.oschina.net/news/479885",
+        "title": "ZGI 正式上线 Gitee：让 Agent 不只被创建，也能被执行、追踪和管理",
+        "takeaway": "Agent 運行時框架從模型演示進化到長期、穩定、可控的生產系統，完整 Agent 生命週期管理。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:simon-opus5",
+        "audience": "work",
+        "url": "https://simonwillison.net/2026/Jul/24/introducing-claude-opus-5/#atom-everything",
+        "title": "Introducing Claude Opus 5",
+        "takeaway": "Opus 5 在模型安全性（最低 prompt injection 易受性）與成本效益的突破，改變企業模型選擇的計算方式。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:simon-prompt-injection",
+        "audience": "work",
+        "url": "https://simonwillison.net/2026/Jul/25/boris-cherny/#atom-everything",
+        "title": "Quoting Boris Cherny",
+        "takeaway": "Opus 5 在 prompt injection 防禦上的量化進展代表模型安全工程化的實質突破。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:latent-space-flux3",
+        "audience": "both",
+        "url": "https://www.latent.space/p/ainews-black-forest-labs-flux-3-multimodal",
+        "title": "[AINews] Black Forest Labs FLUX 3 - Multimodal Flow Models that beat Seedance 2.0, Gemini Omni and Grok Imagine, and FLUX-mimic video-action robotics model",
+        "takeaway": "Flux3 原生音視頻生成與動作機器人模型代表多模態基礎模型的新分化。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:simon-relay-market",
+        "audience": "both",
+        "url": "https://simonwillison.net/2026/Jul/26/relay-market/#atom-everything",
+        "title": "An Inside Look at the Relay Market Powering Token Resellers and Fraud",
+        "takeaway": "LLM token 轉售市場的深度調查暴露按量計費模式的系統性風險與監管盲點。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:simon-ruff",
+        "audience": "work",
+        "url": "https://simonwillison.net/2026/Jul/25/ruff/#atom-everything",
+        "title": "Ruff v0.16.0",
+        "takeaway": "Python Linting 工具 Ruff 的新預設規則代表開發體驗的細節迭代推動生態標準化。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:samsung-mistral-1bn",
+        "audience": "both",
+        "url": "https://www.inside.com.tw/article/41891-samsung-mistral-1bn-investment-20bn-valuation",
+        "title": "記憶體巨頭押注歐洲 AI 新星，三星傳砸 10 億歐元入股 Mistral",
+        "takeaway": "記憶體大廠直投 AI 模型公司，布局歐洲 AI 供應鏈的趨勢加速。",
+        "amount": "€1B",
+        "companies": [
+          "Samsung",
+          "Mistral"
+        ],
+        "region": "eu"
+      },
+      {
+        "id": "market.ma.1:amd-anthropic-chip-deal",
+        "audience": "both",
+        "url": "https://techorange.com/2026/07/23/amd-anthropic-ai/",
+        "title": "AMD 首次投資 Anthropic！賣數百億美元晶片還加碼砸 50 億",
+        "takeaway": "晶片廠首度投資 AI 公司，同步鎖定數百億美元訂單，NVIDIA 競爭態勢變化。",
+        "amount": "$5B+",
+        "companies": [
+          "AMD",
+          "Anthropic"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.2:ibm-hrl-quantum",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/177606",
+        "title": "IBM 收購量子運算研究公司 HRL Laboratories 開啟雙軌技術發展策略",
+        "takeaway": "IBM 收購 Boeing/GM 旗下量子研究單位，建立雙軌量子發展策略。",
+        "companies": [
+          "IBM",
+          "HRL Laboratories"
+        ],
+        "region": "us"
+      }
+    ],
+    "funding": [
+      {
+        "id": "market.funding.0:alphabet-capex-205b",
+        "audience": "both",
+        "url": "https://techorange.com/2026/07/24/ai-infrastructure-alphabet-capex-amd-anthropic/",
+        "title": "Alphabet 雲端營收年增 82%，全年資本支出上看 2,050 億美元",
+        "takeaway": "Google Cloud 營收翻倍，全年資本支出創歷史新高，AI 基建投資如火如荼。",
+        "amount": "$205B capex",
+        "companies": [
+          "Alphabet"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.1:imagi-edtech-45m",
+        "audience": "general",
+        "url": "https://techcrunch.com/2026/07/23/edtech-platform-raises-4-5m-to-help-teach-students-how-to-vibe-code/",
+        "title": "Imagi 教育平台募資 450 萬美元種子輪",
+        "takeaway": "AI 時代編程教育新方向融資落地，藝人 Will.i.am 背書創意編程平台。",
+        "amount": "$4.5M",
+        "companies": [
+          "Imagi"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.2:tsmc-2027-price-hike",
+        "audience": "both",
+        "url": "https://techorange.com/2026/07/23/ai-cost-capacity-capital-tsmc-price-hike-wistron-gb300/",
+        "title": "台積電傳 2027 年漲價最高 10%，AI 晶片成本再升",
+        "takeaway": "台積電明年調漲先進製程與成熟製程費用，原料與海外廠建設成本驅動。",
+        "companies": [
+          "TSMC"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.funding.3:tesla-q2",
+        "audience": "general",
+        "url": "https://www.inside.com.tw/article/41895-tesla-revenue-hits-record-profit-falls-auto-business-funds-ai-robotics-future",
+        "title": "營收創高、獲利倒退，Tesla 正用汽車業務的獲利養 AI 與機器人的未來",
+        "takeaway": "Tesla 營收破紀錄但獲利萎縮，汽車利潤支撐 AI 與機器人長期研發投入。",
+        "amount": "$28.24B revenue",
+        "companies": [
+          "Tesla"
+        ],
+        "region": "us"
+      }
+    ],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:genai-smartphone",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260723nt21-genai-smartphones-market-share-growth-memory-cost-impact-2026/",
+        "title": "2026 年 GenAI 智慧型手機將佔全球出貨量 45%",
+        "takeaway": "GenAI 手機滲透率倍增至 45% 但記憶體供應緊張，導致全球出貨減 13.9%。",
+        "companies": [
+          "Counterpoint Research"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:lpdram-shortage",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20260724nt21-lpdram-supply-shortage-nvidia-vera-rubin-socamm-ai-servers/",
+        "title": "LPDRAM 供給缺口難弭平",
+        "takeaway": "NVIDIA 砍半 Vera Rubin 單顆容量以應對 2027 年初 LPDRAM 產能不足。",
+        "companies": [
+          "NVIDIA"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:light-ding-sic",
+        "audience": "both",
+        "url": "https://www.inside.com.tw/article/41896-ThermaFlat%E2%84%A2%20SiC%20MOSFET",
+        "title": "光鼎電子推出 ThermaFlat™ SiC MOSFET 系列，突破高溫電阻瓶頸",
+        "takeaway": "台灣功率半導體廠推獨創高溫穩定方案，搶攻 AI/HPC/新能源電源市場。",
+        "companies": [
+          "光鼎電子"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:amd-mi400-epyc",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/177584",
+        "title": "AMD 發表最新 AI 加速器及第六代 EPYC 處理器，挾 Helios 機櫃搶市",
+        "takeaway": "AMD MI400 系列採用台積電 2nm 製程，鎖定主權 AI、HPC 與模型訓練需求。",
+        "companies": [
+          "AMD",
+          "TSMC"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:sk-hyper-15gw",
+        "audience": "both",
+        "url": "https://www.inside.com.tw/article/41902-sk-telecom-sk-hyper-ai-datacenter-15gw",
+        "title": "SK 集團成立 AI 資料中心子公司，豪砸 7500 億韓元、首階段拚 15GW",
+        "takeaway": "SK 以 15GW 超大規模 AI 資料中心計畫垂直整合記憶體供應，挑戰 NVIDIA 與雲端廠商話語權。",
+        "companies": [
+          "SK 集團",
+          "SK Hynix"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.5:samsung-v10-nand",
+        "audience": "both",
+        "url": "https://www.techbang.com/posts/131466-samsung-v10-nand-nvidia-ai-ssd-shortage",
+        "title": "三星 V9 與 V10 NAND 全力供貨 NVIDIA，產能排擠效應浮現",
+        "takeaway": "三星 NAND 產能向 AI 傾斜，消費級 SSD 供應危機浮現，記憶體廠商商業模式正劇烈重組。",
+        "companies": [
+          "Samsung",
+          "NVIDIA"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.6:semicon-taiwan",
+        "audience": "general",
+        "url": "https://www.eettaiwan.com/20260724nt22-isemicon-taiwan-global-pavilion-connects-18-nations-for-ai-driven-collaboration/",
+        "title": "AI 深化跨國合作　SEMICON Taiwan 全球專區串聯 18 國",
+        "takeaway": "SEMICON Taiwan 2026 全球專區創紀錄擴張，台灣晶片產業成為 AI 基礎設施戰的國際樞紐。",
+        "companies": [
+          "SEMI"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.7:sony-mitsubishi-ai",
+        "audience": "general",
+        "url": "https://techorange.com/2026/07/23/sony-and-mitsubishi-set-up-ai-vision-joint-venture-for-factories/",
+        "title": "Sony 聯手三菱電機切入 Siemens、Fanuc 戰局，搶攻實體 AI",
+        "takeaway": "日本大廠跟風黃仁勳號召投入實體 AI，預計 2026 年 10 月成立聯合視覺企業。",
+        "companies": [
+          "Sony",
+          "Mitsubishi Electric"
+        ],
+        "region": "global"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:anthropic-opus5",
+        "audience": "general",
+        "url": "https://www.anthropic.com/news/claude-opus-5",
+        "title": "Introducing Claude Opus 5",
+        "takeaway": "Opus 5 達到 Fable 5 水準同時成本減半，重新定義 LLM 成本效益。",
+        "companies": [
+          "Anthropic"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:aws-bedrock-agentic-retrieval",
+        "audience": "general",
+        "url": "https://aws.amazon.com/blogs/machine-learning/agentic-retrieval-for-amazon-bedrock-managed-knowledge-base/",
+        "title": "Agentic retrieval for Amazon Bedrock Managed Knowledge Base",
+        "takeaway": "Bedrock 代理能整合 PDFs、投影片、工單、語音記錄跨越多個來源的多部分推理。",
+        "companies": [
+          "AWS"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:aws-bedrock-silent-failures",
+        "audience": "both",
+        "url": "https://aws.amazon.com/blogs/machine-learning/detecting-silent-agent-failures-with-amazon-bedrock-agentcore-optimization/",
+        "title": "Detecting silent agent failures with Amazon Bedrock AgentCore",
+        "takeaway": "生產代理隱性失敗診斷：儀表板綠燈卻代理已失敗時的檢測與恢復方法。",
+        "companies": [
+          "AWS"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:aws-agent-evaluation",
+        "audience": "both",
+        "url": "https://aws.amazon.com/blogs/machine-learning/evaluating-ai-agents-a-production-blueprint-with-strands-and-agentcore/",
+        "title": "Evaluating AI Agents: A production blueprint with Strands and AgentCore",
+        "takeaway": "生產代理評估：Motorway 日拍賣 8000 輛車的案例，展示約束驗證優於探索。",
+        "companies": [
+          "AWS"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:nvidia-nemotron-nano",
+        "audience": "general",
+        "url": "https://developer.nvidia.com/blog/start-customizing-nvidia-nemotron-3-nano-with-prime-intellect-lab-in-minutes/",
+        "title": "Customizing NVIDIA Nemotron 3 Nano with Prime Intellect Lab",
+        "takeaway": "Nemotron 3 Nano 客製化簡化：無需複雜訓練基礎設施即可領域調適。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.5:aws-gpt56-bedrock",
+        "audience": "general",
+        "url": "https://aws.amazon.com/blogs/machine-learning/get-started-with-openai-gpt-5-6-sol-terra-and-luna-on-amazon-bedrock/",
+        "title": "OpenAI GPT-5.6 Sol, Terra, Luna on Amazon Bedrock",
+        "takeaway": "GPT-5.6 系列在 Bedrock 上線：代理編碼、長期推理、高容量推論的 frontier 模型。",
+        "companies": [
+          "AWS",
+          "OpenAI"
+        ]
+      },
+      {
+        "id": "tech.vendor.6:nvidia-modelexpress",
+        "audience": "general",
+        "url": "https://developer.nvidia.com/blog/modelexpress-distributing-model-artifacts-at-the-speed-of-light/",
+        "title": "ModelExpress: Distributing Model Artifacts at the Speed of Light",
+        "takeaway": "模型分發成本解法：ModelExpress 減少數百 GB 檢查點的分配延遲與基礎設施開支。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.7:samsung-galaxy-ai",
+        "audience": "general",
+        "url": "https://news.samsung.com/global/galaxy-unpacked-july-2026-samsung-and-partners-envision-a-connected-care-future-from-first-signal-to-lasting-change",
+        "title": "Galaxy Unpacked: Samsung and Partners Envision a Connected Care Future",
+        "takeaway": "Galaxy Z Fold8 Ultra 搭載代理 AI，健康監測從反應式治療轉向預防性護理。",
+        "companies": [
+          "Samsung"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:arxiv-kroquant",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2607.21446v1",
+        "title": "KroQuant: Kronecker-Structured Block Transforms for Diffusion Transformer Quantization",
+        "takeaway": "DiT W4A4 量化突破：Kronecker 結構化變換解決異常值，擴散模型邊端部署可行。",
+        "companies": []
+      },
+      {
+        "id": "tech.models.1:arxiv-windowed-mtp",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2607.21535v1",
+        "title": "Windowed-MTP: Removing Full-Context Draft-KV Tax at Million-Token Context",
+        "takeaway": "百萬 token 推測解碼：MTP draft KV 開銷消除，推理成本線性化。",
+        "companies": []
+      },
+      {
+        "id": "tech.models.2:arxiv-kv-error-cert",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2607.21475v1",
+        "title": "Error Certificates for KV-Cache Eviction via Randomized Design",
+        "takeaway": "KV 緩存驅逐可驗證性：隨機設計提供誤差上界，行列式方法無法保證。",
+        "companies": []
+      },
+      {
+        "id": "tech.models.3:hf-glm52",
+        "audience": "general",
+        "url": "https://huggingface.co/zai-org/GLM-5.2",
+        "title": "GLM-5.2: Open-weight MoE frontier model",
+        "takeaway": "GLM-5.2 開源釋出：82 萬下載、MIT 許可，多語言推理基準新參照。",
+        "companies": [
+          "Zhipu AI"
+        ]
+      },
+      {
+        "id": "tech.models.4:hf-inkling",
+        "audience": "general",
+        "url": "https://huggingface.co/thinkingmachines/Inkling",
+        "title": "Inkling: Multimodal MoE with full vLLM support",
+        "takeaway": "Inkling 多模態 MoE：完整 vLLM v0.26.0 支援堆疊，視覺語言推理發佈。",
+        "companies": [
+          "Thinking Machines"
+        ]
+      },
+      {
+        "id": "tech.models.5:hf-mageflow",
+        "audience": "general",
+        "url": "https://huggingface.co/microsoft/Mage-Flow",
+        "title": "Microsoft Mage-Flow: Rectified-flow image generation",
+        "takeaway": "Mage-Flow 修正流擴散：Microsoft 影像生成新方法，MIT 許可開源。",
+        "companies": [
+          "Microsoft"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-gpt52",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 enters top-5 at rank #3",
+        "takeaway": "工具使用基準新排名：GPT-5.2 從 #10 躍升 #3，RAFT 與 GLM 5.2 保持領先。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #3 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:phison-kvcache",
+        "audience": "work",
+        "url": "https://phisonblog.com/why-ai-suffers-when-memory-fills-up-kv-cache-context-and-hidden-failures/",
+        "title": "Why AI Suffers When Memory Fills Up: KV Cache, Context, and Hidden Failures",
+        "takeaway": "KV 緩存記憶體爆滿隱性失敗：推理性能斷崖、延遲暴增、靜默誤差根本原因。",
+        "companies": [
+          "Phison"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:lmcache-operator",
+        "audience": "work",
+        "url": "https://github.com/LMCache/LMCache/releases/tag/operator-v0.5.1",
+        "title": "LMCache operator-v0.5.1: Refactored Prefetch API",
+        "takeaway": "LMCache 操作符重構：分散式 prefetch 規範化，多卡推理同步開銷降低。",
+        "companies": [
+          "LMCache"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:vllm-026",
+        "audience": "work",
+        "url": "https://github.com/vllm-project/vllm/releases/tag/v0.26.0",
+        "title": "vLLM v0.26.0: Inkling support & piecewise CUDA gradients",
+        "takeaway": "vLLM v0.26.0：Inkling 完整支援堆疊、分段 CUDA 梯度，412 commits 從 212 貢獻者。",
+        "companies": [
+          "vLLM"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.3:skhynix-nvidia-500b",
+        "audience": "both",
+        "url": "https://news.skhynix.com/en/skhynix-nvidia-partnership-2026/",
+        "title": "SK Group and NVIDIA 500B+ Strategic Partnership",
+        "takeaway": "SK 集團與 NVIDIA 合作：HBM、DSX AI 工廠、次世代記憶體，推理效能突破。",
+        "companies": [
+          "SK Hynix",
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.4:blocksandfiles-majestic",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/ai-ml/2026/07/23/majestic-labs-wants-to-solve-memory-bound-gpu-problem/5277163",
+        "title": "Majestic Labs solves memory-bound GPU inference problem",
+        "takeaway": "GPU 記憶體瓶頸解法：Majestic Labs 著力計算與記憶體不匹配的推理侷限突破。",
+        "companies": [
+          "Majestic Labs"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.5:blocksandfiles-vast-amd",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/flash/2026/07/23/instinctive-and-epyc-vast-data-sets-up-widespread-amd-cpu/gpu-collaboration/5276173",
+        "title": "VAST Data & AMD: EPYC CPU/Instinct GPU collaboration",
+        "takeaway": "VAST Data 與 AMD 深化合作：EPYC 與 Instinct 整合，推理基礎設施新選項。",
+        "companies": [
+          "VAST Data",
+          "AMD"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-4-6",
+    "ran_judge": false,
+    "report_date": "2026-07-27",
+    "flagged": [],
+    "repaired": 0
+  }
+}
