@@ -10,7 +10,7 @@ describe('theme loader', () => {
     expect(theme.name).toBe('ai-builder');
     expect(theme.persona.audience).toMatch(/AI engineers who build/);
     expect(theme.llm.curator_model).toBe('claude-haiku-4-5');
-    expect(theme.llm.synthesizer_model).toBe('claude-sonnet-4-6');
+    expect(theme.llm.synthesizer_model).toBe('claude-sonnet-5');
     expect(theme.sections).toHaveLength(4);
   });
 
