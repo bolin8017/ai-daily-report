@@ -53,8 +53,8 @@ const RECOVERED = new Set(['ok', 'degraded', 'suspicious-empty', 'skipped']);
  *
  * @param {Array<object>} records  output of parseStageResults
  * @returns {{byStage: object, order: string[], failed: string[], degraded: string[],
- *   attempted: string[], retried: string[], totalCostUsd: number, totalTokens: number,
- *   runId: string|null, lastStage: string|null}}
+ *   attempted: string[], retried: string[], rerolled: string[], totalCostUsd: number,
+ *   totalTokens: number, runId: string|null, lastStage: string|null}}
  */
 export function summarizeStages(records) {
   const latest = new Map();
@@ -62,8 +62,10 @@ export function summarizeStages(records) {
   let totalTokens = 0;
   const seenFailed = new Set();
   const everFailed = new Set();
+  const everEmpty = new Set();
   const attempted = new Set();
   const retried = new Set();
+  const rerolled = new Set();
   for (const r of records) {
     latest.set(r.stage, r);
     // Sum across ALL records so a retried stage's first (failed) attempt cost is
@@ -73,6 +75,11 @@ export function summarizeStages(records) {
     // A record for a stage that already failed on a PRIOR record means the
     // auto-recover retry ran — count it regardless of this record's outcome.
     if (everFailed.has(r.stage)) attempted.add(r.stage);
+    // A record after a PRIOR suspicious-empty record means the empty re-roll
+    // ran (dr-6: it emits no `failed` record, so it was invisible in the
+    // retry accounting) — track it separately, whatever the outcome.
+    if (everEmpty.has(r.stage)) rerolled.add(r.stage);
+    if (r.status === 'suspicious-empty') everEmpty.add(r.stage);
     if (r.status === 'failed') {
       everFailed.add(r.stage);
       seenFailed.add(r.stage);
@@ -102,6 +109,7 @@ export function summarizeStages(records) {
     degraded,
     attempted: [...attempted],
     retried: [...retried],
+    rerolled: [...rerolled],
     totalCostUsd,
     totalTokens,
     runId,
@@ -121,6 +129,7 @@ export function formatStageSummary(summary) {
   if (summary.retried.length) lines.push(`auto-recovered: ${summary.retried.join(', ')}`);
   const failedRetries = (summary.attempted ?? []).filter((s) => !summary.retried.includes(s));
   if (failedRetries.length) lines.push(`retry attempted (failed): ${failedRetries.join(', ')}`);
+  if (summary.rerolled?.length) lines.push(`empty re-rolled: ${summary.rerolled.join(', ')}`);
   for (const stage of summary.order) {
     const s = summary.byStage[stage];
     const mark = BAD.has(s.status) ? '✗' : WARN.has(s.status) ? '!' : '·';

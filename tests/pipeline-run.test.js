@@ -462,6 +462,60 @@ describe('runPipeline — suspicious-empty (disk-backed)', () => {
     expect(final.status).toBe('suspicious-empty');
   });
 
+  // dr-1 (2026-07-22 review): the empty re-roll and the auto-recover retry are
+  // deliberately independent budgets — they target different failure classes
+  // (curator output loss vs API transients). When the re-roll itself
+  // hard-fails, the recovery pass still gets its one delayed retry rather
+  // than losing the day to honor a stricter budget: bounded at 3 invocations,
+  // availability first.
+  it('a hard-failed re-roll still gets the one recovery retry (budgets stack, bounded)', async () => {
+    const sat = new Set(['collect']);
+    const emitted = [];
+    const callsPerStage = {};
+    const runStage = async (stage) => {
+      callsPerStage[stage.id] = (callsPerStage[stage.id] ?? 0) + 1;
+      if (stage.id === 'curate.pulse') {
+        const attempt = callsPerStage[stage.id];
+        if (attempt === 1) {
+          // validates but empty → suspicious-empty
+          writeFileSync(
+            path.join(staging, 'curated', 'pulse.json'),
+            JSON.stringify({ hn: [], lobsters: [], chinese_community: [], ai_bloggers: [] }),
+          );
+        } else if (attempt === 2) {
+          // the re-roll hard-fails (API transient shape)
+          return { exitCode: 1, duration_ms: 1, cost_usd: 0, tokens: 0 };
+        } else {
+          writeFileSync(
+            path.join(staging, 'curated', 'pulse.json'),
+            JSON.stringify({
+              hn: [{ id: 'x' }],
+              lobsters: [],
+              chinese_community: [],
+              ai_bloggers: [],
+            }),
+          );
+        }
+      }
+      sat.add(stage.id);
+      return { exitCode: 0, duration_ms: 1, cost_usd: 0, tokens: 0 };
+    };
+    const { ok } = await runPipeline({
+      today: TODAY,
+      stagingDir: staging,
+      reportsDir: reports,
+      autoRecover: true,
+      sleep: async () => {},
+      runStage,
+      satisfiedFn: (id) => ({ satisfied: sat.has(id) }),
+      emit: (r) => emitted.push(r),
+    });
+    expect(ok).toBe(true); // the recovery retry saved the day
+    expect(callsPerStage['curate.pulse']).toBe(3); // empty + re-roll + recovery, no more
+    const statuses = emitted.filter((e) => e.stage === 'curate.pulse').map((r) => r.status);
+    expect(statuses).toEqual(['suspicious-empty', 'failed', 'ok']);
+  });
+
   it('does not re-roll empty curations without auto-recover', async () => {
     const sat = new Set(['collect']);
     const callsPerStage = {};
