@@ -28,6 +28,12 @@ const WINDOW_OVERRIDES = {
   'sebastian-raschka': 14,
   'eugene-yan': 14,
   'hamel-husain': 14,
+  // Release feeds ship on their own cadence, not daily. Under the 4-day default
+  // they are silent almost every run: ComfyUI tags roughly weekly (a run one day
+  // past a tag saw nothing), and HF diffusers ships every 1-2 months, so it never
+  // cleared the window at all.
+  'comfyui-releases': 10,
+  'diffusers-releases': 14,
 };
 
 const MS_PER_DAY = 86_400_000;
