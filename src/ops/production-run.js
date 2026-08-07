@@ -83,16 +83,58 @@ export function decideNotice(latest, { nowMs, delivered = {}, pidAlive = true })
   return null;
 }
 
+const BAD_STATUS = new Set(['failed', 'blocked']);
+const WARN_STATUS = new Set(['degraded', 'suspicious-empty']);
+
 function renderStages(stages) {
   if (!stages || typeof stages !== 'object') return '';
-  const bad = new Set(['failed', 'blocked']);
-  const warn = new Set(['degraded', 'suspicious-empty']);
   return Object.entries(stages)
     .map(([id, s]) => {
-      const mark = bad.has(s.status) ? '✗' : warn.has(s.status) ? '!' : '·';
+      const mark = BAD_STATUS.has(s.status) ? '✗' : WARN_STATUS.has(s.status) ? '!' : '·';
       return `${mark} ${id}: ${s.status}${s.error ? ` — ${s.error}` : ''}`;
     })
     .join('\n');
+}
+
+// Stages worth naming in an otherwise-successful run. A run is `succeeded`
+// whenever no *required* stage failed, so `faithfulness` (the only `optional`
+// stage) can degrade — shipping an un-audited editorial — and a collect can
+// lose a whole source half, without changing the verdict. renderFailure prints
+// the full stage table; a success notice that prints nothing at all is how
+// those went unnoticed.
+function notableStages(stages) {
+  if (!stages || typeof stages !== 'object') return [];
+  return Object.entries(stages)
+    .filter(([, s]) => BAD_STATUS.has(s?.status) || WARN_STATUS.has(s?.status))
+    .map(([id, s]) => `${id}: ${s.status}${s.error ? ` — ${s.error}` : ''}`);
+}
+
+/**
+ * Describe what Stage 1 actually collected, from the staging metadata it wrote.
+ *
+ * The sequencer always reports `collect` as `skipped`: run.sh runs Stage 1
+ * itself, so by the time the sequencer looks, metadata.json already carries
+ * today's date and the stage is satisfied. That made the run state's collect
+ * entry constant across every recorded run and hid a degraded collect
+ * completely. Returns null when the metadata cannot be read, so a state entry
+ * is never replaced by a guess.
+ *
+ * @param {string} stagingDir
+ * @returns {{status: 'ok'|'degraded', error: string|null}|null}
+ */
+export function collectHealth(stagingDir) {
+  const meta = readJson(path.join(stagingDir, 'metadata.json'));
+  if (!meta || typeof meta !== 'object') return null;
+  const sources = meta.sources && typeof meta.sources === 'object' ? meta.sources : {};
+  const empty = Object.entries(sources)
+    .filter(([, s]) => s && s.ok === false)
+    .map(([id]) => `${id}=empty`);
+  const degraded = Array.isArray(meta.degraded) ? meta.degraded : [];
+  const notes = [...empty, ...degraded];
+  return {
+    status: notes.length > 0 ? 'degraded' : 'ok',
+    error: notes.length > 0 ? `degraded sources: ${notes.join(', ')}` : null,
+  };
 }
 
 export function renderFailure(latest) {
@@ -148,6 +190,10 @@ export function renderSuccess(latest) {
     latest.recovery?.rerolled?.length
       ? `empty re-rolled: ${latest.recovery.rerolled.join(', ')}`
       : null,
+    (() => {
+      const notable = notableStages(latest.stages);
+      return notable.length ? `degraded: ${notable.join('; ')}` : null;
+    })(),
     latest.publish?.missing_days?.length
       ? `missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${latest.publish.missing_days.join(', ')}`
       : null,
@@ -407,6 +453,19 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
   // Parse what the sequencer emitted for observability.
   const summary = summarizeStages(parseStageResults(readFileSync(logFile, 'utf8')));
   base.stages = summary.byStage;
+  // Replace the sequencer's structurally-constant `collect: skipped` with what
+  // Stage 1 actually produced (see collectHealth). Left alone when the staging
+  // metadata is unreadable — an unknown collect is not a healthy one.
+  const health = collectHealth(path.join(REPO_ROOT, 'data', 'staging'));
+  if (health) {
+    base.stages.collect = {
+      cost_usd: 0,
+      tokens: 0,
+      ...(base.stages.collect ?? {}),
+      status: health.status,
+      error: health.error,
+    };
+  }
   base.recovery.attempted = summary.attempted;
   base.recovery.retried = summary.retried;
   base.recovery.rerolled = summary.rerolled;
