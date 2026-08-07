@@ -141,7 +141,20 @@ describe('velocityStats / velocityGatePass', () => {
     );
     expect(velocityGatePass(s, { hasValidation: false })).toBe('pass');
   });
-  it('validation overrides a flat repo', () => {
+  it('validation overrides the cold-start watch verdict', () => {
+    const s = velocityStats(snaps([['2026-06-15', 40]]), '2026-06-15');
+    expect(s.historyDays).toBeLessThan(4);
+    expect(velocityGatePass(s, { hasValidation: true })).toBe('pass');
+  });
+
+  // disc-2 (2026-08-07 review): validation stands in for a ledger that has
+  // nothing to say yet — it is not a substitute for the checks the ledger DOES
+  // support. Once there are >=4 days of history, a feed writeup no longer buys a
+  // pass, because a repo written up once and then abandoned is exactly what the
+  // velocity and spike checks exist to catch. This matters because every
+  // github-feed candidate is validated by construction: it entered the pool
+  // because a feed mentioned it, and externalValidation scans those same items.
+  it('does not let validation override a flat repo that has history', () => {
     const s = velocityStats(
       snaps([
         ['2026-06-08', 30],
@@ -149,11 +162,31 @@ describe('velocityStats / velocityGatePass', () => {
       ]),
       '2026-06-15',
     );
-    expect(velocityGatePass(s, { hasValidation: true })).toBe('pass');
+    expect(s.historyDays).toBeGreaterThanOrEqual(4);
+    expect(velocityGatePass(s, { hasValidation: true })).toBe('fail');
   });
-  it('validation also overrides the cold-start watch verdict', () => {
-    const s = velocityStats(snaps([['2026-06-15', 40]]), '2026-06-15');
-    expect(s.historyDays).toBeLessThan(4);
+
+  it('does not let validation override the spike-and-abandon filter', () => {
+    const s = velocityStats(
+      snaps([
+        ['2026-06-01', 10],
+        ['2026-06-14', 20],
+        ['2026-06-15', 400],
+      ]),
+      '2026-06-15',
+    );
+    expect(s.spike).toBe(true);
+    expect(velocityGatePass(s, { hasValidation: true })).toBe('fail');
+  });
+
+  it('still passes a validated repo that also clears the velocity bar', () => {
+    const s = velocityStats(
+      snaps([
+        ['2026-06-08', 50],
+        ['2026-06-15', 200],
+      ]),
+      '2026-06-15',
+    );
     expect(velocityGatePass(s, { hasValidation: true })).toBe('pass');
   });
 });

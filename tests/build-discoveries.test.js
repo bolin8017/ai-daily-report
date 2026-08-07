@@ -105,7 +105,35 @@ it('excludes a seen repo via the canonical key, not the raw full_name', async ()
   expect(out.watchlist).toEqual([]);
 });
 
-it('external validation rescues a flat repo past the velocity gate', async () => {
+// #165's intent: the ledger clock starts at discovery, so a repo new to the pool
+// has no history to judge on and would be watchlisted (skipping the tree fetch,
+// so it never earns a real eng_score) however strong the outside signal is.
+it('external validation rescues a cold-start repo past the velocity gate', async () => {
+  const out = await buildDiscoveries({
+    items: [{ ...base, full_name: 'o/niche', url: 'https://github.com/o/niche', stars: 50 }],
+    history: {
+      'o/niche': {
+        first_seen: '2026-06-15',
+        snapshots: [{ date: '2026-06-15', stars: 50 }],
+      },
+    },
+    feedItems: [
+      { source: 'simonwillison', url: 'https://github.com/o/niche', title: '', description: '' },
+    ],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+  expect(out.candidates.map((c) => c.full_name)).toEqual(['o/niche']);
+  expect(out.candidates[0].validation_refs).toContain('simonwillison');
+});
+
+// disc-2 (2026-08-07 review): the waiver stops where the ledger starts having
+// something to say. Every github-feed candidate is validated by construction —
+// it entered the pool because a feed mentioned it, and externalValidation scans
+// those same items — so a broader waiver would have exempted that whole intake
+// from the velocity gate permanently.
+it('does not rescue a flat repo once the ledger has history on it', async () => {
   const out = await buildDiscoveries({
     items: [{ ...base, full_name: 'o/niche', url: 'https://github.com/o/niche', stars: 50 }],
     history: {
@@ -124,8 +152,8 @@ it('external validation rescues a flat repo past the velocity gate', async () =>
     todayISO: '2026-06-15',
     fetchTree: async () => goodTree,
   });
-  expect(out.candidates.map((c) => c.full_name)).toEqual(['o/niche']);
-  expect(out.candidates[0].validation_refs).toContain('simonwillison');
+  expect(out.candidates).toEqual([]);
+  expect(out.watchlist).toEqual([]);
 });
 
 it('drops a pass-velocity repo that fails the engineering gate', async () => {

@@ -9,8 +9,15 @@
 // consecutive reports without a single hit.
 //
 // The items produced here carry the same shape as the github-search provider's,
-// so every existing gate (freeGates age/license/staleness, velocity, engineering)
-// applies unchanged — this widens the intake, it does not relax the bar.
+// so every existing gate — freeGates (age/license/staleness), velocity,
+// engineering — applies to them exactly as it does to any other candidate. This
+// widens the intake, it does not relax the bar.
+//
+// Worth knowing: a repo harvested here is externally validated by construction,
+// because externalValidation scans the same feed items that surfaced it. That
+// buys it the cold-start waiver in velocityGatePass and nothing more — once the
+// star-history ledger has ≥4 days on the repo, it clears the velocity and spike
+// thresholds on its own merits or it is dropped.
 
 // Repo names may contain dots; the trailing-punctuation trim below handles prose
 // like "see github.com/o/repo." without eating a legitimate ".js" suffix.

@@ -263,12 +263,19 @@ export function velocityStats(snapshots, todayISO) {
 export function velocityGatePass(stats, { hasValidation }) {
   const { historyDays, perDay, totalStars, spike } = stats;
 
-  // Validation first: the ledger clock starts when a repo is *discovered*, not
+  // Cold start only. The ledger clock starts when a repo is *discovered*, not
   // when it is created, so anything new to the pool has historyDays ≈ 0 and
   // would otherwise be watchlisted no matter how strong the outside signal is.
-  // An independent feed writeup is evidence the ledger cannot supply yet.
-  if (hasValidation) return 'pass';
-  if (historyDays < 4) return 'watch';
+  // An independent feed writeup is the evidence the ledger cannot supply yet.
+  //
+  // It is not, however, a substitute for evidence the ledger CAN supply: once
+  // there is history, the thresholds below stay in force. A repo written up
+  // once and then abandoned is precisely what the spike and perDay checks
+  // exist to catch, and waiving them on a single mention mattered more after
+  // the feed-repo intake landed — every github-feed candidate is validated by
+  // construction, since it entered the pool because a feed mentioned it and
+  // externalValidation scans those same items.
+  if (historyDays < 4) return hasValidation ? 'pass' : 'watch';
 
   if (historyDays >= 7 && perDay >= 5 && totalStars >= 50 && !spike) return 'pass';
   if (historyDays >= 4 && historyDays <= 6 && perDay >= 7 && totalStars >= 30 && !spike)
