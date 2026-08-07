@@ -163,6 +163,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Non-blocking on purpose. A transitive advisory is usually on a code path
+      # this repo never executes (the undici one cleared in the 2026-08-07 sweep
+      # was reachable only through cheerio's network fetch, which is never
+      # called), so gating the build on it would train people to ignore a red
+      # build. Surfacing it as a warning keeps the signal visible without that.
+      - name: Audit production dependencies
+        run: |
+          npm audit --omit=dev --audit-level=high \
+            || echo "::warning::npm audit reports advisories in production dependencies — run 'npm audit --omit=dev' locally"
+
       - name: Lint
         run: npm run lint
 
