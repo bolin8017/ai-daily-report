@@ -263,8 +263,12 @@ export function velocityStats(snapshots, todayISO) {
 export function velocityGatePass(stats, { hasValidation }) {
   const { historyDays, perDay, totalStars, spike } = stats;
 
-  if (historyDays < 4) return 'watch';
+  // Validation first: the ledger clock starts when a repo is *discovered*, not
+  // when it is created, so anything new to the pool has historyDays ≈ 0 and
+  // would otherwise be watchlisted no matter how strong the outside signal is.
+  // An independent feed writeup is evidence the ledger cannot supply yet.
   if (hasValidation) return 'pass';
+  if (historyDays < 4) return 'watch';
 
   if (historyDays >= 7 && perDay >= 5 && totalStars >= 50 && !spike) return 'pass';
   if (historyDays >= 4 && historyDays <= 6 && perDay >= 7 && totalStars >= 30 && !spike)
