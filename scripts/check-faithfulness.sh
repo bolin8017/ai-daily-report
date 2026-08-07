@@ -41,7 +41,7 @@ FAITH_EDITORIAL_FILE="$EDITORIAL_FILE" FAITH_CURATED_DIR="$CURATED_DIR" \
 FAITH_STAGING_DIR="$STAGING_DIR" FAITH_CLAIMS_FILE="$CLAIMS_FILE" \
 FAITH_PROMPT_FILE="$PROMPT_FILE" FAITH_TODAY="$TODAY" FAITH_TOL="$TOL" \
 node --input-type=module -e '
-  import { readFile, writeFile, readdir } from "node:fs/promises";
+  import { readFile, writeFile, readdir, rm } from "node:fs/promises";
   import { buildCuratedIndex, detectTemporalFlags, detectAttributionClaims, buildJudgePrompt } from "./src/lib/faithfulness.js";
   const { FAITH_EDITORIAL_FILE, FAITH_CURATED_DIR, FAITH_STAGING_DIR, FAITH_CLAIMS_FILE, FAITH_PROMPT_FILE, FAITH_TODAY, FAITH_TOL } = process.env;
   const editorial = JSON.parse(await readFile(FAITH_EDITORIAL_FILE, "utf8"));
@@ -58,8 +58,12 @@ node --input-type=module -e '
   const temporalFlags = detectTemporalFlags(editorial, index, { reportDate: FAITH_TODAY, toleranceDays: Number(FAITH_TOL), sidecar });
   const claims = detectAttributionClaims(editorial, index, { sidecar });
   await writeFile(FAITH_CLAIMS_FILE, JSON.stringify({ temporalFlags, claims }, null, 2));
+  // The judge gate below is the presence of this file, so a zero-claim run must
+  // clear it — otherwise a prompt left by an earlier run gets judged instead.
   if (claims.length > 0) {
     await writeFile(FAITH_PROMPT_FILE, buildJudgePrompt(claims, FAITH_TODAY));
+  } else {
+    await rm(FAITH_PROMPT_FILE, { force: true });
   }
   console.error("[check-faithfulness.sh] detected temporal=" + temporalFlags.length + " attribution=" + claims.length);
 ' || { echo '[check-faithfulness.sh] detection failed — skipping (never-abort)' >&2; exit 0; }

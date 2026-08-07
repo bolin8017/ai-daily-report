@@ -196,7 +196,7 @@ Required:
 Optional:
 - `RSSHUB_URL` — env var override. Forces a single URL and **disables the fallback list** — intended for local debugging against a private instance. Production should leave this unset and let `sources.yaml` provide the ordered list.
 - `REPORT_TIMEZONE` — default `Asia/Taipei`.
-- `CLAUDE_MODEL` — override the model for the Stage 3 synthesize `claude -p` call; default `claude-sonnet-5`. Stage 2 curators use `CURATE_MODEL` instead (default `claude-haiku-4-5`). The Stage 3.5 faithfulness judge tracks the same model via `FAITHFULNESS_MODEL` (same default).
+- `CLAUDE_MODEL` — override the model for the Stage 3 synthesize `claude -p` call; default `claude-sonnet-5`. Stage 2 curators use `CURATE_MODEL` instead (default `claude-haiku-4-5`). The Stage 3.5 faithfulness judge tracks the same model via `FAITHFULNESS_MODEL` (same default). **The production host overrides both in `.env`** — `CLAUDE_MODEL=claude-opus-5`, `CURATE_MODEL=claude-sonnet-5` — so the shipped daily report is written a tier above these defaults; the stage-cost figures in the run state reflect that, not the defaults.
 - `SKIP_PUSH=1` — skip `git push` in both stages; also accessible as `--skip-push` CLI flag on `src/collect.js`.
 - `ACTIVE_THEME` — default `ai-builder`. Name of the theme directory under `themes/` to activate. See "Themes" section below.
 - `HOT_DAYS` — default `60`. Reports newer than this stay on the `data` branch; older ones archive monthly to GitHub Releases.
