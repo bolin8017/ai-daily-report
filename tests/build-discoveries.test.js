@@ -247,3 +247,37 @@ it('carries description and readme_excerpt onto candidates and watchlist for the
   const fresh = out.watchlist.find((w) => w.full_name === 'o/new');
   expect(fresh.description).toBe('brand-new constrained-decoding KG extractor');
 });
+
+it('scores a cold-start repo that external feeds already validated', async () => {
+  const out = await buildDiscoveries({
+    items: [
+      { ...base, full_name: 'o/hot', url: 'https://github.com/o/hot', stars: 40 },
+      { ...base, full_name: 'o/quiet', url: 'https://github.com/o/quiet', stars: 40 },
+    ],
+    // Both first seen today — neither can have a velocity verdict.
+    history: {
+      'o/hot': { first_seen: '2026-06-15', snapshots: [{ date: '2026-06-15', stars: 40 }] },
+      'o/quiet': { first_seen: '2026-06-15', snapshots: [{ date: '2026-06-15', stars: 40 }] },
+    },
+    feedItems: [
+      {
+        source: 'hackernews',
+        url: 'https://github.com/o/hot',
+        title: 'Show HN: o/hot',
+        description: '',
+      },
+    ],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+
+  const hot = out.candidates.find((c) => c.full_name === 'o/hot');
+  expect(hot).toBeDefined();
+  expect(hot.excellence_score).toBeGreaterThan(0);
+  expect(hot.eng_score).toBeGreaterThanOrEqual(3);
+  expect(hot.validation_refs).toEqual(['hackernews']);
+
+  // Unvalidated cold-start still watchlists — the override is validation-only.
+  expect(out.watchlist.map((w) => w.full_name)).toEqual(['o/quiet']);
+});

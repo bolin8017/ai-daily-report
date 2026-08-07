@@ -151,6 +151,11 @@ describe('velocityStats / velocityGatePass', () => {
     );
     expect(velocityGatePass(s, { hasValidation: true })).toBe('pass');
   });
+  it('validation also overrides the cold-start watch verdict', () => {
+    const s = velocityStats(snaps([['2026-06-15', 40]]), '2026-06-15');
+    expect(s.historyDays).toBeLessThan(4);
+    expect(velocityGatePass(s, { hasValidation: true })).toBe('pass');
+  });
 });
 
 describe('externalValidation', () => {
