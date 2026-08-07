@@ -1,7 +1,10 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildRunArgs,
+  collectHealth,
   curlDispatch,
   decideNotice,
   dispatchPages,
@@ -315,6 +318,99 @@ describe('renderSuccess', () => {
       publish: { missing_days: [] },
     });
     expect(text).not.toMatch(/missing reports/);
+  });
+
+  // ops-1 (2026-08-07 review): renderFailure ends with a stage summary but
+  // renderSuccess rendered none, so the one stage that can degrade without
+  // failing the run — faithfulness, the only `optional` stage — shipped an
+  // un-audited editorial under an unqualified "completed successfully".
+  it('names a degraded stage instead of announcing an unqualified success', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-08-07',
+      stages: {
+        'curate.market': { status: 'ok' },
+        faithfulness: { status: 'degraded', error: 'judge apply failed' },
+        merge: { status: 'ok' },
+      },
+    });
+    expect(text).toMatch(/faithfulness: degraded/);
+    expect(text).toMatch(/judge apply failed/);
+  });
+
+  it('names a collect degraded by a dead feed source', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-08-07',
+      stages: { collect: { status: 'degraded', error: 'degraded sources: miniflux-feeds' } },
+    });
+    expect(text).toMatch(/collect: degraded — degraded sources: miniflux-feeds/);
+  });
+
+  it('says nothing about stages when every one is ok or skipped', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-08-07',
+      stages: {
+        collect: { status: 'ok' },
+        merge: { status: 'ok' },
+        context: { status: 'skipped' },
+      },
+    });
+    expect(text).not.toMatch(/degraded/);
+  });
+});
+
+// ops-2 (2026-08-07 review): run.sh runs Stage 1 itself, so by the time the
+// sequencer looks, collect is already satisfied and emits `skipped` — the state
+// entry was {status:'skipped', cost 0, tokens 0} in 63 of 63 recorded runs,
+// whatever collect actually did. A Miniflux outage drops the entire native-RSS
+// feed half and left no trace in the state or the notice.
+describe('collectHealth', () => {
+  let dir;
+  const write = (meta) => {
+    dir = mkdtempSync(join(tmpdir(), 'collect-health-'));
+    writeFileSync(join(dir, 'metadata.json'), JSON.stringify(meta));
+    return dir;
+  };
+  const cleanup = () => dir && rmSync(dir, { recursive: true, force: true });
+
+  it('reports ok when every source produced items and nothing degraded', () => {
+    const d = write({
+      date: '2026-08-07',
+      sources: { feeds: { ok: true, count: 4563 }, trending: { ok: true, count: 25 } },
+      degraded: [],
+    });
+    expect(collectHealth(d)).toEqual({ status: 'ok', error: null });
+    cleanup();
+  });
+
+  it('reports degraded when collect recorded a degraded source (miniflux outage)', () => {
+    const d = write({
+      date: '2026-08-07',
+      sources: { feeds: { ok: true, count: 120 } },
+      degraded: ['miniflux-feeds'],
+    });
+    expect(collectHealth(d)).toEqual({
+      status: 'degraded',
+      error: 'degraded sources: miniflux-feeds',
+    });
+    cleanup();
+  });
+
+  it('reports degraded when a source came back empty', () => {
+    const d = write({
+      date: '2026-08-07',
+      sources: { feeds: { ok: false, count: 0 }, trending: { ok: true, count: 25 } },
+      degraded: [],
+    });
+    expect(collectHealth(d).status).toBe('degraded');
+    expect(collectHealth(d).error).toMatch(/feeds=empty/);
+    cleanup();
+  });
+
+  it('returns null when the staging metadata is unreadable, leaving the state as-is', () => {
+    expect(collectHealth(join(tmpdir(), 'definitely-not-a-staging-dir'))).toBeNull();
   });
 });
 
