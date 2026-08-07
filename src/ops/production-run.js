@@ -26,11 +26,14 @@ import {
   closeSync,
   existsSync,
   mkdirSync,
+  mkdtempSync,
   openSync,
   readFileSync,
   renameSync,
+  rmSync,
   writeFileSync,
 } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { allStageIds } from '../pipeline/stages.js';
@@ -316,40 +319,55 @@ function remoteDataListing(logFd) {
   return res.stdout ?? '';
 }
 
-// POST a repository_dispatch to trigger the Pages build. The token is passed via
-// an Authorization header arg; spawnSync does not echo argv to the log.
-// Returns { rc, httpCode } so the retry loop can tell a permanent 4xx (bad
-// token / bad repo — retrying cannot help) from the transient 5xx it targets
-// (dr-3: `-f` alone collapses both into rc=22).
-function curlDispatch(token, logFd) {
-  const res = spawnSync(
-    'curl',
-    [
-      '-sS',
-      '-o',
-      '/dev/null',
-      '-w',
-      '%{http_code}',
-      '-X',
-      'POST',
-      '-H',
-      `Authorization: Bearer ${token}`,
-      '-H',
-      'Accept: application/vnd.github+json',
-      '-H',
-      'X-GitHub-Api-Version: 2022-11-28',
-      `https://api.github.com/repos/${REPO_SLUG}/dispatches`,
-      '-d',
-      '{"event_type":"data-committed"}',
-    ],
-    { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', logFd] },
-  );
-  const httpCode = Number.parseInt(res.stdout ?? '', 10) || null;
-  const ok = res.status === 0 && httpCode !== null && httpCode < 400;
-  // 22 mirrors curl's own `-f` exit code for HTTP >= 400, keeping rc semantics
-  // stable for the run state and notices.
-  const rc = ok ? 0 : res.status || 22;
-  return { rc, httpCode };
+/**
+ * POST a repository_dispatch to trigger the Pages build.
+ *
+ * The Authorization header goes into a 0600 file inside a 0700 temp dir and
+ * reaches curl as `-H @file`, never as an argv element: /proc/<pid>/cmdline is
+ * world-readable for the life of each call. #139 applied exactly this to
+ * archive-month.sh and hydrate-archive.sh; the dispatch, added separately,
+ * was the last site still passing the token on argv.
+ *
+ * Returns { rc, httpCode } so the retry loop can tell a permanent 4xx (bad
+ * token / bad repo — retrying cannot help) from the transient 5xx it targets
+ * (dr-3: `-f` alone collapses both into rc=22). spawnFn is injectable for tests.
+ */
+export function curlDispatch(token, logFd, { spawnFn = spawnSync } = {}) {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'ai-daily-dispatch-'));
+  const headerFile = path.join(dir, 'auth-header');
+  try {
+    writeFileSync(headerFile, `Authorization: Bearer ${token}\n`, { mode: 0o600 });
+    const res = spawnFn(
+      'curl',
+      [
+        '-sS',
+        '-o',
+        '/dev/null',
+        '-w',
+        '%{http_code}',
+        '-X',
+        'POST',
+        '-H',
+        `@${headerFile}`,
+        '-H',
+        'Accept: application/vnd.github+json',
+        '-H',
+        'X-GitHub-Api-Version: 2022-11-28',
+        `https://api.github.com/repos/${REPO_SLUG}/dispatches`,
+        '-d',
+        '{"event_type":"data-committed"}',
+      ],
+      { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', logFd] },
+    );
+    const httpCode = Number.parseInt(res.stdout ?? '', 10) || null;
+    const ok = res.status === 0 && httpCode !== null && httpCode < 400;
+    // 22 mirrors curl's own `-f` exit code for HTTP >= 400, keeping rc semantics
+    // stable for the run state and notices.
+    const rc = ok ? 0 : res.status || 22;
+    return { rc, httpCode };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 // Synchronous sleep — cmdRun is deliberately synchronous end to end.
