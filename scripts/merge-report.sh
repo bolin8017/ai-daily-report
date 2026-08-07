@@ -110,8 +110,12 @@ try {
       ...(report.discoveries?.dev_watch ?? []),
     ].map((p) => ({ repo: canonicalRepoKey(p), stars: p.stars ?? 0 })).filter((p) => p.repo);
     if (shown.length) {
-      const { added, total } = appendSeen(shown, DATE);
-      console.log("[merge-report] seen-repos +" + added + " (total " + total + ")");
+      const { added, total, skipped } = appendSeen(shown, DATE);
+      if (skipped) {
+        console.error("[merge-report] WARN: seen-repos ledger NOT updated (prior state unreadable) — report still written; today's picks may re-surface tomorrow");
+      } else {
+        console.log("[merge-report] seen-repos +" + added + " (total " + total + ")");
+      }
     }
   } catch (e) {
     console.error("[merge-report] WARN: seen-repos ledger update failed (report still written): " + e.message);
