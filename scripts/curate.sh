@@ -8,7 +8,13 @@
 #   STAGING_DIR  — input dir (default: data/staging)
 #   CURATED_DIR  — output dir (default: data/staging/curated)
 #
-# Exit codes:
+# Exit codes, per-section invocation (`curate.sh market` — how the sequencer
+# runs every curator; stages.js owns criticality and declares all four required):
+#   0  — every requested section succeeded
+#   1  — a requested section failed
+#   2  — unknown section argument
+#
+# Exit codes, batch invocation (no args — local reruns):
 #   0  — all critical (discoveries, pulse) succeeded
 #   1  — a critical section failed (abort pipeline)
 #   2  — unknown section argument
@@ -64,7 +70,9 @@ CRITICAL=(discoveries pulse)
 #   bash scripts/curate.sh market        # re-run only the market curator
 # No args = run all four (production default; unchanged behavior).
 SECTIONS=("${ALL_SECTIONS[@]}")
+EXPLICIT_SECTIONS=0
 if [ "$#" -gt 0 ]; then
+  EXPLICIT_SECTIONS=1
   SECTIONS=()
   for arg in "$@"; do
     case " ${ALL_SECTIONS[*]} " in
@@ -199,6 +207,12 @@ run_curator() {
   if ! validate_log=$(node src/curators/validate-output.js "$section" "$out_file"); then
     echo "[curate.sh] $section VALIDATION FAILED"
     quarantine_artifacts "$section" "validation failed after LLM repair"
+    # Remove the rejected file (the quarantine copy above is the post-mortem
+    # evidence). Left in place it is syntactically valid JSON with a fresh
+    # mtime, so satisfied()'s fresh-outputs check marks the stage satisfied on
+    # a later --resume / --recover-from and merge consumes output that this
+    # very validator rejected.
+    rm -f "$out_file"
     return 2
   fi
   echo "$validate_log"
@@ -224,7 +238,26 @@ for sec in "${SECTIONS[@]}"; do
   fi
 done
 
-# Decide exit code based on critical sections
+# Decide the exit code.
+#
+# Per-section invocation — `curate.sh <section>`, which is how the sequencer
+# runs every curator (stages.js: ['bash','scripts/curate.sh', s]) — must report
+# THIS section's own outcome. stages.js declares all four curators `required`
+# and owns the criticality decision; swallowing a market/tech failure here left
+# the sequencer nothing but satisfied()'s output check to go on, and that check
+# passes on any parseable file with a fresh mtime.
+#
+# Batch invocation (no args — local `--curate-only`, one-shot reruns) keeps the
+# historical semantics below: only a critical section aborts.
+if [ "$EXPLICIT_SECTIONS" -eq 1 ]; then
+  if [ "${#FAILED[@]}" -gt 0 ]; then
+    echo "[curate.sh] requested section(s) failed: ${FAILED[*]}" >&2
+    exit 1
+  fi
+  echo "[curate.sh] done. Curated outputs in $CURATED_DIR/"
+  exit 0
+fi
+
 ABORT=0
 for c in "${CRITICAL[@]}"; do
   for f in "${FAILED[@]}"; do
