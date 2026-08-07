@@ -12,8 +12,12 @@
 #   0  — report written and validated
 #   1  — input missing
 #   2  — editorial validation failed
-#   3  — dangling source_link
 #   4  — composed report failed schema validation
+#
+# 3 used to mean "dangling source_link". composeReport stopped aborting on those
+# in the 2026-06-04 cure-don't-abort change (merge.js drops the dead reference
+# and warns), so the code can no longer occur. The number is left retired rather
+# than reused so an old log line still reads unambiguously.
 
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -97,7 +101,6 @@ const meta = aggregateMeta({
   stages,
   model: process.env.CLAUDE_MODEL || process.env.MODEL,
   generatedAt: new Date().toISOString(),
-  analyzeDurationMs: Number(process.env.ANALYZE_DURATION_MS) || undefined,
 });
 
 try {
@@ -117,10 +120,6 @@ try {
     console.error("[merge-report] WARN: seen-repos ledger update failed (report still written): " + e.message);
   }
 } catch (e) {
-  if (/dangling source_link/.test(e.message)) {
-    console.error("[merge-report] " + e.message);
-    process.exit(3);
-  }
   if (e.name === "ZodError") {
     console.error("[merge-report] schema validation failed:");
     for (const iss of e.issues.slice(0, 10)) {
