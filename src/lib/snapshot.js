@@ -7,8 +7,9 @@
 //     unified-feeds object in memory and writes the snapshot file
 //   - Standalone: `node src/lib/snapshot.js` — reads tmp/unified-feeds.json
 
-import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { atomicWriteFileSync } from './fs-atomic.js';
 
 const DST = 'data/feeds-snapshot.json';
 const MAX_PER_SOURCE = 15;
@@ -61,7 +62,11 @@ export function buildSnapshot(feeds, dst = DST) {
     by_source: bySource,
   };
 
-  writeFileSync(dst, `${JSON.stringify(snapshot, null, 2)}\n`);
+  // Atomic (same-dir temp + rename) like the cross-day ledgers: this file is
+  // committed to the data branch and eleventy.config.js throws on an
+  // unparseable one, so a half-written snapshot fails the deploy rather than
+  // degrading quietly.
+  atomicWriteFileSync(dst, `${JSON.stringify(snapshot, null, 2)}\n`);
   console.error(`✓ ${dst} written: ${snapshot.sources} sources, ${snapshot.total_items} items`);
   return snapshot;
 }

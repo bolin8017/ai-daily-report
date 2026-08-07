@@ -2,7 +2,7 @@
 // zero-item feed day must not overwrite the previously committed snapshot —
 // that publishes empty footer source pills / feed lists until the next run.
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -32,5 +32,26 @@ describe('buildSnapshot', () => {
     expect(out.total_items).toBe(1);
     const onDisk = JSON.parse(readFileSync(dst, 'utf8'));
     expect(onDisk.by_source.simonwillison).toHaveLength(1);
+  });
+
+  // col-1 (2026-08-07 review): this file is committed to the data branch and
+  // eleventy.config.js *throws* on an unparseable one, failing the whole deploy.
+  // It was the last committed artifact still written with a plain writeFileSync
+  // while the four cross-day ledgers had already moved to fs-atomic — so a write
+  // that died partway replaced a good snapshot with a truncated one. A failed
+  // write must leave the previously committed snapshot readable.
+  it('leaves the previously committed snapshot intact when the write fails', () => {
+    writeFileSync(dst, '{"generated_at":"yesterday","by_source":{}}\n');
+    // Stand-in for a write that fails partway: the same-dir temp path the atomic
+    // writer uses is occupied by a directory, so the temp write throws before
+    // the rename that would publish it.
+    mkdirSync(`${dst}.tmp`);
+    expect(() =>
+      buildSnapshot(
+        { ok: true, items: [{ source: 'hackernews', title: 't', url: 'https://x' }] },
+        dst,
+      ),
+    ).toThrow();
+    expect(JSON.parse(readFileSync(dst, 'utf8')).generated_at).toBe('yesterday');
   });
 });
