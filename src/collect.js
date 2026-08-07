@@ -33,8 +33,15 @@ import { runAll } from './fetchers/run-all.js';
 import { buildDiscoveries } from './lib/build-discoveries.js';
 import { condenseAll } from './lib/condense.js';
 import { ACTIVE_THEME } from './lib/config.js';
+import { buildFeedRepoItems, extractRepoMentions } from './lib/feed-github-repos.js';
 import { loadFeedList } from './lib/feeds-opml.js';
-import { getContributors, getRecentCommits, getRepoTree, makeOctokit } from './lib/github.js';
+import {
+  getContributors,
+  getReadmeExcerpt,
+  getRecentCommits,
+  getRepoTree,
+  makeOctokit,
+} from './lib/github.js';
 import { minifluxConfigured } from './lib/miniflux-client.js';
 import { fetchPackageDownloads } from './lib/registry-downloads.js';
 import { tagItemScope } from './lib/scope.js';
@@ -165,6 +172,36 @@ async function main() {
   banner('building snapshot');
   buildSnapshot(raw.feeds);
 
+  // Phase 2a2 — harvest GitHub repos the feeds already surfaced (HN, Lobsters,
+  // blogs) as a fourth funnel intake. Topic search and HN's front page barely
+  // overlap, so without this the funnel never sees what people are reading
+  // about. Fail-soft: a failure here just leaves the pool at its old three
+  // sources. Costs ≤2 GitHub-core calls per harvested repo.
+  banner('harvesting feed-mentioned repos');
+  let feedRepoItems = [];
+  try {
+    const { mentions, dropped } = extractRepoMentions(raw.feeds.items ?? []);
+    if (dropped > 0) {
+      banner(`feed-repos: cap dropped ${dropped} mention(s) beyond the limit`);
+    }
+    const octokit = makeOctokit();
+    feedRepoItems = await buildFeedRepoItems({
+      mentions,
+      fetchRepo: async (fullName) => {
+        const [owner, name] = fullName.split('/');
+        const { data } = await octokit.rest.repos.get({ owner, repo: name });
+        return data;
+      },
+      fetchReadme: (fullName) => {
+        const [owner, name] = fullName.split('/');
+        return getReadmeExcerpt(octokit, owner, name, 'feed-repos');
+      },
+    });
+    banner(`feed-repos: ${feedRepoItems.length}/${mentions.length} mentions resolved`);
+  } catch (err) {
+    banner(`feed-repos: harvest FAILED (funnel falls back to 3 sources): ${err.message}`);
+  }
+
   // Phase 2b — append today's star/fork snapshot for every collected GitHub
   // repo to data/star-history.json (velocity backbone; committed by Stage 4).
   // Zero extra API: the numbers are already in the fetched payloads.
@@ -173,6 +210,7 @@ async function main() {
     ...(raw.trending.items ?? []),
     ...(raw.search.items ?? []),
     ...(raw.developers.items ?? []),
+    ...feedRepoItems,
   ];
   const starSnap = recordStarSnapshot(githubItems, date);
   banner(
