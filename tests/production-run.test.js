@@ -1,6 +1,11 @@
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildRunArgs,
+  collectHealth,
+  curlDispatch,
   decideNotice,
   dispatchPages,
   parseArgs,
@@ -171,6 +176,51 @@ describe('renderFailure', () => {
   });
 });
 
+// sec-1 (2026-08-07 review): #139 moved GITHUB_TOKEN off curl's argv in
+// archive-month.sh and hydrate-archive.sh — "world-readable in
+// /proc/<pid>/cmdline during each call" — but the Pages dispatch, added
+// separately, kept passing `-H "Authorization: Bearer <token>"` as an argv
+// element. This was the last remaining site of a pattern the repo had already
+// decided against.
+describe('curlDispatch token hygiene', () => {
+  const TOKEN = 'ghp-do-not-leak-me';
+  const noLog = -1;
+
+  function capture(status = 0, stdout = '204') {
+    const seen = { argv: null, headerFile: null, headerContent: null, headerMode: null };
+    const spawnFn = (cmd, args) => {
+      seen.argv = [cmd, ...args];
+      const ref = args.find((a) => typeof a === 'string' && a.startsWith('@'));
+      if (ref) {
+        seen.headerFile = ref.slice(1);
+        seen.headerContent = readFileSync(seen.headerFile, 'utf8');
+        seen.headerMode = statSync(seen.headerFile).mode & 0o777;
+      }
+      return { status, stdout };
+    };
+    return { seen, spawnFn };
+  }
+
+  it('keeps the token off curl argv and passes it via a 0600 header file', () => {
+    const { seen, spawnFn } = capture();
+    expect(curlDispatch(TOKEN, noLog, { spawnFn })).toEqual({ rc: 0, httpCode: 204 });
+    expect(seen.argv.join(' ')).not.toContain(TOKEN);
+    expect(seen.headerContent).toContain(TOKEN);
+    expect(seen.headerMode).toBe(0o600);
+  });
+
+  it('removes the header file once the call returns, success or failure', () => {
+    const ok = capture();
+    curlDispatch(TOKEN, noLog, { spawnFn: ok.spawnFn });
+    expect(existsSync(ok.seen.headerFile)).toBe(false);
+
+    const bad = capture(0, '503');
+    const out = curlDispatch(TOKEN, noLog, { spawnFn: bad.spawnFn });
+    expect(out).toEqual({ rc: 22, httpCode: 503 });
+    expect(existsSync(bad.seen.headerFile)).toBe(false);
+  });
+});
+
 describe('dispatchPages retry', () => {
   const noLog = -1;
 
@@ -268,6 +318,99 @@ describe('renderSuccess', () => {
       publish: { missing_days: [] },
     });
     expect(text).not.toMatch(/missing reports/);
+  });
+
+  // ops-1 (2026-08-07 review): renderFailure ends with a stage summary but
+  // renderSuccess rendered none, so the one stage that can degrade without
+  // failing the run — faithfulness, the only `optional` stage — shipped an
+  // un-audited editorial under an unqualified "completed successfully".
+  it('names a degraded stage instead of announcing an unqualified success', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-08-07',
+      stages: {
+        'curate.market': { status: 'ok' },
+        faithfulness: { status: 'degraded', error: 'judge apply failed' },
+        merge: { status: 'ok' },
+      },
+    });
+    expect(text).toMatch(/faithfulness: degraded/);
+    expect(text).toMatch(/judge apply failed/);
+  });
+
+  it('names a collect degraded by a dead feed source', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-08-07',
+      stages: { collect: { status: 'degraded', error: 'degraded sources: miniflux-feeds' } },
+    });
+    expect(text).toMatch(/collect: degraded — degraded sources: miniflux-feeds/);
+  });
+
+  it('says nothing about stages when every one is ok or skipped', () => {
+    const text = renderSuccess({
+      run_id: 'r1',
+      report_date: '2026-08-07',
+      stages: {
+        collect: { status: 'ok' },
+        merge: { status: 'ok' },
+        context: { status: 'skipped' },
+      },
+    });
+    expect(text).not.toMatch(/degraded/);
+  });
+});
+
+// ops-2 (2026-08-07 review): run.sh runs Stage 1 itself, so by the time the
+// sequencer looks, collect is already satisfied and emits `skipped` — the state
+// entry was {status:'skipped', cost 0, tokens 0} in 63 of 63 recorded runs,
+// whatever collect actually did. A Miniflux outage drops the entire native-RSS
+// feed half and left no trace in the state or the notice.
+describe('collectHealth', () => {
+  let dir;
+  const write = (meta) => {
+    dir = mkdtempSync(join(tmpdir(), 'collect-health-'));
+    writeFileSync(join(dir, 'metadata.json'), JSON.stringify(meta));
+    return dir;
+  };
+  const cleanup = () => dir && rmSync(dir, { recursive: true, force: true });
+
+  it('reports ok when every source produced items and nothing degraded', () => {
+    const d = write({
+      date: '2026-08-07',
+      sources: { feeds: { ok: true, count: 4563 }, trending: { ok: true, count: 25 } },
+      degraded: [],
+    });
+    expect(collectHealth(d)).toEqual({ status: 'ok', error: null });
+    cleanup();
+  });
+
+  it('reports degraded when collect recorded a degraded source (miniflux outage)', () => {
+    const d = write({
+      date: '2026-08-07',
+      sources: { feeds: { ok: true, count: 120 } },
+      degraded: ['miniflux-feeds'],
+    });
+    expect(collectHealth(d)).toEqual({
+      status: 'degraded',
+      error: 'degraded sources: miniflux-feeds',
+    });
+    cleanup();
+  });
+
+  it('reports degraded when a source came back empty', () => {
+    const d = write({
+      date: '2026-08-07',
+      sources: { feeds: { ok: false, count: 0 }, trending: { ok: true, count: 25 } },
+      degraded: [],
+    });
+    expect(collectHealth(d).status).toBe('degraded');
+    expect(collectHealth(d).error).toMatch(/feeds=empty/);
+    cleanup();
+  });
+
+  it('returns null when the staging metadata is unreadable, leaving the state as-is', () => {
+    expect(collectHealth(join(tmpdir(), 'definitely-not-a-staging-dir'))).toBeNull();
   });
 });
 

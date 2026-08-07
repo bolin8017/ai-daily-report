@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Local development wrapper for the two-stage pipeline.
 #
-# Production runs under Hermes cron (07:00 Asia/Taipei). This script is
+# Production runs under Hermes cron (08:30 Asia/Taipei). This script is
 # for local iteration on fetchers, prompts, or templates.
 #
 # Usage:

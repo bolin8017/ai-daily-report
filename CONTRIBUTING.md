@@ -16,23 +16,28 @@ cp .env.example .env  # set GITHUB_TOKEN
 ```bash
 npm start              # Stage 1 only (fetch + condense, no LLM)
 npm run serve          # 11ty dev server with live reload
-npm test               # Vitest schema tests
+npm test               # Vitest unit tests
 npm run lint           # Biome check
 npm run format         # Biome format --write
+npm run check:sources  # Verify docs/data-sources.md matches the theme's sources.yaml
 npm run validate:report  # Validate latest report against schema
 ```
 
-## Iterating on the agent prompt
+## Iterating on the agent prompts
 
-The agent prompt (`.claude/lenses/ai-builder.md`) is the primary quality lever. To iterate without running the full pipeline:
+The active theme's prompts are the primary quality lever: `themes/ai-builder/synthesizer.md`
+(persona / voice) with `themes/ai-builder/quality.md` (anti-slop rules), plus the
+per-section curator prompts at `themes/ai-builder/sections/<id>/curator.md`. To
+iterate without running the full pipeline:
 
 ```bash
 # 1. Run Stage 1 to get fresh staging data
 npm start
 
-# 2. Edit .claude/lenses/ai-builder.md or .claude/daily-report-quality.md
+# 2. Edit themes/ai-builder/synthesizer.md, themes/ai-builder/quality.md,
+#    or themes/ai-builder/sections/<id>/curator.md
 
-# 3. Run Stage 2 only against existing staging data (no push)
+# 3. Run Stages 2-4 against existing staging data (no push)
 SKIP_PUSH=1 bash scripts/run.sh --analyze
 
 # 4. Validate output
@@ -42,15 +47,21 @@ npm run validate:report
 ## Conventions
 
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `ci:`, `chore:`
-- **Schema-first**: change `src/schemas/` → agent prompt → templates (in that order)
+- **Schema-first**: change the section's `themes/<theme>/sections/<id>/schema.js` → its
+  `curator.md` prompt → its `partial.njk` (in that order)
 - **Lint before push**: `npm test && npm run lint`
 
 ## Adding a data source
 
-1. Add an entry to `config.json` under `sources.feeds[]`
-2. Test: `node src/fetchers/feeds.js | jq '.feeds_ok'`
-3. Run `npm start` to verify end-to-end
-4. If it's a new category, update the **Inputs** section of `.claude/lenses/ai-builder.md`
+`config.json` is an empty placeholder validated with `.strict()` — adding anything to it
+aborts the pipeline at startup. Source configuration lives in the registry and the theme.
+
+1. Add the source to `src/sources/registry.js` (base list), or to
+   `themes/<theme>/sources.yaml` under `phison_overlay` if it is theme-specific
+2. If it is a native-RSS feed, regenerate the Miniflux feed list and provision it:
+   `node scripts/gen-feeds-opml.mjs && node scripts/miniflux-sync.mjs`
+3. Document it in `docs/data-sources.md`, then confirm the two agree: `npm run check:sources`
+4. Run `npm start` to verify end-to-end
 
 ## Architecture
 

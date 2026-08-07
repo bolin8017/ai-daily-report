@@ -12,15 +12,12 @@
 
 | Fetcher | 對應檔案 | 抓取機制 |
 |---|---|---|
-| `feeds` | `src/fetchers/feeds.js` | RSSHub routes / 原生 RSS / 原生 JSON API（來源於 `src/sources/registry.js` 基礎清單 + theme 的 `phison_overlay`，依各來源的 provider chain 分派） |
-| `github-trending` | `src/fetchers/github-trending.js` | cheerio 抓 `github.com/trending` HTML + Octokit 補資料 |
-| `github-search` | `src/fetchers/github-search.js` | Octokit `/search/repositories`，依 topic + `created:>30daysAgo` |
-| `github-developers` | `src/fetchers/github-developers.js` | Octokit `/search/users` + 取使用者最新 repo（72h 視窗） |
+| `feeds` | `src/fetchers/miniflux.js` + `src/fetchers/providers/native-rss.js` | RSSHub routes / 原生 RSS / 原生 JSON API（來源於 `src/sources/registry.js` 基礎清單 + theme 的 `phison_overlay`，依各來源的 provider chain 分派） |
+| `github-trending` | `src/fetchers/providers/github-trending-html.js` | cheerio 抓 `github.com/trending` HTML + Octokit 補資料 |
+| `github-search` | `src/fetchers/providers/github-search-api.js` | Octokit `/search/repositories`，依 topic + `created:>30daysAgo` |
+| `github-developers` | `src/fetchers/providers/github-developers-api.js` | Octokit `/search/users` + 取使用者最新 repo（72h 視窗） |
 
-RSSHub fallback：`themes/ai-builder/sources.yaml` → `rsshub_urls` 為一組依序嘗試的公共實例，目前順序為：
-
-1. `https://rsshub.rssforever.com`
-2. `https://rsshub.pseudoyu.com`
+RSSHub：`themes/ai-builder/sources.yaml` → `rsshub_urls` 指向自架實例 `http://localhost:1200`（`docker/aggregator/`）。公共實例已於 2026-06-06 cutover 退役；原生 RSS 來源改由自架 Miniflux 統一拉取，只剩 `dev-to-top` / `anthropic-news` / `hackernews` / `hf-daily-papers` 這幾條 chain 會用到 RSSHub，失敗時往 jina / firecrawl 遞補。
 
 可用 `RSSHUB_URL` 環境變數強制指定單一實例（會停用 fallback，僅供本地除錯）。
 
@@ -258,7 +255,7 @@ npm run check:sources
 
 ## 鑑識備忘
 
-- **抓取頻率**：所有來源每天 07:00 Asia/Taipei 抓一次（Hermes cron）。
-- **失敗容忍度**：4 個 fetcher 同層級 parallel，允許 1 個失敗（`src/fetchers/all.js`）；feeds.js 內部對 RSSHub 走 instance fallback，對單一 RSS/JSON 失敗則跳過該來源不中斷整個 fetcher。
+- **抓取頻率**：所有來源每天 08:30 Asia/Taipei 抓一次（Hermes cron）。
+- **失敗容忍度**：所有來源由 `src/fetchers/run-all.js` 同層級 parallel 執行，每個來源各自走 provider chain（`run-chain.js` 逐級遞補）；`src/collect.js` 傳入 `minHealthy = ceil(來源數 / 3)`，低於此值才視為整體失敗。單一來源失敗只會被記進 `metadata.degraded`，不中斷整個 collect。
 - **GitHub API quota**：所有 GitHub fetcher 共用同一 `GITHUB_TOKEN`；`github-search` 走 search API 限制（已驗證 30 req/min），`github-developers` 對 README enrichment 用 5-batch 控速以避開 secondary rate limit。
 - **數量**：抓取後經 `src/lib/condense.js` 壓到每來源 ≤8500 tokens，再交給 Stage 2 的 `claude -p` 分析。
