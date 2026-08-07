@@ -1,6 +1,6 @@
-// Schema for normalized feed items produced by src/fetchers/feeds.js
-// and src/fetchers/github-trending.js. Validated by run.sh Phase 1
-// against tmp/*.json after fetchers write their output.
+// Schema for normalized feed items — the Miniflux pull (src/fetchers/miniflux.js)
+// plus the rss/json provider chains, and the repo-card shape from
+// src/fetchers/providers/github-trending-html.js.
 
 import { z } from 'zod';
 

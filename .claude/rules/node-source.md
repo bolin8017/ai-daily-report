@@ -27,7 +27,7 @@ Every file in `src/fetchers/` is both importable and a standalone CLI:
 3. The fetcher function itself never calls `process.stdout.write` or `process.exit`
 4. Return envelope shape: `{ ok: boolean, items: Array, ...meta }`
 
-When adding a new fetcher, register it in `src/fetchers/all.js` (the parallel runner).
+When adding a new provider, register it with `src/fetchers/providers/_registry.js` and add a side-effect import in `src/collect.js`; `src/fetchers/run-all.js` runs the registered chains in parallel.
 
 ## Condense dual-mode pattern
 
@@ -37,12 +37,12 @@ When adding a new fetcher, register it in `src/fetchers/all.js` (the parallel ru
 
 - Top-level `main().catch(...)` with `process.exit(1)` in entry scripts (collect.js)
 - Fetchers: individual failures are `{ ok: false, items: [], error: msg }`, not thrown
-- `runFetchers()` tolerates 1 of 4 fetchers failing (MIN_HEALTHY = 3)
+- `runAll()` tolerates a fraction of sources failing — `src/collect.js` passes `minHealthy: Math.ceil(sources.length / 3)`; failures are recorded in `metadata.degraded`
 
 ## Schema-first development
 
 When changing data shapes:
 1. Update the Zod schema in `src/schemas/` first
-2. Update the agent prompt (`.claude/lenses/ai-builder.md`) if the field is agent-produced
+2. Update the prompts under `themes/<ACTIVE_THEME>/` (`synthesizer.md`, `sections/<id>/curator.md`) if the field is agent-produced
 3. Update 11ty templates (`site/_includes/`) if the field is rendered
 4. Run `npm test` to verify schema fixtures still pass
