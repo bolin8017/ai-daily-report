@@ -173,6 +173,51 @@ describe('externalValidation', () => {
     ];
     expect(externalValidation('o/r', feeds).sort()).toEqual(['hacker-news', 'simonwillison']);
   });
+
+  // disc-1 (2026-08-07 review): the match was a bare substring test, so any
+  // repo whose full name is a PREFIX of a mentioned one was credited with that
+  // mention. Since #165 a single validation ref is an unconditional velocity-gate
+  // pass, so a wrong match now promotes a repo outright.
+  it('does not credit a repo whose name is only a prefix of the mentioned one', () => {
+    const feeds = [
+      {
+        source: 'hackernews',
+        url: 'https://github.com/openai/gpt-oss',
+        title: 'Show HN: gpt-oss',
+        description: '',
+      },
+    ];
+    expect(externalValidation('openai/gpt', feeds)).toEqual([]);
+    expect(externalValidation('openai/gpt-oss', feeds)).toEqual(['hackernews']);
+  });
+
+  it('does not credit a different repo under the same owner', () => {
+    const feeds = [
+      { source: 'lobsters', url: 'https://github.com/acme/tool-cli', title: '', description: '' },
+    ];
+    expect(externalValidation('acme/tool', feeds)).toEqual([]);
+  });
+
+  it('still matches a repo link followed by a path, query, hash, or prose punctuation', () => {
+    const hit = (description) =>
+      externalValidation('o/r', [{ source: 's', url: '', title: '', description }]);
+    expect(hit('https://github.com/o/r/tree/main/src')).toEqual(['s']);
+    expect(hit('https://github.com/o/r?tab=readme-ov-file')).toEqual(['s']);
+    expect(hit('https://github.com/o/r#installation')).toEqual(['s']);
+    expect(hit('worth a look ([repo](https://github.com/o/r))')).toEqual(['s']);
+    expect(hit('see github.com/o/r.')).toEqual(['s']);
+    expect(hit('cloned github.com/o/r.git yesterday')).toEqual(['s']);
+    expect(hit('mixed case at https://GitHub.com/O/R')).toEqual(['s']);
+  });
+
+  it('ignores GitHub route paths that are not repos', () => {
+    const feeds = [
+      { source: 's', url: 'https://github.com/sponsors/o', title: '', description: '' },
+      { source: 's', url: 'https://github.com/topics/r', title: '', description: '' },
+    ];
+    expect(externalValidation('sponsors/o', feeds)).toEqual([]);
+    expect(externalValidation('topics/r', feeds)).toEqual([]);
+  });
 });
 
 describe('excellenceScore', () => {

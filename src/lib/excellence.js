@@ -2,6 +2,8 @@
 // No I/O — all functions take plain data and return plain data.
 // Consumed by src/lib/build-discoveries.js (Stage 1 Phase 2c).
 
+import { repoMentionsIn } from './feed-github-repos.js';
+
 // ---------------------------------------------------------------------------
 // repoAgeDays
 // ---------------------------------------------------------------------------
@@ -282,19 +284,32 @@ export function velocityGatePass(stats, { hasValidation }) {
 // ---------------------------------------------------------------------------
 
 /**
- * Return distinct feed-source ids whose url+title+description mention the repo.
+ * Return distinct feed-source ids whose url+title+description link to the repo.
+ *
+ * Matching goes through repoMentionsIn (the same parser the feed-repo intake
+ * uses) and compares whole owner/repo pairs. A bare substring test on
+ * "github.com/<owner>/<repo>" credited any repo whose name was a prefix of the
+ * mentioned one — a link to github.com/openai/gpt-oss "validated" openai/gpt —
+ * and since validation overrides the velocity gate outright, a wrong match
+ * promotes the wrong repo.
  *
  * @param {string} repoFullName  e.g. "o/r"
  * @param {{ source: string, url: string, title: string, description: string }[]} feedItems
  * @returns {string[]}
  */
 export function externalValidation(repoFullName, feedItems) {
-  const needle = `github.com/${repoFullName}`.toLowerCase();
+  const needle = String(repoFullName ?? '')
+    .trim()
+    .toLowerCase();
+  if (!needle) return [];
   const sources = new Set();
   for (const item of feedItems) {
-    const hay = `${item.url ?? ''} ${item.title ?? ''} ${item.description ?? ''}`.toLowerCase();
-    if (hay.includes(needle)) {
-      sources.add(item.source);
+    const hay = `${item.url ?? ''} ${item.title ?? ''} ${item.description ?? ''}`;
+    for (const mentioned of repoMentionsIn(hay)) {
+      if (mentioned.toLowerCase() === needle) {
+        sources.add(item.source);
+        break;
+      }
     }
   }
   return [...sources];
