@@ -14,7 +14,10 @@
 
 // Repo names may contain dots; the trailing-punctuation trim below handles prose
 // like "see github.com/o/repo." without eating a legitimate ".js" suffix.
-const REPO_URL_RE = /github\.com\/([A-Za-z0-9][\w-]*)\/([\w.-]+)/g;
+// Case-insensitive for the host: prose writes "GitHub.com" and externalValidation
+// (which now shares this parser) used to catch those by lowercasing the whole
+// haystack before its substring test.
+const REPO_URL_RE = /github\.com\/([A-Za-z0-9][\w-]*)\/([\w.-]+)/gi;
 
 // First path segments that are GitHub's own routes, not repo owners.
 const RESERVED_OWNERS = new Set([
@@ -54,6 +57,31 @@ const DEFAULT_LIMIT = 40;
 const FETCH_BATCH_SIZE = 5;
 
 /**
+ * Every distinct "owner/repo" a blob of text links to on github.com, in the
+ * casing the text used. Route paths (`/sponsors/x`, `/topics/y`) are excluded
+ * and a trailing `.git` or prose full-stop is trimmed.
+ *
+ * Shared with excellence.js's externalValidation so intake and validation agree
+ * on what counts as a mention of a given repo: validation used to substring-test
+ * `github.com/<owner>/<repo>`, which credited any repo whose name was a prefix
+ * of the mentioned one (`openai/gpt` matched a link to `openai/gpt-oss`).
+ *
+ * @param {string} text
+ * @returns {Set<string>}
+ */
+export function repoMentionsIn(text) {
+  const out = new Set();
+  for (const m of String(text ?? '').matchAll(REPO_URL_RE)) {
+    const owner = m[1];
+    if (RESERVED_OWNERS.has(owner.toLowerCase())) continue;
+    const repo = m[2].replace(/\.git$/i, '').replace(/[.]+$/, '');
+    if (!repo) continue;
+    out.add(`${owner}/${repo}`);
+  }
+  return out;
+}
+
+/**
  * Scan already-fetched feed items for GitHub repo mentions.
  *
  * Pure. Ranks by how many distinct feed sources mentioned a repo (two
@@ -68,13 +96,7 @@ export function extractRepoMentions(feedItems, { limit = DEFAULT_LIMIT } = {}) {
 
   for (const item of feedItems ?? []) {
     const hay = `${item?.url ?? ''} ${item?.title ?? ''} ${item?.description ?? ''}`;
-    for (const m of hay.matchAll(REPO_URL_RE)) {
-      const owner = m[1];
-      if (RESERVED_OWNERS.has(owner.toLowerCase())) continue;
-      const repo = m[2].replace(/\.git$/i, '').replace(/[.]+$/, '');
-      if (!repo) continue;
-
-      const fullName = `${owner}/${repo}`;
+    for (const fullName of repoMentionsIn(hay)) {
       if (!byName.has(fullName)) byName.set(fullName, new Set());
       if (item?.source) byName.get(fullName).add(item.source);
     }
