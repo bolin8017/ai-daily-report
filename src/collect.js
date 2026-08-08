@@ -272,7 +272,7 @@ async function main() {
       `${JSON.stringify(discoveries, null, 2)}\n`,
     );
     banner(
-      `discoveries: ${discoveries.stats.survivors} candidates, ${discoveries.stats.watchlisted} watchlisted (pool ${discoveries.stats.pool})`,
+      `discoveries: ${discoveries.stats.survivors} candidates, ${discoveries.stats.watchlisted} watchlisted, ${discoveries.stats.rejected} rejected (pool ${discoveries.stats.pool})`,
     );
   } catch (err) {
     // Non-fatal: discoveries is an observability artifact in P2, not yet a
