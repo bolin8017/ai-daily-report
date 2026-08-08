@@ -55,6 +55,21 @@ export async function buildDiscoveries({
 }) {
   const candidates = [];
   const watchlist = [];
+  // Every repo a gate dropped, with the numbers its verdict was computed from.
+  // Survivors and the watchlist were the only things recorded, so a repo the
+  // funnel rejected left no trace and a gate change could not be audited after
+  // the fact — the pool lives only in collect's memory and re-running collect
+  // samples different topics. Staging-only, like the rest of this file.
+  const rejected = [];
+  const reject = (item, gate, reason, detail) => {
+    rejected.push({
+      full_name: item.full_name,
+      stars: item.stars ?? null,
+      gate,
+      reason,
+      ...(detail ? { detail } : {}),
+    });
+  };
   // Per-candidate enrichment context (full_name → { item, scoreInputs }), used
   // by the optional behavioral pass to recompute excellence_score in place.
   const enrichCtx = new Map();
@@ -83,7 +98,10 @@ export async function buildDiscoveries({
 
     // Free gates (cheap, synchronous)
     const gates = freeGates(item, { todayISO });
-    if (!gates.pass) continue;
+    if (!gates.pass) {
+      reject(item, 'free', gates.reason);
+      continue;
+    }
 
     // Compute velocity from history; fall back to a single today-snapshot.
     const rec = history[repoKey];
@@ -119,12 +137,27 @@ export async function buildDiscoveries({
       });
       continue;
     }
-    if (vgate === 'fail') continue;
+    if (vgate === 'fail') {
+      // has_validation and history_days are what the cold-start waiver turns
+      // on, so a rejection carrying both can be re-judged against a changed
+      // gate without needing the pool back.
+      reject(item, 'velocity', 'thresholds', {
+        history_days: vstats.historyDays,
+        velocity_per_day: vstats.perDay,
+        total_stars: vstats.totalStars,
+        spike: vstats.spike,
+        has_validation: hasValidation,
+      });
+      continue;
+    }
 
     // Engineering gate — fetch repo tree (only velocity survivors get here)
     const paths = await fetchTree(item);
     const signals = engSignalsFromTree(paths);
-    if (!engGatePass(signals)) continue;
+    if (!engGatePass(signals)) {
+      reject(item, 'engineering', 'signals', { eng_signals: signals });
+      continue;
+    }
 
     // Compute forkPerDay from history forks delta
     let forkPerDay = 0;
@@ -221,10 +254,12 @@ export async function buildDiscoveries({
     generated_at: generatedAt,
     candidates,
     watchlist,
+    rejected,
     stats: {
       pool,
       survivors: candidates.length,
       watchlisted: watchlist.length,
+      rejected: rejected.length,
     },
   };
 }

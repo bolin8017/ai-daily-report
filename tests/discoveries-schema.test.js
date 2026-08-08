@@ -32,9 +32,32 @@ describe('DiscoveriesStagingSchema', () => {
         generated_at: '2026-06-15T00:00:00Z',
         candidates: [candidate],
         watchlist: [],
-        stats: { pool: 200, survivors: 1, watchlisted: 0 },
+        rejected: [
+          { full_name: 'o/forked', stars: 12, gate: 'free', reason: 'fork' },
+          {
+            full_name: 'o/flat',
+            stars: 50,
+            gate: 'velocity',
+            reason: 'thresholds',
+            detail: { history_days: 7, velocity_per_day: 2.9, has_validation: false },
+          },
+        ],
+        stats: { pool: 200, survivors: 1, watchlisted: 0, rejected: 2 },
       }),
     ).not.toThrow();
+  });
+
+  it('rejects a rejection naming a gate that does not exist', () => {
+    expect(() =>
+      DiscoveriesStagingSchema.parse({
+        ok: true,
+        generated_at: 'x',
+        candidates: [],
+        watchlist: [],
+        rejected: [{ full_name: 'o/r', gate: 'vibes', reason: 'nope' }],
+        stats: { pool: 1, survivors: 0, watchlisted: 0, rejected: 1 },
+      }),
+    ).toThrow();
   });
   it('rejects a candidate missing full_name', () => {
     const bad = { ...candidate };
@@ -45,7 +68,8 @@ describe('DiscoveriesStagingSchema', () => {
         generated_at: 'x',
         candidates: [bad],
         watchlist: [],
-        stats: { pool: 0, survivors: 0, watchlisted: 0 },
+        rejected: [],
+        stats: { pool: 0, survivors: 0, watchlisted: 0, rejected: 0 },
       }),
     ).toThrow();
   });
