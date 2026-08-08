@@ -115,7 +115,7 @@ try {
     if (shown.length) {
       const { added, total, skipped } = appendSeen(shown, DATE);
       if (skipped) {
-        console.error("[merge-report] WARN: seen-repos ledger NOT updated (prior state unreadable) — report still written; today's picks may re-surface tomorrow");
+        console.error("[merge-report] WARN: seen-repos ledger NOT updated (prior state unreadable) — report still written; the picks shown today may re-surface tomorrow");
       } else {
         console.log("[merge-report] seen-repos +" + added + " (total " + total + ")");
       }
