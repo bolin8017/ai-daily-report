@@ -309,3 +309,99 @@ it('scores a cold-start repo that external feeds already validated', async () =>
   // Unvalidated cold-start still watchlists — the override is validation-only.
   expect(out.watchlist.map((w) => w.full_name)).toEqual(['o/quiet']);
 });
+
+// --- rejection ledger -------------------------------------------------------
+// All three gates drop a repo with a bare `continue`, so staging recorded only
+// survivors and the watchlist. When #178 tightened velocityGatePass, "which
+// repos did that actually drop today?" turned out to be unanswerable from the
+// run's own artifacts — the candidate pool lives only in collect's memory, and
+// re-running collect samples different topics. Each rejection now records the
+// gate, its reason, and the numbers the verdict was computed from.
+
+it('records which gate dropped each repo, and why', async () => {
+  const out = await buildDiscoveries({
+    items: [
+      { ...base, full_name: 'o/fork', url: 'https://github.com/o/fork', fork: true, stars: 300 },
+      { ...base, full_name: 'o/bare', url: 'https://github.com/o/bare', license: null, stars: 300 },
+      { ...base, full_name: 'o/flat', url: 'https://github.com/o/flat', stars: 50 },
+      { ...base, full_name: 'o/sloppy', url: 'https://github.com/o/sloppy', stars: 200 },
+    ],
+    history: {
+      'o/flat': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 30 },
+          { date: '2026-06-15', stars: 50 },
+        ],
+      },
+      'o/sloppy': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 50 },
+          { date: '2026-06-15', stars: 200 },
+        ],
+      },
+    },
+    feedItems: [],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    // o/sloppy clears velocity, then fails the engineering gate on its tree.
+    fetchTree: async (item) => (item.full_name === 'o/sloppy' ? ['README.md'] : goodTree),
+  });
+
+  const byName = Object.fromEntries(out.rejected.map((r) => [r.full_name, r]));
+  expect(byName['o/fork']).toMatchObject({ gate: 'free', reason: 'fork' });
+  expect(byName['o/bare']).toMatchObject({ gate: 'free', reason: 'no-license' });
+  expect(byName['o/flat']).toMatchObject({ gate: 'velocity' });
+  expect(byName['o/sloppy']).toMatchObject({ gate: 'engineering' });
+});
+
+// The velocity verdict is the one worth reconstructing after the fact: the
+// cold-start waiver turns on has_validation and history_days, so a rejection
+// that carries both can be re-judged against a changed gate without the pool.
+it('carries the inputs a velocity verdict was computed from', async () => {
+  const out = await buildDiscoveries({
+    items: [{ ...base, full_name: 'o/flat', url: 'https://github.com/o/flat', stars: 50 }],
+    history: {
+      'o/flat': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 30 },
+          { date: '2026-06-15', stars: 50 },
+        ],
+      },
+    },
+    feedItems: [],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+
+  const flat = out.rejected.find((r) => r.full_name === 'o/flat');
+  expect(flat.detail).toMatchObject({
+    history_days: 7,
+    total_stars: 50, // velocityStats.totalStars is the latest count, not the delta
+    spike: false,
+    has_validation: false,
+  });
+  expect(flat.detail.velocity_per_day).toBeCloseTo(20 / 7, 5);
+});
+
+it('counts rejections in stats and does not count deduped repos as rejected', async () => {
+  const out = await buildDiscoveries({
+    items: [
+      { ...base, full_name: 'o/seen', url: 'https://github.com/o/seen', stars: 300 },
+      { ...base, full_name: 'o/fork', url: 'https://github.com/o/fork', fork: true, stars: 300 },
+    ],
+    history: {},
+    feedItems: [],
+    seen: new Set(['o/seen']),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+
+  // o/seen never enters the pool — it was published before, not judged today.
+  expect(out.rejected.map((r) => r.full_name)).toEqual(['o/fork']);
+  expect(out.stats.rejected).toBe(1);
+  expect(out.stats.pool).toBe(1);
+});
