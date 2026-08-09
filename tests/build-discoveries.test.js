@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
 import { buildDiscoveries } from '../src/lib/build-discoveries.js';
+import { DiscoveriesStagingSchema } from '../src/schemas/discoveries.js';
 
 const base = {
   url: '',
@@ -443,6 +444,35 @@ it('records a null source for a repo that arrived without one', async () => {
   });
 
   expect(out.rejected[0].source).toBeNull();
+});
+
+// collect validates the whole file before writing it, and the funnel is
+// fail-soft — so a survivor the schema refuses does not surface as a bad
+// record, it takes the day's entire 新發現 input down with a non-fatal log
+// line. A source-less survivor must not be able to do that.
+it('produces a schema-valid file for a survivor that arrived without a source', async () => {
+  const { source: _drop, ...sourceless } = base;
+  const out = await buildDiscoveries({
+    items: [{ ...sourceless, full_name: 'o/fast', url: 'https://github.com/o/fast', stars: 200 }],
+    history: {
+      'o/fast': {
+        first_seen: '2026-06-08',
+        snapshots: [
+          { date: '2026-06-08', stars: 50 },
+          { date: '2026-06-15', stars: 200 },
+        ],
+      },
+    },
+    feedItems: [],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+
+  expect(out.candidates.map((c) => c.full_name)).toEqual(['o/fast']);
+  expect(() =>
+    DiscoveriesStagingSchema.parse({ ...out, generated_at: '2026-06-15T00:00:00Z' }),
+  ).not.toThrow();
 });
 
 it('counts rejections in stats and does not count deduped repos as rejected', async () => {

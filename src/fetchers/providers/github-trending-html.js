@@ -39,7 +39,7 @@ async function scrapeTrending(url, limit) {
   return extractRows($).slice(0, limit);
 }
 
-async function enrichRepo(octokit, fullName, rank, starsToday = null) {
+export async function enrichRepo(octokit, fullName, rank, starsToday = null) {
   const [owner, repo] = fullName.split('/');
   try {
     const { data } = await octokit.rest.repos.get({ owner, repo });
@@ -58,6 +58,14 @@ async function enrichRepo(octokit, fullName, rank, starsToday = null) {
       default_branch: data.default_branch || null,
       license: data.license?.spdx_id ?? null,
       fork: data.fork ?? false,
+      // The discoveries free gate judges age and staleness on these two. Their
+      // absence does not read as "unknown" there — repoAgeDays returns null and
+      // the gate drops the repo as too-old, which silently cost this intake
+      // every candidate it ever had. Same `|| ''` fallback as the sibling
+      // GitHub providers, so a repo missing them stays conservatively gated.
+      created_at: data.created_at || '',
+      pushed_at: data.pushed_at || '',
+      source: 'github-trending',
     };
   } catch {
     return null;
