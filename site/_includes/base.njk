@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; script-src 'self'; object-src 'none'; base-uri 'self'">
   {%- set displayDate = pageDate if pageDate else report.date -%}
-  <title>AI Creative Daily — {{ displayDate }}</title>
+  <title>{% if pageTitle %}{{ pageTitle }}{% else %}AI Creative Daily — {{ displayDate }}{% endif %}</title>
   <meta name="description" content="AI-powered daily creative tech brief. A Claude Code agent synthesizes signals from GitHub Trending, Hacker News, Lobsters, Dev.to and other communities into steal-worthy side project ideas and deep analysis.">
   <meta name="theme-color" content="#e2a84b">
   <link rel="canonical" href="https://bolin8017.github.io/ai-daily-report/{% if isArchive %}archive/{{ displayDate }}.html{% endif %}">
@@ -32,7 +32,7 @@
         <span class="masthead-kicker">DAILY BRIEF · ASIA/TAIPEI</span>
         <h1>AI Creative <em>Daily</em><span class="dot">.</span></h1>
       </div>
-      <time datetime="{{ displayDate }}">{{ displayDate }} · {{ displayDate | dayOfWeek }}</time>
+      {% if not isArchiveIndex %}<time datetime="{{ displayDate }}">{{ displayDate }} · {{ displayDate | dayOfWeek }}</time>{% endif %}
     </div>
     {% if not isArchiveIndex %}
     {% include "date-nav.njk" %}
@@ -45,7 +45,7 @@
     {{ content | safe }}
   </main>
   <footer>
-    {% if not isArchive %}
+    {% if not isArchive and not isArchiveIndex %}
     <div class="sources" aria-label="本次擷取的來源狀態">
       <span class="sources-label">
         <span class="sources-tab-name">綜合</span> 來源
@@ -66,11 +66,7 @@
     </div>
     {% endif %}
     <nav class="archive">
-      {%- for item in archiveLinks %}
-      {%- if item.date != report.date %}
-      <a href="{{ ('/' + item.url) | url }}">{{ item.date }}</a>
-      {%- endif %}
-      {%- endfor %}
+      <a href="{{ '/archive/' | url }}">所有報告 →</a>
     </nav>
     <p class="powered-by">Powered by Claude Code</p>
   </footer>

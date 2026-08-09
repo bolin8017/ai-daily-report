@@ -199,7 +199,9 @@ export default function (eleventyConfig) {
     return result;
   });
 
-  // Archive links for footer (last 7 dates)
+  // Archive links for the RSS feed (last 7 dates). The footer used to render
+  // these too; it now links to the archive index instead, so site/feed.njk is
+  // the only consumer left.
   eleventyConfig.addGlobalData('archiveLinks', () => {
     return getReportFiles()
       .slice(0, 7)
