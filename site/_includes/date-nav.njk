@@ -1,0 +1,19 @@
+{# Header date switcher. Rendered on the latest report and on every archive
+   page. reportNeighbors returns both sides null for a date outside
+   switchableReports — a pre-cutover archive page — so those pages get the
+   index link and no arrows, which is correct: their neighbours are not
+   reachable in this layout. #}
+{%- set nb = switchableReports | reportNeighbors(displayDate) -%}
+<nav class="date-nav" aria-label="報告日期切換">
+  {%- if nb.prev %}
+  <a class="date-nav-step" rel="prev" href="{{ ('/archive/' + nb.prev.date + '.html') | url }}">← {{ nb.prev.date }}</a>
+  {%- else %}
+  <span class="date-nav-step is-empty"></span>
+  {%- endif %}
+  <a class="date-nav-all" href="{{ '/archive/' | url }}">所有報告</a>
+  {%- if nb.next %}
+  <a class="date-nav-step" rel="next" href="{{ ('/archive/' + nb.next.date + '.html') | url }}">{{ nb.next.date }} →</a>
+  {%- else %}
+  <span class="date-nav-step is-empty"></span>
+  {%- endif %}
+</nav>
