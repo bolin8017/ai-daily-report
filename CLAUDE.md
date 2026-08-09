@@ -165,7 +165,7 @@ Note: `ReportSchema` uses `.passthrough()` at the top level and makes most sub-f
 
 - **Static HTML** built in CI by 11ty, deployed to GitHub Pages via `actions/deploy-pages@v4` (OIDC artifact, not a `gh-pages` branch).
 - **Live URL:** https://bolin8017.github.io/ai-daily-report
-- **Archive:** recent `data/reports/YYYY-MM-DD.json` live on the `data` branch (60-day hot window); older months archive to GitHub Releases and are hydrated back at build time. 11ty pagination generates `_site/archive/YYYY-MM-DD.html`. Footer shows last 7; all reports kept permanently (hot on branch, cold in Releases).
+- **Archive:** recent `data/reports/YYYY-MM-DD.json` live on the `data` branch (60-day hot window); older months archive to GitHub Releases and are hydrated back at build time. 11ty pagination generates `_site/archive/YYYY-MM-DD.html` for the most recent 400 reports; all reports kept permanently (hot on branch, cold in Releases). Readers reach past days through prev/next arrows in the header plus an index at `/archive/`, both driven by the `switchableReports` global — the subset of `archiveReports` whose `discoveries` key is present, i.e. the reports that render in the current layout. Selection logic is `src/lib/report-nav.js` (`selectSwitchable` / `neighborsOf` / `groupByMonth`), tested in `tests/report-nav.test.js`. Both globals derive from one array, so a navigable date always has a generated page. Pre-cutover reports still render at their URLs but are not listed.
 - **RSS feed:** `_site/feed.xml`
 
 ## State Management
