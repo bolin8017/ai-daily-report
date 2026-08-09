@@ -1,0 +1,26 @@
+---
+layout: base.njk
+permalink: archive/index.html
+eleventyComputed:
+  pageTitle: "AI Creative Daily — 所有報告"
+  isArchiveIndex: true
+---
+
+<section class="archive-index">
+  <h2>所有報告</h2>
+  {% if switchableReports.length %}
+  <p class="archive-index-count">共 {{ switchableReports.length }} 份</p>
+  {%- for group in switchableReports | groupByMonth %}
+  <div class="archive-month">
+    <h3>{{ group.month }}</h3>
+    <ul>
+      {%- for d in group.days %}
+      <li><a href="{{ ('/archive/' + d.date + '.html') | url }}">{{ d.day }}</a></li>
+      {%- endfor %}
+    </ul>
+  </div>
+  {%- endfor %}
+  {% else %}
+  <p class="archive-index-count">還沒有可切換的報告。第一份報告產出後就會出現在這裡。</p>
+  {% endif %}
+</section>

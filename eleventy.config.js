@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sanitizeHtml from 'sanitize-html';
 import YAML from 'yaml';
+import { groupByMonth, neighborsOf, selectSwitchable } from './src/lib/report-nav.js';
 import { loadSectionMap } from './src/lib/section-map.js';
 import { rfc822Date, scrubUrls } from './src/lib/site-url.js';
 
@@ -86,6 +87,12 @@ export default function (eleventyConfig) {
       return url;
     }
   });
+
+  // Nunjucks scopes `{% set %}` to the enclosing `{% for %}`, so neither a
+  // running index nor a running month header survives the loop that computes
+  // it. Both list walks happen here instead, against the tested module.
+  eleventyConfig.addFilter('reportNeighbors', (list, date) => neighborsOf(list ?? [], date));
+  eleventyConfig.addFilter('groupByMonth', (list) => groupByMonth(list ?? []));
 
   // --- HTML sanitization ---
   // LLM-generated HTML is sanitized at data-load time to close the indirect
@@ -192,7 +199,9 @@ export default function (eleventyConfig) {
     return result;
   });
 
-  // Archive links for footer (last 7 dates)
+  // Archive links for the RSS feed (last 7 dates). The footer used to render
+  // these too; it now links to the archive index instead, so site/feed.njk is
+  // the only consumer left.
   eleventyConfig.addGlobalData('archiveLinks', () => {
     return getReportFiles()
       .slice(0, 7)
@@ -203,13 +212,28 @@ export default function (eleventyConfig) {
   });
 
   // Archived reports for 11ty pagination (generates /archive/YYYY-MM-DD.html).
-  // Capped to the most recent 90 reports to avoid unbounded memory growth
-  // as the archive accumulates over time (~30KB × 365 = 10MB/year).
-  eleventyConfig.addGlobalData('archiveReports', () => {
-    return getReportFiles()
-      .slice(0, 90)
-      .map((f) => sanitizeReport(JSON.parse(fs.readFileSync(path.join(reportsDir, f), 'utf8'))));
-  });
+  // Capped to bound build memory as the archive accumulates (~30KB each, so
+  // 400 ≈ 12MB). The previous cap of 90 was about to bind — at 84 reports
+  // growing by one a day it would have started dropping the oldest page, and
+  // switchableReports below is derived from this same list, so the index would
+  // have linked to a page that no longer existed.
+  const ARCHIVE_CAP = 400;
+  const loadArchiveRaw = () =>
+    getReportFiles()
+      .slice(0, ARCHIVE_CAP)
+      .map((f) => JSON.parse(fs.readFileSync(path.join(reportsDir, f), 'utf8')));
+
+  eleventyConfig.addGlobalData('archiveReports', () =>
+    loadArchiveRaw().map((r) => sanitizeReport(r)),
+  );
+
+  // Dates the reader can switch between: the subset of archiveReports that
+  // renders in the current layout. Both come from loadArchiveRaw, so a
+  // navigable date always has a generated page. Only `date` survives — no HTML
+  // is rendered from these, so they skip sanitizeReport.
+  eleventyConfig.addGlobalData('switchableReports', () =>
+    selectSwitchable(loadArchiveRaw()).map((r) => ({ date: r.date })),
+  );
 
   // Sources status from feeds-snapshot.json, enriched with per-tab routing.
   //
