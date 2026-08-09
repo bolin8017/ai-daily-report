@@ -26,6 +26,7 @@ export const DiscoveryRejection = z
   .object({
     full_name: z.string(),
     stars: z.number().nullable().optional(),
+    source: z.string().nullable().optional(),
     gate: z.enum(['free', 'velocity', 'engineering']),
     reason: z.string(),
     detail: z.record(z.any()).optional(),

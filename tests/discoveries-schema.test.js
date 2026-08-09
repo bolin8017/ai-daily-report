@@ -59,6 +59,19 @@ describe('DiscoveriesStagingSchema', () => {
       }),
     ).toThrow();
   });
+  it('rejects a rejection whose source is not an intake name', () => {
+    expect(() =>
+      DiscoveriesStagingSchema.parse({
+        ok: true,
+        generated_at: 'x',
+        candidates: [],
+        watchlist: [],
+        rejected: [{ full_name: 'o/r', gate: 'free', reason: 'fork', source: 123 }],
+        stats: { pool: 1, survivors: 0, watchlisted: 0, rejected: 1 },
+      }),
+    ).toThrow();
+  });
+
   it('rejects a candidate missing full_name', () => {
     const bad = { ...candidate };
     delete bad.full_name;

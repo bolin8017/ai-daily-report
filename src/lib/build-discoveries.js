@@ -65,6 +65,10 @@ export async function buildDiscoveries({
     rejected.push({
       full_name: item.full_name,
       stars: item.stars ?? null,
+      // Which intake supplied the repo. Without it the file cannot answer what
+      // an intake is yielding — the gates it dies at are here, but the pool
+      // that would map a rejection back to its source is gone by then.
+      source: item.source ?? null,
       gate,
       reason,
       ...(detail ? { detail } : {}),
