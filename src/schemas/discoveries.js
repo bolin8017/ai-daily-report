@@ -14,7 +14,10 @@ export const DiscoveryCandidate = z
     eng_signals: z.record(z.any()).nullable().optional(),
     validation_refs: z.array(z.string()).optional(),
     excellence_score: z.number().nullable().optional(),
-    source: z.string().optional(),
+    // Nullable because buildDiscoveries writes `item.source ?? null`, and the
+    // whole file is validated before it is written: a survivor from an intake
+    // that does not tag its items would otherwise abort the day's funnel.
+    source: z.string().nullable().optional(),
   })
   .passthrough();
 

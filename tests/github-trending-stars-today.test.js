@@ -1,6 +1,11 @@
 import * as cheerio from 'cheerio';
 import { describe, expect, it } from 'vitest';
-import { extractRows, parseStarsToday } from '../src/fetchers/providers/github-trending-html.js';
+import {
+  enrichRepo,
+  extractRows,
+  parseStarsToday,
+} from '../src/fetchers/providers/github-trending-html.js';
+import { freeGates } from '../src/lib/excellence.js';
 
 describe('parseStarsToday', () => {
   it('parses a comma-formatted count', () => {
@@ -39,5 +44,48 @@ describe('extractRows', () => {
       '<article class="Box-row"><h2 class="h3"><a href="/o/r">o / r</a></h2></article>',
     );
     expect(extractRows($)).toEqual([{ fullName: 'o/r', starsToday: null }]);
+  });
+});
+
+describe('enrichRepo', () => {
+  const freshRepo = {
+    html_url: 'https://github.com/o/hot',
+    description: 'd',
+    language: 'TypeScript',
+    stargazers_count: 500,
+    forks_count: 10,
+    topics: [],
+    default_branch: 'main',
+    license: { spdx_id: 'MIT' },
+    fork: false,
+    created_at: '2026-08-01T00:00:00Z',
+    pushed_at: '2026-08-09T00:00:00Z',
+  };
+  const fakeOctokit = (repo) => ({
+    rest: {
+      repos: {
+        get: async () => ({ data: repo }),
+        getReadme: async () => ({ data: 'readme text' }),
+      },
+    },
+  });
+
+  it('carries the repo dates and its intake name onto the item', async () => {
+    const item = await enrichRepo(fakeOctokit(freshRepo), 'o/hot', 1, 652);
+    expect(item).toMatchObject({
+      full_name: 'o/hot',
+      created_at: '2026-08-01T00:00:00Z',
+      pushed_at: '2026-08-09T00:00:00Z',
+      source: 'github-trending',
+    });
+  });
+
+  // The discoveries funnel's first gate judges on created_at/pushed_at. An item
+  // that omits them is not old — it is unjudgeable, and freeGates cannot tell
+  // the two apart, so it read every trending repo as "too-old" and the intake
+  // contributed nothing from the day the funnel shipped.
+  it('produces an item the funnel free gate can judge on its merits', async () => {
+    const item = await enrichRepo(fakeOctokit(freshRepo), 'o/hot', 1, 652);
+    expect(freeGates(item, { todayISO: '2026-08-09' })).toEqual({ pass: true, reason: null });
   });
 });
