@@ -387,6 +387,64 @@ it('carries the inputs a velocity verdict was computed from', async () => {
   expect(flat.detail.velocity_per_day).toBeCloseTo(20 / 7, 5);
 });
 
+// Which intake a rejection came from is what judging an intake's yield needs:
+// the pool that would let you reconstruct it lives only in collect's memory,
+// so a rejection that does not name its source leaves the question unanswerable
+// even with the whole file in hand.
+it('records which intake each rejected repo came from', async () => {
+  const out = await buildDiscoveries({
+    items: [
+      {
+        ...base,
+        full_name: 'o/fork',
+        url: 'https://github.com/o/fork',
+        fork: true,
+        stars: 300,
+        source: 'github-feed',
+      },
+      {
+        ...base,
+        full_name: 'o/bare',
+        url: 'https://github.com/o/bare',
+        license: null,
+        stars: 300,
+        source: 'github-search',
+      },
+    ],
+    history: {},
+    feedItems: [],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+
+  const byName = Object.fromEntries(out.rejected.map((r) => [r.full_name, r]));
+  expect(byName['o/fork'].source).toBe('github-feed');
+  expect(byName['o/bare'].source).toBe('github-search');
+});
+
+it('records a null source for a repo that arrived without one', async () => {
+  const { source: _drop, ...sourceless } = base;
+  const out = await buildDiscoveries({
+    items: [
+      {
+        ...sourceless,
+        full_name: 'o/fork',
+        url: 'https://github.com/o/fork',
+        fork: true,
+        stars: 9,
+      },
+    ],
+    history: {},
+    feedItems: [],
+    seen: new Set(),
+    todayISO: '2026-06-15',
+    fetchTree: async () => goodTree,
+  });
+
+  expect(out.rejected[0].source).toBeNull();
+});
+
 it('counts rejections in stats and does not count deduped repos as rejected', async () => {
   const out = await buildDiscoveries({
     items: [
