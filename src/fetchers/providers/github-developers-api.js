@@ -19,17 +19,22 @@ async function searchUsers(octokit, query, perPage) {
   }
 }
 
-async function getNewestRepo(octokit, login) {
+// A fork is never a discovery — freeGates rejects `fork: true` outright — but as
+// the newest repo it used to be the ONE repo we looked at, so it hid whatever
+// the developer actually built. Asking for a handful costs the same single call.
+const NEWEST_REPOS_SCANNED = 5;
+
+async function getNewestOriginalRepo(octokit, login) {
   try {
     const { data } = await octokit.rest.repos.listForUser({
       username: login,
       sort: 'created',
       direction: 'desc',
-      per_page: 1,
+      per_page: NEWEST_REPOS_SCANNED,
     });
-    return data[0] || null;
+    return (data || []).find((r) => !r.fork) || null;
   } catch (err) {
-    console.error(`[${LOG_PREFIX}] getNewestRepo(${login}) failed: ${err.message}`);
+    console.error(`[${LOG_PREFIX}] getNewestOriginalRepo(${login}) failed: ${err.message}`);
     return null;
   }
 }
@@ -45,7 +50,7 @@ async function getFollowerCount(octokit, login) {
 }
 
 export async function processUser(octokit, cutoffMs, login, region) {
-  const repo = await getNewestRepo(octokit, login);
+  const repo = await getNewestOriginalRepo(octokit, login);
   if (!repo?.created_at) return null;
 
   const repoMs = new Date(repo.created_at).getTime();
