@@ -94,7 +94,7 @@ const STUBS = {
 };
 
 describe('full chain integration (stubbed providers)', () => {
-  it('all 39 registered sources resolve OK through runAll', { timeout: 15000 }, async () => {
+  it('all registered sources resolve OK through runAll', { timeout: 15000 }, async () => {
     clearProviders();
     const providerNames = new Set(sources.flatMap((s) => s.chain.map((c) => c.provider)));
     // Return 30 stub items so HN sources (threshold 10/5) also pass
@@ -116,12 +116,18 @@ describe('full chain integration (stubbed providers)', () => {
 
     const dir = await mkdtemp(join(tmpdir(), 'ci-'));
     process.env.FIRECRAWL_DISABLED = '1';
+    // Stub the enrichers too: the real hn-algolia one calls the live API, which
+    // made this "stubbed providers" test the only network-dependent unit test.
+    const enriched = [];
     const { healthy } = await runAll(sources, {
       telemetryDir: dir,
       date: '2026-05-22',
       minHealthy: 1,
+      enrichers: { 'hn-algolia': async (items) => enriched.push(items.length) },
     });
     expect(healthy.length).toBe(sources.length);
+    // Both HN sources declare enrich: ['hn-algolia'] in the registry.
+    expect(enriched).toEqual([30, 30]);
 
     const tel = JSON.parse(await readFile(join(dir, '2026-05-22.json'), 'utf8'));
     expect(tel.summary.sources_healthy + tel.summary.sources_degraded).toBe(sources.length);
