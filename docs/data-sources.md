@@ -15,7 +15,7 @@
 | `feeds` | `src/fetchers/miniflux.js` + `src/fetchers/providers/native-rss.js` | RSSHub routes / 原生 RSS / 原生 JSON API（來源於 `src/sources/registry.js` 基礎清單 + theme 的 `phison_overlay`，依各來源的 provider chain 分派） |
 | `github-trending` | `src/fetchers/providers/github-trending-html.js` | cheerio 抓 `github.com/trending` HTML + Octokit 補資料 |
 | `github-search` | `src/fetchers/providers/github-search-api.js` | Octokit `/search/repositories`，依 topic + `created:>30daysAgo` |
-| `github-developers` | `src/fetchers/providers/github-developers-api.js` | Octokit `/search/users` + 取使用者最新 repo（72h 視窗） |
+| `github-developers` | `src/fetchers/providers/github-developers-api.js` | Octokit `/search/users` + 取使用者最新的非 fork repo（72h 視窗） |
 
 RSSHub：`themes/ai-builder/sources.yaml` → `rsshub_urls` 指向自架實例 `http://localhost:1200`（`docker/aggregator/`）。公共實例已於 2026-06-06 cutover 退役；原生 RSS 來源改由自架 Miniflux 統一拉取，只剩 `dev-to-top` / `anthropic-news` / `hackernews` / `hf-daily-papers` 這幾條 chain 會用到 RSSHub，失敗時往 jina / firecrawl 遞補。
 
@@ -189,6 +189,8 @@ Topics 由 `themes/ai-builder/interests.yaml`（interest-subscription registry�
 | Taiwan | `location:taiwan OR location:taipei` 且 `followers:>50` | 50 名開發者 |
 
 新 repo 視窗：72 小時（`themes/ai-builder/sources.yaml` → `github_developers.new_repo_window_hours`）。輸出對應到報告中的 `dev_watch.taiwan` / `dev_watch.global`。
+
+每位開發者取**最新的非 fork repo**：掃最新 5 筆（與只取 1 筆是同一次 listing 呼叫）後挑第一個非 fork。fork 在 funnel 的 `freeGates` 一律被擋，但過去只看最新 1 筆時，開頭的 fork 會成為該開發者唯一被看到的 repo，把真正的新作品蓋掉。
 
 ---
 
