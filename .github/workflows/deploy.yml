@@ -168,6 +168,13 @@ jobs:
       # was reachable only through cheerio's network fetch, which is never
       # called), so gating the build on it would train people to ignore a red
       # build. Surfacing it as a warning keeps the signal visible without that.
+      #
+      # This step is the BACKSTOP, not the alarm. An annotation on a green build
+      # is not something anyone reads — the nanoid advisory (GHSA-2v37-7h3g-55p8)
+      # sat here unactioned because it was the only channel and Dependabot alerts
+      # were switched off at the repo level. Alerts + automated security fixes are
+      # on as of 2026-08-30, so an advisory now arrives as a PR that fixes it;
+      # this line is what catches the case Dependabot has no fix for.
       - name: Audit production dependencies
         run: |
           npm audit --omit=dev --audit-level=high \
