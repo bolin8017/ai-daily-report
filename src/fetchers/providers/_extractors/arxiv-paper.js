@@ -48,5 +48,36 @@ export function extractArxivPaper(markdown) {
     }
   }
 
+  // Pattern 3: what arxiv.org/list actually serves through r.jina.ai — the id
+  // is the link *text* (`[arXiv:2608.27351](.../abs/2608.27351 "Abstract")`)
+  // and the title is a later `Title:` line, not trailing text on the same line.
+  // Pattern 2 was written against a listing shape arxiv has never emitted, so
+  // this tier returned 0 items every time it was actually needed.
+  if (items.length === 0) {
+    const entryRe = /\[arXiv:([0-9]{4}\.[0-9]+)\]\(https:\/\/arxiv\.org\/abs\/[0-9]{4}\.[0-9]+/g;
+    const entries = [];
+    for (let m = entryRe.exec(markdown); m !== null; m = entryRe.exec(markdown)) {
+      entries.push({ id: m[1], at: m.index });
+    }
+    for (const [i, entry] of entries.entries()) {
+      // One entry's block runs until the next entry's anchor.
+      const block = markdown.slice(entry.at, entries[i + 1]?.at ?? markdown.length);
+      const title = block.match(/^Title:\s*(.+?)\s*$/m)?.[1];
+      if (!title || seen.has(entry.id)) continue;
+      seen.add(entry.id);
+      const subjects = block.match(/^Subjects:(.+)$/m)?.[1] ?? '';
+      items.push({
+        paper_id: entry.id,
+        url: `https://arxiv.org/abs/${entry.id}`,
+        title,
+        abstract: '', // the listing page carries no abstracts
+        authors: [],
+        categories: [...subjects.matchAll(/\(([a-z-]+\.[A-Z]{2,})\)/g)].map((m) => m[1]),
+        published: null,
+      });
+      if (items.length >= 20) break;
+    }
+  }
+
   return items;
 }

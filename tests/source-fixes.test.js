@@ -76,6 +76,40 @@ By Jane Smith, John Doe
       expect(items.map((i) => i.paper_id)).toEqual(['2501.04906', '2501.04905']);
       expect(items.every((i) => /arxiv\.org\/abs/.test(i.url))).toBe(true);
     });
+
+    // The listing fixture above is invented; arxiv.org never emits it. That is
+    // why tier 2 passed its tests and still returned 0 items in production on
+    // 2026-08-30, when a transient arxiv-API failure needed it. This fixture is
+    // a verbatim excerpt of what r.jina.ai actually serves for the listing.
+    it('extracts from the markup arxiv.org/list actually serves', () => {
+      const md = `
+### Fri, 28 Aug 2026 (showing first 50 of 157 entries )
+
+[[1]](https://arxiv.org/list/cs.LG/recent)[arXiv:2608.27351](https://arxiv.org/abs/2608.27351 "Abstract") [[pdf](https://arxiv.org/pdf/2608.27351 "Download PDF"), [html](https://arxiv.org/html/2608.27351v1 "View HTML"), [other](https://arxiv.org/format/2608.27351 "Other formats")]
+
+Title: Understanding Evolution Strategies for LLM Reasoning: Broader Reasoning Coverage than GRPO
+
+[Yunpeng Ba](https://arxiv.org/search/cs?searchtype=author&query=Ba,+Y), [Zhi Zheng](https://arxiv.org/search/cs?searchtype=author&query=Zheng,+Z)
+
+Subjects:Machine Learning (cs.LG)
+
+[[2]](https://arxiv.org/list/cs.LG/recent)[arXiv:2608.27339](https://arxiv.org/abs/2608.27339 "Abstract") [[pdf](https://arxiv.org/pdf/2608.27339 "Download PDF")]
+
+Title: Beyond Parallel Blindness: Information Floors and Model Gaps in Block Drafting
+
+[Xinwei Qiang](https://arxiv.org/search/cs?searchtype=author&query=Qiang,+X)
+
+Subjects:Machine Learning (cs.LG); Computation and Language (cs.CL); Information Theory (cs.IT)
+`;
+      const items = extractArxivPaper(md);
+      expect(items.map((i) => i.paper_id)).toEqual(['2608.27351', '2608.27339']);
+      expect(items[0].title).toBe(
+        'Understanding Evolution Strategies for LLM Reasoning: Broader Reasoning Coverage than GRPO',
+      );
+      expect(items[0].url).toBe('https://arxiv.org/abs/2608.27351');
+      expect(items[0].categories).toEqual(['cs.LG']);
+      expect(items[1].categories).toEqual(['cs.LG', 'cs.CL', 'cs.IT']);
+    });
   });
 
   describe('arxiv-cs-ai: tier-0 arxiv API 429 retry-with-backoff', () => {
