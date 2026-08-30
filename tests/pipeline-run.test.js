@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { downstreamOf, runPipeline } from '../src/pipeline/run.js';
+import { downstreamOf, runPipeline, spawnStage } from '../src/pipeline/run.js';
 
 const TODAY = '2026-06-04';
 const ALL = [
@@ -546,5 +546,44 @@ describe('downstreamOf', () => {
   it('returns transitive dependents in the DAG', () => {
     expect(downstreamOf('synthesize').sort()).toEqual(['faithfulness', 'merge']);
     expect(downstreamOf('collect')).toContain('merge');
+  });
+});
+
+// Every `failed` stage used to record `error: null`, so the production notice
+// said only "FAILED" — the 2026-08-26 (OAuth) and 08-27 (OAuth) outages both
+// needed manual archaeology in curated/.logs to find a cause that was already
+// on disk.
+describe('runPipeline — failure cause reporting', () => {
+  it('records why a stage that exited non-zero failed', async () => {
+    const logs = path.join(staging, 'curated', '.logs');
+    mkdirSync(logs, { recursive: true });
+    writeFileSync(
+      path.join(logs, 'market.raw.json'),
+      JSON.stringify({ is_error: true, result: 'OAuth session expired' }),
+    );
+    const stage = { id: 'curate.market', command: ['bash', '-c', 'exit 1'] };
+
+    const res = await spawnStage(stage, { stagingDir: staging, repoRoot: process.cwd() });
+
+    expect(res.exitCode).toBe(1);
+    expect(res.error).toBe('OAuth session expired');
+  });
+
+  it('records no error for a stage that exited cleanly', async () => {
+    const stage = { id: 'curate.market', command: ['bash', '-c', 'exit 0'] };
+
+    const res = await spawnStage(stage, { stagingDir: staging, repoRoot: process.cwd() });
+
+    expect(res.error).toBeUndefined();
+  });
+
+  it('records why a stage that exited 0 without producing its outputs failed', async () => {
+    const h = harness({ results: { synthesize: { exitCode: 0, invalid: true } } });
+
+    await h.run();
+
+    const rec = h.emitted.find((r) => r.stage === 'synthesize');
+    expect(rec.status).toBe('failed');
+    expect(rec.error).toBe('exit 0 but outputs unsatisfied (fresh-outputs)');
   });
 });

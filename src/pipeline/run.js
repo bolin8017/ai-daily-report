@@ -13,6 +13,7 @@ import { readFileSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { satisfied as defaultSatisfied } from './satisfied.js';
+import { stageFailureReason } from './stage-error.js';
 import { getStage, isRetryable, STAGES, topoOrder } from './stages.js';
 
 // A dependency in one of these states is "available" — a dependent may proceed.
@@ -80,17 +81,28 @@ function readSidecar(stagingDir, stageId) {
   }
 }
 
-async function spawnStage(stage, { stagingDir, repoRoot }) {
+// Artifact clocks are coarser than Date.now(), so date the run slightly early
+// rather than discard a cause file written in the same tick as the spawn.
+const ARTIFACT_CLOCK_SKEW_MS = 2_000;
+
+export async function spawnStage(stage, { stagingDir, repoRoot }) {
   const t0 = Date.now();
   const [cmd, ...args] = stage.command;
   const exitCode = await spawnAsync(cmd, args, { cwd: repoRoot, env: process.env });
   const side = readSidecar(stagingDir, stage.id);
-  return {
+  const result = {
     exitCode,
     duration_ms: Date.now() - t0,
     cost_usd: typeof side.cost_usd === 'number' ? side.cost_usd : 0,
     tokens: Number.isInteger(side.output_tokens) ? side.output_tokens : 0,
   };
+  if (exitCode !== 0) {
+    result.error = stageFailureReason(stagingDir, stage.id, {
+      exitCode,
+      sinceMs: t0 - ARTIFACT_CLOCK_SKEW_MS,
+    });
+  }
+  return result;
 }
 
 function emitLine(result) {
@@ -270,6 +282,18 @@ export async function runPipeline({
             console.error(`[run.js] ${id}: validated but empty — retrying once`);
             res = await runStage(stage, { stagingDir, reportsDir, today, repoRoot });
             status = classify(stage, res, { rawSatisfied, stagingDir, dryRun });
+          }
+          // A stage can also fail with a clean exit — it ran, but its outputs
+          // never showed up. spawnStage has no cause to report there, so name
+          // the check that rejected it rather than emitting a null error.
+          if (status === 'failed' && !res.error) {
+            res = {
+              ...res,
+              error:
+                (res.exitCode ?? 0) === 0
+                  ? `exit 0 but outputs unsatisfied (${stage.satisfiedCheck})`
+                  : `exit ${res.exitCode}`,
+            };
           }
           state.set(id, status);
           emit(buildResult(stage, status, { runId, ...res }));
