@@ -129,11 +129,28 @@ export function collectHealth(stagingDir) {
   const meta = readJson(path.join(stagingDir, 'metadata.json'));
   if (!meta || typeof meta !== 'object') return null;
   const sources = meta.sources && typeof meta.sources === 'object' ? meta.sources : {};
+  const degraded = Array.isArray(meta.degraded) ? meta.degraded : [];
+  // An empty bucket and the chain that emptied it are two measurements of one
+  // failure, named in two different namespaces (bucket `arxiv` vs source id
+  // `arxiv-cs-ai`), so listing both read as two independent problems. Stage 1
+  // writes which chains feed each bucket; use it to report them as one note.
+  // Absent (metadata written before the attribution existed) both are listed,
+  // exactly as before.
+  const chains = meta.source_chains && typeof meta.source_chains === 'object' ? {} : null;
+  if (chains) {
+    for (const [bucket, ids] of Object.entries(meta.source_chains)) {
+      if (Array.isArray(ids)) chains[bucket] = ids;
+    }
+  }
+  const attributed = new Set();
   const empty = Object.entries(sources)
     .filter(([, s]) => s && s.ok === false)
-    .map(([id]) => `${id}=empty`);
-  const degraded = Array.isArray(meta.degraded) ? meta.degraded : [];
-  const notes = [...empty, ...degraded];
+    .map(([id]) => {
+      const culprits = (chains?.[id] ?? []).filter((c) => degraded.includes(c));
+      for (const c of culprits) attributed.add(c);
+      return culprits.length > 0 ? `${id}=empty (${culprits.join(', ')})` : `${id}=empty`;
+    });
+  const notes = [...empty, ...degraded.filter((d) => !attributed.has(d))];
   return {
     status: notes.length > 0 ? 'degraded' : 'ok',
     error: notes.length > 0 ? `degraded sources: ${notes.join(', ')}` : null,

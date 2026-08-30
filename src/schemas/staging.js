@@ -42,5 +42,11 @@ export const StagingMetadataSchema = z.object({
   // (Stage 4 copies `sources` into meta.source_health wholesale). Optional so
   // legacy staging files still validate.
   feeds_sections: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  // bucket → the registry source ids that feed it. A sibling of `sources` for
+  // the same invariant reason as feeds_sections. The production notice uses it
+  // to attribute a degraded chain to the bucket it emptied rather than naming
+  // one failure twice (`arxiv=empty, arxiv-cs-ai`). Optional so staging written
+  // before it existed still validates.
+  source_chains: z.record(z.string(), z.array(z.string())).optional(),
   degraded: z.array(z.string()).default([]),
 });

@@ -72,8 +72,42 @@ const FEED_ITEM_TYPES = new Set(['rss-post', 'hn-story']);
 // developers, leaderboards, mops, hf_trending, arxiv}` shape so downstream
 // condense / snapshot / scope logic keeps working without per-source rewrite.
 // Exported for tests; the isMain guard below keeps the import side-effect-free.
+// The one chain behind each structured bucket. Shared by the bucket assembly
+// below and by bucketSourceIds, so the mapping has a single definition.
+const SINGLE_CHAIN_BUCKETS = {
+  trending: 'github-trending',
+  search: 'github-search-topics',
+  developers: 'github-developers',
+  hf_trending: 'hf-trending',
+  mops: 'mops-disclosure',
+  arxiv: 'arxiv-cs-ai',
+};
+
+const feedIdsOf = (sources) =>
+  sources.filter((s) => FEED_ITEM_TYPES.has(s.itemType)).map((s) => s.id);
+const leaderboardIdsOf = (sources) =>
+  sources.filter((s) => s.itemType === 'leaderboard-entry').map((s) => s.id);
+
+/**
+ * Which registry source ids feed each legacy bucket.
+ *
+ * Written to metadata as `source_chains`. Without it the production notice
+ * names one failure twice in two namespaces — the empty bucket (`arxiv`) and
+ * the chain that emptied it (`arxiv-cs-ai`) — reading as two problems.
+ *
+ * @param {object[]} sources - resolved effective sources
+ * @returns {Record<string, string[]>}
+ */
+export function bucketSourceIds(sources) {
+  return {
+    feeds: feedIdsOf(sources),
+    ...Object.fromEntries(Object.entries(SINGLE_CHAIN_BUCKETS).map(([b, id]) => [b, [id]])),
+    leaderboards: leaderboardIdsOf(sources),
+  };
+}
+
 export function mapResultsToLegacyShape(results, sources) {
-  const feedIds = new Set(sources.filter((s) => FEED_ITEM_TYPES.has(s.itemType)).map((s) => s.id));
+  const feedIds = new Set(feedIdsOf(sources));
   const out = {};
   const feedItems = Object.entries(results)
     .filter(([id]) => feedIds.has(id))
@@ -83,13 +117,10 @@ export function mapResultsToLegacyShape(results, sources) {
   // half green on a day it collected nothing (the Miniflux merge later
   // re-derives ok, but only when Miniflux is configured).
   out.feeds = { ok: feedItems.length > 0, items: feedItems };
-  out.trending = results['github-trending'] ?? { ok: false, items: [] };
-  out.search = results['github-search-topics'] ?? { ok: false, items: [] };
-  out.developers = results['github-developers'] ?? { ok: false, items: [] };
-  out.hf_trending = results['hf-trending'] ?? { ok: false, items: [] };
-  out.mops = results['mops-disclosure'] ?? { ok: false, items: [] };
-  out.arxiv = results['arxiv-cs-ai'] ?? { ok: false, items: [] };
-  const leaderboardIds = sources.filter((s) => s.itemType === 'leaderboard-entry').map((s) => s.id);
+  for (const [bucket, id] of Object.entries(SINGLE_CHAIN_BUCKETS)) {
+    out[bucket] = results[id] ?? { ok: false, items: [] };
+  }
+  const leaderboardIds = leaderboardIdsOf(sources);
   out.leaderboards = {
     ok: true,
     items: leaderboardIds
@@ -371,6 +402,11 @@ async function main() {
           shippedSlice.search.length +
           shippedSlice.developers.length,
       },
+      // Which chains feed each bucket. Another sibling of `sources` for the
+      // same invariant reason as feeds_sections. Lets the production notice
+      // report a degraded chain against the bucket it emptied, instead of
+      // naming one failure twice across the two namespaces.
+      source_chains: bucketSourceIds(sources),
       degraded: raw._degraded ?? [],
     },
   };
