@@ -409,6 +409,56 @@ describe('collectHealth', () => {
     cleanup();
   });
 
+  // An empty bucket and the chain that emptied it are two measurements of one
+  // failure, in two different namespaces (bucket `arxiv` vs source id
+  // `arxiv-cs-ai`). Listing both read as two independent problems:
+  //   degraded sources: arxiv=empty, arxiv-cs-ai
+  it('attributes a degraded chain to the bucket it emptied instead of listing both', () => {
+    const d = write({
+      date: '2026-08-30',
+      sources: { feeds: { ok: true, count: 4024 }, arxiv: { ok: false, count: 0 } },
+      degraded: ['arxiv-cs-ai'],
+      source_chains: { feeds: ['hackernews', 'lobsters'], arxiv: ['arxiv-cs-ai'] },
+    });
+    expect(collectHealth(d)).toEqual({
+      status: 'degraded',
+      error: 'degraded sources: arxiv=empty (arxiv-cs-ai)',
+    });
+    cleanup();
+  });
+
+  it('still names a degraded chain whose bucket is not empty', () => {
+    const d = write({
+      date: '2026-08-25',
+      sources: { feeds: { ok: true, count: 3800 } },
+      degraded: ['lobsters'],
+      source_chains: { feeds: ['hackernews', 'lobsters'] },
+    });
+    expect(collectHealth(d).error).toBe('degraded sources: lobsters');
+    cleanup();
+  });
+
+  it('still names an empty bucket that no degraded chain explains', () => {
+    const d = write({
+      date: '2026-08-30',
+      sources: { arxiv: { ok: false, count: 0 } },
+      degraded: [],
+      source_chains: { arxiv: ['arxiv-cs-ai'] },
+    });
+    expect(collectHealth(d).error).toBe('degraded sources: arxiv=empty');
+    cleanup();
+  });
+
+  it('lists both separately when the metadata predates the chain attribution', () => {
+    const d = write({
+      date: '2026-08-30',
+      sources: { arxiv: { ok: false, count: 0 } },
+      degraded: ['arxiv-cs-ai'],
+    });
+    expect(collectHealth(d).error).toBe('degraded sources: arxiv=empty, arxiv-cs-ai');
+    cleanup();
+  });
+
   it('returns null when the staging metadata is unreadable, leaving the state as-is', () => {
     expect(collectHealth(join(tmpdir(), 'definitely-not-a-staging-dir'))).toBeNull();
   });
