@@ -20,6 +20,10 @@ export const CATEGORY_TO_SECTIONS = {
   'phison-vendor': ['tech', 'market'],
   'kv-cache-research': ['tech'],
   'diffusion-research': ['tech'],
+  // Video generation: models, acceleration work, and the runtimes that
+  // serve them. Split from diffusion-research so the daily supply of
+  // video-gen items is countable on its own.
+  'video-generation': ['tech'],
   // ssd-vendor: trade-press + analyst coverage of storage/memory vendors;
   // belongs in tech (vendor/models/benchmarks tabs). blocksandfiles is an
   // rss-post in this category and would be orphaned without this entry.

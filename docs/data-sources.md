@@ -107,8 +107,29 @@ RSSHub：`themes/ai-builder/sources.yaml` → `rsshub_urls` 指向自架實例 `
 |---|---|---|
 | Diffusers Releases | `https://github.com/huggingface/diffusers/releases.atom` | 10 |
 | ComfyUI Releases | `https://github.com/Comfy-Org/ComfyUI/releases.atom` | 10 |
+| ComfyUI Blog | `https://blog.comfy.org/feed` | 10 |
+| stable-diffusion.cpp Commits | `https://github.com/leejet/stable-diffusion.cpp/commits/master.atom` | 20 |
 
 > 2026-07-24 新增：操作者主要工作轉為 diffusion transformer (DiT) 圖像專案，`interests.yaml` 的 `diffusion` interest 同日升為 core。ComfyUI 已遷移至 Comfy-Org 組織，使用新 URL。
+>
+> 2026-09-09 新增 ComfyUI Blog 與 stable-diffusion.cpp：`comfyui-releases` 只帶版本號，敘事層在部落格；sdcpp 是操作者點名的本地 diffusion 執行環境，用 commit feed 而非 release——它以滾動 nightly tag 發 release，標題形如 `master-843-462d675` 且內文為空，實測一天 6 筆零資訊。
+
+#### 1.3.7b 影片生成（→ `tech.vendor` / `tech.models`）
+
+| 名稱 | URL | 上限 |
+|---|---|---|
+| NVlabs Sana Commits | `https://github.com/NVlabs/Sana/commits/main.atom` | 20 |
+| FastVideo Commits | `https://github.com/hao-ai-lab/FastVideo/commits/main.atom` | 20 |
+
+> 2026-09-09 新增。觸發案例：NVIDIA SANA 團隊對 MiniMax H3 的 Sol Engine 加速工作（2026-09-08 發布）在隔日報告完全沒有——它不是 HF 模型、不是 trending repo、也沒上 NVIDIA Developer Blog，只以 GitHub Pages 形式 commit 進 `NVlabs/Sana`。**這就是為什麼這裡用 commit feed 而非 release feed**：影片生成的新技術往往以「研究頁上線」的形式出現，release feed 對它是靜音的。代價是 commit feed 較吵，2026-09-23 依實際訊噪比檢討是否退場。
+>
+> 兩者都用 commit feed 而非 release feed：FastVideo 約每季才 tag 一次 release（最後一筆 2026-06-04），但天天在 commit（最後一筆 2026-09-08）。
+>
+> **刻意不收 Lightricks/LTX-Video**：release feed 停在 2024-12、commit feed 停在 2026-01，repo 已停擺；LTX 開發轉往 HuggingFace，而 `hf_trending` 已經接得到（LTX-2.5 就在 2026-09-09 的報告裡）。接一個永遠不會響的 feed 比不接更糟——它會給人已經涵蓋了的錯覺。
+>
+> 自成 `video-generation` 分類（而非併入 `diffusion-research`），是為了讓每日的影片生成供給量可以單獨計數——兩週後要用這個數字決定問題出在來源還是 curator。
+>
+> **未接：Reddit**（r/StableDiffusion、r/comfyui）。本領域訊息最早出現處，但免費路徑全被擋：原生 `.rss` 403、自架 RSSHub 無 reddit route（上游 2023 移除）、jina-reader 403、公開 redlib 302。需 Reddit 官方 OAuth script app 憑證。
 
 #### 1.3.8 市場情報（→ `market.ma` / `market.funding`）
 
