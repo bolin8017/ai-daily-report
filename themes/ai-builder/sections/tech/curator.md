@@ -27,7 +27,7 @@ Write strict JSON matching `TechCuratedSchema` to `data/staging/curated/tech.jso
 
 ### vendor (cap 8) — 大廠技術
 
-Source: feeds.json from `Anthropic News`, `Google AI Blog`, `OpenAI`, `Microsoft Research AI`, `AWS ML Blog`, `NVIDIA Developer Blog`, `Meta (Research/FAIR)`, DeepMind if present.
+Source: feeds.json from `Anthropic News`, `Google AI Blog`, `OpenAI`, `Microsoft Research AI`, `AWS ML Blog`, `NVIDIA Developer Blog`, `Meta (Research/FAIR)`, DeepMind if present, plus the video-generation feeds (`NVlabs Sana Commits`, `LTX-Video Releases`, `FastVideo Releases`, `ComfyUI Blog`, `stable-diffusion.cpp Releases`).
 
 - **Substance test (include):** post contains model card details, API feature specs with quantitative claims, OSS releases, paper links, OR benchmark numbers.
 - **Marketing-fluff test (exclude):** post is "X enables Y for customers" / "partner X chose us" / pure case study without technical substance.
@@ -44,6 +44,29 @@ Source: feeds.json from `HF Daily Papers` + arxiv.json + hf_trending.json + vend
 - **Exclude:** commercial API-only model announcements (those go to `vendor`), minor version bumps (v1.0.1 → v1.0.2), derivative fine-tunes without benchmark breakthrough.
 
 For each item: `id`, `title`, `url`, `audience`, `takeaway`, `companies` (model maker).
+
+### 影片生成：優先題材（跨 vendor / models）
+
+A new video-generation **technique** — a sampler, a distillation or few-step
+schedule, a sparse/linear attention variant, a cache-reuse trick, a serving
+recipe that changes the latency or VRAM envelope — outranks a routine LLM or
+agent item of equal size. Surface it the day it appears; do not hold it for
+corroboration. It reaches this section as a commit or release entry, not as a
+polished blog post, so judge it on what the diff or release note says it does.
+
+Two failure modes to avoid, both observed:
+
+- **Naming without mechanism.** "廠商更新影片生成模型至 X 版,新增多模態管線" tells a
+  builder nothing. Say what changed and what it buys: which step count, which
+  resolution, which attention variant, what the measured latency or memory
+  figure is. If the source carries no mechanism at all, the item is a `models`
+  one-liner at best — do not promote it.
+- **Crowding-out.** Video-gen items compete against a daily flood of agent and
+  LLM news. When the vendor or models cap forces a cut, an item carrying a
+  concrete video-gen mechanism is cut last, not first.
+
+Model releases still belong in `models`; acceleration and serving work belongs
+in `vendor`. The dedupe rule below applies as usual.
 
 ### benchmarks (cap 6) — 評測
 

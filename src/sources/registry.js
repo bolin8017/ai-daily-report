@@ -233,6 +233,51 @@ export default [
       homepageUrl: 'https://github.com/Comfy-Org/ComfyUI/releases',
     },
   ),
+  rss('comfy-blog', 'ComfyUI Blog', 'diffusion-research', 'https://blog.comfy.org/feed', {
+    homepageUrl: 'https://blog.comfy.org/',
+  }),
+  // Commits, not releases: sdcpp tags rolling nightlies whose entries carry an
+  // opaque title ("master-843-462d675") and an empty body — six a day of pure
+  // noise. The commit stream is where the substance is.
+  rss(
+    'sdcpp-commits',
+    'stable-diffusion.cpp Commits',
+    'diffusion-research',
+    'https://github.com/leejet/stable-diffusion.cpp/commits/master.atom',
+    {
+      homepageUrl: 'https://github.com/leejet/stable-diffusion.cpp',
+    },
+  ),
+
+  // === Video generation (2) ===
+  // Both feeds here watch commits, not releases, because that is where a
+  // video-gen technique actually lands. NVIDIA's Sol Engine work on MiniMax H3
+  // (2026-09-08) exists only under NVlabs/Sana/Sol-Engine/ as committed GitHub
+  // Pages, and FastVideo tags a release about quarterly while committing daily.
+  // A releases feed on either repo would have stayed silent, so both accept the
+  // extra noise as the price of seeing the technique at all.
+  //
+  // Lightricks/LTX-Video is deliberately absent: its releases feed stopped in
+  // 2024-12 and its commits in 2026-01. LTX development moved to HuggingFace,
+  // where hf_trending already reaches it (LTX-2.5 made the 2026-09-09 brief).
+  rss(
+    'nvlabs-sana-commits',
+    'NVlabs Sana Commits',
+    'video-generation',
+    'https://github.com/NVlabs/Sana/commits/main.atom',
+    {
+      homepageUrl: 'https://github.com/NVlabs/Sana',
+    },
+  ),
+  rss(
+    'fastvideo-commits',
+    'FastVideo Commits',
+    'video-generation',
+    'https://github.com/hao-ai-lab/FastVideo/commits/main.atom',
+    {
+      homepageUrl: 'https://github.com/hao-ai-lab/FastVideo',
+    },
+  ),
   rss('phoronix', 'Phoronix', '系統/底層', 'https://www.phoronix.com/rss.php', {
     homepageUrl: 'https://www.phoronix.com/',
   }),
