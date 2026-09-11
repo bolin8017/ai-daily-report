@@ -68,6 +68,18 @@ Two failure modes to avoid, both observed:
 Model releases still belong in `models`; acceleration and serving work belongs
 in `vendor`. The dedupe rule below applies as usual.
 
+**廠商硬體 / runtime 這一側。** `TensorRT Model Optimizer Releases`, `OpenVINO
+Releases`, `AMD ROCm Blog`, `ROCm Releases` and `NVIDIA Developer Blog` are
+domain-general: most of what they carry is LLM, training, or datacenter news
+that has nothing to do with image or video. Admit an item from them under this
+rule ONLY when it bears on image or video generation — diffusion or video-model
+support, a generation-path kernel or quantization, a VRAM or throughput figure
+for an image/video workload, or a "this model now runs on this hardware" claim.
+Everything else from those feeds is judged as ordinary `vendor` material on the
+substance test above, with no video-gen priority. The builder's question here is
+"can my card run it, and how fast" — an item that does not answer it is not a
+video-gen item no matter which vendor published it.
+
 ### benchmarks (cap 6) — 評測
 
 Source: leaderboards.json (per-bench snapshots + diff fields: `new_top_5`, `rank_changes`, `top_5_today`).

@@ -30,7 +30,13 @@ function artifactsFor(stageId) {
     ];
   }
   if (stageId === 'synthesize') {
+    // The validate step first: a run where `claude -p` succeeded and only the
+    // schema check failed leaves a clean envelope and an empty err.txt, so
+    // without this the 2026-09-10 malformed-JSON failure reported "exit 2"
+    // while the real line ("EDITORIAL VALIDATION FAILED: Expected ',' or '}'…")
+    // lived only in the run log.
     return [
+      { kind: 'stderr', file: 'synthesizer.err.txt.validate' },
       { kind: 'envelope', file: 'synthesizer.raw.txt' },
       { kind: 'stderr', file: 'synthesizer.err.txt' },
     ];

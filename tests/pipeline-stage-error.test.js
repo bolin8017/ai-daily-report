@@ -75,6 +75,17 @@ describe('stageFailureReason', () => {
     expect(stageFailureReason(dir, 'synthesize', { exitCode: 1 })).toBe(OAUTH);
   });
 
+  // 2026-09-10: synthesize failed on malformed editorial JSON. `claude -p` had
+  // succeeded, so the envelope was clean and err.txt was empty, and the notice
+  // said "exit 2" while the real line sat only in the run log.
+  it('prefers the synthesize validate stderr over a successful envelope', () => {
+    const msg = "[synthesize.sh] EDITORIAL VALIDATION FAILED: Expected ',' or '}'";
+    write('synthesizer.raw.txt', { is_error: false, result: 'done' });
+    write('synthesizer.err.txt', '');
+    write('synthesizer.err.txt.validate', msg);
+    expect(stageFailureReason(dir, 'synthesize', { exitCode: 2 })).toBe(msg);
+  });
+
   it('reads the faithfulness stage from its verdicts raw envelope', () => {
     write('faithfulness.verdicts.json.raw', { is_error: true, result: OAUTH });
 
