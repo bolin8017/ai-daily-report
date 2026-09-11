@@ -11,6 +11,7 @@ import {
   parseArgs,
   renderFailure,
   renderOrphan,
+  renderStale,
   renderSuccess,
 } from '../src/ops/production-run.js';
 
@@ -28,6 +29,72 @@ function running(extra = {}) {
     ...extra,
   };
 }
+
+describe('decideNotice — missed day', () => {
+  // 2026-09-11: a DNS blip killed the starter's `git pull` before any state was
+  // written. latest.json still held 09-10's succeeded run with its success
+  // notice delivered, so the monitor stayed silent every 15 minutes all day
+  // while no report existed. These lock the detector that closes that hole.
+  const lastRun = {
+    status: 'succeeded',
+    run_id: '20260910070000',
+    report_date: '2026-09-10',
+    started_at: '2026-09-09T23:00:17.000Z', // 2026-09-10 07:00 Asia/Taipei
+    duration_ms: 2_981_000,
+  };
+  // 2026-09-11 08:15 Asia/Taipei. Not 08:00: the previous run started at
+  // 07:00:17, so 25h elapses at 08:00:17 and the monitor's next 15-minute tick
+  // is the first one that sees it. This is the real firing time, ~1h after the
+  // missed slot and well after a transient network fault would have cleared.
+  const nextMorning = Date.parse('2026-09-11T00:15:00.000Z');
+
+  it('reports the missed day even though the last run succeeded and was announced', () => {
+    const n = decideNotice(lastRun, {
+      nowMs: nextMorning,
+      delivered: { success: true },
+    });
+    expect(n).toEqual({
+      marker: 'stale-2026-09-11',
+      text: expect.stringContaining('a scheduled day was missed'),
+    });
+    // The wrapper log is the only trace this failure mode leaves.
+    expect(n.text).toMatch(/launch\.log/);
+  });
+
+  it('reminds once per day, not once per monitor tick', () => {
+    const delivered = { success: true, 'stale-2026-09-11': true };
+    expect(decideNotice(lastRun, { nowMs: nextMorning, delivered })).toBeNull();
+    // Still down the following morning: a new day, so a new reminder.
+    const dayAfter = Date.parse('2026-09-12T00:00:00.000Z');
+    expect(decideNotice(lastRun, { nowMs: dayAfter, delivered })).toEqual({
+      marker: 'stale-2026-09-12',
+      text: expect.stringContaining('a scheduled day was missed'),
+    });
+  });
+
+  it('stays quiet on a normal day, and on a slow run that is still inside the window', () => {
+    // 24h later: the next run is due but not yet overdue.
+    const onTime = Date.parse('2026-09-10T23:00:17.000Z');
+    expect(decideNotice(lastRun, { nowMs: onTime, delivered: { success: true } })).toBeNull();
+    // 24h50m — the 2026-09-10 run itself took 50 minutes. Must not fire.
+    const slowRun = Date.parse('2026-09-10T23:50:17.000Z');
+    expect(decideNotice(lastRun, { nowMs: slowRun, delivered: { success: true } })).toBeNull();
+  });
+
+  it('does not mistake a long-running current run for a missed day', () => {
+    const inFlight = { status: 'running', run_id: 'r', started_at: '2026-09-11T00:00:00.000Z' };
+    const n = decideNotice(inFlight, {
+      nowMs: Date.parse('2026-09-11T01:00:00.000Z'),
+      delivered: {},
+      pidAlive: true,
+    });
+    expect(n.marker).toBe('60m');
+  });
+
+  it('renders the same-day recovery command, which tomorrow cannot run', () => {
+    expect(renderStale(lastRun, 25)).toMatch(/production-run\.js run --state-dir/);
+  });
+});
 
 describe('decideNotice', () => {
   it('prints a success notice once, then suppresses it', () => {
