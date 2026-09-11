@@ -22,6 +22,7 @@
 // is NEVER written to the run log or status JSON.
 
 import { spawnSync } from 'node:child_process';
+import { lookup as dnsLookup } from 'node:dns/promises';
 import {
   closeSync,
   existsSync,
@@ -633,7 +634,38 @@ function cmdStatus({ stateDir, json }) {
   return 0;
 }
 
-function cmdMonitor({ stateDir }) {
+// Delivery happens outside this process — the monitor writes to stdout and the
+// Hermes cron job sends it on — so nothing here can observe whether a notice
+// actually landed. Writing the marker regardless means a notice emitted while
+// the network is down is suppressed forever.
+//
+// That is not hypothetical, and it is worst for the notice that needs it most:
+// on 2026-09-11 the 7-hour DNS outage that caused the missed run (01:16-08:13)
+// was still up at ~08:03 when the staleness alert would have fired, and the
+// Telegram send would have failed with the same EAI_AGAIN that killed the run.
+// So gate the marker on the delivery path being usable at all, and let the next
+// 15-minute tick try again when it is not. The notice still prints; only the
+// "already told them" record waits for a network that could carry it.
+const DELIVERY_PROBE_HOST = 'api.telegram.org';
+const DELIVERY_PROBE_MS = 2000;
+
+export async function deliveryPathUp(host = DELIVERY_PROBE_HOST) {
+  try {
+    await Promise.race([
+      dnsLookup(host),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('probe timeout')), DELIVERY_PROBE_MS),
+      ),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// `probe` is injected by tests: the marker's whole point is that it is NOT
+// written when delivery cannot happen, and that is unobservable otherwise.
+export async function cmdMonitor({ stateDir, probe = deliveryPathUp }) {
   const latest = readJson(path.join(stateDir, 'latest.json'));
   if (!latest) return 0; // nothing to report
   const noticesDir = path.join(stateDir, 'notices');
@@ -654,9 +686,11 @@ function cmdMonitor({ stateDir }) {
     pidAlive: isProcessAlive(latest.pid),
   });
   if (!notice) return 0;
-  mkdirSync(noticesDir, { recursive: true });
-  writeFileSync(markerFor(notice.marker), '');
   process.stdout.write(`${notice.text}\n`);
+  if (await probe()) {
+    mkdirSync(noticesDir, { recursive: true });
+    writeFileSync(markerFor(notice.marker), '');
+  }
   return 0;
 }
 
@@ -706,7 +740,7 @@ if (isMain) {
   let rc = 0;
   if (opts.command === 'run') rc = cmdRun(opts);
   else if (opts.command === 'status') rc = cmdStatus(opts);
-  else if (opts.command === 'monitor') rc = cmdMonitor(opts);
+  else if (opts.command === 'monitor') rc = await cmdMonitor(opts);
   else {
     process.stderr.write(
       `[production] unknown command: ${opts.command ?? '(none)'} (run|status|monitor)\n`,
