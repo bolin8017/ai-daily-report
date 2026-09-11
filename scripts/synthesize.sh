@@ -129,7 +129,7 @@ if ! SYNTH_EDITORIAL_FILE="$EDITORIAL_FILE" node -e '
     m.EditorialSchema.parse(doc);
     console.log("[synthesize.sh] editorial validates against EditorialSchema 2.1-editorial");
   }).catch(e => { console.error("[synthesize.sh] EDITORIAL VALIDATION FAILED:", e.message); process.exit(2); });
-'; then
+' 2> >(tee "$LOG_DIR/synthesizer.err.txt.validate" >&2); then
   exit 2
 fi
 

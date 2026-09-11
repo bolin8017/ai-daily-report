@@ -91,6 +91,18 @@ RSSHub：`themes/ai-builder/sources.yaml` → `rsshub_urls` 指向自架實例 `
 | AWS ML Blog | `https://aws.amazon.com/blogs/machine-learning/feed/` | 大廠技術 | 8 |
 | NVIDIA Developer Blog | `https://developer.nvidia.com/blog/feed` | 大廠技術 | 8 |
 | Meta Research | `https://research.facebook.com/feed` | 大廠技術 | 8 |
+| TensorRT Model Optimizer Releases | `https://github.com/NVIDIA/TensorRT-Model-Optimizer/releases.atom` | 大廠技術 | 10 |
+| OpenVINO Releases | `https://github.com/openvinotoolkit/openvino/releases.atom` | 大廠技術 | 10 |
+| AMD ROCm Blog | `https://rocm.blogs.amd.com/blog/atom.xml` | 大廠技術 | 10 |
+| ROCm Releases | `https://github.com/ROCm/ROCm/releases.atom` | 大廠技術 | 10 |
+
+> 2026-09-11 新增後四者（加速器廠商的影像/影片角度）。操作者要求追蹤 Intel / AMD / NVIDIA 在影片圖片領域的動作，兩個面向都要：**硬體與 runtime 支援**（我的卡能不能跑、跑多快）以及**廠商自家的影像模型**。三家都沒有影像專屬的 feed，所以收的是領域通用 feed，由 `sections/tech/curator.md` 的「廠商硬體 / runtime 這一側」規則把範圍收回影像/影片相關項目；其餘照一般 `vendor` 標準審。
+>
+> 實測落地驗證：`nvidia-cosmos-commits` 帶回 `Add ModelOpt FP8 Cosmos Framework inference`、`trt-model-optimizer-releases` 帶回 `Muse Glimmer AutoQuant recipe`——都是影像生成路徑上的量化工作。`rocm-blog` 同時帶回 `4-bit KV Caching in LMCache`，那是 LLM 不是影像，正是 curator 規則要擋下的那一類。
+>
+> **依實測活性排除兩個**：`intel/intel-extension-for-pytorch`（最後一筆 2025-12，停更 9 個月）、`nvidia-cosmos/cosmos-predict2.5`（最後一筆 2026-06，且該 commit 就是導向 Cosmos 3 的 redirect）。NVIDIA 的 generative-ai 分類 feed 與已收的 `nvidia-developer-blog` 重複，亦不收。
+>
+> `rocm-releases` 為季度節奏（最後一筆 2026-07-16），常態落在 16 天抓取視窗外——這是預期行為，不是故障。
 
 #### 1.3.6 aiDAPTIV+ / SSD-AI 關聯（→ `tech.aidaptiv`）
 
@@ -120,6 +132,7 @@ RSSHub：`themes/ai-builder/sources.yaml` → `rsshub_urls` 指向自架實例 `
 |---|---|---|
 | NVlabs Sana Commits | `https://github.com/NVlabs/Sana/commits/main.atom` | 20 |
 | FastVideo Commits | `https://github.com/hao-ai-lab/FastVideo/commits/main.atom` | 20 |
+| NVIDIA Cosmos Commits | `https://github.com/NVIDIA/Cosmos/commits/main.atom` | 20 |
 
 > 2026-09-09 新增。觸發案例：NVIDIA SANA 團隊對 MiniMax H3 的 Sol Engine 加速工作（2026-09-08 發布）在隔日報告完全沒有——它不是 HF 模型、不是 trending repo、也沒上 NVIDIA Developer Blog，只以 GitHub Pages 形式 commit 進 `NVlabs/Sana`。**這就是為什麼這裡用 commit feed 而非 release feed**：影片生成的新技術往往以「研究頁上線」的形式出現，release feed 對它是靜音的。代價是 commit feed 較吵，2026-09-23 依實際訊噪比檢討是否退場。
 >

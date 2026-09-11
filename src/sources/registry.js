@@ -278,6 +278,54 @@ export default [
       homepageUrl: 'https://github.com/hao-ai-lab/FastVideo',
     },
   ),
+  // NVIDIA's own video/world model line. cosmos-predict2.5 is deliberately not
+  // here: it stopped in 2026-06 and its last commit is a redirect to Cosmos 3.
+  rss(
+    'nvidia-cosmos-commits',
+    'NVIDIA Cosmos Commits',
+    'video-generation',
+    'https://github.com/NVIDIA/Cosmos/commits/main.atom',
+    {
+      homepageUrl: 'https://github.com/NVIDIA/Cosmos',
+    },
+  ),
+
+  // === Accelerator vendors, image/video angle (4) ===
+  // "Can my card run it, and how fast" — the half of vendor news a builder
+  // acts on. These feeds are domain-general (they carry LLM and training news
+  // too), so the tech curator's video-gen rule scopes them to items that bear
+  // on image or video generation; the noise is the price of there being no
+  // image/video-only feed from any of the three vendors.
+  //
+  // Two candidates were rejected on measured staleness, not on relevance:
+  // intel/intel-extension-for-pytorch last shipped 2025-12, and NVIDIA's
+  // generative-ai blog category duplicates nvidia-developer-blog above.
+  rss(
+    'trt-model-optimizer-releases',
+    'TensorRT Model Optimizer Releases',
+    '大廠技術',
+    'https://github.com/NVIDIA/TensorRT-Model-Optimizer/releases.atom',
+    {
+      homepageUrl: 'https://github.com/NVIDIA/TensorRT-Model-Optimizer/releases',
+    },
+  ),
+  rss(
+    'openvino-releases',
+    'OpenVINO Releases',
+    '大廠技術',
+    'https://github.com/openvinotoolkit/openvino/releases.atom',
+    {
+      homepageUrl: 'https://github.com/openvinotoolkit/openvino/releases',
+    },
+  ),
+  rss('rocm-blog', 'AMD ROCm Blog', '大廠技術', 'https://rocm.blogs.amd.com/blog/atom.xml', {
+    homepageUrl: 'https://rocm.blogs.amd.com/',
+  }),
+  // Quarterly and version-level, but the 500-char body the pipeline keeps is
+  // the release-notes header — enough to answer "did a major ROCm ship".
+  rss('rocm-releases', 'ROCm Releases', '大廠技術', 'https://github.com/ROCm/ROCm/releases.atom', {
+    homepageUrl: 'https://github.com/ROCm/ROCm/releases',
+  }),
   rss('phoronix', 'Phoronix', '系統/底層', 'https://www.phoronix.com/rss.php', {
     homepageUrl: 'https://www.phoronix.com/',
   }),
