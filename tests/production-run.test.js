@@ -1,12 +1,22 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildRunArgs,
+  cmdMonitor,
   collectHealth,
   curlDispatch,
   decideNotice,
+  deliveryPathUp,
   dispatchPages,
   parseArgs,
   renderFailure,
@@ -29,6 +39,46 @@ function running(extra = {}) {
     ...extra,
   };
 }
+
+describe('cmdMonitor — the marker waits for a network that can carry the notice', () => {
+  // Delivery happens outside this process, so writing the marker unconditionally
+  // suppresses forever a notice that never left the machine. On 2026-09-11 the
+  // DNS outage that caused the missed run ran 01:16-08:13 and the staleness
+  // alert would have fired at ~08:03 — inside it.
+  const stale = {
+    status: 'succeeded',
+    run_id: '20260910070000',
+    started_at: '2026-09-09T23:00:17.000Z',
+    duration_ms: 1000,
+  };
+
+  function stateDirWith(latest) {
+    const d = mkdtempSync(join(tmpdir(), 'monitor-'));
+    writeFileSync(join(d, 'latest.json'), JSON.stringify(latest));
+    return d;
+  }
+
+  it('does not record the notice when the delivery path is down', async () => {
+    const d = stateDirWith(stale);
+    await cmdMonitor({ stateDir: d, probe: async () => false });
+    expect(existsSync(join(d, 'notices'))).toBe(false);
+    rmSync(d, { recursive: true, force: true });
+  });
+
+  it('records it once the delivery path is back, so the retry stops', async () => {
+    const d = stateDirWith(stale);
+    await cmdMonitor({ stateDir: d, probe: async () => false });
+    await cmdMonitor({ stateDir: d, probe: async () => true });
+    const markers = readdirSync(join(d, 'notices'));
+    expect(markers.filter((m) => m.includes('stale'))).toHaveLength(1);
+    rmSync(d, { recursive: true, force: true });
+  });
+
+  it('treats an unresolvable host as an unusable delivery path', async () => {
+    // .invalid is reserved by RFC 2606 and never resolves.
+    expect(await deliveryPathUp('nothing.invalid')).toBe(false);
+  });
+});
 
 describe('decideNotice — missed day', () => {
   // 2026-09-11: a DNS blip killed the starter's `git pull` before any state was
