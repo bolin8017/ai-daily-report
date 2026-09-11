@@ -60,6 +60,28 @@ const REPO_SLUG = 'bolin8017/ai-daily-report';
  */
 export function decideNotice(latest, { nowMs, delivered = {}, pidAlive = true }) {
   if (!latest || typeof latest !== 'object') return null;
+
+  // Absence, before anything about the last run's own outcome. On 2026-09-11 a
+  // DNS blip killed the starter's `git pull` before any state was written, so
+  // latest.json still held the previous day's `succeeded` run with its success
+  // notice already delivered — decideNotice correctly stayed silent every 15
+  // minutes all day while no report existed. This is also the only notice that
+  // can survive that outage: the 07:00 Telegram send failed on the same DNS
+  // fault, while a staleness alert fires hours later, once the network is back.
+  const staleSinceMs = Date.parse(latest.started_at ?? '');
+  if (Number.isFinite(staleSinceMs) && nowMs - staleSinceMs > STALE_AFTER_MS) {
+    // Keyed by day so a multi-day outage reminds once a day, not once ever and
+    // not every 15 minutes.
+    const tz = process.env.REPORT_TIMEZONE ?? 'Asia/Taipei';
+    const today = new Date(nowMs).toLocaleDateString('sv-SE', { timeZone: tz });
+    const marker = `stale-${today}`;
+    if (!delivered[marker]) {
+      const hours = Math.floor((nowMs - staleSinceMs) / 3_600_000);
+      return { marker, text: renderStale(latest, hours) };
+    }
+    return null;
+  }
+
   if (latest.status === 'succeeded') {
     return delivered.success ? null : { marker: 'success', text: renderSuccess(latest) };
   }
@@ -241,6 +263,27 @@ export function renderOrphan(latest) {
     `log: ${latest.log_file ?? '?'}`,
     '--- last known stage status ---',
     renderStages(latest.stages),
+  ].join('\n');
+}
+
+// A daily run that never started leaves no state of its own to report on, so
+// staleness is measured against the last run that DID happen. 25h is one daily
+// cadence plus an hour, which absorbs a late dispatch and a long run without
+// firing. Schedule-agnostic on purpose: the cron hour has already moved once
+// (08:30 → 07:00 on 2026-09-09) and a threshold that encodes it would have
+// silently stopped matching.
+export const STALE_AFTER_MS = 25 * 60 * 60 * 1000;
+
+export function renderStale(latest, elapsedHours) {
+  return [
+    '[ai-daily-report production] no run has started in ' +
+      `${elapsedHours}h — a scheduled day was missed`,
+    `last run: ${latest.started_at ?? '?'} (${latest.status ?? '?'})`,
+    'The starter aborts before writing any state when it cannot reach GitHub,',
+    'so check the wrapper log first — it is the only trace such a failure leaves:',
+    '  tail -30 <state-dir>/launch.log',
+    'Recover the same day (staging inputs are gone by tomorrow):',
+    '  node src/ops/production-run.js run --state-dir <state-dir> --wiki-root <wiki>',
   ].join('\n');
 }
 
@@ -595,12 +638,15 @@ function cmdMonitor({ stateDir }) {
   if (!latest) return 0; // nothing to report
   const noticesDir = path.join(stateDir, 'notices');
   const markerFor = (m) => path.join(noticesDir, `${latest.run_id}-${m}`);
+  const tz = process.env.REPORT_TIMEZONE ?? 'Asia/Taipei';
+  const staleMarker = `stale-${new Date().toLocaleDateString('sv-SE', { timeZone: tz })}`;
   const delivered = {
     '30m': existsSync(markerFor('30m')),
     '60m': existsSync(markerFor('60m')),
     failed: existsSync(markerFor('failed')),
     orphan: existsSync(markerFor('orphan')),
     success: existsSync(markerFor('success')),
+    [staleMarker]: existsSync(markerFor(staleMarker)),
   };
   const notice = decideNotice(latest, {
     nowMs: Date.now(),
