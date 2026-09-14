@@ -1,0 +1,788 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-15",
+  "meta": {
+    "run_id": "3f8680e2-bb1f-4bcb-8bf8-9b239a3c7318",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-14T23:12:32.043Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 3685
+      },
+      "trending": {
+        "ok": true,
+        "count": 20
+      },
+      "search": {
+        "ok": true,
+        "count": 292
+      },
+      "developers": {
+        "ok": true,
+        "count": 9
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 3
+      },
+      "mops": {
+        "ok": true,
+        "count": 4
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 102,
+      "market": 2,
+      "tech": 6,
+      "shipped": 46
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.613111,
+        "duration_ms": 198971,
+        "num_turns": 4,
+        "input_tokens": 8,
+        "output_tokens": 19031,
+        "cache_read_tokens": 191905,
+        "cache_creation_tokens": 95063,
+        "is_error": false,
+        "session_id": "07a8bd7c-344c-46dc-902d-039b2d83f19d"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1417888,
+        "duration_ms": 12907,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1301,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31512,
+        "is_error": false,
+        "session_id": "39da3673-1a8c-4e91-81e0-83bfdaef2a3f"
+      },
+      "curate.market": {
+        "cost_usd": 0.2379498,
+        "duration_ms": 59679,
+        "num_turns": 4,
+        "input_tokens": 6,
+        "output_tokens": 4746,
+        "cache_read_tokens": 91134,
+        "cache_creation_tokens": 42190,
+        "is_error": false,
+        "session_id": "3422a99d-6c15-4f1c-84d0-15b8f43da749"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.607201,
+        "duration_ms": 202374,
+        "num_turns": 11,
+        "input_tokens": 18,
+        "output_tokens": 18782,
+        "cache_read_tokens": 535290,
+        "cache_creation_tokens": 77303,
+        "is_error": false,
+        "session_id": "82252cd0-641d-4a95-8939-75e5b5612220"
+      },
+      "synthesize": {
+        "cost_usd": 2.4117275,
+        "duration_ms": 365040,
+        "num_turns": 27,
+        "input_tokens": 22,
+        "output_tokens": 24384,
+        "cache_read_tokens": 912009,
+        "cache_creation_tokens": 133330,
+        "is_error": false,
+        "session_id": "9075f994-d4e0-4add-abc5-2f1d078adbf2"
+      },
+      "curate.tech": {
+        "cost_usd": 0.4620542000000001,
+        "duration_ms": 138648,
+        "num_turns": 10,
+        "input_tokens": 14,
+        "output_tokens": 13012,
+        "cache_read_tokens": 394191,
+        "cache_creation_tokens": 62087,
+        "is_error": false,
+        "session_id": "197c71c1-cba8-4e2b-ae3a-0989980607ae"
+      }
+    },
+    "total_cost_usd": 4.4738323,
+    "total_tokens": 81326,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "5/5",
+      "unique_domains": 23,
+      "source_tier": 0.10638297872340426
+    },
+    "lint": {
+      "findings": [
+        {
+          "check": "unhedged_forward",
+          "path": "market.taiwan[0].takeaway",
+          "snippet": "日月光子公司矽品取得 21.6 億元廠務工程合約，封測產能同步擴建至 2028 年中。"
+        }
+      ],
+      "counts": {
+        "unhedged_forward": 1
+      }
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-15 — 今日重點</h3><h4>循環深度：從 Astra 的推測，到可以 pip install 的程式碼</h4><p>Sebastian Raschka 9/9 的長文拆解 GPT-6 Astra，判斷它疑似採用 looped／recurrent-depth 架構，推理能力來自同一組層反覆執行，不是堆參數。lucidrains 的 RLT repo 建立才 1 天、34 stars，是 Princeton Yifan Zhang 提出的 Recurrent Looped Transformer 的非官方實作，已經能 <code>pip install rlt-pytorch</code>。</p><p>以下是推論。權重共用讓參數佔用不隨有效深度增加，每多跑一圈，增加的是算力，在逐圈保留 KV 的實作下 KV cache 也跟著長。做 offload 的人要換一個問題問：瓶頸不再只是權重放不放得下，而是每個 token 要跑幾圈。</p><h4>名字掛 Flash 的模型，在 GPQA 壓過旗艦</h4><p>Epoch 的 GPQA Diamond 榜上，Gemini 3.8 Flash 新進第 2，只輸 GPT-6 Astra；Gemini 3.7 Flash 退到第 3，仍排在 GPT-5.4 Pro 前面，Claude Opus 5 被擠到第 10。LMArena 上 gemini-3.8-flash-high 從第 10 升到第 9，和 claude-opus-5-high 對調。HN 74 分的〈Is a $1.20 Model Good Enough for Code Review?〉拿 GPT-5.6 Luna 對 GPT-6 Astra 實測。</p><p>知識型選擇題榜已經分不出廉價層和旗艦層。該不該付旗艦的錢，只能用你自己的任務集回答。</p><h4>搬離託管 API，卡關的不是權重</h4><p>Qwen3.8-27B 是 Apache 2.0，權重隨手可得。HN 105 分的一篇筆記記下把 35KB 預設 prompt 從 Opus 搬到自架 Ollama 踩的坑，落差出在推論後端處理長 context 的方式。halogen-server（79 stars）走極端路線：kernel 只為 AMD Strix Halo 和 Qwen3.8 寫，沒有可攜層、沒有 fallback，README 宣稱因此跑得比通用引擎快、精度也更高。zx-bench（131 stars）把本地評測做成 621 題、10 個維度，每題附內容雜湊。</p><p>託管服務把 chat template、長 context 處理和量化精度藏在 API 後面；自架之後這些全變成你的變數，搬之前得先有一份可重現的考卷。</p><h4>代理碰到別人的系統，裁判是對方平台和法院</h4><p>tenderlovemaking.com 的文章指 OpenAI 的 bot 早就知道 RubyGems 的快取漏洞卻沒有通報，HN 335 分、40 則留言。Amazon 對 Perplexity 的官司已在第九巡迴上訴法院，牽涉 AI 購物代理的法律灰色地帶（HN 135 分、28 則留言）。</p><p>模型廠的使用條款管不到你的 agent 在第三方網站做了什麼，能不能做由對方平台的條款和判決決定。替使用者上網操作的 agent，User-Agent 要可辨識、rate limit 要守，被封或被告時才拿得出紀錄。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-looped-depth-memory-math",
+        "title": "循環深度把推理成本從參數量搬到迴圈次數",
+        "body": "Sebastian Raschka 9/9 的文章分析 GPT-6 Astra 疑似採用 looped transformer／recurrent depth 架構，推理能力藏在重複執行的層，而不是參數量。lucidrains 的 RLT 是 Princeton Yifan Zhang 提出的 Recurrent Looped Transformer 的非官方實作，repo 建立 1 天、34 stars，README 提供 pip install rlt-pytorch，並表示有餘力會再實作 Harvard Costin-Andrei Oncescu 等人的 Recurrent Transformer。",
+        "mechanism": "以下是分析。標準 transformer 的深度和參數量綁在一起，多一層就多一份權重。循環深度把兩者拆開：同一組權重重複執行，有效深度隨圈數增加，常駐權重不變。推理強度因此變成推論時可調的旋鈕，代價落在每 token 的算力；若實作逐圈保留 KV，KV cache 也隨圈數成長。對記憶體受限的部署，這是划算的交換，權重放得下，慢一點可以接受。Astra 的架構目前仍是 Raschka 的推測，OpenAI 沒有官方說明。",
+        "evidence": "Sebastian Raschka 部落格〈GPT-6 Astra, Looped Transformers, and Hidden Reasoning〉；lucidrains/RLT README（34 stars，建立 1 天）。",
+        "cross_source": 2,
+        "product_opportunity": "用 rlt-pytorch 在小模型上跑一次「權重固定、只改圈數」的掃描，記錄每種圈數的 tokens/s 與顯存峰值，拿到自己的圈數對記憶體曲線，再決定 aiDAPTIV+ demo 要不要備一組循環深度模型的 offload 設定。",
+        "source_links": [
+          "pulse.ai_bloggers.1:sebastianraschka-gpt6-astra-looped",
+          "discoveries.dev_watch.0:lucidrains/RLT"
+        ]
+      },
+      {
+        "id": "focus-flash-tier-closes-on-flagships",
+        "title": "知識型榜單已分不出廉價層與旗艦層",
+        "body": "Epoch GPQA Diamond 前五名是 GPT-6 Astra、Gemini 3.8 Flash、Gemini 3.7 Flash、GPT-5.4 Pro、Gemini 3.1 Pro。Gemini 3.8 Flash 新進第 2，其後模型全數下滑一名，GPT-5.5 Pro 落到第 9，Claude Opus 5 落到第 10。LMArena 上 gemini-3.8-flash-high 由第 10 升至第 9，claude-opus-5-high 掉到第 10。HN 74 分、21 則留言的評比文章，拿 GPT-5.6 Luna 和 GPT-6 Astra 比 code review，標題直接問 1.20 美元的模型夠不夠用。",
+        "mechanism": "以下是分析。GPQA Diamond 是 198 題研究所程度的選擇題，考知識與短鏈推理。實驗室把旗艦能力蒸餾進小模型後，小模型在這類題型追得最快；Google 在 Gemini 1.5 技術報告裡就寫過 Flash 是從 Pro 線上蒸餾而來。榜單差距縮小，代表這個榜替你區分「值不值得付旗艦價」的能力正在消失。剩下的差距要到多步驟、長 context、會用工具的任務裡找，code review 正好是這類任務。",
+        "evidence": "Epoch GPQA Diamond 排名變動；LMArena 排名變動；HN〈GPT-5.6 Luna vs. GPT-6 Astra〉74 分。",
+        "cross_source": 3,
+        "product_opportunity": "pipeline 預設走 Flash 級模型，只在自動檢查失敗（測試沒過、JSON schema 不合、輸出被 validator 擋下）時升級到旗艦；先用 50 題自己的真實任務量兩層的通過率，再決定升級門檻。",
+        "source_links": [
+          "tech.benchmarks.0:epoch-gpqa-gemini-3-8-flash",
+          "tech.benchmarks.1:lmarena-muse-spark-1-2",
+          "pulse.hn.7:hn-gpt56-luna-vs-astra-code-review"
+        ]
+      },
+      {
+        "id": "focus-self-hosting-cost-off-weights",
+        "title": "自架開源模型的成本，從權重轉到 prompt、kernel 與評測",
+        "body": "Qwen3.8-27B 以 Apache 2.0 釋出。HN 105 分的筆記整理把 35KB 預設 prompt 從 Opus 搬到自架 Ollama 的坑，指向不同推論後端處理長 context 的落差。halogen-server（79 stars）的 README 宣稱是在 AMD Strix Halo 上跑 Qwen3.8-27B 最快、精度也最高的方式，所有 kernel 只為這顆 GPU 與這個模型家族寫，不做通用 runtime、沒有 fallback。zx-bench（131 stars）是本地 LLM 評測平台，題庫 621 題、10 個維度，每題帶版本與內容雜湊。反方向的推力來自託管端：ComfyUI v0.35.0 因 Google 退役 Veo 2 與 Veo 3.0，移除了對應的 partner nodes。",
+        "mechanism": "權重可以下載，行為下載不了。託管 API 把 chat template、長 context 處理、量化精度都包在服務後面，搬到自架時這些全變成你要自己對齊的變數，35KB prompt 的落差就從這裡冒出來。halogen 的回應是把變數砍到只剩一顆 GPU 和一個模型家族，拿可攜性換精度；zx-bench 的回應是把「搬過去掉了多少」變成可重現、可稽核的數字。留在託管端也不是零風險，模型會退役，Veo 節點下架後依賴它的 workflow 只能改接。",
+        "evidence": "HF Qwen3.8-27B 模型卡（license:apache-2.0）；HN 筆記 105 分；halogen-server README；zx-bench README；ComfyUI v0.35.0 release notes。",
+        "cross_source": 5,
+        "product_opportunity": "搬離託管 API 前，先把現有 prompt 的 30 組真實輸入輸出存成 golden set，每筆記內容 hash 與 context 長度，在 Ollama、llama.cpp、vLLM 各跑一輪比通過率；落差先在 golden set 上看到，不要等使用者回報。",
+        "source_links": [
+          "tech.models.1:qwen-qwen3-8-27b",
+          "pulse.hn.5:hn-migrating-prompts-opus-ollama",
+          "discoveries.rising.1:peonist-ai/halogen-server",
+          "discoveries.rising.4:suncityldp/zx-bench",
+          "tech.vendor.0:comfyui-releases-v0-35-0"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-codex-memories-git-memory",
+      "title": "codex-memories：coding agent 的記憶放回 Git，不放向量資料庫",
+      "body": "codex-memories 建立 18 天、102 stars，近期約每天 15 stars，有測試與 CI。它替 OpenAI Codex 做本地優先的跨 session 記憶：長期規則存在 Git 裡，需要時再召回相關證據，不需要託管向量資料庫或另開記憶服務帳號。",
+      "mechanism": "coding agent 要記的東西多半是專案決策與規則，數量少、價值高、錯了代價大。向量資料庫的召回是模糊比對，出錯時說不出哪一條記憶、何時寫進去、誰核准的。放進 Git 之後，每條記憶有 diff、有 blame、能走 PR review，錯的規則可以 revert。這不是檢索技術的進步，而是把記憶從檢索問題改成版本控制問題；stars 還在百位數，說明多數人還在往向量資料庫那條路走。",
+      "product_opportunity": "在自己的 agent repo 開一個 decisions 目錄，每條決策一個 markdown 檔、附 frontmatter（日期、理由、適用範圍），agent 動手前先 grep 這個目錄；三個月後比較它和向量召回在「引用錯規則」上的次數。",
+      "source_links": [
+        "discoveries.rising.3:libenxier-beep/codex-memories"
+      ]
+    },
+    "contrarian": {
+      "id": "contrarian-astra-architecture-unconfirmed",
+      "title": "OpenAI 年底前不會正式確認 GPT-6 Astra 用了循環深度",
+      "body": "Raschka 的分析讓「Astra 是 looped transformer」迅速變成討論前提，lucidrains 也已有 RLT 實作可用。我的判斷：到 2026-12-31，OpenAI 不會在任何官方管道明確確認 GPT-6 Astra 採用 looped／recurrent-depth 架構。",
+      "mechanism": "以下是分析，不是近期事實。OpenAI 在 2023 年的 GPT-4 技術報告明言，基於競爭環境與安全考量，不公開架構、模型大小與訓練方法細節，之後的閉源旗艦也維持這個做法。架構是少數開源陣營還沒追上的差異，官方確認等於替對手省下驗證成本。",
+      "evidence": "Sebastian Raschka 部落格對 GPT-6 Astra 架構的推測；lucidrains/RLT 開源實作。",
+      "product_opportunity": "別把產品設計押在 Astra 的架構傳聞上；想要「推論時可調推理圈數」這個特性，直接拿 RLT 這類開源實作在自己的小模型上驗證。",
+      "source_links": [
+        "pulse.ai_bloggers.1:sebastianraschka-gpt6-astra-looped",
+        "discoveries.dev_watch.0:lucidrains/RLT"
+      ],
+      "resolution_date": "2026-12-31",
+      "verification": "若 2026-12-31 前，OpenAI 官方網站、模型卡、系統卡或官方技術部落格明文寫出 GPT-6 Astra 使用 looped、recurrent depth，或同義的權重共用重複層架構，此判斷為錯；第三方推測、洩漏文件或訪談中的暗示不算。"
+    },
+    "predictions": [
+      {
+        "id": "pred-2026-09-15-01",
+        "text": "lucidrains/RLT 在 2026-10-31 前 GitHub stars 達到 300 以上（今天 34）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "repo 已能 pip 安裝，且 GPT-6 Astra 的循環深度推測正把流量導向這個主題。"
+      },
+      {
+        "id": "pred-2026-09-15-02",
+        "text": "2026-11-30 時，Gemini 3.8 Flash 仍在 Epoch GPQA Diamond 前五名。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "它新進第 2，和第 5 名之間隔著 Gemini 3.7 Flash、GPT-5.4 Pro、Gemini 3.1 Pro 三個既有模型，要跌出前五需要至少三個新模型超車。"
+      },
+      {
+        "id": "pred-2026-09-15-03",
+        "text": "libenxier-beep/codex-memories 在 2026-11-30 前 GitHub stars 達到 500 以上（今天 102）。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "建立 18 天、約每天 15 stars；即使速度減半，11 月底前也能跨過 500。"
+      },
+      {
+        "id": "pred-2026-09-15-04",
+        "text": "peonist-ai/halogen-server 到 2026-11-30 時 GitHub stars 不超過 300（今天 79）。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "只支援 AMD Strix Halo 與 Qwen3.8 單一模型家族，受眾上限就是手上有這顆 GPU 又跑這個模型的人。"
+      },
+      {
+        "id": "pred-2026-09-15-05",
+        "text": "2026-10-31 時，muse-spark-1.2 (xHigh) 仍在 LMArena 前五名。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "今天由第 5 升到第 4，前五名其餘四席全是 Claude 系列，它是唯一非 Anthropic 模型且名次在上升。"
+      },
+      {
+        "id": "pred-2026-09-15-06",
+        "text": "2026-10-31 時，GPT-6 Astra 仍是 Epoch GPQA Diamond 第 1 名。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "今天的新進者 Gemini 3.8 Flash 只到第 2，六週內要出現能超過 Astra 的新模型並完成 Epoch 評測，時間偏緊。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:Ibtisam-Mohammad/Fly.exe",
+        "audience": "general",
+        "url": "https://github.com/Ibtisam-Mohammad/Fly.exe",
+        "name": "Ibtisam-Mohammad/Fly.exe",
+        "stars": 12,
+        "language": null,
+        "relevance": "單顆GPU閉環模擬16.5萬神經元果蠅腦連接體，非玩具展示。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 2,
+        "eng_score": 5,
+        "excellence_score": 0.38188888888888894,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.2:MagicBeansAI/what-time",
+        "audience": "general",
+        "url": "https://github.com/MagicBeansAI/what-time",
+        "name": "MagicBeansAI/what-time",
+        "stars": 1,
+        "language": null,
+        "relevance": "支援英語/印地語混合語的離線精確日程解析器，非近似估算。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": 4,
+        "excellence_score": 0.3323933333333333,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.3:libenxier-beep/codex-memories",
+        "audience": "work",
+        "url": "https://github.com/libenxier-beep/codex-memories",
+        "name": "libenxier-beep/codex-memories",
+        "stars": 102,
+        "language": null,
+        "relevance": "以Git治理式記憶取代向量資料庫，Codex免上傳雲端。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 15,
+        "repo_age_days": 18,
+        "eng_score": 2,
+        "excellence_score": 0.22946666666666665,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.1:peonist-ai/halogen-server",
+        "audience": "both",
+        "url": "https://github.com/peonist-ai/halogen-server",
+        "name": "peonist-ai/halogen-server",
+        "stars": 79,
+        "language": null,
+        "relevance": "為Strix Halo客製核心，跑Qwen3.8-27B精度優於通用引擎。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 19,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:ebrevdo/msgspec-serde",
+        "audience": "work",
+        "url": "https://github.com/ebrevdo/msgspec-serde",
+        "name": "ebrevdo/msgspec-serde",
+        "stars": 0,
+        "language": null,
+        "relevance": "msgspec結合FlatBuffers零拷貝解碼NumPy陣列，加速序列化。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 20,
+        "eng_score": 5,
+        "excellence_score": 0.3637407407407408,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.4:suncityldp/zx-bench",
+        "audience": "work",
+        "url": "https://github.com/suncityldp/zx-bench",
+        "name": "suncityldp/zx-bench",
+        "stars": 131,
+        "language": null,
+        "relevance": "621題10維度含內容雜湊，可重現、可稽核的本地LLM評測。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 28,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:lucidrains/RLT",
+        "audience": "general",
+        "url": "https://github.com/lucidrains/RLT",
+        "name": "lucidrains/RLT",
+        "stars": 34,
+        "language": null,
+        "relevance": "從論文重現Recurrent Looped Transformer，可直接取用架構。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 1,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-openai-bots-rubygems-vuln",
+        "audience": "general",
+        "url": "https://tenderlovemaking.com/2026/09/11/what-a-time-to-be-alive/",
+        "title": "OpenAI bots knew about the RubyGems caching vulnerability",
+        "score": 335,
+        "comments": 40,
+        "takeaway": "OpenAI 的爬蟲機器人早已知悉 RubyGems 快取漏洞卻未通報，凸顯 AI 公司作為資安發現者的責任真空。"
+      },
+      {
+        "id": "pulse.hn.1:hn-pion-autonomous-company-agent",
+        "audience": "general",
+        "url": "https://andonlabs.com/blog/why-we-built-pion",
+        "title": "Pion, an agent designed to run any company autonomously",
+        "score": 234,
+        "comments": 65,
+        "takeaway": "Pion 讓 agent 自主營運整間公司，測試多步驟決策代理在真實商業場景的極限。"
+      },
+      {
+        "id": "pulse.hn.2:hn-dario-please",
+        "audience": "general",
+        "url": "https://pop.rdi.sh/dario-please/",
+        "title": "Dario, Please",
+        "score": 192,
+        "comments": 16,
+        "takeaway": "公開質疑直指 Anthropic CEO Dario Amodei 近期言論，反映業界對末日論調已生疲乏。"
+      },
+      {
+        "id": "pulse.hn.3:hn-amazon-perplexity-appeal",
+        "audience": "general",
+        "url": "https://law.justia.com/cases/federal/appellate-courts/ca9/26-1444/26-1444-2026-08-04.html",
+        "title": "Amazon vs. Perplexity – U.S. Court of Appeals for the Ninth Circuit",
+        "score": 135,
+        "comments": 28,
+        "takeaway": "第九巡迴法院受理 Amazon 對 Perplexity 訴訟，AI 購物代理的法律灰色地帶正式進入司法程序。"
+      },
+      {
+        "id": "pulse.hn.4:hn-kinesis-meta-neural-band",
+        "audience": "general",
+        "url": "https://github.com/callbacked/kinesis",
+        "title": "Show HN: Kinesis – Control your Mac with the Meta Neural Band",
+        "score": 106,
+        "comments": 14,
+        "takeaway": "用 Meta Neural Band 的肌電訊號直接操控 Mac，BCI 周邊正從展示走向可用工具鏈。"
+      },
+      {
+        "id": "pulse.hn.5:hn-migrating-prompts-opus-ollama",
+        "audience": "both",
+        "url": "https://patrickmccanna.net/notes-on-migrating-large-prompts-away-from-anthropic-openai-to-self-hosted-llms/",
+        "title": "Notes on gotchas while migrating 35kb preprompts from Opus to self-hosted Ollama",
+        "score": 105,
+        "comments": 10,
+        "takeaway": "35KB 長 prompt 從 Opus 搬到自架 Ollama 踩過的坑，暴露不同推論後端處理長 context 的實際落差。"
+      },
+      {
+        "id": "pulse.hn.6:hn-ml-research-agents-overfit",
+        "audience": "general",
+        "url": "https://www.amazon.science/blog/why-dont-machine-learning-research-agents-overfit",
+        "title": "Why don't machine learning research agents overfit?",
+        "score": 91,
+        "comments": 11,
+        "takeaway": "Amazon Science 拆解為何 ML 研究型 agent 較少對評測集過擬合，替 agent 自動科研的可信度找依據。"
+      },
+      {
+        "id": "pulse.hn.7:hn-gpt56-luna-vs-astra-code-review",
+        "audience": "general",
+        "url": "https://entelligence.ai/blogs/gpt-5.6-luna-vs-gpt-6-astra-is-a-1.20-model-good-enough-for-code-review",
+        "title": "GPT-5.6 Luna vs. GPT-6 Astra: Is a $1.20 Model Good Enough for Code Review?",
+        "score": 74,
+        "comments": 21,
+        "takeaway": "用 1.2 美元跑完整輪 code review 的 GPT-5.6 Luna 對比旗艦 GPT-6 Astra，測出成本與品質的實際甜蜜點。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-programmers-dislike-reduce",
+        "audience": "general",
+        "url": "https://evanhahn.com/posts/2026-09-13-programmers-dislike-reduce/",
+        "title": "Anecdotally, programmers dislike \"reduce\"",
+        "score": 92,
+        "takeaway": "開發者普遍抗拒 reduce 語法，調查點出可讀性與除錯困難是主因。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-contagion-of-fear",
+        "audience": "general",
+        "url": "https://bcantrill.dtrace.org/2026/09/13/the-contagion-of-fear/",
+        "title": "The contagion of fear",
+        "score": 78,
+        "takeaway": "Cantrill 剖析恐懼如何在團隊間擴散，扭曲工程決策的風險判斷。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-tcmalloc-rseq-regression",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1092555/",
+        "title": "[$] Fixing the TCMalloc regression with RSEQ operations",
+        "score": 64,
+        "takeaway": "RSEQ 操作意外拖垮 TCMalloc 效能，凸顯 lockless 機制在生產環境的脆弱面。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-x86-ud2-instruction-name",
+        "audience": "general",
+        "url": "https://devblogs.microsoft.com/oldnewthing/20260910-00/?p=112689",
+        "title": "Why is the x86 undefined instruction called ud2? Why 2?",
+        "score": 64,
+        "takeaway": "微軟工程師考證 x86 UD2 指令命名由來，還原一段被遺忘的硬體設計決策。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-rust-never-type",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1091015/",
+        "title": "[$] Stabilizing Rust's never type",
+        "score": 60,
+        "takeaway": "Rust 的 never type 即將穩定化，補齊型別系統長年缺口。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-ml-engineer-letter",
+        "audience": "general",
+        "url": "https://nemin.hu/llm-letter/index.html",
+        "title": "A Letter from a Machine Learning Engineer",
+        "score": 5,
+        "takeaway": "一名 ML 工程師的公開信，反思日常工作與模型倫理之間的拉扯。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:simonwillison-navier-stokes",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Sep/8/on-navier-stokes/",
+        "title": "On the Navier–Stokes Millennium Prize Problem",
+        "takeaway": "OpenAI 用未發布模型解出納維-史托克方程千禧年懸賞，是 AI 首次觸及頂級數學難題。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:sebastianraschka-gpt6-astra-looped",
+        "audience": "general",
+        "url": "https://magazine.sebastianraschka.com/p/gpt-6-astra-looped-transformers-and",
+        "title": "GPT-6 Astra, Looped Transformers, and Hidden Reasoning",
+        "takeaway": "Raschka 拆解 GPT-6 Astra 疑似採用循環深度架構，推理能力藏在重複層而非參數量。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:simonwillison-calif-research-weworm",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Sep/10/calif-research/",
+        "title": "Quoting Calif Research",
+        "takeaway": "研究團隊展示首個零點擊 WeChat 通話蠕蟲，免互動即可跨 iOS/Android 感染。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:garymarcus-openai-misconduct",
+        "audience": "general",
+        "url": "https://garymarcus.substack.com/p/openais-egregious-pattern-of-misconduct",
+        "title": "OpenAI's Egregious Pattern of Misconduct",
+        "takeaway": "Marcus 彙整一週內 OpenAI 遭爆駭客入侵、掩蓋與數據造假等多起指控。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:simonwillison-chatgpt-images-25",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Sep/8/introducing-chatgpt-images-25/",
+        "title": "Introducing ChatGPT Images 2.5",
+        "takeaway": "OpenAI 影像生成模型累計輸出逾 30 億張圖片，新版 2.5 持續衝刺量產規模。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-3711-20260915",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "代子公司矽品精密工業(股)公司公告取得廠務工程",
+        "takeaway": "日月光子公司矽品取得 21.6 億元廠務工程合約，封測產能同步擴建至 2028 年中。",
+        "amount": "NT$21.6億元",
+        "companies": [
+          "日月光投控",
+          "矽品精密"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-2408-20260915",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2408",
+        "title": "公告本公司取得機器設備",
+        "takeaway": "南亞科砸 11.6 億元向日商 ULVAC 添購設備，DRAM 產能續擴充。",
+        "amount": "NT$11.6億元",
+        "companies": [
+          "南亞科",
+          "ULVAC"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:comfyui-releases-v0-35-0",
+        "audience": "general",
+        "url": "https://github.com/Comfy-Org/ComfyUI/releases/tag/v0.35.0",
+        "title": "ComfyUI v0.35.0",
+        "takeaway": "Google 停用 Veo 2/3 節點,ComfyUI 同步下架並新增 Recraft V4 風格支援。",
+        "companies": [
+          "Comfy Org"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:deepseek-ai-deepseek-v4-1-flash",
+        "audience": "general",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek-V4.1-Flash",
+        "takeaway": "DeepSeek 以 MIT 授權釋出 V4.1 Flash,支援圖文輸入的輕量版本。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.1:qwen-qwen3-8-27b",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Qwen3.8-27B",
+        "takeaway": "阿里雲以 Apache 2.0 釋出 Qwen3.8-27B,支援圖文對話並提供雲端部署選項。",
+        "companies": [
+          "Alibaba",
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.2:lightricks-ltx-2-5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "LTX-2.5",
+        "takeaway": "Lightricks 釋出 LTX-2.5,支援文字、影像、音訊互轉的多模態影片生成。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.3:openbmb-minicpm5-2b",
+        "audience": "both",
+        "url": "https://huggingface.co/openbmb/MiniCPM5-2B",
+        "title": "MiniCPM5-2B",
+        "takeaway": "OpenBMB 推出 20 億參數 MiniCPM5,主打長上下文與端側部署。",
+        "companies": [
+          "OpenBMB"
+        ]
+      },
+      {
+        "id": "tech.models.4:arxiv-2609.12814",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.12814v1",
+        "title": "RunningTensor: Generalizing Linear Attention to Higher-Order Recurrent States",
+        "takeaway": "新論文將線性注意力的記憶狀態從矩陣擴展至高階張量,提升長序列建模能力。",
+        "companies": []
+      },
+      {
+        "id": "tech.models.5:arxiv-2609.13060",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.13060v1",
+        "title": "CanvasAnneal: Curriculum Reinforcement Learning for Diffusion Language Models",
+        "takeaway": "新方法用課程式強化學習搭配教師模型先驗,改善擴散語言模型的推理能力。",
+        "companies": []
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:epoch-gpqa-gemini-3-8-flash",
+        "audience": "general",
+        "url": "https://epoch.ai/benchmarks/gpqa-diamond",
+        "title": "GPQA Diamond (Epoch): Gemini 3.8 Flash 進入前五",
+        "takeaway": "Gemini 3.8 Flash 新進榜前五,原前五名模型全數排名下滑一位。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Gemini 3.8 Flash"
+          ],
+          "rank_changes": [
+            "Gemini 3.7 Flash: #2 → #3 ↓",
+            "GPT-5.4 Pro: #3 → #4 ↓",
+            "Gemini 3.1 Pro: #4 → #5 ↓",
+            "Gemini 3.6 Flash: #5 → #6 ↓",
+            "Grok 4.6: #6 → #7 ↓",
+            "GPT-5.5: #7 → #8 ↓",
+            "GPT-5.5 Pro: #8 → #9 ↓",
+            "Claude Opus 5: #9 → #10 ↓"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:lmarena-muse-spark-1-2",
+        "audience": "general",
+        "url": "https://lmarena.ai/leaderboard",
+        "title": "LMArena: Muse Spark 1.2 (xHigh) 升至第 4 名",
+        "takeaway": "LMArena 前十名洗牌,Muse Spark 1.2 擠進前五,Gemini 3.8 Flash 也躋身前十。",
+        "benchmark_changes": {
+          "new_top_5": [],
+          "rank_changes": [
+            "muse-spark-1.2 (xHigh): #5 → #4 ↑",
+            "claude-fable-5.1-max: #4 → #5 ↓",
+            "gemini-3.8-flash-high: #10 → #9 ↑",
+            "claude-opus-5-high: #9 → #10 ↓"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.2:tau2-gpt-5-2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 從第 10 名躍升至第 2 名",
+        "takeaway": "GPT-5.2 在 agent 工具使用評測大幅跳級,一口氣超車八個名次。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:rocm-blog-helios-gemm-ladder",
+        "audience": "both",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/hipkittens-gemm-ladder/README.html",
+        "title": "AMD Helios 平台 GEMM 優化教學",
+        "takeaway": "AMD 公布 Helios 平台 MI455X 規格:432GB HBM4、23TB/s 頻寬、40 PFLOPs FP4。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:arxiv-2609.13141",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2609.13141v1",
+        "title": "SAS: Simple Attention Sparsification via End-to-End Optimization of Context Ranking",
+        "takeaway": "新方法讓注意力稀疏化的選取器直接接收語言模型損失的梯度,降低推論成本。",
+        "companies": []
+      },
+      {
+        "id": "tech.aidaptiv.2:arxiv-2609.13031",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2609.13031v1",
+        "title": "Attention Quantization for Tabular Foundation Models",
+        "takeaway": "研究指出表格基礎模型的推論瓶頸在注意力計算,而非權重或 KV 快取量化。",
+        "companies": []
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": true,
+    "report_date": "2026-09-15",
+    "flagged": [
+      {
+        "path": "signals.contrarian.mechanism",
+        "type": "temporal",
+        "marker": "今日",
+        "ids": [
+          "pulse.ai_bloggers.1:sebastianraschka-gpt6-astra-looped"
+        ]
+      },
+      {
+        "path": "signals.focus[0].body",
+        "type": "attribution",
+        "author": "Princeton Yifan",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "signals.focus[0].body",
+        "type": "attribution",
+        "author": "Recurrent Looped",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "signals.focus[0].body",
+        "type": "attribution",
+        "author": "Harvard Costin",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "signals.focus[0].body",
+        "type": "attribution",
+        "author": "Andrei Oncescu",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "signals.focus[0].body",
+        "type": "attribution",
+        "author": "Recurrent Transformer",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      }
+    ],
+    "repaired": 1
+  }
+}
