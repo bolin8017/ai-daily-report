@@ -1,0 +1,686 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-17",
+  "meta": {
+    "run_id": "b92a1768-681d-45ba-a2a5-db08079998e7",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-16T23:08:31.070Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 3226
+      },
+      "trending": {
+        "ok": true,
+        "count": 21
+      },
+      "search": {
+        "ok": true,
+        "count": 309
+      },
+      "developers": {
+        "ok": true,
+        "count": 16
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 8
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 97,
+      "market": 2,
+      "tech": 8,
+      "shipped": 53
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.632253,
+        "duration_ms": 208658,
+        "num_turns": 4,
+        "input_tokens": 8,
+        "output_tokens": 20012,
+        "cache_read_tokens": 193150,
+        "cache_creation_tokens": 97335,
+        "is_error": false,
+        "session_id": "6e48b3fb-dfdf-452e-9b59-d3075cd44e43"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1417888,
+        "duration_ms": 12907,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1301,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31512,
+        "is_error": false,
+        "session_id": "39da3673-1a8c-4e91-81e0-83bfdaef2a3f"
+      },
+      "curate.market": {
+        "cost_usd": 0.33967,
+        "duration_ms": 92120,
+        "num_turns": 4,
+        "input_tokens": 6,
+        "output_tokens": 9336,
+        "cache_read_tokens": 100045,
+        "cache_creation_tokens": 55697,
+        "is_error": false,
+        "session_id": "660653ad-9fba-4b46-9138-de00b26a67a2"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.524277,
+        "duration_ms": 172801,
+        "num_turns": 8,
+        "input_tokens": 16,
+        "output_tokens": 15693,
+        "cache_read_tokens": 456520,
+        "cache_creation_tokens": 68234,
+        "is_error": false,
+        "session_id": "5b983d02-77f6-4f6d-816a-3fbca225af75"
+      },
+      "synthesize": {
+        "cost_usd": 2.4505515,
+        "duration_ms": 132840,
+        "num_turns": 21,
+        "input_tokens": 18,
+        "output_tokens": 12531,
+        "cache_read_tokens": 743447,
+        "cache_creation_tokens": 175275,
+        "is_error": false,
+        "session_id": "f67634c9-5953-4033-b116-13836c1eba6c"
+      },
+      "curate.tech": {
+        "cost_usd": 0.48959699999999995,
+        "duration_ms": 188375,
+        "num_turns": 6,
+        "input_tokens": 6,
+        "output_tokens": 17943,
+        "cache_read_tokens": 108435,
+        "cache_creation_tokens": 70937,
+        "is_error": false,
+        "session_id": "7e70e2ee-2fba-4de6-a4c6-e8efb5b819d4"
+      }
+    },
+    "total_cost_usd": 4.5781373,
+    "total_tokens": 76872,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 0.8,
+      "cited_signals": "4/5",
+      "unique_domains": 19,
+      "source_tier": 0.13157894736842105
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-17 — 今日重點</h3><h4>SWE-bench 前段班已經排不出名次</h4><p>一篇審計 254 筆 SWE-bench 提交的論文算出：Verified 榜前兩名各解 396/500 題，前十名共同解出 285 題、共同失敗 51 題，真正能拉開差距的只剩 164 題。同一天 tau2-bench 快照裡 GPT-5.2 從第 10 名跳到第 2，榜首是 RAFT-30B-A3B，但快照本身沒說明跳升原因。對 builder：公開榜的小數點差距已經不能拿來選型，選模型要靠自己的 held-out 題組。</p><h4>開源影片模型把音訊一起生成</h4><p>HF trending 上 MiniMax H3 下載 468.9 萬、Lightricks LTX-2.5 下載 161.7 萬，兩者都標了 text-to-audio-video，影像和聲音在同一個模型裡出。另一頭，ComfyUI v0.35.0 移除了 Google 已退役的 Veo 2 與 Veo 3.0 節點。閉源 API 節點會跟著廠商下架，權重檔不會。</p><h4>4B 模型加 RL，在窄任務上贏過手寫系統</h4><p>HN 311 分的文章用強化學習訓練 4B 模型產生查詢計畫，標題數字是比 Postgres 原生規劃器快 81%。小米則把 Mimo 2.6 的 RL 後訓練儀表板直接公開。查詢計畫的好壞可以直接跑出執行時間來打分，這類任務最適合拿小模型做 RL。</p><h4>台灣記憶體廠用 0% 利率的錢擴產</h4><p>華邦電董事會通過以約 11.2 億美元收購英飛凌 NOR Flash 與 F-RAM 事業，金額占其總資產 44.5%；同一場董事會通過兩檔票面利率 0% 的轉換公司債，上限合計新台幣 180 億元，用途寫明產能擴充與先進製程。威剛馬來西亞子公司則買了不超過 1.05 億美元的設備，另租下 2,016kW 資料中心容量、租期 5 年。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-leaderboard-saturation",
+        "title": "公開 benchmark 的頂端失去排序能力，評測要改成自己出題",
+        "body": "SWE-bench 審計論文指出 Verified 前兩名同樣解出 396/500 題，前十名之間只剩 164 題有區辨力。OmnisBench 則直接把「模型沒見過的新切分」當成賣點，宣稱在這種切分上理想路由比前沿模型便宜約六成，而且每個數字都能離線重算。物理推理評測顯示前沿模型在物理題上仍有明顯落差。tau2-bench 上 GPT-5.2 從 #10 跳到 #2，但快照只記錄名次，沒有附上原因。",
+        "mechanism": "題目公開越久，頂尖系統在同一批題目上的成敗就越趨同，最後只剩少數題目還能分出高下，名次差距主要反映這幾題的雜訊，也更容易被訓練資料污染。這是我的判讀：所以新評測都在強調「新切分、可重跑」，因為能對抗飽和與記憶污染的只有沒公開過的題目。",
+        "evidence": "SWE-bench Verified：前二名各 396/500、前十名共同成功 285 題、共同失敗 51 題、可區辨 164 題；OmnisBench：新切分上約省 60% 成本（作者宣稱）；tau2-bench：GPT-5.2 #10 → #2。",
+        "cross_source": 4,
+        "product_opportunity": "在你的 repo 放一份 50–100 題、從未公開的內部任務集（例如自家 DiT pipeline 的 prompt 對照組或 aiDAPTIV+ demo 的真實查詢），每次換模型前先跑它，公開榜只拿來篩掉明顯落後的候選。",
+        "source_links": [
+          "tech.models.5:arxiv-2609.17394",
+          "discoveries.rising.2:Fortitude-Group/OmnisBench",
+          "tech.benchmarks.0:tau2-gpt-5.2",
+          "pulse.hn.6:hn-frontier-models-physics"
+        ]
+      },
+      {
+        "id": "focus-open-weight-av-generation",
+        "title": "影音聯合生成進入開源權重，閉源影片 API 開始有下架成本",
+        "body": "MiniMax H3（HF 下載 4,689,062）與 LTX-2.5（1,616,663）都支援文字與圖片轉影片，並在同一個模型裡生成音訊；LTX-2.5 的 HF tags 直接標了 comfyui。ComfyUI v0.35.0 的 release note 寫的是移除「retiring」的 Veo 2 與 Veo 3.0 節點。SolarWM 則開源了長時域影片世界模型的訓練資料，repo 26 天累積 663 星。",
+        "mechanism": "閉源影片模型的生命週期由廠商決定：模型一退役，下游 workflow 裡的節點就跟著被刪。開源權重可以釘版本，所以一旦畫質和音訊整合夠用，工作流作者會把依賴從 API 節點移到本地權重。音訊跟影像一起生成，也省掉另外串一個 TTS／配樂模型再對齊時間軸的步驟。",
+        "evidence": "MiniMax H3 下載 468.9 萬、LTX-2.5 下載 161.7 萬，兩者皆標 text-to-audio-video；ComfyUI v0.35.0 移除 Veo 2／Veo 3.0 節點；SolarWM 663 星。",
+        "cross_source": 4,
+        "product_opportunity": "把你 DiT 圖像 pipeline 的輸出接到 LTX-2.5 的 image-to-video 做一個本地 demo，版本釘死在 HF commit hash，並寫一個測試在 CI 裡檢查所依賴的 ComfyUI 節點名稱仍存在。",
+        "source_links": [
+          "tech.models.2:hf-minimax-h3",
+          "tech.models.3:hf-ltx-2.5",
+          "tech.vendor.0:comfyui-releases-b18f6a02",
+          "discoveries.rising.0:Junchao-cs/SolarWM"
+        ]
+      },
+      {
+        "id": "focus-small-model-rl-narrow-tasks",
+        "title": "小模型加上可量測的獎勵，在窄任務上贏過專家寫的系統",
+        "body": "一個 4B 模型用強化學習生成查詢計畫，標題宣稱比 Postgres 原生規劃器快 81%，HN 311 分。小米把 Mimo 2.6 的 RL 後訓練過程做成公開的即時儀表板（HN 168 分）。OpenBMB 的 MiniCPM5-2B 主打工具呼叫與長文本、鎖定裝置端，HF 標籤列出 UltraData-RL-2609 資料集。三元權重論文宣稱突破 1.58-bit，推理成本可以再往下壓。",
+        "mechanism": "查詢計畫可以實際執行並量出耗時，工具呼叫可以比對回傳結果，這類「答案能被程式驗證」的任務，RL 的獎勵訊號便宜又乾淨，4B 模型就夠學會。模型越小，越容易再往下量化、放到邊緣裝置。這條推論是我的分析，不是上述任一來源的原話。",
+        "evidence": "4B 模型查詢計畫比 Postgres 快 81%（作者標題）；Mimo 2.6 公開 RL 儀表板；MiniCPM5-2B 下載 324,322、標有 RL 資料集；三元 LLM 低於 1.58-bit（論文宣稱）。",
+        "cross_source": 4,
+        "product_opportunity": "挑一個 aiDAPTIV+ demo 裡答案能自動驗證的子任務（SQL 生成、工具參數填寫），用 MiniCPM5-2B 當起點做一輪 GRPO，把驗證器寫成獎勵函式，跟直接呼叫大模型的結果並排比。",
+        "source_links": [
+          "pulse.hn.1:hn-4b-model-postgres-query-plans",
+          "pulse.hn.3:hn-xiaomi-mimo-2-6-dashboard",
+          "tech.models.4:hf-minicpm5-2b",
+          "pulse.hn.5:hn-ternary-llm-1-58-bit-barrier"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-edge0-ssd-offload",
+      "title": "HF trending 上出現標著 ssd-offload 的 35B MoE 社群模型",
+      "body": "Edge0/Edge0-35B-A3B-preview 以 Qwen3.6-35B-A3B 為底、走 MLX 4-bit，HF tags 列了 edge-inference、prerouter、lora、ssd-offload。下載只有 27,759，按讚卻有 3,037，比例遠高於同榜的 DeepSeek-V4.1-Flash（下載 366,459、讚 2,850）。",
+      "mechanism": "MoE 每個 token 只啟用少數專家，沒被選中的專家權重可以放在 SSD 上按需載入。社群開始把 ssd-offload 當成模型卡上的賣點標籤，代表「用 SSD 補記憶體不足」已經從儲存廠的簡報內容，變成終端 builder 會主動搜尋的功能。tags 只說明有這個功能，沒說明實作細節與效能，這部分仍需要實測。",
+      "evidence": "Edge0-35B-A3B-preview：下載 27,759、讚 3,037，tags 含 ssd-offload／prerouter／mlx／4-bit，base model 為 Qwen/Qwen3.6-35B-A3B。",
+      "product_opportunity": "下載這個模型，在 Mac 上量測 ssd-offload 模式下的 tokens/s 與首 token 延遲，拿來跟 aiDAPTIV+ 在同級 35B MoE 上的數字對照，做成 demo 的競品比較頁。",
+      "source_links": []
+    },
+    "contrarian": {
+      "id": "contrarian-swebench-verified-dropped",
+      "title": "前沿實驗室會開始把 SWE-bench Verified 從發表主表拿掉",
+      "body": "目前的共識是 SWE-bench Verified 仍是 coding agent 的標準成績單，每次新模型發表都會列出。我的判斷相反：當前兩名同樣卡在 396/500、前十名只剩 164 題能分高下時，這個數字已經拉不開差距，拿它當主打指標沒有行銷價值。",
+      "mechanism": "發表文件的主表只放能證明領先的數字。榜單飽和後，實驗室會換成仍有落差的評測（SWE-bench Live、內部任務集或 agent 長任務），Verified 會被移到附錄或乾脆不列。",
+      "evidence": "審計論文：254 筆提交，Verified 前二名各 396/500，前十名可區辨題目僅 164 題。",
+      "source_links": [
+        "tech.models.5:arxiv-2609.17394"
+      ],
+      "resolution_date": "2026-12-31",
+      "verification": "2026-12-31 前，OpenAI、Anthropic、Google 三家中至少一家發表新的旗艦模型時，官方發表文章的主要 benchmark 表格未列 SWE-bench Verified，即判定成立；三家新發表都列出則判定不成立。"
+    },
+    "predictions": [
+      {
+        "id": "pred-minimax-h3-10m-downloads",
+        "text": "MiniMax H3 的 HF 模型頁顯示的下載數，在 2026-10-31 前超過 1,000 萬（目前 4,689,062）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "它是 trending 上下載最高的開源影音聯合生成模型，ComfyUI 生態的量化與衍生版本通常在發表後一個月內集中出現。",
+        "created": "2026-09-17"
+      },
+      {
+        "id": "pred-tau2-gpt52-top5",
+        "text": "2026-10-17 的 tau2-bench 快照中，GPT-5.2 仍在前 5 名。",
+        "resolution_date": "2026-10-17",
+        "status": "pending",
+        "rationale": "從 #10 跳到 #2 的原因沒有揭露；若是提交設定改變而非模型變強，排名會維持，若是一次性結果則會回落。",
+        "created": "2026-09-17"
+      },
+      {
+        "id": "pred-firefox-mistral-stable",
+        "text": "Firefox 在 2026-12-31 前的正式版（非 Nightly／Beta）中推出由 Mistral 模型驅動的 AI 瀏覽功能。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "Mistral 官方已公開合作並聚焦隱私與多語，Firefox 約四週一個正式版，三個半月內有三次以上的出貨窗口。",
+        "created": "2026-09-17"
+      },
+      {
+        "id": "pred-skhynix-intel-no-deal",
+        "text": "2026-12-31 前，SK hynix 與 Intel 不會正式宣布在美國合作生產記憶體晶片。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "SK hynix 已發聲明表示相關洽談未有確定計畫；這類跨國產能合作從傳聞到正式簽約通常超過一季。",
+        "created": "2026-09-17"
+      },
+      {
+        "id": "pred-winbond-infineon-not-closed",
+        "text": "華邦電收購英飛凌 NOR Flash 與 F-RAM 事業的交割，不會在 2026-12-31 前完成。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "重訊載明需先取得相關主管機關核准並滿足交割先決條件，交易金額占華邦電總資產 44.5%，跨國審查難在三個半月內走完。",
+        "created": "2026-09-17"
+      },
+      {
+        "id": "pred-omnisbench-200-stars",
+        "text": "Fortitude-Group/OmnisBench 在 2026-11-30 前達到 200 顆 GitHub 星（目前 0）。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "LLM 路由省成本的宣稱很多，但可離線重算、防記憶污染的公開基準很少；若沒有人引用，代表市場不在乎驗證這類宣稱。",
+        "created": "2026-09-17"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:Junchao-cs/SolarWM",
+        "audience": "general",
+        "url": "https://github.com/Junchao-cs/SolarWM",
+        "name": "Junchao-cs/SolarWM",
+        "stars": 663,
+        "language": null,
+        "relevance": "開源長時域影片世界模型的訓練資料，多數論文不公開此資料。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 24.583333333333332,
+        "repo_age_days": 26,
+        "eng_score": 3,
+        "excellence_score": 0.3383409090909091,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.1:vinnylarouge/jevlike",
+        "audience": "general",
+        "url": "https://github.com/vinnylarouge/jevlike",
+        "name": "vinnylarouge/jevlike",
+        "stars": 188,
+        "language": null,
+        "relevance": "單次前向為每個選項評分，開源復刻取代逐字生成的專有架構。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": 2,
+        "excellence_score": 0.26566666666666666,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.2:Fortitude-Group/OmnisBench",
+        "audience": "work",
+        "url": "https://github.com/Fortitude-Group/OmnisBench",
+        "name": "Fortitude-Group/OmnisBench",
+        "stars": 0,
+        "language": null,
+        "relevance": "可重複驗證的路由效率基準，防記憶污染，宣稱省六成成本。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 29,
+        "eng_score": 3,
+        "excellence_score": 0.24680555555555556,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.3:Kayforkind/reimagine-it",
+        "audience": "work",
+        "url": "https://github.com/Kayforkind/reimagine-it",
+        "name": "Kayforkind/reimagine-it",
+        "stars": 158,
+        "language": null,
+        "relevance": "從原始 HTML 擷取名詞、日期、數字重建設計，而非套版重繪。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 28,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": []
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-mistral-mozilla-ai-browsing",
+        "audience": "general",
+        "url": "https://mistral.ai/news/mistral-x-mozilla/",
+        "title": "Mistral X Mozilla: Private, Multilingual AI Browsing",
+        "score": 510,
+        "comments": 33,
+        "takeaway": "Mistral 為 Firefox 打造隱私優先的本地 AI 瀏覽功能，直接對上 Chrome 的雲端 AI 搜尋。"
+      },
+      {
+        "id": "pulse.hn.1:hn-4b-model-postgres-query-plans",
+        "audience": "general",
+        "url": "https://rohanbansal.com/qorl",
+        "title": "Training a 4B model to produce 81% faster query plans than Postgres",
+        "score": 311,
+        "comments": 12,
+        "takeaway": "4B 模型用強化學習生成查詢計畫，比 Postgres 原生規劃器快 81%。"
+      },
+      {
+        "id": "pulse.hn.2:hn-dream-rsi-recursive-self-improvement",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.14858",
+        "title": "Dream-RSI: Recursive Self-Improvement through Evolving Worlds",
+        "score": 171,
+        "comments": 17,
+        "takeaway": "新論文用不斷演化的模擬環境，讓模型透過自我改進遞迴提升能力。"
+      },
+      {
+        "id": "pulse.hn.3:hn-xiaomi-mimo-2-6-dashboard",
+        "audience": "general",
+        "url": "https://mimo.xiaomi.com/rl/",
+        "title": "Xiaomi Mimo 2.6 live post-training dashboard",
+        "score": 168,
+        "comments": 15,
+        "takeaway": "小米公開 Mimo 2.6 訓練即時儀表板，把 RL 後訓練過程攤在陽光下。"
+      },
+      {
+        "id": "pulse.hn.4:hn-deepmind-institute",
+        "audience": "general",
+        "url": "https://institute.deepmind.com/",
+        "title": "The DeepMind Institute",
+        "score": 118,
+        "comments": 11,
+        "takeaway": "DeepMind 成立獨立研究機構，把長期基礎研究與產品開發正式切開。"
+      },
+      {
+        "id": "pulse.hn.5:hn-ternary-llm-1-58-bit-barrier",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2609.16338",
+        "title": "Breaking the 1.58-bit Barrier for Ternary LLMs",
+        "score": 81,
+        "comments": 4,
+        "takeaway": "三元權重 LLM 突破 1.58-bit 極限，量化推理成本再往下探底。"
+      },
+      {
+        "id": "pulse.hn.6:hn-frontier-models-physics",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.13009",
+        "title": "How good are frontier models at physics?",
+        "score": 52,
+        "comments": 4,
+        "takeaway": "新評測顯示前沿模型在物理推理上仍遠不及宣傳中的通用智能。"
+      },
+      {
+        "id": "pulse.hn.7:hn-amd-matrix-cores-model",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2609.14845",
+        "title": "Accurate Models of AMD Matrix Cores",
+        "score": 47,
+        "comments": 1,
+        "takeaway": "針對 AMD Matrix Core 建立精確效能模型，補上 CUDA 生態外的關鍵拼圖。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-llm-bearish-navier-stokes",
+        "audience": "general",
+        "url": "https://dank.systems/posts/2026-09-15-ai-bear.html",
+        "title": "Why i'm still bearish on LLMs after Navier-Stokes",
+        "score": 24,
+        "takeaway": "作者以 Navier-Stokes 案例反駁 LLM 推理能力被過度誇大的說法。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-osrs-wiki-ai-strain",
+        "audience": "general",
+        "url": "https://oldschool.runescape.wiki/w/User:Cook_Me_Plox/OSRS_Wiki_and_RuneLite_are_increasingly_under_strain_from_low-effort_AI_development",
+        "title": "OSRS Wiki and RuneLite are increasingly under strain from low-effort AI development",
+        "score": 15,
+        "takeaway": "開源社群坦言，低品質 AI 產出的 PR 正在拖垮維護者的審查量能。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-c2pa-forgery-pixel-10",
+        "audience": "general",
+        "url": "https://www.hackerfactor.com/blog/index.php?/archives/1102-C2PA-and-Pixel-Glitter-Milk.html",
+        "title": "Forgery of C2PA on a Pixel 10",
+        "score": 35,
+        "takeaway": "研究者示範偽造 Pixel 10 的 C2PA 內容溯源標記，AI 圖片驗證機制形同虛設。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-tcmalloc-rseq-regression",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1092555/",
+        "title": "Fixing the TCMalloc regression with RSEQ operations",
+        "takeaway": "RSEQ 無鎖操作曾拖垮 TCMalloc 效能，此文拆解根因與修復手法。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-zed-delta-pull-requests",
+        "audience": "general",
+        "url": "https://zed.dev/blog/delta-public-beta",
+        "title": "Replacing Pull Requests with Delta",
+        "score": 12,
+        "takeaway": "Zed 推出 Delta 想取代 PR 流程，把程式碼審查搬進即時協作介面。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-issue-tracking-git-native",
+        "audience": "general",
+        "url": "https://blog.manganin.dev/blog/reinventing-issue-tracking/",
+        "title": "Reinventing issue tracking: Local-first and Git-native",
+        "score": 23,
+        "takeaway": "新工具把議題追蹤資料直接存進 Git repo，擺脫對雲端服務的依賴。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:sebastian-raschka-gpt-6-astra-looped-transformers",
+        "audience": "general",
+        "url": "https://magazine.sebastianraschka.com/p/gpt-6-astra-looped-transformers-and",
+        "title": "GPT-6 Astra, Looped Transformers, and Hidden Reasoning",
+        "takeaway": "拆解 GPT-6 Astra 的循環式 Transformer 架構，推理藏在權重重複使用裡。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:gary-marcus-two-rays-of-hope",
+        "audience": "general",
+        "url": "https://garymarcus.substack.com/p/breaking-two-rays-of-hope",
+        "title": "BREAKING: Two rays of hope",
+        "takeaway": "參議員 Blumenthal 去信要求 OpenAI 交代具體風險揭露，監管壓力升溫。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:devto-ai-outgrows-tests",
+        "audience": "general",
+        "url": "https://dev.to/hemapriya_kanagala/what-happens-when-ai-outgrows-the-tests-we-use-to-measure-it-30al",
+        "title": "What Happens When AI Outgrows the Tests We Use to Measure It?",
+        "takeaway": "GPT-6 Astra 引爆 AGI 爭論，凸顯現有評測基準已跟不上模型能力。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:devto-qodo-shift-left-review",
+        "audience": "general",
+        "url": "https://dev.to/dev_kiran/shift-left-code-review-how-qodo-turns-your-coding-agent-into-its-own-first-reviewer-58fc",
+        "title": "Shift Left Code Review: How Qodo Turns Your Coding Agent Into Its Own First Reviewer",
+        "takeaway": "Qodo 讓 coding agent 先自我審查再交人看，把 review 往左移一步。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:devto-cognitive-atrophy-engineer",
+        "audience": "general",
+        "url": "https://dev.to/codingwithjiro/the-slow-and-quiet-cognitive-atrophy-of-a-modern-software-engineer-3lbh",
+        "title": "The Slow and Quiet Cognitive Atrophy of a Modern Software Engineer",
+        "takeaway": "長期依賴 AI 生成程式碼，正悄悄侵蝕工程師的除錯與設計直覺。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-2344-20260917-infineon",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2344",
+        "title": "本公司擬以直接或間接方式取得Infineon Technologies LLC旗下NOR Flash與F-RAM事業經重組後之100%股權",
+        "takeaway": "華邦電擬砸11.2億美元收購英飛凌NOR Flash與F-RAM事業，強化利基記憶體版圖。",
+        "amount": "約US$1.12B（約新台幣353.92億元）",
+        "companies": [
+          "華邦電",
+          "Infineon Technologies"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-2344-20260917-cb",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2344",
+        "title": "本公司董事會決議發行國內第四次及第五次無擔保轉換公司債",
+        "takeaway": "華邦電董事會通過發行合計上限180億元轉換公司債，資金用於先進製程與產能擴充。",
+        "amount": "合計上限新台幣180億元（140億元+40億元）",
+        "companies": [
+          "華邦電"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:mops-3260-20260916-equip",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3260",
+        "title": "代馬來西亞子公司ADATA QUANTUM CORE SDN. BHD.公告取得供營業用之機器設備",
+        "takeaway": "威剛砸1.05億美元擴充馬來西亞產能，記憶體模組海外布局加速。",
+        "amount": "不超過US$105,219仟元（約1.05億美元）",
+        "companies": [
+          "威剛"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:mops-3260-20260916-dc",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3260",
+        "title": "代馬來西亞子公司ADATA QUANTUM CORE SDN. BHD.公告取得使用權資產",
+        "takeaway": "威剛馬來西亞子公司租下2,016kW資料中心容量，卡位東南亞AI算力市場。",
+        "amount": "使用權資產價值US$17,365,512元，租期5年",
+        "companies": [
+          "威剛"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:mops-6669-20260917",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=6669",
+        "title": "代⼦公司Wiwynn International Corporation公告向非關係人取得供營業使用設備",
+        "takeaway": "AI伺服器訂單吃緊，緯穎子公司加碼1,609萬美元設備採購。",
+        "amount": "USD 16,090,400",
+        "companies": [
+          "緯穎"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.5:mops-3711-20260917",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "代子公司日月光半導體製造(股)公司公告向萬潤科技股份有限公司取得供營業用之機器設備",
+        "takeaway": "日月光砸近18億元擴充封測設備，先進封裝產能持續加碼。",
+        "amount": "新台幣1,793,880仟元（未稅，約17.9億元）",
+        "companies": [
+          "日月光投控"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:comfyui-releases-b18f6a02",
+        "audience": "general",
+        "url": "https://github.com/Comfy-Org/ComfyUI/releases/tag/v0.35.0",
+        "title": "ComfyUI v0.35.0 drops retiring Veo 2/3.0 nodes, adds Recraft V4 style support",
+        "takeaway": "ComfyUI 移除已退役的 Veo 2、Veo 3.0 節點,新增 Recraft V4 風格支援,汰換過時影片模型整合。",
+        "companies": [
+          "ComfyUI",
+          "Google",
+          "Recraft"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:hf-deepseek-v4.1-flash",
+        "audience": "general",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek releases V4.1-Flash multimodal model",
+        "takeaway": "DeepSeek 開源 V4.1 Flash 多模態模型,採 MIT 授權並提供 fp8 量化版本,降低部署成本。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.1:hf-qwen3.8-27b",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Qwen releases Qwen3.8-27B open multimodal model",
+        "takeaway": "Qwen 開源多模態模型 Qwen3.8-27B,採 Apache-2.0 授權,HF 下載已破767萬次。",
+        "companies": [
+          "Alibaba",
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.2:hf-minimax-h3",
+        "audience": "general",
+        "url": "https://huggingface.co/MiniMaxAI/MiniMax-H3",
+        "title": "MiniMax open-sources H3 video generation model",
+        "takeaway": "MiniMax 開源影片生成模型 H3,支援文字與圖片轉影片並同步生成音訊,下載破460萬次。",
+        "companies": [
+          "MiniMax"
+        ]
+      },
+      {
+        "id": "tech.models.3:hf-ltx-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "Lightricks releases LTX-2.5 video generation model",
+        "takeaway": "Lightricks 發布 LTX-2.5 影片生成模型,支援文字與圖片轉影片並聯合生成音訊,下載破160萬次。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.4:hf-minicpm5-2b",
+        "audience": "both",
+        "url": "https://huggingface.co/openbmb/MiniCPM5-2B",
+        "title": "OpenBMB releases MiniCPM5-2B for on-device deployment",
+        "takeaway": "OpenBMB 推出 20 億參數 MiniCPM5,主打長文本與工具呼叫能力,鎖定裝置端部署場景。",
+        "companies": [
+          "OpenBMB"
+        ]
+      },
+      {
+        "id": "tech.models.5:arxiv-2609.17394",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.17394v1",
+        "title": "Coding Agents Have Converged: Why the SWE-bench Leaderboard Can No Longer Order Its Top Entries, and What to Measure Instead",
+        "takeaway": "研究指出 SWE-bench Verified 前二名同解 396/500 題,前十名僅 164 題能分高下,排名恐失真。",
+        "companies": []
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 rises to #2",
+        "takeaway": "GPT-5.2 在 tau2-bench 從第10名躍升至第2,顯示 agent 工具呼叫能力大幅提升。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:sk-hynix-news-4d7e21ab",
+        "audience": "both",
+        "url": "https://news.skhynix.com/en/fact-10/",
+        "title": "SK hynix declines to confirm reported US memory chip talks with Intel",
+        "takeaway": "SK hynix 未證實與 Intel 洽談赴美設廠代工記憶體,若成局將牽動 HBM 供應鏈布局。",
+        "companies": [
+          "SK Hynix",
+          "Intel"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-17",
+    "flagged": [],
+    "repaired": 0
+  }
+}
