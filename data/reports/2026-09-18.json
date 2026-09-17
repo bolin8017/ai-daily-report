@@ -1,0 +1,818 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-18",
+  "meta": {
+    "run_id": "b0d8744b-1a22-4e41-8a81-188a36ababa6",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-17T23:12:17.214Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 2856
+      },
+      "trending": {
+        "ok": true,
+        "count": 20
+      },
+      "search": {
+        "ok": true,
+        "count": 288
+      },
+      "developers": {
+        "ok": true,
+        "count": 19
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 4
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 90,
+      "market": 2,
+      "tech": 12,
+      "shipped": 56
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.7061069999999999,
+        "duration_ms": 235509,
+        "num_turns": 5,
+        "input_tokens": 10,
+        "output_tokens": 23603,
+        "cache_read_tokens": 269130,
+        "cache_creation_tokens": 103021,
+        "is_error": false,
+        "session_id": "ac137b37-7954-4036-bfcd-1d9844a67ffd"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1417888,
+        "duration_ms": 12907,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1301,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31512,
+        "is_error": false,
+        "session_id": "39da3673-1a8c-4e91-81e0-83bfdaef2a3f"
+      },
+      "curate.market": {
+        "cost_usd": 0.2715394,
+        "duration_ms": 84006,
+        "num_turns": 4,
+        "input_tokens": 6,
+        "output_tokens": 6662,
+        "cache_read_tokens": 92832,
+        "cache_creation_tokens": 45710,
+        "is_error": false,
+        "session_id": "64c70532-f95a-4ee4-9d81-991e4cf9f6d6"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.5316284,
+        "duration_ms": 178308,
+        "num_turns": 6,
+        "input_tokens": 12,
+        "output_tokens": 19464,
+        "cache_read_tokens": 274147,
+        "cache_creation_tokens": 69765,
+        "is_error": false,
+        "session_id": "280bd327-87dc-406f-8e5a-853ffcc90965"
+      },
+      "synthesize": {
+        "cost_usd": 2.281097,
+        "duration_ms": 371912,
+        "num_turns": 18,
+        "input_tokens": 20,
+        "output_tokens": 22975,
+        "cache_read_tokens": 847668,
+        "cache_creation_tokens": 127008,
+        "is_error": false,
+        "session_id": "7e293c70-7642-45ae-8609-df014b9fbb59"
+      },
+      "curate.tech": {
+        "cost_usd": 0.579609,
+        "duration_ms": 181969,
+        "num_turns": 9,
+        "input_tokens": 12,
+        "output_tokens": 20102,
+        "cache_read_tokens": 329965,
+        "cache_creation_tokens": 76963,
+        "is_error": false,
+        "session_id": "03051d47-b888-4a4a-9903-77c4ffda6f10"
+      }
+    },
+    "total_cost_usd": 4.511769599999999,
+    "total_tokens": 94169,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "6/6",
+      "unique_domains": 19,
+      "source_tier": 0.06382978723404255
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-18 — 近期重點</h3>\n<h4>判斷交給小模型,執行交回程式碼</h4>\n<p>兩個昨天才建立的 repo 用了同一招。awlevin/typesafe-computer-use 把螢幕 OCR 出來、用一個叫 TypeSafe 的小模型分類下一步動作,再點下去,單步成本 0.0002 美元,166 stars。RomanSlack/jev-drone 在 MuJoCo 裡讓同族的小判斷模型以 2.5Hz 進迴圈,飛控的即時部分留給傳統程式碼,52 stars。共同點不在模型能力,在頻率:語意判斷跑在人類等得起的節奏,執行跑在毫秒級的 deterministic code。</p>\n<h4>AMD 這四天補的是 diffusion 的 kernel 層</h4>\n<p>ROCm 部落格 9/14 到 9/17 連發五篇:FlyDSL 手寫 diffusion attention kernel、ROCprof Compute Viewer 的 thread trace、MLPerf Inference v6.1 的技術拆解與完整重現步驟、MI355X 上的 DFlash 投機解碼。Helios 的規格(432GB HBM4、23TB/s 頻寬、40 PFLOPs FP4,搭載 MI455X)也在 9/14 那篇給了,但那是還沒到手的板子。今天能拿來用的是另外四篇,它們回答的是「你的 kernel 為什麼慢」,而規格表回答的是別的問題。</p>\n<h4>寫程式碼變便宜之後,瓶頸搬到驗證</h4>\n<p>昨天 HN 上有 192 分的 Bend(用形式證明攔截 AI 寫錯的程式碼)、92 分的〈Towards Self-Driving Codebases〉,Lobsters 那邊 50 分的是 Martin Fowler 的〈I Don't Like LLMs〉。同一天 dev.to 有人寫〈AI Generated Tests Are Passing And Still Lying To You〉:測試全綠,但它在騙你。而 orbi-build/orbi 宣稱 414 個 PR 全自動合併上線。四條互斥的驗證路線擠在同一天,說明的不是趨勢成形,是沒有人知道正確答案長什麼樣。</p>\n<h4>華邦電花 11.2 億美元買下英飛凌的 NOR Flash 與 F-RAM</h4>\n<p>約新台幣 354 億元,交易仍待主管機關核准。同一天日月光旗下矽品取得逾 10.12 億元台幣的營業用機器設備,威剛完成第九次無擔保可轉債募資、收足 30.6 億元。這三筆錢跟 AI 推論的 HBM 主線沒有直接關係。值得記下來的是價格本身:NOR Flash 這種長期被當成低成長市場的非揮發記憶體,現在有人願意用十億美元級的金額整併。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-judgment-execution-split",
+        "title": "判斷與執行分家:agent 迴圈的成本結構被拆開",
+        "body": "昨天建立的兩個 repo 指向同一個結構。awlevin/typesafe-computer-use 用 OCR 讀螢幕、用小模型 TypeSafe 分類下一個動作,整趟 macOS computer use 的單步成本 0.0002 美元。RomanSlack/jev-drone 把同族的小判斷模型放進純攝影機導航的迴圈,決策頻率壓在 2.5Hz,毫秒級的飛控留給傳統程式碼。兩個作者不同、領域不同,選的切法一樣。HF trending 上的供給端也在往這個方向長:MiniCPM5-2B 主打 on-device 長上下文與工具呼叫,32 萬次下載;Edge0-35B-A3B-preview 用 prerouter 加 SSD-offload 硬塞 35B MoE 到邊緣;HN 上 96 分的 Bonsai 2 27B 做的是近乎無損的 9 分之 1 壓縮。",
+        "mechanism": "每一步都問一次大型 VLM,成本與延遲就跟步數線性綁在一起。把迴圈拆成低頻判斷加高頻執行之後,大模型呼叫次數跟任務步數解耦:一趟 GUI 操作裡真正需要語意判斷的節點通常只有幾個,其餘是 deterministic 的座標與狀態轉移。壓縮與 on-device 模型讓「判斷」那一端也變便宜,兩邊同時往下走。",
+        "evidence": "typesafe-computer-use(166 stars,repo 建立 1 天)標示單步 0.0002 美元;jev-drone(52 stars,repo 建立 1 天)標示 2.5Hz 決策頻率;MiniCPM5-2B 329,713 次下載;Edge0-35B-A3B-preview 37,131 次下載;Bonsai 2 27B 在 HN 拿 96 分。",
+        "cross_source": 5,
+        "product_opportunity": "拿你現有的 agent 或 computer-use 迴圈,把 per-step 的 VLM 截圖呼叫換成 OCR 加分類器,在同一組任務上量成功率與每步成本。如果成功率掉不到 5 個百分點,這條路對你的 demo 就成立了;掉超過 10 個百分點,代表你的任務真的需要視覺語意,別再花時間試。",
+        "source_links": [
+          "discoveries.rising.3:awlevin/typesafe-computer-use",
+          "discoveries.rising.2:RomanSlack/jev-drone",
+          "tech.models.4:hf-minicpm5-2b",
+          "tech.models.3:hf-edge0-35b-a3b-preview",
+          "pulse.hn.5:hn-bonsai-2-27b"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-diffusion-two-factors",
+        "title": "Diffusion 推論被兩個正交因子同時攻擊:步數與 kernel",
+        "body": "facebookresearch/UnStep 昨天才推上 GitHub,論文標題直接寫了立場:免訓練加速因果視訊擴散,步數比蒸餾版本還少。repo 說明的數字是 H100 上 50 FPS、GB200 上 64 FPS。同一天 AMD 的 ROCm 部落格貼出 FlyDSL 手寫 diffusion attention kernel 的作法,切入點不是通用 transformer,是 diffusion 生成路徑。需求端沒有懸念:Lightricks 的 LTX-2.5 支援文字、圖片、音訊互轉影片,在 HF 上累積 160 萬次下載、4,226 個 likes。",
+        "mechanism": "擴散模型的推論時間等於步數乘以每步 kernel 時間。減步數過去靠蒸餾,代價是重訓、要資料、產出綁死一個 checkpoint;免訓練的 step reduction 可以直接掛在既有權重上,不動訓練管線。kernel 那端則是把 attention 的形狀特化給 diffusion。兩者相乘不相加,所以同時落地才值得注意。",
+        "evidence": "UnStep repo 建立 0 天,Meta 官方帳號發布;FlyDSL 文章 9/17 上線;LTX-2.5 在 HF trending 上 1,602,865 次下載。",
+        "cross_source": 3,
+        "product_opportunity": "如果你在做 DiT 圖像生成,先在自己的 checkpoint 上跑 UnStep 的免訓練 step reduction,量 FID 或人工評分掉多少,這一步不用改訓練管線所以成本是小時級。kernel 層先別動,等 ROCm 那邊有第三方回報再說。",
+        "source_links": [
+          "discoveries.dev_watch.2:facebookresearch/UnStep",
+          "tech.vendor.0:rocm-blog-flydslcu",
+          "tech.models.0:hf-lightricks-ltx-2.5"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-verification-bottleneck",
+        "title": "四條互斥的驗證路線同一天出現,代表答案還沒收斂",
+        "body": "orbi-build/orbi 把 GitHub Issues 當成唯一的狀態存儲,宣稱 414 個 PR 全自動合併上線,179 stars。coldteadotai/pr-lens 走相反方向:把每個 PR 畫成動畫架構圖跟資料流,讓人在讀 diff 之前先看懂改了什麼,1,220 stars 而且已經在 HN 被討論過。officefloor/ImpactGate 兩個都不選,改成量化變更影響、用複雜度趨勢評分當閘門,54 stars、每天進 8 顆星。最硬派的是昨天 HN 192 分的 Bend:用形式證明在編譯期擋下 AI 寫錯的程式碼。反方證據也在同一天:Lobsters 50 分的 Martin Fowler〈I Don't Like LLMs〉,以及 dev.to 那篇講 AI 產出的測試全綠卻在掩蓋真錯誤。",
+        "mechanism": "寫程式碼的邊際成本掉下來之後,系統吞吐量由最慢的環節決定,而 review 跟測試沒有跟著變便宜。近期浮出來的四條路線攻擊的是同一個瓶頸的不同位置:形式證明擋在編譯期、影響量測擋在合併前、視覺化擋在人眼、全自動合併乾脆取消這一關。它們互斥的原因是各自假設了不同的信任邊界,而沒有任何一方拿出讓其他三方閉嘴的數據。",
+        "evidence": "Bend 在 HN 192 分、〈Towards Self-Driving Codebases〉92 分,兩者都是昨天的內容;Fowler 那篇在 Lobsters 50 分,同樣昨天。pr-lens repo 已經 28 天、1,220 stars;ImpactGate 22 天、velocity 每天 8 顆星;orbi 24 天、179 stars。",
+        "cross_source": 6,
+        "product_opportunity": "先量自己的瓶頸在哪再買工具。統計過去一個月你的 PR 從開啟到合併,拆成 CI 跑完、人看完、改完三段時間。人看完最長就試 pr-lens 這種視覺化,改完最長就試 ImpactGate 這種影響評分,CI 最長的話這四條路線都幫不上你。",
+        "source_links": [
+          "discoveries.rising.1:orbi-build/orbi",
+          "discoveries.rising.0:coldteadotai/pr-lens",
+          "discoveries.rising.4:officefloor/ImpactGate",
+          "pulse.hn.3:hn-bend-lang",
+          "pulse.hn.6:hn-self-driving-codebases",
+          "pulse.lobsters.0:lobsters-i-dont-like-llms",
+          "pulse.ai_bloggers.1:devto-ai-tests-lying"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-amd-reproducibility",
+        "title": "AMD 這輪賣的是可重現性,不是規格表",
+        "body": "四天內五篇 ROCm 部落格,其中三篇的內容是工具跟步驟而不是數字。9/17 一次出兩篇 MLPerf Inference v6.1:一篇技術拆解,一篇教你用自帶 Docker 映像跟公開量化模型重現 MI355X、MI350X、MI350P 的成績。9/15 的 Thread Trace 系列講 ROCprof Compute Viewer 怎麼看 wave 在哪等。9/16 的 DFlash 投機解碼是唯一一篇主打倍率的,AMD 自稱 Qwen3.5 推論最高提速 5 倍,這是廠商的 up-to 宣稱,不是可以搬進簡報的事實。規格那篇在 9/14,講的是還沒出貨的 Helios。",
+        "mechanism": "GPU 採購決策卡在遷移風險而不是峰值算力。thread trace、可重現的 MLPerf、手寫 kernel 的教學,共同壓的是「我搬過去會不會撞牆、撞了能不能自己查」這件事。一家公司開始補工具鏈,等於承認自己的短板在生態不在矽;NVIDIA 的護城河從來就是 profiler 跟 kernel 生態,不是 FLOPs。",
+        "evidence": "MLPerf Inference v6.1 成績於 2026-09-16 釋出,AMD 的兩篇拆解與重現文於 9/17 上線;Thread Trace Part 1 於 9/15;DFlash 於 9/16;Helios 規格(432GB HBM4、23TB/s、40 PFLOPs FP4,MI455X)於 9/14。",
+        "cross_source": 4,
+        "product_opportunity": "如果你手上有或即將有 ROCm 機器,這週先跑一次 MLPerf 的重現 Docker,確認你的環境能對上 AMD 公布的數字。對不上就是你的軟體堆疊有問題,現在發現比在 demo 前一天發現便宜。",
+        "source_links": [
+          "tech.vendor.3:rocm-blog-mlperfin",
+          "tech.vendor.4:rocm-blog-threadtr",
+          "tech.vendor.1:rocm-blog-dflashon",
+          "tech.vendor.2:rocm-blog-hipkitte"
+        ],
+        "audience": "work"
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-tool-progress-kv-eviction",
+      "title": "Serving system 應該去問工具進度,不該猜工具要跑多久",
+      "body": "一個 agentic request 大半的 wall-clock 時間花在等工具回來,而這段時間它的 KV cache 一直佔著 GPU 記憶體。目前所有 serving system 決定這份 cache 要留、要踢、還是等一下再載回來,靠的都是猜:從工具名稱猜、從歷史耗時猜、從呼叫前宣告的 duration 猜,或是看引擎自己的佔用率。兩天前公告的 arXiv 2609.18849 主張任何在呼叫開始前就固定的估計都不可能知道答案,因為工具的實際進度只有工具自己知道,所以正確的介面是讓工具回報進度。這篇沒有討論度,而同一天 HN 上 351 分的是 Z.ai 那篇 GLM 自建推理架構——講排程與硬體取捨,層級比這高一階,也比這模糊一階。",
+      "mechanism": "KV cache 在等待期間的機會成本,等於被它擋住的其他請求的吞吐量。猜錯的方向有兩種:高估工具耗時就白白重算一次 prefill,低估就讓記憶體卡著不放。這個誤差目前完全沒有被量測,因為沒有人把工具進度當成排程的輸入訊號。",
+      "product_opportunity": "在你自己的 tool wrapper 裡加一個進度回報通道,先只是記 log,量出你的工具實際耗時分佈跟你的推論引擎假設的差多少。這個數字本身就足以判斷值不值得往下做。",
+      "source_links": [
+        "tech.aidaptiv.1:arxiv-2609.18849",
+        "pulse.hn.0:hn-glm-inference-infra"
+      ],
+      "audience": "work",
+      "why_asymmetric": "改動落在 application 層就能先驗證,不必等推論引擎改介面。如果你的 agent 有長工具呼叫,這是一個成本低、驗證快、目前沒人在做的方向。"
+    },
+    "contrarian": {
+      "id": "contrarian-ssd-offload-not-mainstream",
+      "title": "SSD-offload 不會成為邊緣跑大 MoE 的主流路徑",
+      "body": "共識是把權重換到 SSD,讓邊緣裝置也能跑大 MoE。今天 HF trending 的數字給了反向證據。Edge0-35B-A3B-preview 用 prerouter 加 SSD-offload 把 35B MoE 塞進邊緣裝置,拿到 3,299 個 likes,下載量 37,131,每個 like 只換到 11 次下載。同一張榜上 MiniCPM5-2B 是 1,537 likes 對 329,713 次下載,每個 like 換到 214 次;Qwen3.8-27B 更極端,15,525 likes 對 745 萬次下載。按讚代表覺得這招聰明,下載才代表真的要跑。SSD-offload 現在的位置是「大家覺得聰明但沒人放進 pipeline」,而把模型做小那條路已經在生產環境裡跑。這對做記憶體擴充推論的人是逆風的判斷,我還是押這一邊。",
+      "source_links": [
+        "tech.models.3:hf-edge0-35b-a3b-preview",
+        "tech.models.4:hf-minicpm5-2b",
+        "tech.models.2:hf-qwen3.8-27b"
+      ],
+      "audience": "work",
+      "claim": "到 2027-03-31 為止,vLLM、llama.cpp、MLX 三個主線專案都不會把 SSD/NVMe 權重換頁列為正式支援的功能。",
+      "resolution_date": "2027-03-31",
+      "verification": "檢查三個專案在 2027-03-31 前的主線 release notes 與官方文件功能清單。實驗性 PR、未合併分支、社群 fork 都不算;必須出現在主線發行說明的功能列表裡才算我錯。"
+    },
+    "predictions": [
+      {
+        "id": "pred-tau2-small-model-top1",
+        "text": "tau2-bench 工具使用榜的第 1 名在 2026-12-31 仍由參數量 50B 以下的模型佔據(今日榜首 RAFT-30B-A3B,GPT-5.2 剛從第 10 升到第 2)。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "工具使用的瓶頸在格式穩定度與流程遵循,不在世界知識,這是小模型透過針對性後訓練可以吃下的能力。"
+      },
+      {
+        "id": "pred-unstep-mainline-merge",
+        "text": "facebookresearch/UnStep 的免訓練 step reduction 在 2027-03-31 前被 diffusers 或 ComfyUI 主線合併,第三方 custom node 不算。",
+        "resolution_date": "2027-03-31",
+        "status": "pending",
+        "rationale": "免訓練的加速方法不需要重新發權重,整合阻力遠低於蒸餾版本;Meta 官方帳號發布也降低授權疑慮。"
+      },
+      {
+        "id": "pred-winbond-infineon-close",
+        "text": "華邦電收購英飛凌 NOR Flash 與 F-RAM 事業(約 11.2 億美元)在 2027-06-30 前完成主管機關核准並交割。",
+        "resolution_date": "2027-06-30",
+        "status": "pending",
+        "rationale": "非揮發記憶體不在先進製程管制清單上,買賣雙方也沒有重疊的市場集中疑慮,審查路徑相對單純。"
+      },
+      {
+        "id": "pred-ocr-default-backend",
+        "text": "到 2026-12-31,至少一個 star 數超過 5,000 的開源 computer-use 專案把預設後端從 VLM 截圖推理改成 OCR 加分類器。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "0.0002 美元的單步成本跟 VLM 截圖推理差了兩個數量級以上,只要準確率差距在可接受範圍,預設值遲早會翻。"
+      },
+      {
+        "id": "pred-qwen4-release",
+        "text": "阿里巴巴在 2026-12-31 前正式發布名稱含有 Qwen4 的模型(今日 Qwen3.8-Flash-Next 在 HF 上掛的架構標籤是 qwen4_exp)。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "架構標籤在正式版之前先出現在預覽模型上,是 Qwen 過去幾代慣用的節奏。"
+      },
+      {
+        "id": "pred-tool-progress-interface",
+        "text": "到 2027-06-30,vLLM 或 SGLang 主線出現由工具呼叫方回報執行進度、供排程決定 KV cache 去留的介面。",
+        "resolution_date": "2027-06-30",
+        "status": "pending",
+        "rationale": "agentic 請求佔比上升之後,等待期間的記憶體佔用會變成實際帳單問題;介面改動小,阻力在協定共識而不在工程。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:coldteadotai/pr-lens",
+        "audience": "work",
+        "url": "https://github.com/coldteadotai/pr-lens",
+        "name": "coldteadotai/pr-lens",
+        "stars": 1220,
+        "language": null,
+        "relevance": "PR 內嵌動畫架構圖與資料流視覺化，審查前免逐行讀 diff。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 28,
+        "eng_score": 4,
+        "excellence_score": 0.41433333333333333,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.3:awlevin/typesafe-computer-use",
+        "audience": "work",
+        "url": "https://github.com/awlevin/typesafe-computer-use",
+        "name": "awlevin/typesafe-computer-use",
+        "stars": 166,
+        "language": null,
+        "relevance": "OCR 加分類器取代大型 VLM 截圖推理，單步操作成本降到 0.0002 美元。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 1,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:orbi-build/orbi",
+        "audience": "work",
+        "url": "https://github.com/orbi-build/orbi",
+        "name": "orbi-build/orbi",
+        "stars": 179,
+        "language": null,
+        "relevance": "以 GitHub Issues 為唯一狀態存儲，414 個 PR 全自動合併上線。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 24,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:RomanSlack/jev-drone",
+        "audience": "general",
+        "url": "https://github.com/RomanSlack/jev-drone",
+        "name": "RomanSlack/jev-drone",
+        "stars": 52,
+        "language": null,
+        "relevance": "小型判斷模型以 2.5Hz 決策，即時控制交給傳統程式碼，純攝影機導航避障。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 1,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.4:officefloor/ImpactGate",
+        "audience": "work",
+        "url": "https://github.com/officefloor/ImpactGate",
+        "name": "officefloor/ImpactGate",
+        "stars": 54,
+        "language": null,
+        "relevance": "鎖定變更疊加的複雜度趨勢評分，及早攔截類別複雜度失控。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 8,
+        "repo_age_days": 22,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:anthropics/uplifting-biomolecular-modeling",
+        "audience": "work",
+        "url": "https://github.com/anthropics/uplifting-biomolecular-modeling",
+        "name": "anthropics/uplifting-biomolecular-modeling",
+        "stars": 23,
+        "language": null,
+        "relevance": "36 個即插即用推論優化套件，涵蓋蛋白質與基因體模型且保留原版釘選版。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.1:lucidrains/stack-attention",
+        "audience": "general",
+        "url": "https://github.com/lucidrains/stack-attention",
+        "name": "lucidrains/stack-attention",
+        "stars": 2,
+        "language": null,
+        "relevance": "以可微分堆疊擴充注意力機制，鎖定階層式模式建模的研究方向。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.2:facebookresearch/UnStep",
+        "audience": "both",
+        "url": "https://github.com/facebookresearch/UnStep",
+        "name": "facebookresearch/UnStep",
+        "stars": 2,
+        "language": null,
+        "relevance": "免訓練加速因果視訊擴散，H100 上跑到 50 FPS、GB200 達 64 FPS。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.3:liyupi/ai-model-world",
+        "audience": "general",
+        "url": "https://github.com/liyupi/ai-model-world",
+        "name": "liyupi/ai-model-world",
+        "stars": 29,
+        "language": null,
+        "relevance": "556 個模型即時同步四大評測來源，靜態站零後端每小時自動更新。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-glm-inference-infra",
+        "audience": "both",
+        "url": "https://z.ai/blog/glm-built-its-inference-infrastructure",
+        "title": "How GLM built its own inference infrastructure",
+        "score": 351,
+        "comments": 22,
+        "takeaway": "Z.ai公開GLM自建推理架構,揭露排程與硬體取捨的實際權衡。"
+      },
+      {
+        "id": "pulse.hn.1:hn-fugleramme-bird-eink",
+        "audience": "general",
+        "url": "https://github.com/arnegiacomo/fugleramme",
+        "title": "Show HN: An e-ink frame that hears birds and draws them as 1800s illustrations",
+        "score": 2271,
+        "comments": 99,
+        "takeaway": "e-ink裝置即時辨識鳥鳴並生成復古插畫,展示邊緣AI推理可行性。"
+      },
+      {
+        "id": "pulse.hn.2:hn-astra-for-law",
+        "audience": "general",
+        "url": "https://openai.com/index/astra-for-law/",
+        "title": "Astra for Law",
+        "score": 200,
+        "comments": 38,
+        "takeaway": "OpenAI推出Astra法律垂直版,鎖定專業場景的agentic應用。"
+      },
+      {
+        "id": "pulse.hn.3:hn-bend-lang",
+        "audience": "general",
+        "url": "https://bend-lang.com/",
+        "title": "Bend – A language that blocks AI mistakes via proof, on CPU and GPU",
+        "score": 192,
+        "comments": 33,
+        "takeaway": "Bend語言用形式證明攔截AI寫錯的程式碼,CPU/GPU皆可執行。"
+      },
+      {
+        "id": "pulse.hn.4:hn-fields-medallists-letter",
+        "audience": "general",
+        "url": "https://gowers.wordpress.com/2026/09/17/why-i-didnt-sign-the-fields-medallists-letter/",
+        "title": "Why I didn't sign the Fields medallists' letter",
+        "score": 185,
+        "comments": 30,
+        "takeaway": "多位Fields獎得主對AI風險公開信立場分歧,反映學界路線之爭。"
+      },
+      {
+        "id": "pulse.hn.5:hn-bonsai-2-27b",
+        "audience": "both",
+        "url": "https://prismml.com/news/bonsai-2-27b",
+        "title": "Bonsai 2 27B: Near-Lossless Compression in a 9x Smaller Footprint",
+        "score": 96,
+        "comments": 10,
+        "takeaway": "Bonsai 2 27B近乎無損壓縮,模型體積縮小至9分之1。"
+      },
+      {
+        "id": "pulse.hn.6:hn-self-driving-codebases",
+        "audience": "general",
+        "url": "https://blog.detail.dev/posts/towards-self-driving-codebases/",
+        "title": "Towards Self-Driving Codebases",
+        "score": 92,
+        "comments": 26,
+        "takeaway": "探討全自動coding agent接手完整codebase維運的技術瓶頸。"
+      },
+      {
+        "id": "pulse.hn.7:hn-infinite-parameter-llms",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.18842",
+        "title": "Infinite-Parameter LLMs: Generating and Adapting Weights from Live Data",
+        "score": 91,
+        "comments": 7,
+        "takeaway": "研究提出即時生成、調整權重的LLM架構,挑戰固定參數假設。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-i-dont-like-llms",
+        "audience": "general",
+        "url": "https://martinfowler.com/articles/2026-dont-like-llms.html",
+        "title": "I Don't Like LLMs",
+        "score": 50,
+        "takeaway": "Martin Fowler公開質疑LLM輔助開發的實際生產力成效。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-rust-never-type",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1091015/",
+        "title": "[$] Stabilizing Rust's never type",
+        "takeaway": "Rust的never type正式邁向穩定化,牽動型別系統設計決策。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-decade-of-rustls",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1093391/",
+        "title": "A decade of Rustls",
+        "takeaway": "Rustls十年回顧,純Rust TLS函式庫邁向1.0前的技術取捨。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-targeted-attacks-rustaceans",
+        "audience": "general",
+        "url": "https://blog.rust-lang.org/2026/09/17/targeted-attacks/",
+        "title": "Be alert: targeted attacks on prominent Rustaceans",
+        "score": 31,
+        "takeaway": "知名Rust開發者遭鎖定攻擊,供應鏈安全風險再度浮上檯面。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-golden-spike-valen",
+        "audience": "general",
+        "url": "https://verdagon.dev/blog/golden-spike-reviving-vale-valen",
+        "title": "The Golden Spike, and Resurrecting the Vale(n) Programming Language",
+        "score": 39,
+        "takeaway": "Vale語言重生為Valen,記憶體安全模型的實驗仍在推進。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-julia-1-13",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1093567/",
+        "title": "Julia 1.13 released",
+        "takeaway": "Julia 1.13加速套件預編譯,REPL與Juliaup體驗同步升級。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:sebastianraschka-gpt6-astra",
+        "audience": "general",
+        "url": "https://magazine.sebastianraschka.com/p/gpt-6-astra-looped-transformers-and",
+        "title": "GPT-6 Astra, Looped Transformers, and Hidden Reasoning",
+        "takeaway": "Raschka拆解GPT-6 Astra的looped transformer與隱藏推理機制。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:devto-ai-tests-lying",
+        "audience": "general",
+        "url": "https://dev.to/thebitforge/ai-generated-tests-are-passing-and-still-lying-to-you-46fm",
+        "title": "AI Generated Tests Are Passing And Still Lying To You",
+        "takeaway": "AI產生的測試通過卻掩蓋真實錯誤,凸顯自動化測試的假訊號風險。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:devto-ai-outgrows-tests",
+        "audience": "general",
+        "url": "https://dev.to/hemapriya_kanagala/what-happens-when-ai-outgrows-the-tests-we-use-to-measure-it-30al",
+        "title": "What Happens When AI Outgrows the Tests We Use to Measure It?",
+        "takeaway": "當模型能力超越既有評測基準,現行eval方法論面臨失效危機。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:devto-qodo-shift-left-review",
+        "audience": "general",
+        "url": "https://dev.to/dev_kiran/shift-left-code-review-how-qodo-turns-your-coding-agent-into-its-own-first-reviewer-58fc",
+        "title": "Shift Left Code Review: How Qodo Turns Your Coding Agent Into Its Own First Reviewer",
+        "takeaway": "Qodo讓coding agent自我審查程式碼,把code review往左移。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:devto-tooljet-mcp-recall-console",
+        "audience": "general",
+        "url": "https://dev.to/tooljet/building-a-recall-response-console-with-tooljet-mcp-and-examining-tooljets-approach-to-ai-app-126",
+        "title": "Building a Recall Response Console With ToolJet MCP (and Examining ToolJet's Approach to AI App Building)",
+        "takeaway": "以ToolJet MCP打造回收應變主控台,示範MCP的實務整合模式。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:mops-2344-20260918",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2344",
+        "title": "華邦電收購英飛凌 NOR Flash 與 F-RAM 事業,交易金額約 11.2 億美元",
+        "takeaway": "華邦電併英飛凌非揮發記憶體事業,擴大 NOR Flash 版圖,交易仍待主管機關核准。",
+        "amount": "US$1.12B (約新台幣354億元)",
+        "companies": [
+          "Winbond Electronics",
+          "Infineon Technologies"
+        ],
+        "region": "global"
+      }
+    ],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-3711-20260918",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "日月光代子公司矽品精密取得營業用機器設備逾 10 億元",
+        "takeaway": "封測廠加碼設備投資,反映先進封裝產能仍在擴充。",
+        "amount": "NT$10.12億元",
+        "companies": [
+          "ASE Technology Holding",
+          "Siliconware Precision Industries"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-3260-20260917",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3260",
+        "title": "威剛完成國內第九次無擔保轉換公司債募資,收足 30.6 億元",
+        "takeaway": "記憶體模組廠完成可轉債募資,強化資本結構應對市況波動。",
+        "amount": "NT$30.6億元",
+        "companies": [
+          "ADATA Technology"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:rocm-blog-flydslcu",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/flydsl-customized-attention/README.html",
+        "title": "Implementing a High-Performance Custom Diffusion Attention Kernel with FlyDSL",
+        "takeaway": "AMD 以 FlyDSL 手寫 attention kernel,鎖定 diffusion 生成路徑做加速。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:rocm-blog-dflashon",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/dflash-on-MI355x/README.html",
+        "title": "DFlash Speculative Decoding on AMD Instinct MI355X: Up to 5x Faster Qwen3.5 Inference",
+        "takeaway": "AMD 宣稱 DFlash 投機解碼在 MI355X 上讓 Qwen3.5 推論最高提速 5 倍。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:rocm-blog-hipkitte",
+        "audience": "both",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/hipkittens-gemm-ladder/README.html",
+        "title": "An Educational GEMM Ladder for Helios GPUs",
+        "takeaway": "AMD 公布 Helios 平台規格:432GB HBM4、23TB/s 頻寬、40 PFLOPs FP4 算力。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:rocm-blog-mlperfin",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/mlperf-inf-v6.1/README.html",
+        "title": "Technical Dive into AMD MLPerf Inference v6.1 Submission",
+        "takeaway": "AMD 在 MLPerf Inference v6.1 拿下多項領先成績,涵蓋 MI355X/MI350X/MI350P。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:rocm-blog-threadtr",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/thread-trace/README.html",
+        "title": "Thread Trace Part 1: ROCprof Compute Viewer",
+        "takeaway": "ROCprof Compute Viewer 視覺化 GPU thread 執行,揪出 wave 等待瓶頸。",
+        "companies": [
+          "AMD"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:hf-lightricks-ltx-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "Lightricks releases LTX-2.5 multimodal video/audio generation model",
+        "takeaway": "Lightricks 發布 LTX-2.5,支援文字/圖片/音訊互轉影片的生成管線。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.1:hf-deepseek-v4.1-flash",
+        "audience": "both",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek releases V4.1 Flash, MIT-licensed multimodal model",
+        "takeaway": "DeepSeek 開源 V4.1 Flash,MIT 授權、支援圖文輸入,以 FP8 精度部署。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.2:hf-qwen3.8-27b",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Alibaba releases Qwen3.8-27B, rapid HF adoption",
+        "takeaway": "Qwen3.8-27B 上線即衝上 740 萬次下載,Apache 2.0 授權開源。",
+        "companies": [
+          "Alibaba",
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.3:hf-edge0-35b-a3b-preview",
+        "audience": "both",
+        "url": "https://huggingface.co/Edge0/Edge0-35B-A3B-preview",
+        "title": "Edge0 ships SSD-offload MoE preview built on Qwen3.6-35B-A3B",
+        "takeaway": "Edge0 預覽版以 prerouter + SSD-offload 架構,把 35B MoE 塞進邊緣裝置。",
+        "companies": [
+          "Edge0"
+        ]
+      },
+      {
+        "id": "tech.models.4:hf-minicpm5-2b",
+        "audience": "both",
+        "url": "https://huggingface.co/openbmb/MiniCPM5-2B",
+        "title": "OpenBMB releases MiniCPM5-2B, on-device long-context model",
+        "takeaway": "MiniCPM5-2B 主打邊緣裝置長上下文與工具呼叫,2B 參數即可部署。",
+        "companies": [
+          "OpenBMB"
+        ]
+      },
+      {
+        "id": "tech.models.5:hf-qwen3.8-flash-next",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next",
+        "title": "Qwen3.8-Flash-Next surfaces with qwen4_exp architecture tag",
+        "takeaway": "Qwen3.8-Flash-Next 標記 qwen4_exp 架構,疑為 Qwen4 早期實驗版本。",
+        "companies": [
+          "Alibaba",
+          "Qwen"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 enters top-5, jumps from #10 to #2",
+        "takeaway": "GPT-5.2 在 tau2-bench 工具使用評測從第 10 名衝上第 2,新進榜單前五。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:sk-hynix-news-aiinfras",
+        "audience": "work",
+        "url": "https://news.skhynix.com/en/ai-infra-summit-2026/",
+        "title": "SK hynix outlines AI infrastructure memory strategy at AI Infra Summit 2026",
+        "takeaway": "SK hynix 於 9/15-17 聖塔克拉拉高峰會,闡述 AI 基礎設施的記憶體布局。",
+        "companies": [
+          "SK hynix"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:arxiv-2609.18849",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2609.18849v1",
+        "title": "Ask the Tool, Don't Guess: serving systems should read tool-call progress for KV-cache eviction",
+        "takeaway": "研究指出靠猜測工具執行時間決定 KV cache 去留並不可靠,伺服系統應讀取工具即時進度。"
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-18",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "temporal",
+        "marker": "今日",
+        "ids": [
+          "pulse.ai_bloggers.1:devto-ai-tests-lying"
+        ]
+      },
+      {
+        "path": "signals.focus[2].mechanism",
+        "type": "temporal",
+        "marker": "今天",
+        "ids": [
+          "pulse.ai_bloggers.1:devto-ai-tests-lying"
+        ]
+      }
+    ],
+    "repaired": 2
+  }
+}
