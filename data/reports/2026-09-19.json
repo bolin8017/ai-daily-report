@@ -1,0 +1,766 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-19",
+  "meta": {
+    "run_id": "b8ca3294-9eca-4bd5-8946-44a4dbe42a14",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-18T23:09:51.485Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 2458
+      },
+      "trending": {
+        "ok": true,
+        "count": 17
+      },
+      "search": {
+        "ok": true,
+        "count": 293
+      },
+      "developers": {
+        "ok": true,
+        "count": 17
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 2
+      },
+      "mops": {
+        "ok": true,
+        "count": 7
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 88,
+      "market": 2,
+      "tech": 12,
+      "shipped": 54
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.6218990000000001,
+        "duration_ms": 220221,
+        "num_turns": 4,
+        "input_tokens": 8,
+        "output_tokens": 19132,
+        "cache_read_tokens": 195300,
+        "cache_creation_tokens": 96839,
+        "is_error": false,
+        "session_id": "d9f765ca-609a-44ee-a25e-851fd37daf85"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1417888,
+        "duration_ms": 12907,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1301,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31512,
+        "is_error": false,
+        "session_id": "39da3673-1a8c-4e91-81e0-83bfdaef2a3f"
+      },
+      "curate.market": {
+        "cost_usd": 0.2766912,
+        "duration_ms": 58804,
+        "num_turns": 4,
+        "input_tokens": 6,
+        "output_tokens": 6210,
+        "cache_read_tokens": 95476,
+        "cache_creation_tokens": 47997,
+        "is_error": false,
+        "session_id": "d10421f0-02ba-4873-bbac-85597b3f8e5a"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.42209500000000005,
+        "duration_ms": 148852,
+        "num_turns": 3,
+        "input_tokens": 6,
+        "output_tokens": 14456,
+        "cache_read_tokens": 102060,
+        "cache_creation_tokens": 63509,
+        "is_error": false,
+        "session_id": "dc044f86-3c17-490f-af82-0bbbecc08721"
+      },
+      "synthesize": {
+        "cost_usd": 1.897435,
+        "duration_ms": 196914,
+        "num_turns": 16,
+        "input_tokens": 18,
+        "output_tokens": 15639,
+        "cache_read_tokens": 679994,
+        "cache_creation_tokens": 115364,
+        "is_error": false,
+        "session_id": "86f7fbbb-f3b6-4a28-86d0-91cbb1767105"
+      },
+      "curate.tech": {
+        "cost_usd": 0.6163346000000001,
+        "duration_ms": 213146,
+        "num_turns": 9,
+        "input_tokens": 12,
+        "output_tokens": 22905,
+        "cache_read_tokens": 327883,
+        "cache_creation_tokens": 79241,
+        "is_error": false,
+        "session_id": "c42a192b-7bc2-4533-986b-8047736288ba"
+      }
+    },
+    "total_cost_usd": 3.9762436,
+    "total_tokens": 79695,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "5/5",
+      "unique_domains": 19,
+      "source_tier": 0.16279069767441862
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-19 — 今日重點</h3>\n<h4>Diffusion 的帳單開在 attention 上</h4>\n<p>AMD 在 ROCm blog 上用 FlyDSL 手寫了一支 diffusion 專用的 attention kernel，理由寫在開頭：傳統 autoregressive transformer 逐 token 生成，diffusion 不用，所以既有 kernel 假設不成立。arXiv 上的 Video DeltaNet 從另一端切：影片 diffusion 在去噪時反覆處理長時空 token 序列，attention 就是主要運算瓶頸，因此改掛線性注意力、再想辦法保住細節。dQwen3.5 走第三條路，把混合注意力的 AR 模型改造成擴散語言模型，正面處理 RNN 層天生因果、難以雙向化的障礙。四天之內，kernel 層、架構層、改造路線各有人動手，指向同一個成本中心。</p>\n<h4>端側省的是位元，不是參數</h4>\n<p>Ternary-Bonsai-2 把 Qwen3.8-27B 壓成 2-bit 三元權重，HF 上 40 萬次下載；IST 奧地利團隊的 GSQ-RCO 混合精度版本用同一個底模，下載破 107 萬。Cactus Needle 3 在 HN 拿到 144 分、25 則留言，主張 8-29MB 的自動化模型能打平 DeepSeek V4 Flash。這些做法都沒有縮參數量，動的是每個權重花幾個 bit。</p>\n<h4>coding agent 的信任邊界落在 Base URL</h4>\n<p>ZCode 被爆靜默把整個 Git 歷史上傳雲端，HN 237 分、35 則留言。maskit 給出的是另一側的解法：一個本地閘道，出站前打碼、回應時流式還原，任何吃 Base URL 的工具零改動就能接。同樣兩天內，Rust 官方發文警告知名維護者正被鎖定攻擊。帳號跟工作站是同一條供應鏈上的兩個環。</p>\n<h4>台灣封測同一天簽掉 68.56 億</h4>\n<p>日月光投控今天發了三則重訊：矽品 42.02 億買 12 批愛德萬測試設備、再 11.75 億買 4 批村田機械設備，新加坡子公司另外 14.79 億向 Teradyne 添購測試設備。南亞科同日 10.57 億向 Kokusai Electric 買晶圓製程設備擴 DRAM。買的是測試機跟搬運機，不是前段曝光機。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-diffusion-attention-cost",
+        "title": "Diffusion 推論的成本中心被三層獨立攻擊",
+        "body": "AMD 用 FlyDSL 為 diffusion 客製 attention kernel，理由是非自回歸生成推翻了既有 kernel 的逐 token 假設。Video DeltaNet 直指影片 diffusion 在去噪時反覆處理長時空 token 序列、attention 成為主要運算瓶頸，用線性注意力換算力、再補回細粒度互動。dQwen3.5 則從 AR 端反向改造，把混合注意力模型轉成擴散語言模型，處理 RNN 層結構性因果、難以雙向化的問題。四天之內三份材料，各自站在編譯器層、模型架構層、模型改造路線上，但攻擊的是同一個東西。",
+        "mechanism": "Diffusion 的計算圖跟 autoregressive 是反的：AR 每步生一個 token、瓶頸在權重讀取頻寬；diffusion 每步重讀整段序列、瓶頸在 attention 對序列長度的成本。序列一拉到影片的時空維度，attention 就從一個 op 變成整張帳單。這是結構性的，不是實作不夠好，所以三層都必須各自動手：kernel 層改記憶體存取模式、架構層換線性注意力、模型層改造 AR 底模去吃 diffusion 的推論路徑。",
+        "evidence": "AMD FlyDSL 客製 diffusion attention kernel（age 2）；Video DeltaNet 影片原生混合注意力（age 2）；dQwen3.5 混合注意力擴散語言模型（age 2）。",
+        "cross_source": 3,
+        "product_opportunity": "如果你的 DiT 圖像 pipeline 還在用 stock scaled_dot_product_attention，先把 attention 在單張圖的 denoise step 裡佔多少 wall-clock 量出來——這是所有後續優化的分母。AMD 同期釋出的 ROCprof Compute Viewer thread trace 正好能看 wave 等待時間，在 MI 卡上這是免費的量測工具。",
+        "source_links": [
+          "tech.vendor.0:rocm-blog-f7a3c1e2",
+          "tech.models.3:arxiv-2609.20744",
+          "tech.models.4:arxiv-2609.20751",
+          "tech.vendor.3:rocm-blog-2d8a5f01"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-bits-per-weight",
+        "title": "端側競賽的變數從參數量換成每權重位元數",
+        "body": "同一個 Qwen3.8-27B 底模，近期在 HF trending 上有兩個量化分身：prism-ml 的 2-bit 三元權重版本（40 萬次下載）、IST 奧地利團隊的 GSQ-RCO 混合精度版本（107 萬次下載，兩篇 arXiv 撐理論）。方向不同：三元是把每個權重壓到極限，混合精度是讓不同層花不同的 bit。OpenBMB 的 MiniCPM5-2B 從另一頭來，直接訓一個針對長文本跟工具呼叫的 2B 端側模型，35 萬次下載。Cactus Needle 3 在 HN 上把話講得最白：8-29MB 的自動化模型打平 DeepSeek V4 Flash。",
+        "mechanism": "端側的硬約束是記憶體容量跟頻寬，不是 FLOPs。27B 模型在 fp16 要 54GB、在 2-bit 三元只要 7GB 出頭，這個差距決定的是「能不能載入」而不是「跑多快」——一個是二元問題，一個是連續問題。所以當參數量已經被上游實驗室固定住，唯一還能動的自由度就是每權重花幾個 bit，而這一層現在有三種相互競爭的技術路線同時在跑。",
+        "evidence": "Ternary-Bonsai-2-27B 2-bit 三元（405,609 次下載）；Qwen3.8-27B-GSQ-RCO 混合精度（1,078,301 次下載）；MiniCPM5-2B 端側長文本＋工具呼叫（357,166 次下載）；Cactus Needle 3 在 HN 144 分。",
+        "cross_source": 4,
+        "product_opportunity": "如果 aiDAPTIV+ 的 demo 目前是拿 fp16 或 int8 當基線在算記憶體帳，那個基線已經落後市場一檔。拿 Ternary-Bonsai-2 跟 GSQ-RCO 兩個同底模的 GGUF 各跑一次你的任務集，量的不是 perplexity 而是你實際 demo 的那幾個下游指標——三元量化在 27B 級別掉多少，是接下來所有規格對話的前提數字。",
+        "source_links": [
+          "tech.aidaptiv.1:hf-prism-ml/Ternary-Bonsai-2-27B-gguf",
+          "tech.aidaptiv.2:hf-ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF",
+          "tech.models.5:hf-openbmb/MiniCPM5-2B",
+          "pulse.hn.4:hn-cactus-needle-3"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-agent-tool-trust-boundary",
+        "title": "AI coding 工具的資料外洩，從假設變成已知案例",
+        "body": "ZCode 被抓到靜默把整個 Git 歷史上傳雲端，HN 237 分、35 則留言。兩天內，Rust 官方在部落格警告知名維護者正遭到鎖定式攻擊，Lobsters 91 分。GitHub 上冒出來的 maskit 給的是防守面：一個本地閘道，出站前把敏感內容打碼、回應時再流式還原，任何吃 Base URL 的工具零改動就能接，246 顆星。攻擊面、案例、對策這三件事在同一個視窗裡出現。",
+        "mechanism": "coding agent 要有用，就必須同時拿到整個 repo 的讀權限跟一個外部 inference endpoint 的寫權限——這兩個權限一旦在同一個 process 裡，工具跟外洩管道在技術上就是同一個東西，差別只在廠商的自律。而維護者帳號被鎖定攻擊會放大這件事：對手要的不是你的 repo，是你有權限推 commit 的那些 repo。maskit 之所以選在 Base URL 那一層攔截，正是因為這是唯一一個使用者還握有控制權的位置。",
+        "evidence": "ZCode 靜默上傳 Git 歷史（HN 237 分，age 2）；Rust 官方鎖定式攻擊警告（Lobsters 91 分，age 2）；maskit 本地打碼閘道（246 stars）。",
+        "cross_source": 3,
+        "product_opportunity": "本週在你的 agent 設定裡把 base URL 指向一個你自己跑的反向代理，先只做記錄不做攔截，跑一週看它到底送了什麼出去。maskit 可以直接當這個代理的起點，也可以只抄它的流式還原做法——重點是你要有一份自己的出站日誌，而不是相信廠商的隱私頁。",
+        "source_links": [
+          "pulse.hn.7:hn-zcode-silent-workspace-snapshot-upload",
+          "pulse.lobsters.0:lobsters-targeted-attacks-rust",
+          "discoveries.rising.1:xiaYuTian11/maskit"
+        ],
+        "audience": "both"
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-ssd-offload-inference",
+      "title": "SSD 卸載跑 MoE，有人在 HF 上直接發成模型了",
+      "body": "Edge0-35B-A3B-preview 以 Qwen3.6-35B-A3B 為底，把 SSD 卸載跟 LoRA prerouter 組在一起，目標是讓 35B 的 MoE 在端側跑起來。數字很不尋常：52,519 次下載配 3,394 個 likes。likes 逼近下載量的 6.5%，代表大多數人是先收藏、還沒真的部署——這是一個技術主張剛開始被注意、但還沒被驗證的形狀。對 aiDAPTIV+ 來說這是外部第三方在替同一個論點背書，而且是用 MoE 的稀疏啟動特性去吃 SSD 的延遲，不是硬扛。",
+      "mechanism": "MoE 每次前向只啟動一小部分專家（35B 裡的 A3B 就是 3B 活躍參數），所以「大部分權重此刻用不到」這件事是架構自帶的，不是優化出來的。這正好對上 SSD 的性質：容量便宜、隨機讀有延遲。prerouter 的作用是提前知道要載哪些專家，把 SSD 讀取藏到計算後面。稠密模型做同樣的事會被延遲直接打死，MoE 不會。",
+      "evidence": "Edge0-35B-A3B-preview：ssd-offload / prerouter / lora / mlx tags，52,519 次下載、3,394 likes，Apache 2.0。",
+      "product_opportunity": "把這個模型當成競品規格書來讀，不是當成產品。它的 prerouter 設計決定了 SSD 隨機讀的 queue depth 跟 block size 長什麼樣——那正是 aiDAPTIV+ 這一層能不能做出差異的地方。先在你手上的 SSD 上量 Edge0 的 expert 載入模式，再決定要不要做一個更好的 prerouter。",
+      "source_links": [
+        "tech.aidaptiv.0:hf-Edge0/Edge0-35B-A3B-preview"
+      ],
+      "audience": "work"
+    },
+    "contrarian": {
+      "id": "contrarian-small-models-own-tool-calling",
+      "title": "agent 工具呼叫不會回到前緣模型手上",
+      "body": "共識是 agent 能力要靠更大的模型買，今天的 tau2-bench 快照打臉這個共識：榜首是 RAFT-30B-A3B，排在 GPT-5.2、Claude Opus 4.5、Gemini 3 Flash 前面，而 GPT-5.2 這次才剛從第 10 衝上第 2。我的判斷是這不是噪音。工具呼叫考的是格式穩定度跟狀態追蹤，不是廣度知識——這種能力蒸餾下去掉得很少，而且小模型的低延遲在多輪 agent 迴圈裡會反過來變成準確度優勢，因為你負擔得起重試。同一天 HF trending 上 NeoHorse-1-4B 掛著 agentic / tool-use tag、MiniCPM5-2B 明寫針對工具呼叫優化，供給側已經在往這個方向壓。",
+      "mechanism": "多輪 agent 的錯誤來源是累積的格式偏移跟狀態遺失，不是單步推理深度。前者可以用窄領域資料蒸餾掉，後者靠 harness 設計解決。所以模型規模在這個任務上的邊際報酬遞減得特別快。",
+      "evidence": "tau2-bench 今日前五：RAFT-30B-A3B、GPT-5.2、Claude Opus 4.5、Gemini 3 Flash、Qwen3.5-397B-A17B；GPT-5.2 由 #10 升至 #2。MiniCPM5-2B 明示針對長文本與工具呼叫優化。",
+      "source_links": [
+        "tech.benchmarks.1:tau2-gpt-5.2",
+        "tech.models.5:hf-openbmb/MiniCPM5-2B"
+      ],
+      "audience": "work",
+      "claim": "到 2026-12-31，tau2-bench 前五名裡會有至少三個參數量 ≤50B 的模型（含 MoE 總參數量計）。",
+      "resolution_date": "2026-12-31",
+      "verification": "2026-12-31 查 taubench.com 排行榜前五，數其中參數量 ≤50B 的模型數目。≥3 則此預測成立；≤2 則我錯。RAFT-30B-A3B 掉出前五且沒有其他小模型補上，就是最乾脆的證偽。"
+    },
+    "predictions": [
+      {
+        "id": "pred-2026-09-19-ssd-offload-second",
+        "text": "到 2026-12-31，Hugging Face 上出現第二個以 SSD 卸載為主要賣點、likes 破 1000 的推論模型（Edge0-35B-A3B 之外）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "Edge0 的 likes/downloads 比例顯示關注度遠高於實際部署量，這種形狀通常會引來模仿者而非使用者。"
+      },
+      {
+        "id": "pred-2026-09-19-tau2-small-models",
+        "text": "到 2026-12-31，tau2-bench 前五名有至少三個參數量 ≤50B 的模型。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "對應今日 contrarian 的可證偽條件；RAFT-30B-A3B 現居榜首。"
+      },
+      {
+        "id": "pred-2026-09-19-diffusion-lm-serving",
+        "text": "到 2027-03-31，vLLM 或 SGLang 其中之一在主線分支併入擴散語言模型的解碼路徑（非 fork、非 example）。",
+        "resolution_date": "2027-03-31",
+        "status": "pending",
+        "rationale": "dQwen3.5 這類把現成 AR 底模改造成 DLM 的做法降低了模型供給門檻，serving 端接不接得住是下一個瓶頸。"
+      },
+      {
+        "id": "pred-2026-09-19-coding-tool-exfil-disclosure",
+        "text": "到 2026-12-31，至少再有一個裝機量破十萬的 AI coding 工具被公開揭露未經明確同意上傳使用者 repo 內容，並發出正式回應聲明。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "ZCode 案例會把社群的檢視方法（攔 HTTPS、看出站封包）擴散出去，這類發現通常成串出現。"
+      },
+      {
+        "id": "pred-2026-09-19-ternary-mainline-serving",
+        "text": "到 2027-03-31，vLLM 官方支援矩陣列入 2-bit 或以下的三元權重格式。",
+        "resolution_date": "2027-03-31",
+        "status": "pending",
+        "rationale": "三元量化目前只在 llama.cpp / GGUF 生態成熟；要進企業端推論還需要主流 serving 框架背書。"
+      },
+      {
+        "id": "pred-2026-09-19-amd-diffusion-e2e",
+        "text": "到 2026-12-31，AMD 在 ROCm 官方部落格發布至少一篇 diffusion 或影片生成模型的端到端效能對比（含與 NVIDIA 硬體的對照數字），而不只是 kernel 層教學。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "FlyDSL kernel 與 MLPerf v6.1 剖析是準備動作；AMD 在自家 blog 上的敘事節奏通常是先鋪工具、再出對比。"
+      },
+      {
+        "id": "pred-2026-09-19-ase-test-capex",
+        "text": "到 2026-12-31，日月光投控再公告單月合計超過 50 億元的測試設備取得重訊。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "今日單日三則合計 68.56 億且集中在測試機與搬運機，指向後段測試產能吃緊而非單次補貨。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:shinthink/blitzstrike",
+        "audience": "work",
+        "url": "https://github.com/shinthink/blitzstrike",
+        "name": "shinthink/blitzstrike",
+        "stars": 636,
+        "language": null,
+        "relevance": "57 條提權鏈、130 種工具目錄，把滲透測試方法論做成單一 MCP server。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 2,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:xiaYuTian11/maskit",
+        "audience": "work",
+        "url": "https://github.com/xiaYuTian11/maskit",
+        "name": "xiaYuTian11/maskit",
+        "stars": 246,
+        "language": null,
+        "relevance": "本地閘道自動打碼再流式還原，任何相容 Base URL 工具零改動防外洩。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 9,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:fidetolabs/qanat",
+        "audience": "work",
+        "url": "https://github.com/fidetolabs/qanat",
+        "name": "fidetolabs/qanat",
+        "stars": 214,
+        "language": null,
+        "relevance": "白話文直接編譯成回測 DAG，量化策略免寫程式碼即可驗證。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 8.5,
+        "repo_age_days": 13,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:ruc-datalab/EvoOntology",
+        "audience": "work",
+        "url": "https://github.com/ruc-datalab/EvoOntology",
+        "name": "ruc-datalab/EvoOntology",
+        "stars": 156,
+        "language": null,
+        "relevance": "以自演化本體層取代向量記憶，Agent 知識隨任務持續進化。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 3,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.4:KelaoHu/dsh-lowtide",
+        "audience": "work",
+        "url": "https://github.com/KelaoHu/dsh-lowtide",
+        "name": "KelaoHu/dsh-lowtide",
+        "stars": 156,
+        "language": null,
+        "relevance": "把任務排到離峰時段執行，靠 API 離峰定價套利省下推論成本。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 26,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:SalesforceAIResearch/Beagle",
+        "audience": "work",
+        "url": "https://github.com/SalesforceAIResearch/Beagle",
+        "name": "SalesforceAIResearch/Beagle",
+        "stars": 73,
+        "language": null,
+        "relevance": "像 HF Trainer 一樣跑 rollout，規模化評測與演化多種 Agent。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 29,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.6:js713-lab/sonic-match-mcp",
+        "audience": "general",
+        "url": "https://github.com/js713-lab/sonic-match-mcp",
+        "name": "js713-lab/sonic-match-mcp",
+        "stars": 44,
+        "language": null,
+        "relevance": "看畫面內容配授權安全配樂，自動產生 ffmpeg 混音參數。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 8,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": []
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-claude-code-agents-md",
+        "audience": "general",
+        "url": "https://code.claude.com/docs/en/changelog",
+        "title": "Claude Code now reads AGENTS.md if there is no Claude.md",
+        "score": 301,
+        "comments": 43,
+        "takeaway": "Claude Code 無 CLAUDE.md 時改讀 AGENTS.md,收斂多 agent 設定檔格式。"
+      },
+      {
+        "id": "pulse.hn.1:hn-us-military-ai-false-intelligence-china-ship",
+        "audience": "general",
+        "url": "https://www.cnn.com/2026/09/18/politics/us-military-ai-false-intelligence-china-ship",
+        "title": "US Military had close call after using AI for hallucinated intelligence report",
+        "score": 341,
+        "comments": 37,
+        "takeaway": "美軍曾因 AI 幻覺情報誤判局勢,軍事場景仍需人工複核把關。"
+      },
+      {
+        "id": "pulse.hn.2:hn-how-to-write-with-an-llm",
+        "audience": "general",
+        "url": "https://sockpuppet.org/blog/2026/09/17/how-to-write-with-an-llm/",
+        "title": "How to Write with an LLM",
+        "score": 350,
+        "comments": 55,
+        "takeaway": "作者主張用 LLM 當寫作草稿夥伴而非代寫,55 則留言在辯論這條界線。"
+      },
+      {
+        "id": "pulse.hn.3:hn-how-i-vibed-a-proof-of-conways-conjecture",
+        "audience": "general",
+        "url": "https://overreacted.io/how-i-vibed-a-proof-of-conways-conjecture/",
+        "title": "I vibed a proof of Conway's conjecture",
+        "score": 197,
+        "comments": 23,
+        "takeaway": "作者用 vibe coding 生成 Conway 猜想證明,測出 agent 推理的實戰上限。"
+      },
+      {
+        "id": "pulse.hn.4:hn-cactus-needle-3",
+        "audience": "both",
+        "url": "https://cactuscompute.com/needle",
+        "title": "Show HN: Cactus Needle 3: 8-29MB automation models can match DeepSeek V4 Flash",
+        "score": 144,
+        "comments": 25,
+        "takeaway": "Cactus Needle 3 用 8-29MB 模型打平 DeepSeek V4 Flash,端側小模型可用性再進一步。"
+      },
+      {
+        "id": "pulse.hn.5:hn-arxiv-2510.03215",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2510.03215",
+        "title": "Cache-to-Cache: Direct Semantic Communication Between LLMs (2025)",
+        "score": 55,
+        "comments": 4,
+        "takeaway": "Cache-to-Cache 讓 LLM 直接交換語意快取,略過文字生成的頻寬瓶頸。"
+      },
+      {
+        "id": "pulse.hn.6:hn-arxiv-2609.02852",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.02852",
+        "title": "The Implications of Linguistic Illegibility for LLM Security",
+        "score": 38,
+        "comments": 5,
+        "takeaway": "論文指出語言可讀性下降會讓 LLM 安全防線失效,對 prompt injection 防禦是警訊。"
+      },
+      {
+        "id": "pulse.hn.7:hn-zcode-silent-workspace-snapshot-upload",
+        "audience": "general",
+        "url": "https://blog.ferstar.org/en/posts/zcode-silent-workspace-snapshot-upload/",
+        "title": "Inside ZCode: Silently uploading your Git history to the cloud",
+        "score": 237,
+        "comments": 35,
+        "takeaway": "ZCode 被爆靜默把整個 Git 歷史上傳雲端,AI coding 工具的資料外洩風險浮上檯面。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-targeted-attacks-rust",
+        "audience": "general",
+        "url": "https://blog.rust-lang.org/2026/09/17/targeted-attacks/",
+        "title": "Be alert: targeted attacks on prominent Rustaceans",
+        "score": 91,
+        "takeaway": "知名 Rust 開發者近期成為鎖定式攻擊目標,開源維護者帳號成新攻擊面。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-flock-cameras-vulnerabilities",
+        "audience": "general",
+        "url": "https://micahflee.com/flock-cameras-are-riddled-with-security-vulnerabilities-and-hard-coded-credentials/",
+        "title": "Flock cameras are riddled with security vulnerabilities and hard-coded credentials",
+        "score": 95,
+        "takeaway": "Flock 監控攝影機被抓到寫死帳密與多項漏洞,執法用 AI 監控設備風險浮現。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-a-decade-of-rustls",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1093391/",
+        "title": "A decade of Rustls",
+        "takeaway": "Rustls 邁入第十年,作者盤點通往 0.24 與 1.0 版本的路線圖與教訓。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-julia-1-13-released",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1093567/",
+        "title": "Julia 1.13 released",
+        "takeaway": "Julia 1.13 加速套件預編譯並升級 REPL,新增 Juliaup 圖形化介面。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-typst-makes-big-strides",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1092993/",
+        "title": "Typst makes big strides",
+        "score": 66,
+        "takeaway": "Typst 排版系統近期進展加速,成為 LaTeX 之外的技術文件寫作新選項。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-golden-spike-reviving-vale-valen",
+        "audience": "general",
+        "url": "https://verdagon.dev/blog/golden-spike-reviving-vale-valen",
+        "title": "The Golden Spike, and Resurrecting the Vale(n) Programming Language",
+        "score": 59,
+        "takeaway": "沉寂多年的 Vale 語言以 Valen 之姿重啟,作者記錄語言復活的技術決策。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:sebastianraschka-gpt-6-astra-looped-transformers",
+        "audience": "general",
+        "url": "https://magazine.sebastianraschka.com/p/gpt-6-astra-looped-transformers-and",
+        "title": "GPT-6 Astra, Looped Transformers, and Hidden Reasoning",
+        "takeaway": "文章拆解 GPT-6 Astra 循環式 transformer 與隱藏推理機制的設計取捨。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-3711-20260919-1405",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "代子公司ASE Singapore Pte. Ltd.公告向Teradyne(Asia)Pte. Ltd.取得供營業用之機器設備",
+        "takeaway": "日月光新加坡子公司砸14.79億添購測試設備，擴充半導體封測產能。",
+        "amount": "美金4,792萬元，約合新台幣14.79億元",
+        "companies": [
+          "日月光投控"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-2408-20260919-1702",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2408",
+        "title": "公告本公司取得機器設備",
+        "takeaway": "南亞科砸10.57億向Kokusai Electric添購晶圓製程設備，擴大DRAM產能。",
+        "amount": "約新台幣10.57億元",
+        "companies": [
+          "南亞科"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:mops-3711-20260919-1812",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "代子公司矽品精密工業(股)公司公告取得營業用機器設備達十億元（愛德萬測試設備）",
+        "takeaway": "矽品砸42.02億添購12批愛德萬測試設備，強化封測產能。",
+        "amount": "約新台幣42.02億元（12批）",
+        "companies": [
+          "日月光投控"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:mops-3711-20260919-1813",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "代子公司矽品精密工業(股)公司公告取得營業用機器設備達十億元（村田機械設備）",
+        "takeaway": "矽品再砸11.75億添購4批村田機械設備，同步擴充封測產線。",
+        "amount": "約新台幣11.75億元（4批）",
+        "companies": [
+          "日月光投控"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:rocm-blog-f7a3c1e2",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/flydsl-customized-attention/README.html",
+        "title": "AMD 以 FlyDSL 打造 diffusion attention 自製 kernel",
+        "takeaway": "diffusion 模型免逐字生成,AMD 以 FlyDSL 打造客製 attention kernel 加速非自回歸推論。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:rocm-blog-4b9d2a88",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/dflash-on-MI355x/README.html",
+        "title": "AMD DFlash 推測解碼:宣稱 MI355X 上 Qwen3.5 推論最高提速 5 倍",
+        "takeaway": "自回歸解碼受限於權重讀取頻寬,AMD 稱 DFlash 推測解碼可讓 MI355X 上的 Qwen3.5 推論最高提速 5 倍。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:rocm-blog-9e1f6c3d",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/mlperf-inf-v6.1/README.html",
+        "title": "AMD 公布 MLPerf Inference v6.1 技術剖析,MI355X 系列奪多項第一",
+        "takeaway": "MLPerf Inference v6.1 於 9/16 公布,AMD 稱 MI355X/MI350X/MI350P 奪下多項第一並擴大測試覆蓋範圍。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:rocm-blog-2d8a5f01",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/thread-trace/README.html",
+        "title": "AMD 推出 ROCprof Compute Viewer:GPU thread trace 視覺化工具",
+        "takeaway": "找到待優化的 GPU kernel 後,thread trace 能顯示指令執行與 wave 等待時間,協助精準定位瓶頸。",
+        "companies": [
+          "AMD"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:hf-deepseek-ai/DeepSeek-V4.1-Flash",
+        "audience": "general",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek 釋出 V4.1-Flash 開源模型",
+        "takeaway": "MIT 授權釋出 fp8 量化版本,支援圖文輸入,上線後下載量已破 42 萬次。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.1:hf-Qwen/Qwen3.8-27B",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "阿里雲釋出 Qwen3.8-27B 開源模型",
+        "takeaway": "Apache 2.0 授權的圖文模型,已支援 Azure、SageMaker 一鍵部署,下載量逾 700 萬次。",
+        "companies": [
+          "Alibaba",
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.2:hf-Lightricks/LTX-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "Lightricks 釋出 LTX-2.5 影片生成模型",
+        "takeaway": "新版 LTX-Video 同時支援文字、圖片、音訊互轉影片,下載量已破 159 萬次。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.3:arxiv-2609.20744",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.20744v1",
+        "title": "Video DeltaNet:直播影片生成的原生混合注意力機制",
+        "takeaway": "影片 diffusion 因長時空序列使 attention 成瓶頸,新法把線性注意力用於直播生成,同時保留細節品質。"
+      },
+      {
+        "id": "tech.models.4:arxiv-2609.20751",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.20751v1",
+        "title": "dQwen3.5:將混合注意力 AR 模型改造為擴散語言模型",
+        "takeaway": "多數擴散語言模型改造只從全注意力 transformer 出發,這篇處理了 RNN 層天生因果、難以雙向化的障礙。"
+      },
+      {
+        "id": "tech.models.5:hf-openbmb/MiniCPM5-2B",
+        "audience": "both",
+        "url": "https://huggingface.co/openbmb/MiniCPM5-2B",
+        "title": "OpenBMB 釋出 MiniCPM5-2B 端側模型",
+        "takeaway": "針對長文本與工具呼叫優化的端側模型,Apache 2.0 授權,下載量已破 35 萬次。",
+        "companies": [
+          "OpenBMB"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:lmarena-claude-fable-5-high",
+        "audience": "general",
+        "url": "https://lmarena.ai/leaderboard",
+        "title": "LMArena:Claude Fable 5(High)首度進榜前五",
+        "takeaway": "Claude Fable 5 的 High 模式首度躋身 LMArena 綜合排行榜前五。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "claude-fable-5-high"
+          ],
+          "rank_changes": []
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:tau2-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench:GPT-5.2 從第 10 名躍升至第 2",
+        "takeaway": "GPT-5.2 在 agent 工具呼叫評測 tau2-bench 排名大躍進,由第 10 衝上第 2。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:hf-Edge0/Edge0-35B-A3B-preview",
+        "audience": "work",
+        "url": "https://huggingface.co/Edge0/Edge0-35B-A3B-preview",
+        "title": "Edge0-35B-A3B 預覽版導入 SSD 卸載,支援端側推論",
+        "takeaway": "以 Qwen3.6-35B-A3B 為底,結合 SSD 卸載與 LoRA prerouter,讓 35B MoE 模型能在端側跑起來。",
+        "companies": [
+          "Edge0"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:hf-prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "title": "Ternary-Bonsai-2 將 27B 模型壓至 2-bit 三元量化",
+        "takeaway": "以 Qwen3.8-27B 為底,採 2-bit 三元權重加混合注意力,大幅壓低推論記憶體需求。",
+        "companies": [
+          "Prism ML"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:hf-ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF",
+        "audience": "work",
+        "url": "https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF",
+        "title": "IST 奧地利團隊發布 GSQ-RCO 混合精度量化法",
+        "takeaway": "GSQ 搭配 RCO 混合精度量化技術套用於 Qwen3.8-27B 多模態版本,兩篇 arXiv 論文提供理論依據。",
+        "companies": [
+          "ISTA-DASLab"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.3:sk-hynix-news-a1b2c3d4",
+        "audience": "both",
+        "url": "https://news.skhynix.com/en/sk-hynix-ventures/",
+        "title": "SK 海力士於矽谷成立 SK hynix Ventures,擴大 AI 生態系投資",
+        "takeaway": "SK 海力士執行長 Kwak Noh-Jung 率隊出席矽谷首屆 AI 基建投資日,宣布擴大對 AI 生態系新創的投資佈局。",
+        "companies": [
+          "SK hynix"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-19",
+    "flagged": [
+      {
+        "path": "signals.focus[1].body",
+        "type": "temporal",
+        "marker": "今天",
+        "ids": [
+          "pulse.hn.4:hn-cactus-needle-3"
+        ]
+      }
+    ],
+    "repaired": 1
+  }
+}
