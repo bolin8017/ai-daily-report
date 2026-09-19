@@ -1,0 +1,630 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-20",
+  "meta": {
+    "run_id": "e4ca1a5f-70b1-48ae-b652-70c408eeacdd",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-19T23:10:02.185Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 2100
+      },
+      "trending": {
+        "ok": true,
+        "count": 15
+      },
+      "search": {
+        "ok": true,
+        "count": 288
+      },
+      "developers": {
+        "ok": true,
+        "count": 17
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 2
+      },
+      "mops": {
+        "ok": true,
+        "count": 1
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 64,
+      "market": 2,
+      "tech": 9,
+      "shipped": 54
+    },
+    "degraded_sources": [
+      "lobsters"
+    ],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.6777635999999999,
+        "duration_ms": 222498,
+        "num_turns": 7,
+        "input_tokens": 14,
+        "output_tokens": 18394,
+        "cache_read_tokens": 499028,
+        "cache_creation_tokens": 97457,
+        "is_error": false,
+        "session_id": "a77ad7b0-f315-4341-b5c3-45511f6f4c9c"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1417888,
+        "duration_ms": 12907,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1301,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31512,
+        "is_error": false,
+        "session_id": "39da3673-1a8c-4e91-81e0-83bfdaef2a3f"
+      },
+      "curate.market": {
+        "cost_usd": 0.07514280000000001,
+        "duration_ms": 24347,
+        "num_turns": 6,
+        "input_tokens": 10,
+        "output_tokens": 1686,
+        "cache_read_tokens": 207849,
+        "cache_creation_tokens": 3298,
+        "is_error": false,
+        "session_id": "be37b00c-e65c-4e9f-a738-947550c1f4a4"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.443051,
+        "duration_ms": 151544,
+        "num_turns": 7,
+        "input_tokens": 14,
+        "output_tokens": 13386,
+        "cache_read_tokens": 308550,
+        "cache_creation_tokens": 61092,
+        "is_error": false,
+        "session_id": "13e127b7-ae5f-46d8-bb76-0cdcf88c8282"
+      },
+      "synthesize": {
+        "cost_usd": 2.026705,
+        "duration_ms": 216657,
+        "num_turns": 19,
+        "input_tokens": 20,
+        "output_tokens": 17303,
+        "cache_read_tokens": 790304,
+        "cache_creation_tokens": 118616,
+        "is_error": false,
+        "session_id": "7bb8f8cf-59ed-42fb-87d3-31ef629fc2bc"
+      },
+      "curate.tech": {
+        "cost_usd": 0.6662277999999999,
+        "duration_ms": 236466,
+        "num_turns": 13,
+        "input_tokens": 18,
+        "output_tokens": 21425,
+        "cache_read_tokens": 588624,
+        "cache_creation_tokens": 82368,
+        "is_error": false,
+        "session_id": "d7a3bbcb-4358-4ff1-bcb9-25060a068920"
+      }
+    },
+    "total_cost_usd": 4.030679,
+    "total_tokens": 73573,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "5/5",
+      "unique_domains": 17,
+      "source_tier": 0.12121212121212122
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-20 — 近期重點</h3>\n<h4>「一次一個 token」開始被當成工程問題處理</h4>\n<p>AMD 在 ROCm 部落格把話講得很白：自回歸解碼每前進一個 token 就要把權重完整串流過 GPU 一遍，單請求延遲卡的是頻寬，不是算力。它給了兩條解法，DFlash 推測解碼（AMD 自稱在 MI355X 上跑 Qwen3.5 最高提速 5 倍），以及用 FlyDSL 手寫 diffusion attention kernel——後者能成立，正是因為 diffusion 不逐字生成。arXiv 上的 dQwen3.5 從模型那頭走同一條路，把混合注意力的 AR 模型改造成擴散語言模型，難點卡在 RNN 層天生因果、不好雙向化。</p>\n<h4>一份權重，六個衍生版</h4>\n<p>HF trending 的 15 個模型裡，有 6 個的 base 是同一份 Qwen3.8-27B（Apache 2.0，本體下載 736 萬次）。unsloth 的 GGUF 711 萬次、ISTA-DASLab 的 GSQ-RCO 混合精度 115 萬次、Prism ML 的 2-bit 三元 Ternary-Bonsai-2 152 萬次。壓縮路線各走各的，但疊在同一組權重上，所以結果可以直接互比。要把 27B 塞進固定 DRAM 的人，量化選型從「自己做」變成「挑兩個現成 GGUF 跑 A/B」。</p>\n<h4>HN 的排序說了另一件事</h4>\n<p>今天 HN 前排是兩篇談「怎麼用」的文章。1284 分的〈AI-generated posters don't have to be horrible〉拆的是構圖與後製；611 分的〈How to Write with an LLM〉給的是工作流程，不是 prompt。反方那篇〈I think you should almost never use AI to write〉拿到 180 分。而微軟高層在 NYT 訴訟的法庭文件裡把 AI 爬取訓練資料稱為「史上最大規模勞動竊取」，83 分、7 則留言。能力之爭已經退到背景，留在檯面上的是手藝跟法律帳單。</p>\n<h4>端側的兩條路線</h4>\n<p>Cactus 在 Show HN 自稱 Needle 3 的 8-29MB 自動化模型效能追平 DeepSeek V4 Flash，拿到 224 分。OpenBMB 的 MiniCPM5-2B 走另一條，2B 規模做長文本加工具呼叫，下載破 38 萬次。一邊把通用模型往下壓，一邊直接訓練任務專用微模型；端側的硬約束是 DRAM 不是 FLOPs，兩條路搶的是同一塊記憶體預算。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-autoregressive-bandwidth-wall",
+        "title": "自回歸解碼的頻寬牆，正被 kernel、架構、任務層三個高度同時鑿",
+        "body": "AMD 在 DFlash 那篇裡直接寫出瓶頸的定義：自回歸解碼一次 forward 只產一個 token，單請求延遲取決於權重串流過 GPU 的速度，不是算力。它的兩篇文章各攻一側，推測解碼讓一次 forward 多吐幾個 token（自稱 MI355X 上的 Qwen3.5 最高提速 5 倍），FlyDSL 則是替 diffusion 這種不逐字生成的模型手寫 attention kernel。arXiv 上 dQwen3.5 把混合注意力的 AR 模型改造成擴散語言模型，Video DeltaNet 把線性注意力搬進影片 diffusion 的長時空序列。HN 那篇 1021 分的〈I built non-autoregressive decision models with RL a year ago〉則是從第三個高度打：需要的如果只是決策，就別生成文字。",
+        "mechanism": "同一個成本結構被三種人各自撞到——每個解碼步都要把整份權重讀過一遍，於是延遲與模型大小綁死、與 batch 無關。kernel 側的解法是每步多做點事，架構側的解法是拆掉「每步只出一個 token」這個前提，任務側的解法是連生成都不要。三者的 upstream 是同一條記憶體頻寬曲線，不是巧合。",
+        "cross_source": 5,
+        "product_opportunity": "做 DiT 圖像的人可以直接拿 FlyDSL 那篇當對照組：先量自己的 denoise step 到底是 memory-bound 還是 compute-bound，再決定該調 kernel 還是調 scheduler。量錯了，後面的優化全打在空處。",
+        "source_links": [
+          "tech.vendor.1:rocm-blog-4b9d2a88",
+          "tech.vendor.0:rocm-blog-f7a3c1e2",
+          "tech.models.4:arxiv-2609.20751",
+          "tech.models.3:arxiv-2609.20744",
+          "pulse.hn.1:hn-non-autoregressive-decision-models"
+        ],
+        "audience": "both"
+      },
+      {
+        "id": "focus-qwen38-quantization-substrate",
+        "title": "Qwen3.8-27B 成了量化生態的公用底座",
+        "body": "HF trending 15 個模型裡，6 個掛著同一個 base_model：Qwen/Qwen3.8-27B。Prism ML 的 Ternary-Bonsai-2 走 2-bit 三元權重加混合注意力，下載 152 萬次、1190 個 likes；IST 奧地利團隊的 GSQ-RCO 走混合精度，下載 115 萬次、1415 個 likes，並附兩篇 arXiv 當理論依據。本體自己是 Apache 2.0、下載 736 萬次，且已支援 Azure 與 SageMaker 一鍵部署。",
+        "mechanism": "授權夠鬆、部署路徑夠短，量化研究者才願意把工作疊在同一份權重上。一旦底座統一，兩種互不相干的壓縮技術就變成可以放在同一張表上比的東西，衍生版的下載量因此能各自破百萬而不互相稀釋——這是社群自己長出來的 benchmark harness。",
+        "cross_source": 3,
+        "product_opportunity": "要在固定 DRAM 上跑 27B，不必自己做量化。2-bit 三元和混合精度兩條路的 GGUF 都已公開且同一 base，拿來直接 A/B 你自己那份資料上的品質落差，一個下午能跑完。",
+        "source_links": [
+          "tech.models.1:hf-Qwen/Qwen3.8-27B",
+          "tech.aidaptiv.0:hf-prism-ml/Ternary-Bonsai-2-27B-gguf",
+          "tech.aidaptiv.1:hf-ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-on-device-memory-budget-split",
+        "title": "端側的路線之爭：壓縮 27B，還是訓練 8MB",
+        "body": "Cactus 在 Show HN 自稱 Needle 3 的 8-29MB 自動化模型效能追平 DeepSeek V4 Flash，224 分、31 則留言。OpenBMB 的 MiniCPM5-2B 停在 2B，換到的是長文本與工具呼叫，Apache 2.0、下載 38 萬次。Prism ML 則往反方向做，把 27B 壓成 2-bit 三元塞進端側。三者的目標裝置重疊，做法完全不同。",
+        "mechanism": "端側的硬約束是 DRAM 容量與頻寬，不是 FLOPs，所以這三條路線其實在搶同一塊記憶體預算。分界線只有一條：你的任務要不要通用能力。要，就得付 27B 壓縮後的殘餘品質損失；不要，8-29MB 這個級距就把整塊記憶體還給你。",
+        "cross_source": 3,
+        "product_opportunity": "先界定你的 demo 裡哪幾步真的需要通用模型。分類、路由、UI 操作這類動作層，換成 10MB 級距的專用模型，省下來的 DRAM 可以全部留給 DiT 的 latent 與 UNet 權重。",
+        "source_links": [
+          "pulse.hn.4:hn-cactus-needle-3",
+          "tech.models.5:hf-openbmb/MiniCPM5-2B",
+          "tech.aidaptiv.0:hf-prism-ml/Ternary-Bonsai-2-27B-gguf"
+        ],
+        "audience": "both"
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-on-demand-attention",
+      "title": "On-Demand Attention：讓模型自己決定這一步要不要回讀歷史",
+      "body": "一篇低調的 arXiv 論文（2609.20734）指出，長文推論裡多數解碼步根本不需要讀完整段歷史，而模型的解碼狀態在執行全域回讀「之前」，就已經帶有足以預測「這次讀了有沒有用」的資訊。作者據此讓模型自行決定何時回讀。它沒進 HN 前排，也沒被任何一個 AI blogger 討論。",
+      "mechanism": "業界談 KV cache 幾乎都在談怎麼「存得更小」——量化、壓縮、分層卸載。這篇改談怎麼「讀得更少」，而讀取正是把單請求延遲綁死在記憶體頻寬上的那一端。省儲存只放寬容量上限，省讀取直接砍每步的成本，兩者不是同一個維度。",
+      "product_opportunity": "如果你的 agent 迴圈已經在跑幾萬 token 的 context，這個方向值得先做一個廉價驗證：統計你的解碼步裡有多少比例實際上只依賴最近幾百個 token。比例高，就代表你現在每步都在付不必要的全域讀取費。",
+      "source_links": [
+        "tech.aidaptiv.2:arxiv-2609.20734"
+      ],
+      "audience": "work",
+      "why_asymmetric": "成本是讀一篇論文加一次統計；若成立，省下的是長 context 推論每一步的固定開銷，而不是一次性的容量。"
+    },
+    "contrarian": {
+      "id": "contrarian-system-one-likes-without-downloads",
+      "title": "「System One」這波是 likes 現象，不是部署現象",
+      "body": "非自回歸決策模型近期在 HN 拿到 1021 分，同一個團隊（convaiinnovations）掛在 HF 上的 laya 有 507 個 likes、下載計數 0。旁邊那個同樣主打 parallel-decoding 的 harshatheg/Qwen-2.5-1B-RLCD 是 424 個 likes、下載計數 0。dev.to 上還有人寫了 TypeSafe Jev 的實測指南，講的是輸入型別化問題、平行回傳機率決策而非純文字。討論熱度是真的，裝機數不是。",
+      "mechanism": "換模型很便宜，換輸出介面很貴。這類模型要求呼叫端從「解析一段文字」改成「消費一組校準過的機率」，等於動到既有 pipeline 的 schema、錯誤處理跟 eval 腳本。願意按 like 的人遠多於願意動這三處的人，而 HF 的下載計數只認後者。",
+      "source_links": [
+        "pulse.hn.1:hn-non-autoregressive-decision-models",
+        "pulse.ai_bloggers.1:devto-jev-typesafe-system-one-guide"
+      ],
+      "audience": "general",
+      "claim": "到 2026-10-31，convaiinnovations/laya 在 Hugging Face 頁面上顯示的下載計數仍低於 10,000。",
+      "resolution_date": "2026-10-31",
+      "verification": "打開 https://huggingface.co/convaiinnovations/laya，讀模型頁上的 downloads 計數；≥10,000 即為我判斷錯誤。"
+    },
+    "predictions": [
+      {
+        "id": "pred-qwen38-derivatives-hold-trending",
+        "text": "到 2026-11-30，Hugging Face trending 前 15 名中，以 Qwen/Qwen3.8-27B 為 base_model 的衍生模型仍至少佔 4 個（今天是 6 個）。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "底座統一之後，量化與微調的衍生版彼此不搶流量，反而互相帶量；要掉到 4 個以下需要一個新的 Apache 授權同級底座出現並完成遷移。"
+      },
+      {
+        "id": "pred-diffusion-decode-in-major-engine",
+        "text": "到 2026-12-31，vLLM、SGLang、llama.cpp 三者之一會在正式 release note 中納入擴散語言模型（diffusion LM）的解碼路徑。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "dQwen3.5 這類 AR→DLM 改造把門檻從「重新預訓練」降到「改造既有權重」，一旦有可下載的權重，推論引擎接上去的動機就成立。"
+      },
+      {
+        "id": "pred-aa-index-top5-stays-closed",
+        "text": "到 2026-12-31，Artificial Analysis Intelligence Index 的前五名仍全數為閉源權重模型（今天前五是 Claude Fable 5.1 的三個設定加上 GPT-6 Astra 的兩個設定）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "該榜單的高分區靠的是重度推理設定的 test-time compute，開源權重目前的競爭力集中在單位成本而非絕對上限。"
+      },
+      {
+        "id": "pred-tau2-open-weights-keeps-top",
+        "text": "到 2026-12-31，tau2-bench 榜首仍由開源權重模型佔據（今天是 RAFT-30B-A3B，GPT-5.2 剛從第 10 升到第 2）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "工具呼叫類評測對後訓練配方的敏感度高於模型規模，這是開源側迭代最快的一塊；但 GPT-5.2 八名的跳幅說明閉源側正在補這一課，所以這條有真實的翻盤風險。"
+      },
+      {
+        "id": "pred-amd-dflash-beyond-mi355x",
+        "text": "到 2026-11-30，AMD ROCm 部落格會公布 DFlash 推測解碼在 MI355X 以外硬體（MI350X、MI350P 或後續型號）上的數據。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "同一批文章裡 MLPerf Inference v6.1 的提交已經橫跨 MI355X/MI350X/MI350P 三款，推測解碼的數據沒有理由只停在旗艦。"
+      },
+      {
+        "id": "pred-dqwen35-weights-published",
+        "text": "到 2026-12-31，Hugging Face 上會出現至少一份公開可下載的 dQwen3.5 擴散語言模型權重。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "論文的賣點是改造成本低，而 Qwen3.5 系列本身權重公開；不放權重，這個賣點無法被任何人驗證。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:binuka200/package-doctor",
+        "audience": "work",
+        "url": "https://github.com/binuka200/package-doctor",
+        "name": "binuka200/package-doctor",
+        "stars": 9,
+        "language": null,
+        "relevance": "以 CISA KEV／EPSS 排序漏洞優先度，鎖定會碰外部輸入的廢棄套件。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 7,
+        "eng_score": 3,
+        "excellence_score": 0.38201000000000007,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.2:mutonby/vibetube",
+        "audience": "general",
+        "url": "https://github.com/mutonby/vibetube",
+        "name": "mutonby/vibetube",
+        "stars": 68,
+        "language": null,
+        "relevance": "同步錄多機位畫面，交給 Claude Code／Codex 自動剪輯並發布。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 3,
+        "repo_age_days": 4,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:henryhyw/slidepoise",
+        "audience": "general",
+        "url": "https://github.com/henryhyw/slidepoise",
+        "name": "henryhyw/slidepoise",
+        "stars": 44,
+        "language": null,
+        "relevance": "先用生成圖像探索版型，再重建成可編輯的 PPT 文字與圖表。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 2,
+        "repo_age_days": 14,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:kentcdodds/kody-celld",
+        "audience": "work",
+        "url": "https://github.com/kentcdodds/kody-celld",
+        "name": "kentcdodds/kody-celld",
+        "stars": 2,
+        "language": null,
+        "relevance": "把 Cloudflare 版 kody.codes 搬到自架 Deno celld，MCP 介面不變。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-ai-generated-posters",
+        "audience": "general",
+        "url": "https://john.hartnup.uk/2026/06/07/ai-event-posters.html",
+        "title": "AI-generated posters don’t have to be horrible",
+        "score": 1284,
+        "comments": 162,
+        "takeaway": "教學拆解如何用構圖與後製修正,讓 AI 生成海報擺脫廉價感。"
+      },
+      {
+        "id": "pulse.hn.1:hn-non-autoregressive-decision-models",
+        "audience": "general",
+        "url": "https://laya.convaiinnovations.com/",
+        "title": "I built non-autoregressive decision models with RL a year ago",
+        "score": 1021,
+        "comments": 59,
+        "takeaway": "非自回歸 RL 決策模型的實作紀錄,搶在主流討論一年前就落地。"
+      },
+      {
+        "id": "pulse.hn.2:hn-how-to-write-with-llm",
+        "audience": "general",
+        "url": "https://sockpuppet.org/blog/2026/09/17/how-to-write-with-an-llm/",
+        "title": "How to Write with an LLM",
+        "score": 611,
+        "comments": 69,
+        "takeaway": "分享與 LLM 協作寫作的具體工作流程,而非單純丟 prompt 交差。"
+      },
+      {
+        "id": "pulse.hn.3:hn-gpt6-astra-wwi-cipher",
+        "audience": "general",
+        "url": "https://www.prinzai.com/p/gpt-6-astra-solves-a-wwi-german-radio",
+        "title": "GPT-6 Astra Solves a WWI German Radio Cipher",
+        "score": 349,
+        "comments": 26,
+        "takeaway": "GPT-6 Astra 破解一戰德軍密碼,展示長鏈推理在歷史謎題的實戰力。"
+      },
+      {
+        "id": "pulse.hn.4:hn-cactus-needle-3",
+        "audience": "both",
+        "url": "https://cactuscompute.com/needle",
+        "title": "Show HN: Cactus Needle 3: 8-29MB automation models can match DeepSeek V4 Flash",
+        "score": 224,
+        "comments": 31,
+        "takeaway": "8-29MB 的 on-device 模型效能追平 DeepSeek V4 Flash,端側部署門檻再降。"
+      },
+      {
+        "id": "pulse.hn.5:hn-never-use-ai-to-write",
+        "audience": "general",
+        "url": "https://erichgrunewald.substack.com/p/why-you-should-almost-never-use-ai",
+        "title": "I think you should almost never use AI to write",
+        "score": 180,
+        "comments": 25,
+        "takeaway": "反方觀點:AI 寫作省下的時間,多半犧牲了思考與風格的養成。"
+      },
+      {
+        "id": "pulse.hn.6:hn-ai-scraping-theft-of-labor",
+        "audience": "general",
+        "url": "https://www.tomshardware.com/tech-industry/artificial-intelligence/microsoft-director-called-ai-scraping-the-largest-theft-of-labor-in-human-history-while-openai-head-brands-chatgpt-an-existential-threat-to-publishers-revelations-come-from-legal-briefs-filed-in-nyt-lawsuit",
+        "title": "Microsoft director: AI scraping 'the largest theft of labor in human history'",
+        "score": 83,
+        "comments": 7,
+        "takeaway": "微軟法務文件證實內部視 AI 爬取訓練資料為「史上最大規模勞動竊取」。"
+      },
+      {
+        "id": "pulse.hn.7:hn-cua-s1-computer-use",
+        "audience": "general",
+        "url": "https://github.com/trycua/cua",
+        "title": "Show HN: CUA-S1 – A System One Model for Computer Use",
+        "score": 48,
+        "comments": 4,
+        "takeaway": "開源 System One 模型專攻電腦操作任務,瞄準 agent 的動作執行層。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lwn-julia-1-13-released",
+        "audience": "general",
+        "url": "https://lwn.net/Articles/1093567/",
+        "title": "Julia 1.13 released",
+        "takeaway": "Julia 1.13 加速套件預編譯,並整合 Juliaup 圖形化版本管理工具。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:sebastianraschka-gpt6-astra-looped-transformers",
+        "audience": "general",
+        "url": "https://magazine.sebastianraschka.com/p/gpt-6-astra-looped-transformers-and",
+        "title": "GPT-6 Astra, Looped Transformers, and Hidden Reasoning",
+        "takeaway": "拆解 GPT-6 Astra 的 looped transformer 架構與隱藏推理機制。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:devto-jev-typesafe-system-one-guide",
+        "audience": "general",
+        "url": "https://dev.to/valyuai/how-to-use-jev-a-practical-guide-to-typesafes-system-one-model-g5e",
+        "title": "How to Use Jev: A practical guide to TypeSafe's System One model",
+        "takeaway": "實測 TypeSafe 的 Jev 模型:輸入型別化問題,平行回傳機率決策而非純文字。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:devto-filter-boolean-typescript",
+        "audience": "general",
+        "url": "https://dev.to/nyaomaru/why-filterboolean-is-not-a-nullish-filter-in-typescript-4m82",
+        "title": "Why filter(Boolean) Is Not a Nullish Filter in TypeScript",
+        "takeaway": "拆解 filter(Boolean) 在型別推導上為何不等於 nullish 過濾。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": []
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:rocm-blog-f7a3c1e2",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/flydsl-customized-attention/README.html",
+        "title": "AMD 以 FlyDSL 打造 diffusion attention 自製 kernel",
+        "takeaway": "diffusion 模型免逐字生成,AMD 以 FlyDSL 打造客製 attention kernel 加速非自回歸推論。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:rocm-blog-4b9d2a88",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/dflash-on-MI355x/README.html",
+        "title": "AMD DFlash 推測解碼:宣稱 MI355X 上 Qwen3.5 推論最高提速 5 倍",
+        "takeaway": "自回歸解碼受限於權重讀取頻寬,AMD 稱 DFlash 推測解碼可讓 MI355X 上的 Qwen3.5 推論最高提速 5 倍。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:rocm-blog-9e1f6c3d",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/mlperf-inf-v6.1/README.html",
+        "title": "AMD 公布 MLPerf Inference v6.1 技術剖析,MI355X 系列奪多項第一",
+        "takeaway": "MLPerf Inference v6.1 於 9/16 公布,AMD 稱 MI355X/MI350X/MI350P 奪下多項第一並擴大測試覆蓋範圍。",
+        "companies": [
+          "AMD"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:hf-deepseek-ai/DeepSeek-V4.1-Flash",
+        "audience": "general",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek 釋出 V4.1-Flash 開源模型",
+        "takeaway": "MIT 授權釋出 fp8 量化版本,支援圖文輸入,上線後下載量已破 48 萬次。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.1:hf-Qwen/Qwen3.8-27B",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "阿里雲釋出 Qwen3.8-27B 開源模型",
+        "takeaway": "Apache 2.0 授權的圖文模型,已支援 Azure、SageMaker 一鍵部署,下載量逾 700 萬次。",
+        "companies": [
+          "Alibaba",
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.2:hf-Lightricks/LTX-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "Lightricks 釋出 LTX-2.5 影片生成模型",
+        "takeaway": "新版 LTX-Video 同時支援文字、圖片、音訊互轉影片,下載量已破 160 萬次。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.3:arxiv-2609.20744",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.20744v1",
+        "title": "Video DeltaNet:直播影片生成的原生混合注意力機制",
+        "takeaway": "影片 diffusion 因長時空序列使 attention 成瓶頸,新法把線性注意力用於直播生成,同時保留細節品質。"
+      },
+      {
+        "id": "tech.models.4:arxiv-2609.20751",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.20751v1",
+        "title": "dQwen3.5:將混合注意力 AR 模型改造為擴散語言模型",
+        "takeaway": "多數擴散語言模型改造只從全注意力 transformer 出發,這篇處理了 RNN 層天生因果、難以雙向化的障礙。"
+      },
+      {
+        "id": "tech.models.5:hf-openbmb/MiniCPM5-2B",
+        "audience": "both",
+        "url": "https://huggingface.co/openbmb/MiniCPM5-2B",
+        "title": "OpenBMB 釋出 MiniCPM5-2B 端側模型",
+        "takeaway": "針對長文本與工具呼叫優化的端側模型,Apache 2.0 授權,下載量已破 38 萬次。",
+        "companies": [
+          "OpenBMB"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench:GPT-5.2 從第 10 名躍升至第 2",
+        "takeaway": "GPT-5.2 在 agent 工具呼叫評測 tau2-bench 排名大躍進,由第 10 衝上第 2。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:artificial-analysis-claude-opus-5-xhigh",
+        "audience": "general",
+        "url": "https://artificialanalysis.ai/",
+        "title": "Artificial Analysis Intelligence Index:Claude Opus 5(Xhigh Effort)攀升至第 8",
+        "takeaway": "重度推理設定排名互有消長,Claude Opus 5 回升至第 8,GPT-6 Astra 中階版跌出第 10。",
+        "benchmark_changes": {
+          "new_top_5": [],
+          "rank_changes": [
+            "Claude Opus 5 (Adaptive Reasoning, Xhigh Effort): #10 → #8 ↑",
+            "Claude Fable 5 (Adaptive Reasoning, Max Effort, Opus 4.8 Fallback): #8 → #9 ↓",
+            "GPT-6 Astra (medium): #9 → #10 ↓"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:hf-prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "audience": "work",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "title": "Ternary-Bonsai-2 將 27B 模型壓至 2-bit 三元量化",
+        "takeaway": "以 Qwen3.8-27B 為底,採 2-bit 三元權重加混合注意力,大幅壓低推論記憶體需求。",
+        "companies": [
+          "Prism ML"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:hf-ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF",
+        "audience": "work",
+        "url": "https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF",
+        "title": "IST 奧地利團隊發布 GSQ-RCO 混合精度量化法",
+        "takeaway": "GSQ 搭配 RCO 混合精度量化技術套用於 Qwen3.8-27B 多模態版本,兩篇 arXiv 論文提供理論依據。",
+        "companies": [
+          "ISTA-DASLab"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:arxiv-2609.20734",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2609.20734v1",
+        "title": "On-Demand Attention:模型自行判斷何時需要長文回讀",
+        "takeaway": "長文推論多數步驟不必全讀歷史,新法讓解碼狀態自行判斷是否需要全域回讀,省下運算。"
+      },
+      {
+        "id": "tech.aidaptiv.3:sk-hynix-news-a1b2c3d4",
+        "audience": "both",
+        "url": "https://news.skhynix.com/en/sk-hynix-ventures/",
+        "title": "SK 海力士於矽谷成立 SK hynix Ventures,擴大 AI 生態系投資",
+        "takeaway": "SK 海力士執行長 Kwak Noh-Jung 率隊出席矽谷首屆 AI 基建投資日,宣布擴大對 AI 生態系新創的投資佈局。",
+        "companies": [
+          "SK hynix"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-20",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "temporal",
+        "marker": "今日",
+        "ids": [
+          "pulse.hn.2:hn-how-to-write-with-llm"
+        ]
+      },
+      {
+        "path": "signals.contrarian.body",
+        "type": "temporal",
+        "marker": "今天",
+        "ids": [
+          "pulse.ai_bloggers.1:devto-jev-typesafe-system-one-guide"
+        ]
+      }
+    ],
+    "repaired": 2
+  }
+}
