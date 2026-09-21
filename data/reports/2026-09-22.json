@@ -1,0 +1,777 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-22",
+  "meta": {
+    "run_id": "50dfe6e9-254c-484b-9083-1ff2e155d3d1",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-21T23:12:20.455Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 1675
+      },
+      "trending": {
+        "ok": true,
+        "count": 12
+      },
+      "search": {
+        "ok": true,
+        "count": 298
+      },
+      "developers": {
+        "ok": true,
+        "count": 13
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 4
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 79,
+      "market": 1,
+      "tech": 6,
+      "shipped": 50
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.708552,
+        "duration_ms": 229828,
+        "num_turns": 5,
+        "input_tokens": 10,
+        "output_tokens": 20167,
+        "cache_read_tokens": 291140,
+        "cache_creation_tokens": 111118,
+        "is_error": false,
+        "session_id": "8b570e06-56b6-4821-b844-b280e060d4f8"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1417888,
+        "duration_ms": 12907,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1301,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31512,
+        "is_error": false,
+        "session_id": "39da3673-1a8c-4e91-81e0-83bfdaef2a3f"
+      },
+      "curate.market": {
+        "cost_usd": 0.267199,
+        "duration_ms": 38071,
+        "num_turns": 8,
+        "input_tokens": 14,
+        "output_tokens": 3539,
+        "cache_read_tokens": 275800,
+        "cache_creation_tokens": 43280,
+        "is_error": false,
+        "session_id": "19642cc2-f701-420a-bda4-3ac3c3415384"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.5437082000000001,
+        "duration_ms": 188953,
+        "num_turns": 9,
+        "input_tokens": 16,
+        "output_tokens": 17082,
+        "cache_read_tokens": 447591,
+        "cache_creation_tokens": 70067,
+        "is_error": false,
+        "session_id": "0bf36601-201b-4fe2-9a6f-0ab8b0220db7"
+      },
+      "synthesize": {
+        "cost_usd": 2.3163655,
+        "duration_ms": 344387,
+        "num_turns": 22,
+        "input_tokens": 22,
+        "output_tokens": 23706,
+        "cache_read_tokens": 945265,
+        "cache_creation_tokens": 123824,
+        "is_error": false,
+        "session_id": "9af9513e-d462-482b-b169-814440539894"
+      },
+      "curate.tech": {
+        "cost_usd": 0.4875654,
+        "duration_ms": 163996,
+        "num_turns": 10,
+        "input_tokens": 14,
+        "output_tokens": 13807,
+        "cache_read_tokens": 381017,
+        "cache_creation_tokens": 67136,
+        "is_error": false,
+        "session_id": "6602850d-b90e-4626-a0f0-46605bf8263c"
+      }
+    },
+    "total_cost_usd": 4.4651789,
+    "total_tokens": 79680,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "6/6",
+      "unique_domains": 19,
+      "source_tier": 0.04878048780487805
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-22 — 今日重點</h3>\n<h4>Jev 類決策模型的開源複製,四天內長成一排</h4>\n<p>HN 今天分數最高的三則:Grok 4.7 拿 454 分、jaredpalmer/kev 拿 384 分、小米 MiMo v2.6 拿 366 分。中間那個 repo 四天大、2377 stars,自我描述是「tiny Jev-like family of decision models built on top of Qwen3.5」。今天的 HuggingFace trending 榜上還有 AlexWortega/openjev(413 likes,Qwen3.5-4B 的 cross-encoder reranker)和 convaiinnovations/laya(1720 likes,標籤寫 calibrated-decisions、routing、guardrails)。複製品全長在 Qwen3.5 上,做的全是分類、排序、打分這類窄工作。</p>\n<h4>一張卡的上下文天花板,是量化格式在推</h4>\n<p>jpezzulli/sglang-rtxpro6000 在單張 RTX PRO 6000 Blackwell 96GB 上跑 Qwen3.8-27B FP8 配 DFlash2,撐出 524K context(95 stars,27 天,每日約 +2)。AMD 昨天的 ROCm blog 從反方向補上同一條線:四張 MI355X 用 SGLang 服務 MXFP4 量化的 GLM-5.2 時,prefill 的 context parallelism 只在長 prompt 才划算。切卡有代價,所以單卡量化配置的相對位置在變好。</p>\n<h4>出圖品質不再是差異化來源</h4>\n<p>NVIDIA 昨天在 Cosmos repo 加了 DMD2 蒸餾版的 TensorRT-LLM 走查,Cosmos3-Super 文字轉圖像 4 步完成推論,同一天晚些又補上 Cosmos3-Edge 的影音版。Qwen-Image-2.1 這一版加的是 RGBA 直出。一個對照值得記住:Qwen-Image-2.1 官方 repo 只有 6,523 次下載,Comfy-Org 的單檔版有 535,365 次。使用者不是從 diffusers 進來的。</p>\n<h4>CI 是最先爆的那一道</h4>\n<p>Linear 昨天把「AI coding has made CI a bottleneck」送上 HN(98 分),說 AI 產出的程式碼量把自家流程逼到重構。今天新發現裡有三個 repo 各自蹲在不同的驗證關卡:agent-chaperone 擋工具呼叫執行前、thepartly/differential 擋合併前、otobongfp/code-graph-view 擋餵給模型之前。產出變便宜以後,稀缺的是「看過並確認」。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-jev-open-replication",
+        "title": "Jev 類決策模型的護城河以天計,不以季計",
+        "body": "jaredpalmer/kev 在 HN 拿 384 分,repo 四天大、2377 stars,權重規模從 0.8B 到 9B,底座是 Qwen3.5。近期的 HuggingFace trending 榜上有 AlexWortega/openjev(413 likes,Qwen3.5-4B 的 cross-encoder reranker)和 convaiinnovations/laya(1720 likes,標籤是 calibrated-decisions、routing、guardrails、moderation)。sdras 兩天前推出 jev-webmcp-extension(70 stars),JacobLinCool 一天前推出 jev-ai-detector。本週還有一篇 dev.to 文章主張作者一年前就做過非自回歸決策模型,現在被前沿實驗室稱為突破。",
+        "mechanism": "決策模型的工作面很窄:分類、排序、打分、擋門。窄到一個 0.8B 到 9B 的 Qwen3.5 微調就能把行為近似出來,不需要複製通用對話能力。所以這類產品的護城河不在模型本身,而在誰先把它接到呼叫點上:openjev 接 rerank,laya 接 guardrail,jev-webmcp-extension 接瀏覽器的工具呼叫。這種複製週期用天算。",
+        "evidence": "kev 2377 stars / 4 天 / HN 384 分;openjev 413 likes;laya 1720 likes;jev-webmcp-extension 70 stars / 48 小時;jev-ai-detector 1 天;dev.to 優先權爭議文 4 天。",
+        "cross_source": 5,
+        "product_opportunity": "你 RAG 管線裡那顆用 frontier API 做 rerank 或意圖分類的呼叫,現在有 4B 級的本地替代品。這週跑一次對照:同一批 query 下 openjev 或 kev 的 top-k 命中率跟現行 API 差幾個百分點,再乘上你的每日呼叫量算省下多少。",
+        "source_links": [
+          "pulse.hn.2:hn-kev-qwen3-5-decision-models",
+          "discoveries.rising.3:jaredpalmer/kev",
+          "discoveries.dev_watch.0:sdras/jev-webmcp-extension",
+          "discoveries.dev_watch.1:JacobLinCool/jev-ai-detector",
+          "pulse.ai_bloggers.1:dev-to-non-autoregressive-decision-models"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-single-card-context-ceiling",
+        "title": "單卡長上下文的上限,是數值格式推上去的,不是算力",
+        "body": "jpezzulli/sglang-rtxpro6000 在一張 RTX PRO 6000 Blackwell 96GB(SM120)上跑 Qwen3.8-27B FP8 配 DFlash2、Qwen3.8 Flash-Next NVFP4 配 FR-Spec,加上 HiCache 與 NIXL,撐出 524K context(95 stars,27 天,每日約 +2)。AMD 昨天的 ROCm blog 給了反方向的證據:四張 MI355X 用 SGLang 服務 MXFP4 量化的 GLM-5.2 時,prefill 的 context parallelism 只在長 prompt 才划算。prism-ml 的 Ternary-Bonsai-2-27B 把 Qwen3.8-27B 壓成三元 2-bit,累計下載 2,227,879 次,對照基座本體的 7,153,238 次。Tim Dettmers 昨天也在寫自有硬體上跑前沿模型這件事(HN 67 分)。",
+        "mechanism": "限制條件不是 FLOPs,是權重加 KV cache 佔掉多少 HBM。這幾條線都在同一個地方施力:換更省的數值格式(FP8、NVFP4、MXFP4、三元 2-bit),再用注意力核心跟投機解碼把省下來的空間換成上下文長度。AMD 那筆數據同時說明拆卡不是免費的,短 prompt 下 prefill 平行化是淨虧,所以單卡配置的相對位置在往上走。",
+        "evidence": "524K context on 1× RTX PRO 6000 96GB;4× MI355X 的 prefill 平行化僅在長 prompt 划算;Ternary-Bonsai-2-27B 2,227,879 下載 vs Qwen3.8-27B 7,153,238 下載。",
+        "cross_source": 4,
+        "product_opportunity": "把 aiDAPTIV+ demo 的 baseline 換成單卡量化配置重量一次,prefill 跟 decode 分開計時。sglang-rtxpro6000 的 524K 設定可以直接當對照組,跑完你才知道客戶那台機器的真實上限落在哪一段。",
+        "source_links": [
+          "discoveries.rising.7:jpezzulli/sglang-rtxpro6000",
+          "tech.vendor.1:rocm-blog-glm52-mxfp4-mi355",
+          "tech.models.4:prism-ml/Ternary-Bonsai-2-27B-gguf",
+          "pulse.hn.7:hn-frontier-ai-own-hardware"
+        ],
+        "audience": "both"
+      },
+      {
+        "id": "focus-verification-bottleneck",
+        "title": "瓶頸已經從寫程式移到看程式",
+        "body": "Linear 昨天把「AI coding has made CI a bottleneck, so we reworked ours to keep up」送上 HN(98 分),起因是 AI 產出的程式碼量把自家流程逼到重構。近期新發現裡有三個 repo 剛好各自蹲在不同的檢查點:agent-chaperone 在 MCP proxy 層把工具呼叫與回傳結果都先過濾一遍(1 star、3 天大,七項工程訊號全中,115 個原始檔,30 次非機器人 commit,npm 週下載 528),thepartly/differential 把大 diff 按語意重分組讓人審得動(121 個原始檔),otobongfp/code-graph-view 免索引產呼叫圖再輸出低 token 上下文。Lobsters 今天排第一的是一篇沙箱隔離基礎讀物(51 分)。",
+        "mechanism": "產出變便宜之後,稀缺資源是「看過並確認」。這幾個工具位置不同但形狀一樣:在 agent 動作的前後插一個檢查點,把不可審的東西變成可審的。agent-chaperone 擋執行前,differential 擋合併前,code-graph-view 擋餵進模型之前,CI 是最後一道,所以最先撐不住。",
+        "evidence": "Linear CI 重構文 98 分;agent-chaperone eng 訊號 tests / CI / types / lint / lockfile / layout / docs 全為真,3 天內 30 次非機器人 commit;沙箱基礎文在 Lobsters 51 分居首。",
+        "cross_source": 4,
+        "product_opportunity": "先量自己的數字:最近 20 個 agent 產出的 PR,從開出來到人類看完要多久,CI 佔掉幾成。如果 CI 不是主因,你需要的是 differential 那種語意分組,不是更多 runner。",
+        "source_links": [
+          "pulse.hn.6:hn-ai-coding-ci-bottleneck",
+          "discoveries.rising.0:agent-chaperone/agent-chaperone",
+          "discoveries.rising.1:thepartly/differential",
+          "discoveries.rising.2:otobongfp/code-graph-view",
+          "pulse.lobsters.0:lobsters-software-sandboxing-basics"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus-generation-postproduction-interface",
+        "title": "生成模型的競爭軸線移到輸出物能不能直接進後製",
+        "body": "NVIDIA 昨天在 Cosmos repo 補上 DMD2 蒸餾版的 TensorRT-LLM 走查,Cosmos3-Super 文字轉圖像 4 步完成推論,同一天晚些又加了 Cosmos3-Edge 的影音版。Qwen-Image-2.1 這一版加的是 RGBA 直出,生成圖直接帶透明通道。LTX-2.5 把文字、圖片、音訊到影片收進一條管線,累計下載 1,626,742 次、4,658 likes。真正刺眼的是下載分布:Qwen-Image-2.1 官方 repo 只有 6,523 次,Comfy-Org 的單檔版有 535,365 次,連 GGUF 版都有 33,232 次。",
+        "mechanism": "採樣步數從幾十步掉到 4 步之後,延遲不再是差異化來源,誰都做得到互動級。剩下的差距在輸出物能不能無縫進既有工作流:alpha 通道省掉一次去背,音訊同管線省掉一次對齊。那個 6,523 對 535,365 的下載比則說明用量入口在哪裡,使用者從 ComfyUI 進來,不從 diffusers 進來。",
+        "evidence": "Cosmos3-Super 4 步 DMD2 蒸餾;Qwen-Image-2.1 RGBA 直出,官方 repo 6,523 下載 vs Comfy-Org 單檔版 535,365、GGUF 版 33,232;LTX-2.5 1,626,742 下載 / 4,658 likes。",
+        "cross_source": 3,
+        "product_opportunity": "你的 DiT 圖像管線該優先補的不是再降一次 FID,是輸出格式:把 RGBA 或 alpha matte 當一等輸出,並且先出 ComfyUI 單檔權重,再考慮 diffusers 整合。發布順序反了,前兩週的用量就沒了。",
+        "source_links": [
+          "tech.vendor.2:nvidia-cosmos-96e266d6",
+          "tech.models.3:Qwen/Qwen-Image-2.1",
+          "tech.models.2:Lightricks/LTX-2.5"
+        ],
+        "audience": "both"
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-vendor-capability-drift",
+      "title": "廠商的版本號不再告訴你能力變了",
+      "body": "HN 今天有一則 327 分的貼文標題是「Fable 5 – Median thinking declined in August」,中位數推理表現下滑是社群自己量出來的,不是廠商公告的。同一天的 tau2-bench 快照顯示 GPT-5.2 從第 10 名跳到第 2,榜首仍是 RAFT-30B-A3B。兩件事指向同一個缺口:托管模型的實際能力會在你看不到的地方移動,而你的回歸測試大概沒在追。這週做一件事就好:挑 30 個產品裡最關鍵的 prompt 固定成資料集,每天跑一次記分數進一張表。不對稱在成本,一個 cron job 對上的是某天客戶比你先發現品質掉了。",
+      "evidence": "Fable 5 推理中位數下滑貼文 HN 327 分 / 39 則留言;tau2-bench 今日快照 GPT-5.2 #10 → #2,前五為 RAFT-30B-A3B、GPT-5.2、Claude Opus 4.5、Gemini 3 Flash、Qwen3.5-397B-A17B。",
+      "product_opportunity": "把那 30 個 prompt 的每日分數接進你現有的 CI,分數掉超過一個門檻就讓 build 紅燈。",
+      "source_links": [
+        "pulse.hn.3:hn-fable-5-median-thinking-decline",
+        "tech.benchmarks.0:tau2-gpt-5.2"
+      ],
+      "audience": "both"
+    },
+    "contrarian": {
+      "id": "contrarian-small-decision-models-agent-loop",
+      "title": "小型決策模型不會吃進 agent 主迴圈",
+      "body": "今天這波開源複製潮的隱含主張是小模型正在變成 agent 的承重結構。我押反面:到 2027-01-31,tau2-bench 前五名裡不會出現任何公開總參數量 ≤9B 的模型。今天前五是 RAFT-30B-A3B、GPT-5.2、Claude Opus 4.5、Gemini 3 Flash、Qwen3.5-397B-A17B,最小的是 RAFT-30B-A3B。驗證方式:2027-01-31 當天讀 taubench.com 的前五名,任一模型公開總參數 ≤9B 即我判斷錯誤。理由是決策模型贏的是單點判斷,tau2 量的是多輪工具呼叫的狀態維持,那要長程一致性,不是一次打分。",
+      "evidence": "tau2-bench 今日前五:RAFT-30B-A3B、GPT-5.2、Claude Opus 4.5、Gemini 3 Flash、Qwen3.5-397B-A17B。",
+      "source_links": [
+        "tech.benchmarks.0:tau2-gpt-5.2",
+        "discoveries.rising.3:jaredpalmer/kev"
+      ],
+      "audience": "work",
+      "resolution_date": "2027-01-31"
+    },
+    "predictions": [
+      {
+        "id": "pred-kev-stars-6000",
+        "text": "jaredpalmer/kev 在 2026-10-31 前 GitHub stars 突破 6000(2026-09-22 為 2377)。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "四天內累積 2377 stars 且已上 HN 首頁;若聲量只靠單次 HN 曝光,成長曲線會在兩週內平掉。"
+      },
+      {
+        "id": "pred-ternary-bonsai-5m-downloads",
+        "text": "prism-ml/Ternary-Bonsai-2-27B-gguf 在 2026-11-30 前 HuggingFace 累計下載突破 500 萬(2026-09-22 為 2,227,879)。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "測試三元 2-bit 量化是否真的被拿去部署,而不只是嘗鮮下載。"
+      },
+      {
+        "id": "pred-gpt52-tau2-top1",
+        "text": "GPT-5.2 在 2026-11-30 前登上 tau2-bench 第 1 名(2026-09-22 為第 2,榜首 RAFT-30B-A3B)。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "從第 10 跳到第 2 通常代表工具呼叫路徑做過一次結構性修正,而不是分數微調。"
+      },
+      {
+        "id": "pred-ltx25-few-step-distill",
+        "text": "Lightricks 在 2026-12-31 前釋出 LTX-2.5 的少步蒸餾版本,官方 model card 宣告 ≤8 步採樣。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "NVIDIA 已對 Cosmos3-Super 出了 4 步 DMD2 蒸餾學生模型;影片生成的延遲壓力比圖像更大,蒸餾是最短路徑。"
+      },
+      {
+        "id": "pred-second-rgba-base-model",
+        "text": "2026-12-31 前至少再有一個開源文字轉圖像基座在官方 model card 宣告原生 RGBA 或 alpha 輸出。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "若 Qwen-Image-2.1 的 RGBA 直出真的解決後製痛點,跟進成本低到別家沒理由不做;沒人跟進就表示這需求被高估了。"
+      },
+      {
+        "id": "pred-single-gpu-500k-official-recipe",
+        "text": "SGLang 或 vLLM 官方文件在 2026-12-31 前收錄單張 96GB GPU 跑 ≥500K context 的設定範例。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "目前 524K 單卡設定只存在於第三方 repo(95 stars);上游收進官方文件才代表這是可支援配置而非特技。"
+      },
+      {
+        "id": "pred-nanya-capex-followup",
+        "text": "南亞科在 2026-12-31 前再公告單筆金額 ≥20 億元新台幣的廠務設備取得。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "今日兩筆分別 21.7 億與 24.3 億元由董事長核決,核決期間橫跨近一年;若為擴產批次,後續應有同量級公告。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:agent-chaperone/agent-chaperone",
+        "audience": "work",
+        "url": "https://github.com/agent-chaperone/agent-chaperone",
+        "name": "agent-chaperone/agent-chaperone",
+        "stars": 1,
+        "language": null,
+        "relevance": "在 MCP proxy 層攔截工具呼叫與回傳結果，執行前先過濾風險。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 3,
+        "eng_score": 6,
+        "excellence_score": 0.45228,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.1:thepartly/differential",
+        "audience": "work",
+        "url": "https://github.com/thepartly/differential",
+        "name": "thepartly/differential",
+        "stars": 1,
+        "language": null,
+        "relevance": "把 AI 產出的大型 diff 按語意重新分組，審查不再逐檔翻。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 30,
+        "eng_score": 3,
+        "excellence_score": 0.3666416216216216,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.3:jaredpalmer/kev",
+        "audience": "general",
+        "url": "https://github.com/jaredpalmer/kev",
+        "name": "jaredpalmer/kev",
+        "stars": 2377,
+        "language": null,
+        "relevance": "開源重現 Jev 決策模型，0.8B～9B 權重可自行訓練部署。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 4,
+        "eng_score": 4,
+        "excellence_score": 0.3342033333333333,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.6:huang-sh/PiX",
+        "audience": "work",
+        "url": "https://github.com/huang-sh/PiX",
+        "name": "huang-sh/PiX",
+        "stars": 175,
+        "language": null,
+        "relevance": "會話存成樹狀圖，任意節點皆可分岔，上下文隨分支各自流動。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 17,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:jangtrinh/design-os-3d-blender",
+        "audience": "work",
+        "url": "https://github.com/jangtrinh/design-os-3d-blender",
+        "name": "jangtrinh/design-os-3d-blender",
+        "stars": 79,
+        "language": null,
+        "relevance": "Agent 建模前查 bpy 知識庫，再用列印良率關卡把關輸出。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 3,
+        "repo_age_days": 15,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.7:jpezzulli/sglang-rtxpro6000",
+        "audience": "both",
+        "url": "https://github.com/jpezzulli/sglang-rtxpro6000",
+        "name": "jpezzulli/sglang-rtxpro6000",
+        "stars": 95,
+        "language": null,
+        "relevance": "單張 RTX PRO 6000 靠 DFlash2、FR-Spec 撐出 524K context。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 2,
+        "repo_age_days": 27,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:otobongfp/code-graph-view",
+        "audience": "work",
+        "url": "https://github.com/otobongfp/code-graph-view",
+        "name": "otobongfp/code-graph-view",
+        "stars": 2,
+        "language": null,
+        "relevance": "免索引產生呼叫圖，直接輸出低 token 上下文餵給 AI 助手。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 1,
+        "eng_score": 4,
+        "excellence_score": 0.3519583333333334,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.4:hirotomasato/yowes",
+        "audience": "work",
+        "url": "https://github.com/hirotomasato/yowes",
+        "name": "hirotomasato/yowes",
+        "stars": 127,
+        "language": null,
+        "relevance": "MCP 一鍵生成 13 國教師證件範本，測試流程免手刻假資料。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 33.5,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:sdras/jev-webmcp-extension",
+        "audience": "work",
+        "url": "https://github.com/sdras/jev-webmcp-extension",
+        "name": "sdras/jev-webmcp-extension",
+        "stars": 70,
+        "language": null,
+        "relevance": "Jev 即時預測網頁 WebMCP 呼叫，免逐站點客製化設定。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.1:JacobLinCool/jev-ai-detector",
+        "audience": "general",
+        "url": "https://github.com/JacobLinCool/jev-ai-detector",
+        "name": "JacobLinCool/jev-ai-detector",
+        "stars": 0,
+        "language": null,
+        "relevance": "九維度比對文體常態，抓 AI 味不再只靠二元判定。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 1,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-grok-4-7",
+        "audience": "general",
+        "url": "https://x.ai/news/grok-4-7",
+        "title": "Grok 4.7",
+        "score": 454,
+        "comments": 46,
+        "takeaway": "xAI 發布 Grok 4.7,旗艦模型版本迭代節奏持續加快。"
+      },
+      {
+        "id": "pulse.hn.1:hn-xiaomi-mimo-2-6",
+        "audience": "general",
+        "url": "https://mimo.xiaomi.com/mimo-v2-6",
+        "title": "Xiaomi MiMo v2.6",
+        "score": 366,
+        "comments": 29,
+        "takeaway": "小米 MiMo 系列升級至 v2.6,中國廠商自研模型迭代速度加快。"
+      },
+      {
+        "id": "pulse.hn.2:hn-kev-qwen3-5-decision-models",
+        "audience": "general",
+        "url": "https://github.com/jaredpalmer/kev/tree/main",
+        "title": "Kev: Tiny Jev-like family of decision models built on top of Qwen3.5",
+        "score": 384,
+        "comments": 33,
+        "takeaway": "Kev 以 Qwen3.5 為底座打造輕量決策模型家族,鎖定 agent 落地場景。"
+      },
+      {
+        "id": "pulse.hn.3:hn-fable-5-median-thinking-decline",
+        "audience": "general",
+        "url": "https://twitter.com/Lon/status/2101793422487204027",
+        "title": "Fable 5 – Median thinking declined in August",
+        "score": 327,
+        "comments": 39,
+        "takeaway": "社群回報 Fable 5 八月推理表現中位數下滑,凸顯模型品質監控的必要性。"
+      },
+      {
+        "id": "pulse.hn.4:hn-mini-agi-continual-learning",
+        "audience": "both",
+        "url": "https://github.com/volotat/mini-AGI/",
+        "title": "Show HN: Mini-AGI – Dynamic continual learning model trained on 8GB VRAM",
+        "score": 247,
+        "comments": 25,
+        "takeaway": "Mini-AGI 在 8GB VRAM 完成持續學習模型訓練,壓低邊緣訓練門檻。"
+      },
+      {
+        "id": "pulse.hn.5:hn-transformers-explained-visually",
+        "audience": "general",
+        "url": "https://poloclub.github.io/transformer-explainer/",
+        "title": "Transformers Explained Visually",
+        "score": 121,
+        "comments": 10,
+        "takeaway": "互動式視覺化拆解 Transformer 運作機制,適合團隊內部教學參考。"
+      },
+      {
+        "id": "pulse.hn.6:hn-ai-coding-ci-bottleneck",
+        "audience": "general",
+        "url": "https://linear.app/now/ci-bottleneck-reworked",
+        "title": "AI coding has made CI a bottleneck, so we reworked ours to keep up",
+        "score": 98,
+        "comments": 16,
+        "takeaway": "AI 產出程式碼量暴增讓 CI 成為瓶頸,Linear 重構流程因應規模。"
+      },
+      {
+        "id": "pulse.hn.7:hn-frontier-ai-own-hardware",
+        "audience": "both",
+        "url": "https://timdettmers.com/2026/09/21/dlab-open-source-week/",
+        "title": "Frontier AI on Your Own Hardware",
+        "score": 67,
+        "comments": 10,
+        "takeaway": "Tim Dettmers 談如何在自有硬體上跑前沿 AI,呼應端側部署需求升溫。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-software-sandboxing-basics",
+        "audience": "general",
+        "url": "https://blog.emilua.org/2025/01/12/software-sandboxing-basics/",
+        "title": "Software sandboxing: The basics (2025)",
+        "score": 51,
+        "takeaway": "系統性拆解沙箱隔離機制,是強化 agent 執行環境安全的基礎讀物。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-parallel-programming-review",
+        "audience": "general",
+        "url": "https://ahelwer.ca/post/2026-09-21-concurrency-textbook/",
+        "title": "Textbook review: Is Parallel Programming Hard, And, If So, What Can You Do About It?",
+        "score": 27,
+        "takeaway": "重新檢視平行程式設計經典教材,反思多核心併發除錯的長年痛點。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-relation-algebra",
+        "audience": "general",
+        "url": "https://remy.wang/blog/ra-ra.html",
+        "title": "Relation algebra is not relational algebra",
+        "score": 15,
+        "takeaway": "釐清關係代數與關聯式代數的定義差異,點出資料庫理論常見的誤用盲點。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-zephyr-2604-lts",
+        "audience": "general",
+        "url": "https://canonical.com/blog/zephyr-lts-announcement",
+        "title": "Canonical announces Zephyr 26.04 LTS",
+        "score": 14,
+        "takeaway": "Canonical 發布 Zephyr 26.04 LTS,鞏固嵌入式即時作業系統的長期支援選項。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-markdown-in-src",
+        "audience": "general",
+        "url": "https://htmx.org/essays/markdown-in-src/",
+        "title": "Markdown in /src",
+        "score": 11,
+        "takeaway": "htmx 作者主張把 Markdown 檔案直接放進原始碼樹管理,簡化文件與程式碼協作。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-cgnat-self-hosting",
+        "audience": "general",
+        "url": "https://david.alvarezrosa.com/posts/self-hosting-behind-cgnat/",
+        "title": "Self-Hosting Behind CGNAT",
+        "score": 11,
+        "takeaway": "詳解如何在 CGNAT 環境下自架伺服器對外曝露服務,解決家用頻寬穿透痛點。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:sebastian-raschka-gpt6-astra",
+        "audience": "general",
+        "url": "https://magazine.sebastianraschka.com/p/gpt-6-astra-looped-transformers-and",
+        "title": "GPT-6 Astra, Looped Transformers, and Hidden Reasoning",
+        "takeaway": "拆解 GPT-6 Astra 的 looped transformer 架構,追蹤 hidden reasoning 技術路線最新進展。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:dev-to-non-autoregressive-decision-models",
+        "audience": "general",
+        "url": "https://dev.to/nandakishor_m_6cc0adfde9f/i-built-non-autoregressive-decision-models-a-year-ago-then-a-frontier-lab-called-it-a-18me",
+        "title": "I Built Non-Autoregressive Decision Models a Year Ago. Then a Frontier Lab Called It a \"Breakthrough\".",
+        "takeaway": "作者主張自己去年就做出非自回歸決策模型,對前沿實驗室的『突破』說法提出優先權質疑。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:dev-to-ai-agent-browser-demo",
+        "audience": "general",
+        "url": "https://dev.to/sylwia-lask/what-if-your-ai-agent-never-had-to-leave-the-browser-demo--5g",
+        "title": "What If Your AI Agent Never Had to Leave the Browser? (Demo)",
+        "takeaway": "示範讓 AI agent 全程留在瀏覽器內運作,聚焦 agentic browsing 的實際落地體驗。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-2408-20260922",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2408",
+        "title": "南亞科公告取得廠務設備，兩筆合計逾46億元",
+        "takeaway": "南亞科單日核准兩筆廠務設備採購，合計約46億元，指向產能擴充動作。",
+        "amount": "4,600,195,207",
+        "companies": [
+          "南亞科"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-2451-20260922",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2451",
+        "title": "創見展延無擔保轉換公司債募集期間至116年1月6日",
+        "takeaway": "創見延長轉換公司債募集期間，反映資本市場行情不明朗下的籌資調整。",
+        "amount": null,
+        "companies": [
+          "創見"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:rocm-blog-hyperloom-optimization",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/hyperloom-optimization/README.html",
+        "title": "Hyperloom: A Multi-Agent Harness for Autonomous Inference Optimization on AMD GPUs",
+        "takeaway": "AMD 稱 Hyperloom 自動搜尋推論參數,在 Instinct GPU 上實測中位數提速 1.73 倍,最高達 7.31 倍。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:rocm-blog-glm52-mxfp4-mi355",
+        "audience": "both",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/glm52-mxfp4-mi355/README.html",
+        "title": "Serving GLM-5.2-MXFP4 on AMD Instinct MI355X: When Prefill Context Parallelism Pays",
+        "takeaway": "四張 MI355X 以 SGLang 服務 MXFP4 量化的 GLM-5.2 時,prefill 平行化只在長 prompt 才划算。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:nvidia-cosmos-96e266d6",
+        "audience": "general",
+        "url": "https://github.com/NVIDIA/cosmos/commit/96e266d69e7c58f75bf591d768c4a7f00ea52585",
+        "title": "Add TensorRT-LLM distilled 4-step guide (#353)",
+        "takeaway": "NVIDIA 為 Cosmos3-Super 文字轉圖像模型釋出 DMD2 蒸餾版教學,4 步驟即可完成生成推論。",
+        "companies": [
+          "NVIDIA"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:deepseek-ai/DeepSeek-V4.1-Flash",
+        "audience": "general",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek-V4.1-Flash",
+        "takeaway": "DeepSeek V4 系列推出 V4.1-Flash 更新,原生支援圖文輸入並提供 FP8 權重。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.1:Qwen/Qwen3.8-27B",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Qwen3.8-27B",
+        "takeaway": "Qwen3.8-27B 下載量破 700 萬,成為近期最多下游量化與微調版本依附的多模態基座。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.2:Lightricks/LTX-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "LTX-2.5",
+        "takeaway": "LTX-2.5 把文字、圖片、音訊生成影片整合進單一多模態管線,由 Lightricks 開源釋出。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.3:Qwen/Qwen-Image-2.1",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen-Image-2.1",
+        "title": "Qwen-Image-2.1",
+        "takeaway": "Qwen-Image-2.1 新增 RGBA 直出能力,生成圖像可直接帶透明通道供後製使用。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.4:prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "audience": "both",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "title": "Ternary-Bonsai-2-27B-gguf",
+        "takeaway": "Ternary-Bonsai-2 把 Qwen3.8-27B 壓成三元 2-bit 權重,搭配混合注意力機制推上終端裝置。",
+        "companies": [
+          "prism-ml"
+        ]
+      },
+      {
+        "id": "tech.models.5:XingChen-AGI/Xing4.0-29B-A4B",
+        "audience": "general",
+        "url": "https://huggingface.co/XingChen-AGI/Xing4.0-29B-A4B",
+        "title": "Xing4.0-29B-A4B",
+        "takeaway": "Xing4.0 以 29B 總參數、僅啟用約 4B 的 MoE 架構打入熱門模型榜。",
+        "companies": [
+          "XingChen-AGI"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 rises to #2, enters top-5",
+        "takeaway": "GPT-5.2 在代理工具呼叫測試 tau2-bench 上從第 10 名衝到第 2,工具呼叫能力大幅補強。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": []
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-22",
+    "flagged": [
+      {
+        "path": "signals.focus[0].body",
+        "type": "temporal",
+        "marker": "今天",
+        "ids": [
+          "pulse.hn.2:hn-kev-qwen3-5-decision-models",
+          "pulse.ai_bloggers.1:dev-to-non-autoregressive-decision-models"
+        ]
+      },
+      {
+        "path": "signals.focus[2].body",
+        "type": "temporal",
+        "marker": "今天",
+        "ids": [
+          "pulse.lobsters.0:lobsters-software-sandboxing-basics"
+        ]
+      }
+    ],
+    "repaired": 2
+  }
+}
