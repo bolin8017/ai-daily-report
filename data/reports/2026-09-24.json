@@ -1,0 +1,769 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-24",
+  "meta": {
+    "run_id": "a0f3a158-1acc-4244-8907-55e33684e0a7",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-23T23:19:18.395Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 1230
+      },
+      "trending": {
+        "ok": true,
+        "count": 17
+      },
+      "search": {
+        "ok": true,
+        "count": 300
+      },
+      "developers": {
+        "ok": true,
+        "count": 9
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 4
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 20
+      }
+    },
+    "feeds_sections": {
+      "pulse": 77,
+      "market": 0,
+      "tech": 24,
+      "shipped": 46
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.8771746,
+        "duration_ms": 316348,
+        "num_turns": 6,
+        "input_tokens": 12,
+        "output_tokens": 30849,
+        "cache_read_tokens": 374488,
+        "cache_creation_tokens": 122404,
+        "is_error": false,
+        "session_id": "ba84bc2a-b6d3-41a0-8bb2-e8910e382ed0"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1428268,
+        "duration_ms": 14664,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1527,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31249,
+        "is_error": false,
+        "session_id": "b30fc6da-4149-4aed-8fcb-b602378097a2"
+      },
+      "curate.market": {
+        "cost_usd": 0.3300502,
+        "duration_ms": 93335,
+        "num_turns": 8,
+        "input_tokens": 14,
+        "output_tokens": 7172,
+        "cache_read_tokens": 308506,
+        "cache_creation_tokens": 48275,
+        "is_error": false,
+        "session_id": "64cdfdf6-49cf-4709-8e17-b40ebc3780aa"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.4158884,
+        "duration_ms": 146987,
+        "num_turns": 3,
+        "input_tokens": 6,
+        "output_tokens": 14796,
+        "cache_read_tokens": 99502,
+        "cache_creation_tokens": 61234,
+        "is_error": false,
+        "session_id": "62f7c602-54eb-4446-8595-7637f2fa6407"
+      },
+      "synthesize": {
+        "cost_usd": 1.9155085,
+        "duration_ms": 191632,
+        "num_turns": 17,
+        "input_tokens": 20,
+        "output_tokens": 15050,
+        "cache_read_tokens": 769951,
+        "cache_creation_tokens": 114147,
+        "is_error": false,
+        "session_id": "8c67c73b-fc6d-401c-ad49-0512d02bfbb2"
+      },
+      "curate.tech": {
+        "cost_usd": 0.5501506,
+        "duration_ms": 171411,
+        "num_turns": 10,
+        "input_tokens": 14,
+        "output_tokens": 18924,
+        "cache_read_tokens": 395813,
+        "cache_creation_tokens": 69250,
+        "is_error": false,
+        "session_id": "f6ddc3f0-ef93-4820-9883-2e6cd008b67d"
+      }
+    },
+    "total_cost_usd": 4.2315991,
+    "total_tokens": 88386,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "5/5",
+      "unique_domains": 18,
+      "source_tier": 0.06976744186046512
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-24 — 今日重點</h3>\n<h4>「做決定」這一步正被搬出 LLM</h4>\n<p>Nokia Applied Research 的 AnyJev 開了兩天、378 stars,做的事是免訓練把任意 LLM 轉成回傳型別化決策與真實機率的模型,指標是選項順序翻轉率從 0.23 降到 0.073。同幾天內 laya 的 Core ML 移植衝到 1391 stars、每天約新增 339 顆星,主打 M3 Max 上單次短決策約 5 毫秒;FluidUse 則把同一顆模型接上 macOS Accessibility API 做本機填表,單次判斷約 1 毫秒。HN 上 136 分的 JevBench 在替這一類模型建可重現基準。有人開始做 benchmark,代表這個類別已經多到需要比較。</p>\n<h4>量化權重吃掉部署,評測還留在全精度</h4>\n<p>Qwen3.8-27B 母模型下載 691 萬次,它的兩個量化衍生版合計 422 萬次:prism-ml 的 2-bit 三元 Ternary-Bonsai-2-27B 281 萬、ISTA DASLab 的 GSQ-RCO 混合精度 141 萬。同一時間 arXiv 上〈Greedy Decoding Is Not Precision-Invariant〉指出同一組權重換精度後端跑貪婪解碼,輸出會分歧;另一篇〈Train Where the Quantized Model Goes〉則改用 on-policy 蒸餾直接在量化落點上訓練。你在全精度跑完的 eval,不保證你部署的 2-bit 版本還成立。</p>\n<h4>文生圖的瓶頸從「畫得出來」變成「接得進 pipeline」</h4>\n<p>Qwen-Image-2.1 開源版支援影像編輯與 RGBA 透明圖層輸出,NVIDIA 則在 Cosmos 加進 TensorRT-LLM 的 DMD2 蒸餾指南,把 Cosmos3-Super 的文生圖推論壓到 4 步。輸出要能直接落進合成軌道,延遲要能進互動迴圈,兩件事指向同一件工程需求。通路的重量也很清楚:官方 Qwen-Image-2.1 模型卡下載 28,407 次,Comfy-Org 打包的單檔版 222 萬次。</p>\n<h4>Claude Code 曾經只在遙測開啟時讀 AGENTS.md</h4>\n<p>HN 435 分那篇指出,Claude Code 先前只有遙測開啟時才會讀 AGENTS.md,關掉遙測的專案規則全數失效,目前已修復。這類 bug 的殺傷力在於它不報錯:agent 照常跑完,只是沒照你的規則跑。如果你有關掉遙測的 repo,把最近幾週 agent 產出的 commit 抓出來,對一次你的 AGENTS.md 條款。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-typed-decision-layer",
+        "title": "型別化決策層:agent 的判斷步驟正在脫離自迴歸模型",
+        "body": "六天內冒出一整排同一形狀的 repo。Nokia Applied Research 的 AnyJev(378 stars,開庫 2 天)免訓練把任意 LLM 轉成型別化決策模型,把選項順序翻轉率從 0.23 壓到 0.073。Verdict-open-jev 走另一條路:151M 參數的 ModernBERT 非自迴歸決策引擎,帶校準不確定度,附瀏覽器內 WebGPU 展示,6 天 83 stars。laya 的 Core ML 移植 1391 stars、日增約 339 顆,報 M3 Max 上約 5 毫秒;FluidUse 把它接上 macOS Accessibility API 做本機填表,約 1 毫秒且資料不出機。Jev-Mem 把同一層拿去控 agent 的長效記憶。然後 HN 出現 136 分的 JevBench,替這類模型做可重現基準——類別成熟的第一個外部跡象,永遠是有人開始做比較表。",
+        "mechanism": "自迴歸模型吐出來的是一串 token,不是一個你能設門檻的機率。LLM-as-judge 因此有兩個硬傷:答案會隨選項排列順序改變(AnyJev 量到 0.23 的翻轉率),而且它沒有可校準的信心值,你無法寫出「信心低於 0.8 就轉人工」這種規則。把決策步驟換成一顆小的、非自迴歸的、經過校準的分類器,兩個問題一起解決,順帶把延遲從數百毫秒掉到個位數毫秒。這不是模型變強,是控制流從生成回到判斷。",
+        "evidence": "AnyJev order-flip 0.23 → 0.073;Verdict-open-jev 151M ModernBERT + RLCD 校準;laya-coreml 1391 stars / M3 Max 約 5ms;FluidUse 約 1ms;JevBench HN 136 分。",
+        "cross_source": 6,
+        "product_opportunity": "把你 agent 迴圈裡純粹在做分類的那幾個 LLM 呼叫挑出來——路由、guardrail、工具選擇、要不要重試——換成一顆本機小模型,並開始記錄它的信心分佈。這是 aiDAPTIV+ demo 最好講的一段:同一台機器上,判斷 1 毫秒、生成才動用大模型。",
+        "source_links": [
+          "discoveries.rising.2:nokia-applied-research/AnyJev",
+          "discoveries.rising.3:Heman10x-NGU/Verdict-open-jev",
+          "discoveries.rising.7:mizorewww/laya-coreml",
+          "discoveries.rising.8:FluidInference/FluidUse",
+          "discoveries.rising.6:libingzheren/Jev-Mem",
+          "pulse.hn.5:hn-jevmodel"
+        ]
+      },
+      {
+        "id": "focus-quantized-eval-gap",
+        "title": "部署已經搬到低位元,評測還留在全精度",
+        "body": "Qwen3.8-27B 母模型下載 691 萬次,兩個量化衍生版合計 422 萬:prism-ml 的 2-bit 三元 Ternary-Bonsai-2-27B 281 萬(標榜終端裝置部署),ISTA DASLab 的 GSQ-RCO 混合精度 141 萬。也就是說,同一組權重在真實世界跑的時候,有相當大的比例根本不是原始精度。而 arXiv 這邊剛好有兩篇打在同一個點上:〈Greedy Decoding Is Not Precision-Invariant〉說同一模型換精度後端跑貪婪解碼輸出會分歧,〈Train Where the Quantized Model Goes〉乾脆改用 on-policy 蒸餾,直接在量化後的落點上訓練低位元推理能力。兩篇都在說同一件事:量化不是無損壓縮,是換了一個模型。",
+        "mechanism": "量化改變的不只是權重數值,是整條解碼路徑的數值行為。貪婪解碼在每一步取 argmax,只要兩個候選 token 的 logit 差距小於量化誤差,選擇就會翻面,而後續每個 token 都建立在這個翻面上,分歧會沿著序列放大。所以「量化後困惑度只掉一點點」這個常用的驗收指標,完全沒有覆蓋到你真正在意的東西:同一個 prompt,部署版本會不會給出不同的工具呼叫。On-policy 蒸餾之所以是對的方向,是因為它讓訓練分佈跟推論分佈落在同一個精度上,而不是訓完再壓。",
+        "evidence": "Qwen3.8-27B 下載 691 萬;Ternary-Bonsai-2-27B(2-bit 三元)281 萬;Qwen3.8-27B-GSQ-RCO 141 萬;arXiv 2609.26621 與 2609.26708。",
+        "cross_source": 4,
+        "product_opportunity": "在你的 eval 腳本裡加一個精度對照組:同一組 prompt、temperature 0,分別跑全精度與你實際要出貨的量化版本,記錄輸出不一致的比例而不只是分數差。這個不一致率是 aiDAPTIV+ 客戶會問、而目前幾乎沒人報的數字。",
+        "source_links": [
+          "tech.models.0:hf-qwen-qwen3.8-27b",
+          "tech.models.3:hf-prism-ml-ternary-bonsai-2-27b-gguf",
+          "tech.models.4:hf-ista-daslab-qwen3.8-27b-gsq-rco-gguf",
+          "tech.aidaptiv.1:arxiv-2609.26621",
+          "tech.aidaptiv.0:arxiv-2609.26708"
+        ]
+      },
+      {
+        "id": "focus-image-stack-pipeline",
+        "title": "文生圖的競爭點移到步數與圖層",
+        "body": "Qwen-Image-2.1 開源釋出,賣點不是畫質而是兩個工程屬性:影像編輯,以及 RGBA 透明圖層輸出。NVIDIA 在 Cosmos 加進 TensorRT-LLM 的 DMD2 蒸餾指南,把 Cosmos3-Super 的文生圖推論壓到 4 步。這兩件事看起來一個是開源模型、一個是廠商工具鏈,但要解的是同一個交付問題:一張還要去背的圖進不了合成軌道,一次要跑幾十步的模型進不了互動迴圈。下載量分佈把通路講得更白:官方 Qwen-Image-2.1 模型卡 28,407 次,Comfy-Org 打包的單檔版 222 萬次,再加上一個社群 GGUF 量化版 35 萬次。模型發布在 HF,實際使用發生在 ComfyUI。",
+        "mechanism": "擴散模型的成本結構是步數乘以每步的 UNet/DiT 前向,所以蒸餾到 4 步是一次量級的延遲削減,而不是調參。另一邊,RGBA 原生輸出把去背這個後處理環節整個拿掉——過去要接 matting 模型、要處理邊緣殘留,現在 alpha 通道直接從模型出來。兩者合起來決定的是同一件事:這個模型能不能被放進一條已經存在的生產流程,而不是只能在 demo 頁面上生圖。",
+        "evidence": "Qwen-Image-2.1 支援編輯與 RGBA 輸出;NVIDIA Cosmos commit 加入 TensorRT-LLM 4 步蒸餾指南(DMD2);HF 下載:官方卡 28,407 / Comfy-Org 單檔 2,220,609 / 社群 GGUF 350,678。",
+        "cross_source": 3,
+        "product_opportunity": "如果你的 DiT 專案還在自己接去背,先測 Qwen-Image-2.1 的 RGBA 輸出能不能取代那一段;同時把 DMD2 這類少步數蒸餾當成你自己模型的壓縮路線來評估,而不是等官方出 turbo 版。交付時優先出 ComfyUI 單檔格式。",
+        "source_links": [
+          "tech.models.2:hf-qwen-qwen-image-2.1",
+          "tech.vendor.0:nvidia-cosmos-96e266d6"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-npu-custom-kernels",
+      "title": "npunlock:有人把 Intel NPU 的 C kernel 路徑逆向出來了",
+      "body": "48 顆星、開庫三天、作者一個人寫了 12 個原始檔。npunlock 做的事是讓你替 Intel Core Ultra 的 NPU 寫並執行自訂 C kernel,直接打到 SHAVE core,繞過官方只開放的 graph-level 介面。HN 有人提過,但還沒進主流視野。",
+      "evidence": "hsfzxjy/npunlock:48 stars、repo 年齡 3 天、12 個原始檔、有測試與 CI,HN 有引用。",
+      "source_links": [
+        "discoveries.rising.1:hsfzxjy/npunlock"
+      ],
+      "why_asymmetric": "目前每一台 Core Ultra 筆電都有一顆 NPU,但它只能跑 Intel 決定要支援的算子圖。這中間的差別是「NPU 能跑 Intel 出貨的運算」跟「NPU 能跑你的運算」——對任何要在終端裝置上做非標準推論的人,這是開關等級的差異,不是效能等級。下檔風險很小:專案掛掉你只損失一個週末;上檔是整類 x86 終端裝置的可程式化加速器。",
+      "commercial_path": "拿一顆你在 aiDAPTIV+ demo 裡真的跑的小算子(量化反量化、KV 搬運、或上面那類型別化決策模型的前向)寫成 SHAVE kernel,量一次延遲與功耗,對照 CPU 與 iGPU。這是能在客戶面前 30 秒講完的差異化。"
+    },
+    "contrarian": {
+      "id": "contrarian-jev-is-server-side",
+      "title": "型別化決策模型的贏家會在伺服器端,不在 Apple Silicon",
+      "body": "反過來說,如果我錯了,錯的方式會是隱私而不是延遲:本機填表、讀螢幕、碰通訊軟體這類場景,資料不出機本身就是規格,那時 Core ML / WebGPU 這條線會贏。",
+      "source_links": [
+        "discoveries.rising.7:mizorewww/laya-coreml",
+        "discoveries.rising.8:FluidInference/FluidUse",
+        "discoveries.rising.3:Heman10x-NGU/Verdict-open-jev"
+      ],
+      "claim": "目前這波熱度幾乎全押在終端延遲:星數最高的是 Core ML 移植(1391),第二波是 macOS Accessibility API 的本機填表,連瀏覽器內的 WebGPU playground 都出來了。共識是「小、快、在你機器上」。我的判斷相反:5 毫秒和 1 毫秒的差距對真實 agent 迴圈沒有意義,因為同一迴圈裡還有一次數百毫秒的生成呼叫。真正稀缺的是校準品質——能不能相信那個 0.8 的信心值——而校準要靠資料與 RLCD 這類訓練方法,不是靠 runtime。所以一年後大家用的會是掛在推論伺服器旁邊、吃 GPU 的那一版,終端移植會變成 demo 用途。",
+      "resolution_date": "2026-12-31",
+      "verification": "到 2026-12-31,比較 HuggingFace 上 laya/jev 系列衍生模型的累計下載量:若下載量最高者是終端 runtime 導向(Core ML / MLX / GGUF / WebGPU)的移植版本,判定 resolved-no;若是伺服器端 / GPU 導向的變體或原始權重,判定 resolved-yes。"
+    },
+    "predictions": [
+      {
+        "id": "pred-jevbench-adoption",
+        "text": "到 2026-11-30,至少三個獨立的型別化決策模型 repo 會在 README 中引用 JevBench 作為評測依據。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "JevBench 在 HN 拿到 136 分,而這個類別目前每家自報指標互不可比;第一個可重現基準通常在兩個月內被同類專案收編,否則就會被下一個基準取代。"
+      },
+      {
+        "id": "pred-ternary-overtakes-base",
+        "text": "到 2026-12-31,prism-ml/Ternary-Bonsai-2-27B-gguf 的 HuggingFace 累計下載量仍低於母模型 Qwen/Qwen3.8-27B。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "目前 281 萬對 691 萬。量化版成長較快但母模型同時是雲端部署與再量化的來源,三個月內追平的機率低於五成。"
+      },
+      {
+        "id": "pred-qwen-image-few-step",
+        "text": "到 2026-12-31,Qwen 團隊會官方釋出 Qwen-Image 系列的少步數(8 步或更少)蒸餾版本。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "NVIDIA 已在 Cosmos 給出 DMD2 的 4 步路徑,少步數蒸餾對開源文生圖模型的採用率影響太直接,不太可能留給社群做。"
+      },
+      {
+        "id": "pred-tau2-gpt52-top1",
+        "text": "到 2026-10-31,GPT-5.2 會登上 tau2-bench 第 1 名。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "它剛從第 10 衝到第 2,但第 1 是 RAFT-30B-A3B,一個專為工具調用訓練的小模型;通用模型在專用榜上最後一階通常最難。我押不會。"
+      },
+      {
+        "id": "pred-winbond-infineon-close",
+        "text": "到 2026-12-31,華邦電收購英飛凌 NOR Flash 與 F-RAM 事業案仍未完成交割。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "11.2 億美元的跨國半導體資產重組,公告明載交割待主管機關核准;這類案件的審查期少見短於半年。以公開資訊觀測站的後續公告判定。"
+      },
+      {
+        "id": "pred-npunlock-traction",
+        "text": "到 2026-12-31,hsfzxjy/npunlock 的 star 數會突破 1000。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "目前 48 顆、開庫三天、單一作者。逆向工程類專案要嘛在一次 HN 頭版後爆量、要嘛停在低三位數;我押後者,因為它需要使用者自己有 Core Ultra 硬體。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.2:nokia-applied-research/AnyJev",
+        "audience": "general",
+        "url": "https://github.com/nokia-applied-research/AnyJev",
+        "name": "nokia-applied-research/AnyJev",
+        "stars": 378,
+        "language": null,
+        "relevance": "免訓練把任意 LLM 轉成校準決策模型，order-flip 率從 0.23 降到 0.073。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:hsfzxjy/npunlock",
+        "audience": "both",
+        "url": "https://github.com/hsfzxjy/npunlock",
+        "name": "hsfzxjy/npunlock",
+        "stars": 48,
+        "language": null,
+        "relevance": "逆向出 Intel NPU 的 SHAVE core C 語言路徑，繞過官方僅開放的 graph-level 介面。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 3,
+        "eng_score": 3,
+        "excellence_score": 0.3365,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.8:FluidInference/FluidUse",
+        "audience": "both",
+        "url": "https://github.com/FluidInference/FluidUse",
+        "name": "FluidInference/FluidUse",
+        "stars": 149,
+        "language": null,
+        "relevance": "靠 Accessibility API 加微型決策模型做本機填表，單次判斷約 1 毫秒且資料不出機。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.7:mizorewww/laya-coreml",
+        "audience": "both",
+        "url": "https://github.com/mizorewww/laya-coreml",
+        "name": "mizorewww/laya-coreml",
+        "stars": 1391,
+        "language": null,
+        "relevance": "把決策模型移植到 Apple Core ML／Neural Engine，M3 Max 上單次決策約 5 毫秒。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 339.3333333333333,
+        "repo_age_days": 4,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.9:lordx64/phantom-kv",
+        "audience": "general",
+        "url": "https://github.com/lordx64/phantom-kv",
+        "name": "lordx64/phantom-kv",
+        "stars": 140,
+        "language": null,
+        "relevance": "以可卸載的 KV-cache graft 調整模型拒答行為，不改權重、隨時可還原。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:Heman10x-NGU/Verdict-open-jev",
+        "audience": "general",
+        "url": "https://github.com/Heman10x-NGU/Verdict-open-jev",
+        "name": "Heman10x-NGU/Verdict-open-jev",
+        "stars": 83,
+        "language": null,
+        "relevance": "151M 參數 ModernBERT 打造開源非自回歸決策引擎，附 WebGPU 瀏覽器內展示。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 13.666666666666666,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.0:kyky2347/ALTA",
+        "audience": "general",
+        "url": "https://github.com/kyky2347/ALTA",
+        "name": "kyky2347/ALTA",
+        "stars": 692,
+        "language": null,
+        "relevance": "多智能體交易平台先過 Shadow 模擬與明確授權才能真實下單，控管衝動下單風險。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 30.285714285714285,
+        "repo_age_days": 27,
+        "eng_score": 4,
+        "excellence_score": 0.468063025210084,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.6:libingzheren/Jev-Mem",
+        "audience": "general",
+        "url": "https://github.com/libingzheren/Jev-Mem",
+        "name": "libingzheren/Jev-Mem",
+        "stars": 51,
+        "language": null,
+        "relevance": "以 System-One 快速決策層控管長效 agent 記憶，附 arXiv 論文與 HF Space。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 3,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:ruc-datalab/SkillAdam",
+        "audience": "work",
+        "url": "https://github.com/ruc-datalab/SkillAdam",
+        "name": "ruc-datalab/SkillAdam",
+        "stars": 78,
+        "language": null,
+        "relevance": "以論文為底，一鍵自動進化 Claude Code / Codex 的 Skill 內容。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 2,
+        "repo_age_days": 17,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.4:bgts-ai-org/bgts-context-engine",
+        "audience": "work",
+        "url": "https://github.com/bgts-ai-org/bgts-context-engine",
+        "name": "bgts-ai-org/bgts-context-engine",
+        "stars": 57,
+        "language": null,
+        "relevance": "用 Postgres + Apache AGE 圖資料庫做確定性程式碼上下文檢索，迴圈中不靠 LLM。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 15,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:audreyt/paseo-spacedock",
+        "audience": "general",
+        "url": "https://github.com/audreyt/paseo-spacedock",
+        "name": "audreyt/paseo-spacedock",
+        "stars": 3,
+        "language": null,
+        "relevance": "唐鳳將 Spacedock 決策層接進 Paseo，用「委任工作流」frontmatter 記錄每次授權。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 1,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-claudeco",
+        "audience": "general",
+        "url": "https://blog.szypowi.cz/p/claude-code-reads-agents.md-only-when-telemetry-is-on/",
+        "title": "Claude Code reads AGENTS.md only when telemetry is on [fixed]",
+        "score": 435,
+        "comments": 28,
+        "takeaway": "Claude Code 先前只有遙測開啟才讀取 AGENTS.md,關閉遙測的專案規則全數失效,現已修復。"
+      },
+      {
+        "id": "pulse.hn.1:hn-claudedi",
+        "audience": "general",
+        "url": "https://www.anthropic.com/news/claude-discovers-novel-enzyme-system",
+        "title": "Claude discovers a novel enzyme system with CRISPR-like repeats",
+        "score": 392,
+        "comments": 32,
+        "takeaway": "Claude 獨立發現具 CRISPR 樣重複序列的新型酶系統,顯示模型已能產出可驗證的生物發現。"
+      },
+      {
+        "id": "pulse.hn.2:hn-miniagi",
+        "audience": "general",
+        "url": "https://github.com/volotat/mini-AGI/",
+        "title": "Show HN: Mini-AGI – Dynamic continual learning model trained on 8GB VRAM",
+        "score": 276,
+        "comments": 30,
+        "takeaway": "Mini-AGI 在 8GB VRAM 上示範持續學習,不靠大規模預訓練也能動態更新權重。"
+      },
+      {
+        "id": "pulse.hn.3:hn-gemini38",
+        "audience": "general",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-8-text-to-speech/",
+        "title": "Gemini 3.8 text-to-speech",
+        "score": 227,
+        "comments": 35,
+        "takeaway": "Gemini 3.8 加入原生語音合成,補上 Google 模型家族在 TTS 上的缺口。"
+      },
+      {
+        "id": "pulse.hn.4:hn-tokensto",
+        "audience": "general",
+        "url": "https://jyn.dev/tokens-too-cheap-to-meter/",
+        "title": "Tokens too cheap to meter",
+        "score": 213,
+        "comments": 27,
+        "takeaway": "作者主張 token 成本已跌到近乎免費,推論定價策略該重新設計而非持續微調。"
+      },
+      {
+        "id": "pulse.hn.5:hn-jevmodel",
+        "audience": "general",
+        "url": "https://benchmarkheaven.com/jev-models",
+        "title": "Show HN: JevBench, a reproducible benchmark for typed decision models",
+        "score": 136,
+        "comments": 13,
+        "takeaway": "JevBench 為 Jev 決策模型建立可重現基準測試,方便跨團隊比較效能。"
+      },
+      {
+        "id": "pulse.hn.6:hn-howwemad",
+        "audience": "general",
+        "url": "https://claude.dev/blog/how-we-made-claude-ai-faster/",
+        "title": "Once Claude can measure something, it can make it faster",
+        "score": 130,
+        "comments": 29,
+        "takeaway": "Anthropic 分享心得:只要能量測到瓶頸,Claude 就能持續把效能往上榨。"
+      },
+      {
+        "id": "pulse.hn.7:hn-lossless",
+        "audience": "general",
+        "url": "https://github.com/aru-labs/lossless-memory",
+        "title": "Show HN: Lossless-memory – a personal AI memory that never summarizes",
+        "score": 67,
+        "comments": 9,
+        "takeaway": "Lossless-memory 捨棄摘要式記憶,讓個人 AI 助理保留完整歷史紀錄不失真。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-nosloptob",
+        "audience": "general",
+        "url": "https://no-sloptober.com/",
+        "title": "No Sloptober",
+        "score": 76,
+        "takeaway": "「No Sloptober」發起社群自律,呼籲十月拒絕發布 AI 生成的低品質內容。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-disclosu",
+        "audience": "general",
+        "url": "https://radicle.dev/2026/09/23/disclosure-of-vulnerability-in-network-protocol.html",
+        "title": "Radicle: Disclosure of Vulnerability in the Network Protocol",
+        "score": 70,
+        "takeaway": "Radicle 揭露其網路協定漏洞,對等式版控系統的安全模型再受檢視。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-thegnome",
+        "audience": "general",
+        "url": "https://blogs.gnome.org/alatiera/2026/09/23/the-gnome-llm-policy-that-i-want/",
+        "title": "The GNOME LLM Policy That I Want",
+        "score": 37,
+        "takeaway": "作者提出 GNOME 專案應有的 LLM 使用政策,劃出貢獻與審查的界線。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-githubwi",
+        "audience": "general",
+        "url": "https://michaelheap.com/github-wiki-is-an-antipattern/",
+        "title": "The GitHub wiki is an anti-pattern",
+        "score": 33,
+        "takeaway": "作者主張 GitHub Wiki 缺乏版本審查與備份保障,不該作為正式文件來源。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-thezigjo",
+        "audience": "general",
+        "url": "https://kristoff.it/blog/the-zig-journey/",
+        "title": "The Zig Journey",
+        "score": 31,
+        "takeaway": "作者回顧採用 Zig 的心路歷程,點出型別系統與建置流程的實際取捨。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-signedme",
+        "audience": "general",
+        "url": "https://andanti.no/blog/SignedMesh.html",
+        "title": "I want my mesh networks to be signed, not encrypted",
+        "score": 22,
+        "takeaway": "作者主張 mesh 網路該優先簽章驗證來源,而非一味加密內容。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:devto-whatifyo",
+        "audience": "general",
+        "url": "https://dev.to/sylwia-lask/what-if-your-ai-agent-never-had-to-leave-the-browser-demo--5g",
+        "title": "What If Your AI Agent Never Had to Leave the Browser? (Demo 🚀)",
+        "takeaway": "作者示範讓 AI agent 全程留在瀏覽器內操作,省去本機環境與外部沙盒的搭建成本。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:devto-cleancod",
+        "audience": "general",
+        "url": "https://dev.to/georgekobaidze/clean-code-is-not-the-same-as-clear-code-comments-were-never-the-problem-42n",
+        "title": "Clean Code Is Not the Same as Clear Code: Comments Were Never the Problem",
+        "takeaway": "作者主張程式碼清晰與乾淨是兩回事,拿掉註解不代表意圖就會自動顯明。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:mops-2344-20260916",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2344",
+        "title": "本公司取得Infineon Technologies LLC旗下NOR Flash與F-RAM事業經重組後之100%股權",
+        "takeaway": "華邦電以11.2億美元收購英飛凌 NOR Flash 與 F-RAM 事業，交割仍待主管機關核准。",
+        "amount": "美金11.2億元（約新台幣354億元）",
+        "companies": [
+          "華邦電",
+          "Infineon Technologies"
+        ],
+        "region": "global"
+      }
+    ],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-2344-20260924",
+        "audience": "both",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2344",
+        "title": "本公司訂購機器設備公告",
+        "takeaway": "華邦電向 KLA 累計採購逾15.9億元設備，擴充晶圓檢測產能。",
+        "amount": "新台幣15.95億元",
+        "companies": [
+          "華邦電",
+          "KLA Corporation"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:nvidia-cosmos-96e266d6",
+        "audience": "general",
+        "url": "https://github.com/NVIDIA/cosmos/commit/96e266d69e7c58f75bf591d768c4a7f00ea52585",
+        "title": "Add TensorRT-LLM distilled 4-step guide (#353)",
+        "takeaway": "NVIDIA 以 DMD2 蒸餾技術把 Cosmos3-Super 文生圖推論壓縮至 4 步,大幅縮短延遲。",
+        "companies": [
+          "NVIDIA"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:hf-qwen-qwen3.8-27b",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Qwen3.8-27B",
+        "takeaway": "Qwen3.8-27B 下載已破 690 萬次,並列入 Azure、SageMaker 官方部署選項。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.1:hf-deepseek-ai-deepseek-v4.1-flash",
+        "audience": "general",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek-V4.1-Flash",
+        "takeaway": "DeepSeek 推出 V4.1-Flash,以 FP8 精度支援圖文雙模態推論。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.2:hf-qwen-qwen-image-2.1",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen-Image-2.1",
+        "title": "Qwen-Image-2.1",
+        "takeaway": "Qwen-Image-2.1 開源文生圖模型上線,支援影像編輯與 RGBA 透明圖層輸出。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.3:hf-prism-ml-ternary-bonsai-2-27b-gguf",
+        "audience": "both",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "title": "Ternary-Bonsai-2-27B-gguf",
+        "takeaway": "以 2-bit 三元量化壓縮 Qwen3.8-27B,下載量已破 280 萬,主打終端裝置部署。",
+        "companies": [
+          "prism-ml"
+        ]
+      },
+      {
+        "id": "tech.models.4:hf-ista-daslab-qwen3.8-27b-gsq-rco-gguf",
+        "audience": "both",
+        "url": "https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF",
+        "title": "Qwen3.8-27B-GSQ-RCO-GGUF",
+        "takeaway": "ISTA DASLab 以 GSQ-RCO 混合精度量化 Qwen3.8-27B,下載已破 140 萬。",
+        "companies": [
+          "ISTA DASLab"
+        ]
+      },
+      {
+        "id": "tech.models.5:hf-xingchen-agi-xing4.0-29b-a4b",
+        "audience": "general",
+        "url": "https://huggingface.co/XingChen-AGI/Xing4.0-29B-A4B",
+        "title": "Xing4.0-29B-A4B",
+        "takeaway": "XingChen-AGI 發布 Xing4.0,29B 參數 MoE 模型啟用 4B 參數。",
+        "companies": [
+          "XingChen-AGI"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 vaults from #10 to #2",
+        "takeaway": "GPT-5.2 在 agent 工具調用測試 tau2-bench 上由第 10 名衝上第 2 名。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:arxiv-2609.26708",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2609.26708",
+        "title": "Train Where the Quantized Model Goes: On-Policy Distillation for Low-Bit Reasoning",
+        "takeaway": "新研究以 on-policy 蒸餾訓練低位元量化模型,鎖定推論精度落差問題。",
+        "companies": []
+      },
+      {
+        "id": "tech.aidaptiv.1:arxiv-2609.26621",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2609.26621",
+        "title": "Greedy Decoding Is Not Precision-Invariant: Cross-Precision Output Divergence in LLM Inference",
+        "takeaway": "同一模型換精度後端跑貪婪解碼,輸出會分歧,量化部署需留意一致性。",
+        "companies": []
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": true,
+    "report_date": "2026-09-24",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "attribution",
+        "author": "Greedy Decoding",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "lead.html",
+        "type": "attribution",
+        "author": "Is Not",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "lead.html",
+        "type": "attribution",
+        "author": "Train Where",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "lead.html",
+        "type": "attribution",
+        "author": "Quantized Model",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      }
+    ],
+    "repaired": 0
+  }
+}
