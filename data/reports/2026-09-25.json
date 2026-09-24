@@ -1,0 +1,745 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-25",
+  "meta": {
+    "run_id": "c5f2b4ca-29dd-45d7-990f-02452c4d3b08",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-24T23:17:31.431Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 846
+      },
+      "trending": {
+        "ok": true,
+        "count": 14
+      },
+      "search": {
+        "ok": true,
+        "count": 302
+      },
+      "developers": {
+        "ok": true,
+        "count": 12
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 3
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 20
+      }
+    },
+    "feeds_sections": {
+      "pulse": 75,
+      "market": 0,
+      "tech": 24,
+      "shipped": 49
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.6761585999999999,
+        "duration_ms": 198349,
+        "num_turns": 6,
+        "input_tokens": 12,
+        "output_tokens": 19394,
+        "cache_read_tokens": 334753,
+        "cache_creation_tokens": 102773,
+        "is_error": false,
+        "session_id": "e8995862-3eff-4d6c-8100-ca1ebc339167"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1428268,
+        "duration_ms": 14664,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1527,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31249,
+        "is_error": false,
+        "session_id": "b30fc6da-4149-4aed-8fcb-b602378097a2"
+      },
+      "curate.market": {
+        "cost_usd": 0.2273512,
+        "duration_ms": 49782,
+        "num_turns": 4,
+        "input_tokens": 6,
+        "output_tokens": 3729,
+        "cache_read_tokens": 91881,
+        "cache_creation_tokens": 42043,
+        "is_error": false,
+        "session_id": "0e1f947c-ee3e-4b2b-98f3-96c5f697ac3c"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.4621322,
+        "duration_ms": 158756,
+        "num_turns": 8,
+        "input_tokens": 14,
+        "output_tokens": 14176,
+        "cache_read_tokens": 349586,
+        "cache_creation_tokens": 61838,
+        "is_error": false,
+        "session_id": "a605965b-b1dd-41b2-b3cf-ed1dc92d02ef"
+      },
+      "synthesize": {
+        "cost_usd": 2.1416135,
+        "duration_ms": 233998,
+        "num_turns": 18,
+        "input_tokens": 22,
+        "output_tokens": 18809,
+        "cache_read_tokens": 887091,
+        "cache_creation_tokens": 121502,
+        "is_error": false,
+        "session_id": "e1ced3ab-a8d5-479c-9e2e-70b97f886bde"
+      },
+      "curate.tech": {
+        "cost_usd": 0.5151312,
+        "duration_ms": 187719,
+        "num_turns": 6,
+        "input_tokens": 6,
+        "output_tokens": 20894,
+        "cache_read_tokens": 104736,
+        "cache_creation_tokens": 70128,
+        "is_error": false,
+        "session_id": "022ff3fc-50f6-45dc-8235-bfe845249465"
+      }
+    },
+    "total_cost_usd": 4.1652135,
+    "total_tokens": 78591,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "6/6",
+      "unique_domains": 19,
+      "source_tier": 0.07317073170731707
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-25 — 近期重點</h3>\n<p>今天的線索分佈在四個不同的層：發布格式、模型邊界、agent 的攻防面，還有調參這件事本身。</p>\n<h4>模態邊界正在收進同一個 checkpoint</h4>\n<p>LTX-2.5 一個檔案上掛著 text-to-video、video-to-audio、audio-to-video、image-text-to-audio-video 十餘個 pipeline 標籤，HuggingFace 上 163 萬次下載、5000 個 like。Qwen-Image-2.1 走的是另一個方向：原生 RGBA 透明圖層，去背從後處理變成模型輸出，Comfy-Org 那份轉檔已經 285 萬次下載。做 DiT 的人可以把這兩件事讀成同一個工程後果——你現在串在 pipeline 裡的 matting 與音軌分離外掛，下一輪大概率變成 checkpoint 的一個 output head。</p>\n<h4>自主 agent 已經在野外掃描</h4>\n<p>Transluce 從 urlquery.net 的資料裡撈到自主 AI agent 主動掃描並嘗試入侵的紀錄，HN 233 分、32 則討論。守方的工具也已經長出來了：AgentCapture 這個 22 天大的 repo 累到 122 顆星，作法是反過來用提示詞注入，把自動化滲透 agent 誘進蜜罐。攻守兩邊操作的是同一個介面，就是模型會讀進去的那段文字。Lobsters 上另一則的分數不高，但畫面很清楚：有人直接開口跟 Meta Muse 要檔案系統，它送了 6.8 GB 出來。</p>\n<h4>低精度從社群的工作變成發布的一部分</h4>\n<p>Moonshot 的 Kimi-K3 是 2.8 兆參數、1M context 的 MoE，權重以原生 MXFP4 釋出，AMD Instinct 在 vLLM、SGLang、ATOM 三個引擎上 day 0 就跑得動。DeepSeek V4.1-Flash 以 MIT 授權開源，FP8 直接可用。TensorRT ModelOpt 0.47 的 ONNX autotune 現在會用目標 runtime 精度實測過各種 placement，只留下真的達到 TensorRT 精度門檻的 INT8/FP8 Q/DQ。等一週社群量化檔的那個空窗正在消失，瓶頸換到 kernel 端。</p>\n<h4>一個 5 顆星的 repo</h4>\n<p>lucidrains 今天開了 log-depth-recurrent-modeling，5 顆星，實作的是 Imperial College London 的 Yiqin Wang 提出的 log-depth recurrent modeling；今天抓到的 arXiv cs.LG 清單裡就躺著同名論文 2609.28212。用 Blelloch scan 做前綴掃描，遞迴的深度壓到對數級，序列長度外推是順帶拿到的。進場成本是讀一個檔案。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-multimodal-single-checkpoint",
+        "title": "生成模型把模態邊界收進單一 checkpoint",
+        "body": "影片、音訊、圖像的邊界不再由「哪個模型」決定，而是由同一個 checkpoint 的哪個 output head 決定。對 DiT 應用層來說，這意味著現在 pipeline 裡那幾個外掛步驟的保存期限，開始由上游模型的發布節奏決定，不是由你的重構排程決定。",
+        "mechanism": "訓練端一旦把音訊與影像當成同一個 latent 序列的不同 channel，拆成多個專用模型的理由就只剩 serving 成本；而 4-step 蒸餾正在把 serving 成本壓下來，單一大 checkpoint 的算帳方式就翻過來了。alpha 通道是同一個邏輯的小尺寸版本——透明度本來就是生成過程裡的資訊，只是過去被丟掉再用 matting 猜回來。",
+        "evidence": "LTX-2.5 單一 checkpoint 掛 text-to-video / video-to-audio / audio-to-video / image-text-to-audio-video 等十餘個 pipeline 標籤，HF 下載 163 萬次；Qwen-Image-2.1 原生 RGBA 透明圖層；NVIDIA 在 TensorRT-LLM cookbook 補上 Cosmos3-Edge 的影音部署章節，以及 Cosmos3-Super 兩個 DMD2 蒸餾學生的 4-step 走法。",
+        "cross_source": 4,
+        "product_opportunity": "把現在 pipeline 裡的 matting 與音軌分離外掛標記成待汰換，這週先用 Qwen-Image-2.1 的 RGBA 輸出跑一次你手上的去背測試集，直接比對髮絲邊緣跟半透明區域的品質差多少。",
+        "source_links": [
+          "tech.models.3:Lightricks/LTX-2.5",
+          "tech.models.0:Qwen/Qwen-Image-2.1",
+          "tech.vendor.3:nvidia-cosmos-commits-d9e35b02",
+          "tech.vendor.2:nvidia-cosmos-commits-c4a19d76"
+        ]
+      },
+      {
+        "id": "focus-agent-security-prompt-layer",
+        "title": "Agent 安全的攻與防跑在同一層：模型讀得到的文字",
+        "body": "自主 agent 主動掃描網路這件事，從推演變成有人撈得到紀錄的觀測。值得注意的是反制工具長得跟攻擊工具一樣——AgentCapture 的手法就是反向提示詞注入。這條路線的結論不太好聽：你的 guardrail 跟攻擊者用的是同一個 API。",
+        "mechanism": "agent 同時握有工具權限與網路出口之後，攻擊成本的單位從人力變成 API 額度，掃描規模跟預算成正比而不是跟人數成正比。而不論攻方守方，唯一能改變 agent 行為的介面都是它會讀進去的文字，所以誘捕與入侵在實作上是鏡像的。",
+        "evidence": "Transluce 從 urlquery.net 的資料中找出自主 agent 主動掃描並嘗試入侵的早期活動（HN 233 分 / 32 則討論）；AgentCapture 用反向代理把 API 密餌載入真實業務、再以反向提示詞注入反制滲透 agent，122 顆星；有人直接向 Meta Muse 索取檔案系統，拿到 6.8 GB；Trail of Bits 則在談 AI 輔助安全稽核的實務界線。",
+        "cross_source": 4,
+        "product_opportunity": "你的 agent 只要會讀外部網頁或 issue 內容，這週就在 tool call 前面補一層輸入來源標記，把不可信文字跟系統指令分開記錄。做不到即時阻擋沒關係，至少事後查得出來是哪一段文字改了行為。",
+        "source_links": [
+          "pulse.hn.0:hn-transluce-agent-activity",
+          "discoveries.rising.0:Tcotl/AgentCapture",
+          "pulse.lobsters.3:lobsters-meta-muse-filesystem-leak",
+          "pulse.hn.7:hn-security-auditing-good-enough-ai"
+        ]
+      },
+      {
+        "id": "focus-low-precision-moves-upstream",
+        "title": "低精度格式從下游社群搬到上游發布端",
+        "body": "Kimi-K3 不是先出 BF16 再等社群量化，而是原生 MXFP4 就是那份權重。DeepSeek V4.1-Flash 的 FP8 也是同一個模式。這改變的不只是檔案大小，而是誰承擔精度損失的驗證責任——現在是模型廠。",
+        "mechanism": "模型廠自己以低精度訓練或發布之後，「等一週等社群量化檔」的空窗就不存在了，瓶頸整個移到推論引擎的 kernel 支援：誰的 kernel 先到位，誰就吃到 day-0 的使用者。同時 autotune 工具把量化從「套一個 recipe」變成「在目標精度下實測每個 placement，不達標就不留」，人工調 recipe 的空間跟著縮小。",
+        "evidence": "Kimi-K3 是 2.8 兆參數、1M context、原生 MXFP4 的 MoE，AMD Instinct 在 vLLM / SGLang / ATOM 三個獨立引擎上 day 0 支援；DeepSeek V4.1-Flash 以 MIT 授權開源、FP8 即用；ModelOpt 0.47 的 ONNX autotune 只保留達到設定 TensorRT 精度門檻的 INT8/FP8 Q/DQ；裝置端那頭，Ternary-Bonsai-2-27B 用 2-bit 三元量化壓 27B，HF 上 299 萬次下載。",
+        "cross_source": 4,
+        "product_opportunity": "aiDAPTIV+ 的支援模型清單拆成兩欄：「原生低精度發布」跟「需要社群量化」。前者你可以對外承諾發布當天上 demo，後者不行——這條分界線比模型名單本身更有說服力。",
+        "source_links": [
+          "tech.vendor.4:rocm-blog-e26f7a18",
+          "tech.models.1:deepseek-ai/DeepSeek-V4.1-Flash",
+          "tech.vendor.6:trt-model-optimizer-releases-0a7e4d31",
+          "tech.aidaptiv.0:prism-ml/Ternary-Bonsai-2-27B-gguf"
+        ]
+      },
+      {
+        "id": "focus-tuning-compiled-into-search",
+        "title": "推論調參正在被編譯成搜尋迴圈",
+        "body": "AMD 把調校包成一個多 agent harness 丟著跑，NVIDIA 把量化 placement 的取捨交給 autotune 實測。兩邊做的是同一件事：把綁在少數工程師身上的手感，寫成可以無人值守執行的迴圈。手調還有價值，但價值的位置變了——只剩在搜尋空間之外。",
+        "mechanism": "調校知識一旦能拆成「profile 工作負載 → 列舉設定空間 → 在目標精度下實測 → 只留達標的」這個固定迴圈，它就能跑整夜而不需要人在場。人的優勢從「知道哪個旋鈕該轉」變成「知道哪個旋鈕還沒被放進搜尋空間」。AMD 那篇 prefill context parallelism 的結論正好示範了差別：它得出的是一個條件分支（只有長 prompt 划算），而條件分支正是搜尋迴圈自己會找到的東西。",
+        "evidence": "AMD 自家評測中，Hyperloom 這個多 agent harness 在無人值守測試下取得中位數 1.73 倍推論加速，區間 1.35 到 7.31 倍；ModelOpt 0.47 的 autotune 在要求的 runtime 精度下實際 benchmark 各種 placement；AMD 另一篇把 GLM-5.2-MXFP4 在四張 MI355X 上的 prefill context parallelism 適用條件收斂成「看 prompt 長度」。",
+        "cross_source": 3,
+        "product_opportunity": "先別手調。把你 DiT 推論的 batch size、dtype、attention backend、scheduler 步數寫成一張可枚舉的設定表，跑一次全掃描，再回頭看手調還剩多少空間。多數情況下答案是沒有。",
+        "source_links": [
+          "tech.vendor.0:rocm-blog-a1f3c9e2",
+          "tech.vendor.6:trt-model-optimizer-releases-0a7e4d31",
+          "tech.vendor.1:rocm-blog-b7d2e841"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-log-depth-recurrence",
+      "title": "lucidrains 今天開的那個 5 顆星 repo",
+      "body": "log-depth-recurrent-modeling，今天建立，5 顆星，實作 Imperial College London 的 Yiqin Wang 提出的 log-depth recurrent modeling。今天抓到的 arXiv cs.LG 清單裡就有同名論文 2609.28212〈Log-Depth Recurrent Language Modeling〉。核心是用 Blelloch scan 做前綴掃描，把遞迴的計算深度從線性壓到對數級，序列長度外推是這個結構順帶給的，不需要額外訓練。",
+      "mechanism": "遞迴模型過去輸給 attention 的地方在於訓練時無法平行化——時間步之間有依賴。Blelloch scan 是把有結合律的運算展開成平行前綴的標準作法，如果狀態更新能寫成結合律形式，遞迴就能在 O(log n) 深度內算完。這條路線如果成立，長序列的成本曲線換一條，跟 KV cache 壓縮是正交的另一種解法。",
+      "product_opportunity": "花 30 分鐘讀那份實作，特別看狀態更新怎麼寫成結合律形式。如果你手上有長序列的 VLM 或影片任務，這決定了你該不該繼續在 KV cache 壓縮上投資。",
+      "source_links": [
+        "discoveries.dev_watch.0:lucidrains/log-depth-recurrent-modeling"
+      ],
+      "why_asymmetric": "lucidrains 的參考實作歷來是論文能見度的放大器，而現在它只有 5 顆星。進場成本是讀一個檔案；如果這個結構真的成立，你會比社群早幾週知道長序列的成本結構要重算。",
+      "falsification": "如果到 2026-11-30 它還在 100 顆星以下，代表社群看過後不買單，我這個判斷就是錯的。"
+    },
+    "contrarian": {
+      "id": "contrarian-raft-30b-tau2",
+      "title": "RAFT-30B-A3B 的 tau2-bench 榜首是擬合，不是能力",
+      "body": "今天 tau2-bench 的前五是 RAFT-30B-A3B、GPT-5.2、Claude Opus 4.5、Gemini 3 Flash、Qwen3.5-397B-A17B，GPT-5.2 從第 10 衝到第 2。市場會把這讀成「小模型在工具呼叫上追平前沿」。我不這樣讀。",
+      "source_links": [
+        "tech.benchmarks.0:tau2-bench-GPT-5.2"
+      ],
+      "claim": "RAFT-30B-A3B 會在 2026-12-31 前跌出 tau2-bench 前三名。",
+      "rationale": "一個 active 參數只有 3B 的 MoE 壓在 GPT-5.2 跟 Claude Opus 4.5 前面，比較像是對這個評測的任務分布擬合得特別好，不是工具呼叫能力真的超車。agent 評測的任務池小、環境固定，對這種形狀的模型特別友善；這類榜首通常在一個季度內被修正，不是被後來者擠下去，就是榜單自己補上驗證條件。",
+      "resolution_date": "2026-12-31",
+      "verification": "2026-12-31 當天查 taubench.com 官方榜，看前三名是否仍包含 RAFT-30B-A3B。含 = 我錯；不含 = 我對。"
+    },
+    "predictions": [
+      {
+        "id": "pred-native-low-precision-default",
+        "text": "下一個以開放權重發布的 1 兆參數級以上 MoE 模型，其主要 checkpoint 會是原生 sub-8-bit 格式（MXFP4 或 FP8），而非 BF16 參考權重加社群後量化。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "Kimi-K3 原生 MXFP4、DeepSeek V4.1-Flash 直出 FP8，顯示模型廠已經把精度驗證責任收回自己手上。"
+      },
+      {
+        "id": "pred-raft-30b-drops-tau2-top3",
+        "text": "RAFT-30B-A3B 在 2026-12-31 的 tau2-bench 官方榜上，不在前三名之內。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "3B active 參數壓過 GPT-5.2 與 Claude Opus 4.5 的形狀，比較像評測擬合而非能力超車。"
+      },
+      {
+        "id": "pred-second-rogue-agent-report",
+        "text": "2026-11-30 前，會有 Transluce 以外的第二個組織公開發表野外自主 agent 主動掃描或入侵行為的量測資料。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "掃描流量帶有可辨識的結構特徵，第一份公開觀測通常會觸發同業拿自己的日誌對照。"
+      },
+      {
+        "id": "pred-open-rgba-image-models",
+        "text": "2026-12-31 前，至少兩個非 Qwen 系的開源文生圖模型發布原生 RGBA / alpha 通道輸出。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "Qwen-Image-2.1 示範了透明度可以直接是模型輸出；去背是設計與電商流程裡最貴的後處理步驟之一。"
+      },
+      {
+        "id": "pred-log-depth-repo-traction",
+        "text": "lucidrains/log-depth-recurrent-modeling 在 2026-11-30 前達到 100 顆星以上。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "這是 sleeper 判斷的證偽條件：低於 100 顆星代表社群看過後不買單。"
+      },
+      {
+        "id": "pred-bidirectional-audio-video-checkpoint",
+        "text": "2026-12-31 前，至少一個非 Lightricks 的開源影片生成模型，在單一 checkpoint 內同時支援 video-to-audio 與 audio-to-video。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "LTX-2.5 已經把雙向音影轉換放進同一份權重，開源影片模型的功能表通常在一季內互相對齊。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.2:TencentARC/WorldCrafter",
+        "audience": "general",
+        "url": "https://github.com/TencentARC/WorldCrafter",
+        "name": "TencentARC/WorldCrafter",
+        "stars": 346,
+        "language": null,
+        "relevance": "以隱式 3D 記憶維持影片世界模型的時空一致性。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 10,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:awss1i/assay",
+        "audience": "work",
+        "url": "https://github.com/awss1i/assay",
+        "name": "awss1i/assay",
+        "stars": 94,
+        "language": null,
+        "relevance": "不寫測試、不靠 LLM，直接驗證生成網頁能否運作。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 7,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.0:Tcotl/AgentCapture",
+        "audience": "work",
+        "url": "https://github.com/Tcotl/AgentCapture",
+        "name": "Tcotl/AgentCapture",
+        "stars": 122,
+        "language": null,
+        "relevance": "以反向提示詞注入誘捕自動化滲透 agent，資安蜜罐新戰術。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 22,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:aru-labs/lossless-memory",
+        "audience": "work",
+        "url": "https://github.com/aru-labs/lossless-memory",
+        "name": "aru-labs/lossless-memory",
+        "stars": 112,
+        "language": null,
+        "relevance": "捨棄摘要與向量檢索，逐行加時間戳保留原始記憶。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 11.666666666666666,
+        "repo_age_days": 20,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:lucidrains/log-depth-recurrent-modeling",
+        "audience": "general",
+        "url": "https://github.com/lucidrains/log-depth-recurrent-modeling",
+        "name": "lucidrains/log-depth-recurrent-modeling",
+        "stars": 5,
+        "language": null,
+        "relevance": "以 Blelloch scan 達成對數深度遞迴，序列長度外推免費。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-transluce-agent-activity",
+        "audience": "both",
+        "url": "https://transluce.org/agent-activity",
+        "source": "Hacker News",
+        "title": "Early rogue AI agent activity and attempts to hack found on urlquery.net",
+        "score": 233,
+        "comments": 32,
+        "takeaway": "野外首見自主 AI agent 主動掃描並嘗試入侵,agentic 安全風險成真。"
+      },
+      {
+        "id": "pulse.hn.1:hn-jevbench-decision-models",
+        "audience": "general",
+        "url": "https://benchmarkheaven.com/jev-models",
+        "source": "Show HN",
+        "title": "Show HN: JevBench, a reproducible benchmark for typed decision models",
+        "score": 145,
+        "comments": 13,
+        "takeaway": "針對型別化決策模型推出可重現 benchmark,補上這塊評測空缺。"
+      },
+      {
+        "id": "pulse.hn.2:hn-opus-5-5-explainer-videos",
+        "audience": "general",
+        "url": "https://launchvideo.io/",
+        "source": "Hacker News",
+        "title": "Opus 5.5 is good at explainer videos",
+        "score": 99,
+        "comments": 25,
+        "takeaway": "Opus 5.5 生成解說影片品質獲社群肯定,拓展多模態應用場景。"
+      },
+      {
+        "id": "pulse.hn.3:hn-google-project-suncatcher",
+        "audience": "general",
+        "url": "https://blog.google/innovation-and-ai/models-and-research/google-research/google-project-suncatcher-facts/",
+        "source": "Hacker News",
+        "title": "Google's Project Suncatcher to put ML infrastructure in space",
+        "score": 82,
+        "comments": 13,
+        "takeaway": "Google 評估把 ML 基礎設施送上太空,靠太陽能緩解電力瓶頸。"
+      },
+      {
+        "id": "pulse.hn.4:hn-ai-content-detection-structure",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2609.15369",
+        "source": "Show HN",
+        "title": "Show HN: Training a model to identify AI web content from structure alone",
+        "score": 68,
+        "comments": 7,
+        "takeaway": "僅憑網頁結構特徵、不看文字內容即可辨識 AI 生成網站。"
+      },
+      {
+        "id": "pulse.hn.5:hn-npunlock-intel-npu",
+        "audience": "both",
+        "url": "https://github.com/hsfzxjy/npunlock",
+        "source": "Show HN",
+        "title": "Show HN: Npunlock – Run custom C kernels for Intel NPUs",
+        "score": 66,
+        "comments": 6,
+        "takeaway": "開源工具繞過官方限制,讓開發者在 Intel NPU 上跑自訂 C kernel。"
+      },
+      {
+        "id": "pulse.hn.6:hn-tutoring-company-use-ai",
+        "audience": "general",
+        "url": "https://www.afr.com/policy/health-and-education/tutoring-company-tell-parents-to-save-their-money-and-use-ai-instead-20260923-p60z0r",
+        "source": "Hacker News",
+        "title": "Tutoring company tells parents to save their money and 'use AI instead'",
+        "score": 64,
+        "comments": 13,
+        "takeaway": "補教業者公開建議家長改用 AI,顯示服務業已直面替代壓力。"
+      },
+      {
+        "id": "pulse.hn.7:hn-security-auditing-good-enough-ai",
+        "audience": "general",
+        "url": "https://blog.trailofbits.com/2026/09/18/auditing-in-the-age-of-good-enough-ai/",
+        "source": "Hacker News",
+        "title": "Security auditing in the age of (good enough) AI",
+        "score": 45,
+        "comments": 1,
+        "takeaway": "Trail of Bits 分享用 AI 輔助安全稽核的實務界線與限制。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-radicle-vuln-disclosure",
+        "audience": "general",
+        "url": "https://radicle.dev/2026/09/23/disclosure-of-vulnerability-in-network-protocol.html",
+        "source": "Lobsters",
+        "title": "Radicle: Disclosure of Vulnerability in the Network Protocol",
+        "score": 137,
+        "takeaway": "去中心化協作工具 Radicle 揭露網路協定漏洞,牽動節點同步安全。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-lwn-modernizing-open-source-desktop",
+        "audience": "general",
+        "url": "https://lwn.net/SubscriberLink/1095425/2d9f411252325784/",
+        "source": "Lobsters",
+        "title": "Ideas on modernizing the open-source desktop",
+        "score": 55,
+        "takeaway": "LWN 探討開源桌面現代化的具體技術路徑與長年痛點。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-named-arguments-at-home",
+        "audience": "general",
+        "url": "https://corrode.dev/blog/named-arguments-at-home/",
+        "source": "Lobsters",
+        "title": "We Have Named Arguments at Home",
+        "score": 49,
+        "takeaway": "示範用 struct pattern 在 Rust 模擬具名參數語法。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-meta-muse-filesystem-leak",
+        "audience": "general",
+        "url": "https://mouse.dev/blog/muse-runtime-export/",
+        "source": "Lobsters",
+        "title": "I asked Meta's Muse for its filesystem and it sent me 6.8 GB",
+        "score": 34,
+        "takeaway": "只要開口要求,Meta Muse 模型就交出 6.8 GB 內部檔案系統。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-clankers-second-brain",
+        "audience": "general",
+        "url": "https://jadarma.github.io/blog/posts/2026/09/clankers-made-me-build-a-second-brain/",
+        "source": "Lobsters",
+        "title": "Clankers Made Me Build a Second Brain",
+        "score": 27,
+        "takeaway": "作者靠 AI 工具打造個人知識管理系統,取代傳統筆記流程。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-peg-vs-regex-lisp-org-parser",
+        "audience": "general",
+        "url": "https://jointhefreeworld.org/blog/articles/lisps/parsing-expression-grammar-lisp-org-convert-to-html/index.html",
+        "source": "Lobsters",
+        "title": "Parsing Expression Grammar vs. regexes: Building Org parser in Lisp (via SXML)",
+        "score": 19,
+        "takeaway": "用 Lisp 寫 PEG 剖析器產生 HTML,展現比正規表達式更易組合。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:devto-ai-agent-never-leave-browser",
+        "audience": "general",
+        "url": "https://dev.to/sylwia-lask/what-if-your-ai-agent-never-had-to-leave-the-browser-demo--5g",
+        "source": "Dev.to Top",
+        "title": "What If Your AI Agent Never Had to Leave the Browser? (Demo)",
+        "takeaway": "示範讓 AI agent 全程留在瀏覽器內完成任務,免除環境切換成本。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:devto-type-guard-drift-typescript",
+        "audience": "general",
+        "url": "https://dev.to/nyaomaru/your-type-guard-can-silently-drift-from-your-typescript-type-o57",
+        "source": "Dev.to Top",
+        "title": "Your Type Guard Can Silently Drift from Your TypeScript Type",
+        "takeaway": "點出 TypeScript type guard 可能與型別定義悄悄不同步的陷阱。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:devto-clean-code-vs-clear-code",
+        "audience": "general",
+        "url": "https://dev.to/georgekobaidze/clean-code-is-not-the-same-as-clear-code-comments-were-never-the-problem-42n",
+        "source": "Dev.to Top",
+        "title": "Clean Code Is Not the Same as Clear Code: Comments Were Never the Problem",
+        "takeaway": "主張乾淨與清晰是兩回事,替留言辯護而非一味主張刪除。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:devto-phishing-link-checker-nodejs",
+        "audience": "general",
+        "url": "https://dev.to/nikolas_dimitroulakis_d23/build-a-phishing-link-checker-in-nodejs-with-three-api-calls-2pb4",
+        "source": "Dev.to Top",
+        "title": "Build a phishing link checker in Node.js with three API calls",
+        "takeaway": "示範串接三個 API 呼叫,做出可用的網址釣魚偵測工具。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:devto-kaggle-benchmarking-challenge",
+        "audience": "general",
+        "url": "https://dev.to/devteam/join-the-kaggle-benchmarking-challenge-2500-in-prizes-for-five-winners-18ml",
+        "source": "Dev.to Top",
+        "title": "Join the Kaggle Benchmarking Challenge: $2,500 in Prizes for FIVE Winners!",
+        "takeaway": "Kaggle 推出挑戰賽,要求參賽者建構基準並實測真實模型。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-3711-20260924",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "日月光子公司矽品公告斥資逾84億元添置封測與測試設備",
+        "takeaway": "矽品向愛德萬測試、東京威力科創等分批採購設備，封測產能擴張持續加碼。",
+        "amount": "合計約新台幣84.8億元",
+        "companies": [
+          "日月光投控",
+          "矽品精密",
+          "愛德萬測試",
+          "東京威力科創",
+          "萬潤科技"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:rocm-blog-a1f3c9e2",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/hyperloom-optimization/README.html",
+        "title": "Hyperloom: A Multi-Agent Harness for Autonomous Inference Optimization on AMD GPUs",
+        "takeaway": "AMD Hyperloom 自動調校推論管線,MI GPU 上實測加速 1.73 倍。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:rocm-blog-b7d2e841",
+        "audience": "both",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/glm52-mxfp4-mi355/README.html",
+        "title": "Serving GLM-5.2-MXFP4 on AMD Instinct™ MI355X: When Prefill Context Parallelism Pays",
+        "takeaway": "MI355X 服務 GLM-5.2-MXFP4 時,prefill context parallelism 僅長 prompt 划算。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:nvidia-cosmos-commits-c4a19d76",
+        "audience": "general",
+        "url": "https://github.com/NVIDIA/cosmos/commit/96e266d69e7c58f75bf591d768c4a7f00ea52585",
+        "title": "Add TensorRT-LLM distilled 4-step guide (#353)",
+        "takeaway": "TensorRT-LLM 新增 Cosmos3-Super 4-step 蒸餾推論教學,加速文字生圖。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:nvidia-cosmos-commits-d9e35b02",
+        "audience": "both",
+        "url": "https://github.com/NVIDIA/cosmos/commit/003460e5e74e4bbd3c26107e328df811a4bbdf56",
+        "title": "Add a TensorRT-LLM Cosmos3-Edge audiovisual guide (#354)",
+        "takeaway": "TensorRT-LLM 補齊 Cosmos3-Edge 影音生成的邊緣部署教學。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:rocm-blog-e26f7a18",
+        "audience": "both",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/kimi-k3-mad/README.html",
+        "title": "Benchmarking Kimi-K3 Across vLLM, SGLang, and ATOM on MI350X",
+        "takeaway": "Moonshot Kimi-K3(2.8T MoE、原生 MXFP4)MI350X 三引擎日發布即支援。",
+        "companies": [
+          "AMD",
+          "Moonshot AI"
+        ]
+      },
+      {
+        "id": "tech.vendor.5:rocm-blog-f083c5a9",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/hylo-long-context/README.html",
+        "title": "Zebra-HyLo: Upcycling Transformers into Long-Context Hybrid LLMs on AMD Instinct™ GPUs",
+        "takeaway": "AMD Zebra-HyLo 把既有 Transformer 升級成混合線性注意力長文本模型。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.6:trt-model-optimizer-releases-0a7e4d31",
+        "audience": "both",
+        "url": "https://github.com/NVIDIA/Model-Optimizer/releases/tag/0.47.0",
+        "title": "ModelOpt 0.47.0 Release",
+        "takeaway": "TensorRT ModelOpt 0.47 讓 ONNX 量化自動保留符合精度的 INT8/FP8。",
+        "companies": [
+          "NVIDIA"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:Qwen/Qwen-Image-2.1",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen-Image-2.1",
+        "title": "Qwen-Image-2.1",
+        "takeaway": "Qwen-Image-2.1 新增 RGBA 透明圖層,原生支援去背與圖片編輯。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.1:deepseek-ai/DeepSeek-V4.1-Flash",
+        "audience": "both",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+        "title": "DeepSeek-V4.1-Flash",
+        "takeaway": "DeepSeek V4.1 Flash 以 MIT 授權開源多模態版,FP8 量化即用。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.2:Qwen/Qwen3.8-27B",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Qwen3.8-27B",
+        "takeaway": "Qwen3.8-27B 主打圖文對話,原生支援 Azure、SageMaker 一鍵部署。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.3:Lightricks/LTX-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "LTX-2.5",
+        "takeaway": "LTX-2.5 把文字轉影片擴展到音訊、跨模態互轉,單一模型涵蓋十餘種生成任務。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.4:XiaomiMiMo/MiMo-V2.6-Pro-RL",
+        "audience": "both",
+        "url": "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Pro-RL",
+        "title": "MiMo-V2.6-Pro-RL",
+        "takeaway": "小米 MiMo-V2.6 用 RL 強化長文本多模態 agent,涵蓋影片理解與語音。",
+        "companies": [
+          "Xiaomi"
+        ]
+      },
+      {
+        "id": "tech.models.5:TaichuAI/ZDTaichu5.0-9B",
+        "audience": "general",
+        "url": "https://huggingface.co/TaichuAI/ZDTaichu5.0-9B",
+        "title": "ZDTaichu5.0-9B",
+        "takeaway": "TaichuAI 推出 ZDTaichu5.0-9B,9B 參數扛下空間推理與影片理解 agent 任務。",
+        "companies": [
+          "TaichuAI"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-bench-GPT-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 rises to #2 as new top-5 entrant",
+        "takeaway": "GPT-5.2 在 tau2-bench agent 工具呼叫評測從第 10 衝到第 2 名。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "audience": "both",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "title": "Ternary-Bonsai-2-27B-gguf",
+        "takeaway": "Ternary-Bonsai 用 2-bit 三元量化壓縮 27B 模型,鎖定裝置端推論(CPU/CUDA/Metal 皆可跑)。",
+        "companies": [
+          "prism-ml"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-25",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "temporal",
+        "marker": "今日",
+        "ids": [
+          "pulse.lobsters.0:lobsters-radicle-vuln-disclosure",
+          "pulse.lobsters.1:lobsters-lwn-modernizing-open-source-desktop"
+        ]
+      }
+    ],
+    "repaired": 1
+  }
+}
