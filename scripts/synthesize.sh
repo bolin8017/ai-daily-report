@@ -61,6 +61,8 @@ if ! node scripts/hermes/build-synthesizer-prompt.mjs \
   --report-context-file "$REPORT_CONTEXT_FILE" \
   --synth-prompt "$SYNTH_PROMPT_FILE_PATH" \
   --quality "$QUALITY_FILE_PATH" \
+  --staging-dir "$STAGING_DIR" \
+  --curated-dir "$CURATED_DIR" \
   --output "$PROMPT_FILE"; then
   echo "[synthesize.sh] prompt generation failed" >&2
   exit 3
@@ -68,6 +70,11 @@ fi
 
 echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
 
+# The prompt inlines the curated files, the small raw inputs and the schema
+# source (build-synthesizer-prompt.mjs), so the common path is one turn; Read /
+# Grep remain only for targeted lookups in the large raw feeds. The reply is
+# the editorial JSON — no Write tool: the Read-everything-then-Write loop took
+# ~23 turns, each re-sending the whole accumulated context.
 # NB: extended thinking stays OFF for this synthesis call — reasoning mode
 # raises hallucination on source-faithful summarization. (The Stage 3.5 judge
 # call may use it; synthesis must not.)
@@ -76,8 +83,8 @@ echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
     --model "$MODEL" \
     --fallback-model "$FALLBACK_MODEL" \
     --output-format json \
-    --tools "Read,Write,Glob,Grep" \
-    --allowed-tools Read Write Glob Grep \
+    --tools "Read,Grep" \
+    --allowed-tools Read Grep \
     --no-session-persistence \
     "${LEAN_FLAGS[@]}" \
     < "$PROMPT_FILE" \
@@ -101,8 +108,14 @@ if [ "$RC" -ne 0 ]; then
   exit 1
 fi
 
-if [ ! -f "$EDITORIAL_FILE" ]; then
-  echo "[synthesize.sh] $EDITORIAL_FILE missing — synthesizer didn't Write it" >&2
+# The reply is the editorial: extract its JSON object (a stray fence or
+# preamble is stripped). An empty reply is the same failure the missing-file
+# check used to catch.
+rm -f "$EDITORIAL_FILE"
+node src/lib/claude-envelope.js json "$LOG_DIR/synthesizer.raw.txt" > "$EDITORIAL_FILE"
+if [ ! -s "$EDITORIAL_FILE" ]; then
+  echo "[synthesize.sh] $EDITORIAL_FILE empty — synthesizer returned no editorial" >&2
+  rm -f "$EDITORIAL_FILE"
   exit 2
 fi
 
