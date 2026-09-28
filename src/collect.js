@@ -330,6 +330,11 @@ async function main() {
   // Phase 4 — condense per-source for prompt-size control (scope-aware)
   banner('condensing');
   const condensed = condenseAll(raw);
+  if (condensed.over_budget.length > 0) {
+    // Not fatal: this bucket feeds no prompt (see condenseAll). Worth saying so
+    // the day it starts mattering again.
+    banner(`condense over budget (no prompt reads these): ${condensed.over_budget.join(', ')}`);
+  }
 
   // Phase 4b — section-aware feed slices (sole feed staging after Plan 5 cutover).
   // Built from RAW feed items, which still carry published/score/_scope.

@@ -182,28 +182,43 @@ function condenseOne(data, type) {
 
 /**
  * Condense raw fetcher results in-memory.
+ *
+ * The budget exists to keep curator prompts small, so only a bucket that still
+ * reaches a prompt may abort the run. The three GitHub buckets do, via
+ * buildShippedSlice. `unified-feeds` does not: the Plan 5 cutover retired
+ * unified.json, and the feed sections are built by buildSectionFeedSlices from
+ * RAW items, with their own caps. Before that distinction existed, adding a
+ * single feed source could take Stage 1 down over a prompt nobody sends
+ * (2026-09-28: "budget exceeded: unified-feeds (9510 tokens)"). An overshoot is
+ * still reported in `over_budget` so prompt-size creep stays visible.
+ *
  * @param {object} raw - { feeds, trending, search, developers } from runFetchers()
- * @returns {object} { unified, trending, search, developers } — condensed objects
- * @throws if any condensed output exceeds BUDGET_TOKENS after all attempts
+ * @returns {object} { unified, trending, search, developers, over_budget }
+ * @throws if a prompt-bound condensed output exceeds BUDGET_TOKENS after all attempts
  */
 export function condenseAll(raw) {
   const plan = [
-    { type: 'unified-feeds', input: raw.feeds, key: 'unified' },
-    { type: 'github-trending', input: raw.trending, key: 'trending' },
-    { type: 'github-search', input: raw.search, key: 'search' },
-    { type: 'github-developers', input: raw.developers, key: 'developers' },
+    { type: 'unified-feeds', input: raw.feeds, key: 'unified', prompted: false },
+    { type: 'github-trending', input: raw.trending, key: 'trending', prompted: true },
+    { type: 'github-search', input: raw.search, key: 'search', prompted: true },
+    { type: 'github-developers', input: raw.developers, key: 'developers', prompted: true },
   ];
 
   const out = {};
   const over = [];
-  for (const { type, input, key } of plan) {
+  const fatal = [];
+  for (const { type, input, key, prompted } of plan) {
     const { result, tokens, exhausted } = condenseOne(input, type);
     out[key] = result;
-    if (exhausted) over.push(`${type} (${tokens} tokens)`);
+    if (exhausted) {
+      over.push(`${type} (${tokens} tokens)`);
+      if (prompted) fatal.push(`${type} (${tokens} tokens)`);
+    }
   }
-  if (over.length > 0) {
-    throw new Error(`[condense] budget exceeded: ${over.join(', ')}`);
+  if (fatal.length > 0) {
+    throw new Error(`[condense] budget exceeded: ${fatal.join(', ')}`);
   }
+  out.over_budget = over;
   return out;
 }
 
