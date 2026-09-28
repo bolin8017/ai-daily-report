@@ -20,6 +20,19 @@ describe('parseOpml', () => {
     });
   });
 
+  // Reddit refuses a non-browser User-Agent (403), so its outline carries the
+  // UA Miniflux must send. Feeds without the attribute stay UA-less.
+  it('carries a per-feed userAgent when the outline declares one', () => {
+    const feeds = parseOpml(
+      '<outline text="reddit-stablediffusion" xmlUrl="https://www.reddit.com/r/StableDiffusion/.rss" category="tech" userAgent="Mozilla/5.0 (X11; Linux x86_64)"/>',
+    );
+    expect(feeds[0].userAgent).toBe('Mozilla/5.0 (X11; Linux x86_64)');
+  });
+
+  it('leaves userAgent undefined for feeds that do not need one', () => {
+    expect(parseOpml(SAMPLE)[0].userAgent).toBeUndefined();
+  });
+
   it('decodes XML entities in attributes', () => {
     const feeds = parseOpml('<outline text="x" xmlUrl="https://e.com/feed?a=1&amp;b=2"/>');
     expect(feeds[0].url).toBe('https://e.com/feed?a=1&b=2');

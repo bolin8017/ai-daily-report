@@ -59,7 +59,13 @@ async function main() {
     try {
       const res = await api('/v1/feeds', {
         method: 'POST',
-        body: JSON.stringify({ feed_url: f.feed_url, category_id: catId.get(f.category) }),
+        body: JSON.stringify({
+          feed_url: f.feed_url,
+          category_id: catId.get(f.category),
+          // Miniflux's own UA is 403'd by Reddit; without this the feed is
+          // created and then never returns an entry.
+          ...(f.userAgent ? { user_agent: f.userAgent } : {}),
+        }),
       });
       // Tag with the registry source id (the fetcher reads it back via feed.title).
       await api(`/v1/feeds/${res.feed_id}`, {

@@ -24,6 +24,13 @@ export const CATEGORY_TO_SECTIONS = {
   // serve them. Split from diffusion-research so the daily supply of
   // video-gen items is countable on its own.
   'video-generation': ['tech'],
+  // genai-community: practitioner community (Reddit) on image/video generation.
+  // Deliberately NOT 'video-generation' — that category's daily item count is
+  // the measurement for whether the video-gen sources added 2026-09 earn their
+  // place, and mixing a high-volume community feed into it would answer a
+  // different question. Not in pulse either: the pulse curator routes by source
+  // into four fixed sub-groups, so an unlisted source would be silently dropped.
+  'genai-community': ['tech'],
   // ssd-vendor: trade-press + analyst coverage of storage/memory vendors;
   // belongs in tech (vendor/models/benchmarks tabs). blocksandfiles is an
   // rss-post in this category and would be orphaned without this entry.

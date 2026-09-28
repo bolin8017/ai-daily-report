@@ -59,7 +59,9 @@ async function main() {
     const category = sourceToSection[s.id] ?? '';
     if (!url) throw new Error(`no feed url derivable for ${s.id}`);
     if (!category) console.error(`[gen-feeds-opml] WARN: ${s.id} not in any section map`);
-    return `    <outline text="${esc(s.id)}" title="${esc(s.label ?? s.id)}" type="rss" xmlUrl="${esc(url)}" category="${esc(category)}"/>`;
+    const ua = s.chain?.[0]?.config?.userAgent;
+    const uaAttr = ua ? ` userAgent="${esc(ua)}"` : '';
+    return `    <outline text="${esc(s.id)}" title="${esc(s.label ?? s.id)}" type="rss" xmlUrl="${esc(url)}" category="${esc(category)}"${uaAttr}/>`;
   });
 
   const opml = `<?xml version="1.0" encoding="UTF-8"?>

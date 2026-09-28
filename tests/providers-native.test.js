@@ -33,6 +33,18 @@ describe('native providers', () => {
     expect(result.items[0].source).toBe('test');
   });
 
+  it('native-rss sends a per-source User-Agent when one is configured', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(RSS_XML) });
+    vi.stubGlobal('fetch', fetchMock);
+    await nativeRSSProvider(
+      { url: 'https://x.test/feed', sourceName: 't', userAgent: 'Mozilla/5.0 (X11; Linux x86_64)' },
+      { itemType: 'rss-post', sourceId: 't' },
+    );
+    expect(fetchMock.mock.calls[0][1].headers['User-Agent']).toBe(
+      'Mozilla/5.0 (X11; Linux x86_64)',
+    );
+  });
+
   it('native-rss returns ok:false on HTTP error', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 403 }));
     const result = await nativeRSSProvider(

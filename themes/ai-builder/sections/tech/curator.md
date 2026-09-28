@@ -27,7 +27,7 @@ Write strict JSON matching `TechCuratedSchema` to `data/staging/curated/tech.jso
 
 ### vendor (cap 8) — 大廠技術
 
-Source: feeds.json from `Anthropic News`, `Google AI Blog`, `OpenAI`, `Microsoft Research AI`, `AWS ML Blog`, `NVIDIA Developer Blog`, `Meta (Research/FAIR)`, DeepMind if present, plus the video-generation feeds (`NVlabs Sana Commits`, `LTX-Video Releases`, `FastVideo Releases`, `ComfyUI Blog`, `stable-diffusion.cpp Releases`).
+Source: feeds.json from `Anthropic News`, `Google AI Blog`, `OpenAI`, `Microsoft Research AI`, `AWS ML Blog`, `NVIDIA Developer Blog`, `Meta (Research/FAIR)`, DeepMind if present, plus the video-generation feeds (`NVlabs Sana Commits`, `LTX-Video Releases`, `FastVideo Releases`, `ComfyUI Blog`, `stable-diffusion.cpp Releases`) and the practitioner community feed (`r/StableDiffusion`).
 
 - **Substance test (include):** post contains model card details, API feature specs with quantitative claims, OSS releases, paper links, OR benchmark numbers.
 - **Marketing-fluff test (exclude):** post is "X enables Y for customers" / "partner X chose us" / pure case study without technical substance.
@@ -79,6 +79,20 @@ Everything else from those feeds is judged as ordinary `vendor` material on the
 substance test above, with no video-gen priority. The builder's question here is
 "can my card run it, and how fast" — an item that does not answer it is not a
 video-gen item no matter which vendor published it.
+
+**r/StableDiffusion（社群實測這一側，cap 2）。** 這條 feed 是實際在自己卡上跑
+生成的人最先講出結果的地方，但同一批貼文裡混著大量純作品展示。只在貼文帶下列
+其中一項時收：量化過的觀察（步數、解析度、VRAM、每張耗時、哪張卡）、一個可重現
+的做法（工作流、node、取樣器、LoRA 訓練設定）、或對某個新模型／新版本的實測結論
+（「這版提示詞跟隨度變好」要附它是怎麼比的）。
+
+排除：純作品展示（貼圖貼片、風格試作、迷因、角色二創，即使畫面很好）、求助提問、
+「哪張卡值得買」這類選購討論、以及只有感想沒有數字或做法的心得。判準是一句話：
+**讀者能不能照著做，或據此改自己的參數。** 不能就不收。
+
+社群貼文的份量天生比不上一則 release，所以 cap 2、而且要和其他 `vendor` 項目
+一起排序，不因為「來自社群」而降級或升級。同一件事若 commit feed 也講了
+（例如同一個取樣器），以 commit feed 那則為主，社群那則只在補上實測數字時才留。
 
 ### benchmarks (cap 6) — 評測
 

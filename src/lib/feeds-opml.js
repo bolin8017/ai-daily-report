@@ -24,6 +24,9 @@ export function parseOpml(xml) {
       label: attrs.title ?? attrs.text,
       url: attrs.xmlUrl,
       category: attrs.category ?? '',
+      // Non-standard OPML attribute: the UA Miniflux must send for hosts that
+      // serve the feed only to a browser (Reddit 403s anything else).
+      ...(attrs.userAgent ? { userAgent: attrs.userAgent } : {}),
     });
   }
   return feeds;

@@ -29,7 +29,9 @@ function stripHTML(html) {
 export async function nativeRSSProvider(cfg, ctx) {
   const res = await fetch(cfg.url, {
     signal: AbortSignal.timeout(TIMEOUT),
-    headers: { 'User-Agent': 'ai-daily-report/1.0' },
+    // Some hosts (Reddit) serve a feed only to a browser UA and 403 everything
+    // else, so a source may override the default.
+    headers: { 'User-Agent': cfg.userAgent ?? 'ai-daily-report/1.0' },
   });
   if (!res.ok) return { ok: false, items: [], error: `HTTP ${res.status}` };
   const xml = await res.text();
