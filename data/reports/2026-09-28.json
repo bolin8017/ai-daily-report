@@ -1,0 +1,735 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-28",
+  "meta": {
+    "run_id": "a64c6d5f-d139-48bf-844c-5abda036ce37",
+    "pipeline_version": "e12c6ca",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-28T14:39:32.267Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 135
+      },
+      "trending": {
+        "ok": true,
+        "count": 9
+      },
+      "search": {
+        "ok": true,
+        "count": 332
+      },
+      "developers": {
+        "ok": true,
+        "count": 13
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 0
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 20
+      }
+    },
+    "feeds_sections": {
+      "pulse": 71,
+      "market": 0,
+      "tech": 3,
+      "shipped": 47
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 1.1418174,
+        "duration_ms": 385640,
+        "num_turns": 10,
+        "input_tokens": 20,
+        "output_tokens": 32456,
+        "cache_read_tokens": 968507,
+        "cache_creation_tokens": 155879,
+        "is_error": false,
+        "session_id": "f01d6485-ea28-4b6a-97b9-ec2469bbaebc"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1428268,
+        "duration_ms": 14664,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1527,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31249,
+        "is_error": false,
+        "session_id": "b30fc6da-4149-4aed-8fcb-b602378097a2"
+      },
+      "curate.market": {
+        "cost_usd": 0.1620624,
+        "duration_ms": 7483,
+        "num_turns": 4,
+        "input_tokens": 6,
+        "output_tokens": 544,
+        "cache_read_tokens": 102432,
+        "cache_creation_tokens": 34031,
+        "is_error": false,
+        "session_id": "94b39f42-5b11-4b31-9ed6-dc969e7c6f00"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.51939,
+        "duration_ms": 176297,
+        "num_turns": 3,
+        "input_tokens": 6,
+        "output_tokens": 19370,
+        "cache_read_tokens": 101690,
+        "cache_creation_tokens": 76335,
+        "is_error": false,
+        "session_id": "6314a3b8-fa96-44b4-9e3f-9c9ddc2b24db"
+      },
+      "synthesize": {
+        "cost_usd": 2.5514625,
+        "duration_ms": 450485,
+        "num_turns": 23,
+        "input_tokens": 26,
+        "output_tokens": 28209,
+        "cache_read_tokens": 1041415,
+        "cache_creation_tokens": 132540,
+        "is_error": false,
+        "session_id": "24597a9e-e666-41f1-b8bf-532910b56930"
+      },
+      "curate.tech": {
+        "cost_usd": 0.5146976,
+        "duration_ms": 142866,
+        "num_turns": 10,
+        "input_tokens": 14,
+        "output_tokens": 14405,
+        "cache_read_tokens": 380718,
+        "cache_creation_tokens": 73619,
+        "is_error": false,
+        "session_id": "0d855d51-2bac-4fa7-97d7-3934fe83b7e2"
+      }
+    },
+    "total_cost_usd": 5.0322567,
+    "total_tokens": 96585,
+    "confidence": {
+      "band": "moderate",
+      "citation_coverage": 0.6666666666666666,
+      "cited_signals": "4/6",
+      "unique_domains": 17,
+      "source_tier": 0.10810810810810811
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-28 — 今日重點</h3>\n<p>今天的訊號集中在 agent 的基礎設施層：綁定怎麼被拆、監督怎麼變成機器讀得懂的產出物、推論怎麼再便宜一階。先講清楚一件事，市場那一區的 14 個來源（台灣科技媒體、創投新聞、公開資訊觀測站）今天全部抓不到，廠商區也只剩 AMD 的 ROCm 部落格還活著，所以那兩格的空白是抓取失敗，不是市場安靜。</p>\n<h4>Agent harness 的綁定被從兩端拆開</h4>\n<p>綁定其實只有兩個掛勾：對話歷史存在誰家，底層模型怎麼呼叫。universal-session-log 把 session 紀錄抽成獨立協定，讓同一段對話能在 Claude Code、Codex、Pi 之間搬；AstraBox 走另一頭，自架一個能同時管這幾種 agent 的控制面；rebyte 的 agent API 則是把介面對齊 OpenAI，換模型不必改呼叫端。需求是真的，但還沒有人贏：universal-session-log 建了 29 天只有 53 顆星、近期增速掛零，AstraBox 在 HN 拿 2 分、0 則留言。</p>\n<h4>監督改成機器可檢查的產出物</h4>\n<p>Meta 的 logact 要求 agent 先送出意圖再執行動作，出錯能回放、能被獨立審核。mcp-audit-tool 更直接，掃 MCP server 設定裡的工具投毒（tool poisoning：把惡意指令藏在工具描述裡）與 rug pull，輸出 SARIF 這種能直接進 CI 的格式，這個 repo 建立才 1 天就累積 105 顆星。同一批來源裡，Lobsters 上 26 分的論文在講人在迴路的監督設計正被 agent 的自主權架空，而 dev.to 比較三款 AI code review 工具的結論是多數只會留建議、少數才能把規則變成每個 PR 必過的檢查。</p>\n<h4>官方 repo 不是權重真正被取走的地方</h4>\n<p>HuggingFace 熱門快照上，Qwen-Image-2.1 官方 repo 的下載數是 52,804，ComfyUI 打包的單檔版本是 3,987,373，差了約 75 倍；連第三方的 uncensored GGUF 都有 964,220。文字模型這邊一樣：prism-ml 把 Qwen3.8-27B 量到三元 2-bit 的 GGUF 有 3,343,748 次下載，官方 base 是 6,727,629。使用者要的是能直接餵給 runtime 的單檔，不是 diffusers 或 transformers 的目錄結構。做 DiT 圖像那條線的人，發權重時先決定打包格式要不要自己出。</p>\n<h4>便宜化的槓桿在 bit 數、解碼路徑與啟用參數</h4>\n<p>AMD 的 UltraQuant 在 Instinct 上跑 MXFP4，decode 吞吐上去、延遲下來，推理準確率沒有明顯掉。llama.cpp 那邊把 prompt lookup 的草稿路徑加速，這招不需要草稿模型，直接從上下文裡撈重複片段當候選 token，agent 工作負載重複率高，正好吃得到。最有說服力的是 tau2-bench 今天的榜：第一名是 RAFT-30B-A3B，名稱上是 30B 總參數、3B 啟用，排在剛從第 10 衝到第 2 的 GPT-5.2 前面。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus.harness-unbundling",
+        "title": "Agent harness 的兩個綁點同時被拆：session 與 provider",
+        "body": "四個彼此無關的專案今天同時出現在 funnel 與 HN 上，做的都是同一件事的一半：把對話歷史抽出來，或把 provider 介面抽出來。universal-session-log 定義 session 紀錄的獨立協定，讓對話能在 Claude Code、Codex、Pi 之間搬；AstraBox 自架一個能同時管這幾種 agent 的控制面；rebyte 的 agent API 把介面對齊 OpenAI，換底層模型不用改呼叫端；dsh-deepseek-web-login 用瀏覽器登入態把網頁版模型接成 agent 可呼叫的 provider。要注意的是熱度都還很低：universal-session-log 建了 29 天 53 顆星、近期增速 0，AstraBox 在 HN 拿 2 分 0 留言。需求存在，標準還沒出現。",
+        "mechanism": "換 harness 的成本集中在兩處：對話歷史的格式，跟 provider 的呼叫介面。這兩個只要被抽成外部規格，harness 本身就退化成可替換的前端，所以各自獨立的專案會不約而同去拆同樣的兩個點。",
+        "evidence": "universal-session-log：53 星 / 建立 29 天 / 近期增速 0。AstraBox：repo 建立 5 天、1,478 個原始檔、HN 2 分 0 留言。rebyte agent API：HN 2 分。dsh-deepseek-web-login：168 星 / 17 天 / npm 週下載 1,321。",
+        "cross_source": 4,
+        "product_opportunity": "把自己 agent 專案的對話紀錄先落成一份與 harness 無關的 JSON（每則含意圖、工具呼叫、結果），再包一層薄 provider adapter。之後換 harness 只要改 adapter，不用重寫歷史。",
+        "source_links": [
+          "discoveries.rising.0:agent-session-protocol/universal-session-log",
+          "discoveries.rising.5:Colton-z/AstraBox",
+          "pulse.hn.5:hn-rebyteai-agentsapi",
+          "discoveries.rising.7:cv-superding/dsh-deepseek-web-login"
+        ],
+        "audience": "work"
+      },
+      {
+        "id": "focus.oversight-as-artifact",
+        "title": "監督從人工逐步審查，換成機器可檢查的產出物",
+        "body": "Meta 的 logact 要求 agent 先送出意圖、再執行動作，出錯能回放，也能被獨立審核。mcp-audit-tool 把同一個概念做在設定檔上：掃 MCP server 設定裡的工具投毒與 rug pull，輸出 SARIF 直接接 CI，建立 1 天就 105 顆星。Lobsters 上一篇 26 分的論文講的正是為什麼需要這種東西，agent 自主權變大之後，人在迴路的監督設計已經被架空。dev.to 那篇比較 Qodo、CodeRabbit 與 Cubic 的文章給出同一個答案的商業版本：只會留建議的工具沒有用，能把規則變成每個 PR 必過檢查的才算。",
+        "mechanism": "agent 一天產生的動作數量早就超過人能逐一看過的量。監督只能改成機器讀得懂的東西：事前的意圖宣告、可回放的 log、SARIF 這種進得了 CI 的掃描結果、以及會擋下 PR 的硬規則。四個來源的共同點不是主題相近，是都把監督的載體從人的注意力換成檔案。",
+        "evidence": "logact：意圖先行、可回放、可獨立審核（takeaway 未宣稱已在生產使用）。mcp-audit-tool：105 星 / repo 建立 1 天 / 輸出 SARIF。Lobsters 論文 26 分。dev.to 工具比較：多數只給建議，少數能強制規則。",
+        "cross_source": 4,
+        "product_opportunity": "CI 加一步掃 MCP 設定，SARIF 丟進 GitHub code scanning；同時讓 agent 在每個工具呼叫前寫一行意圖到 log。出事時這份 log 是唯一能重建現場的東西，事後補不回來。",
+        "source_links": [
+          "discoveries.dev_watch.0:facebookresearch/logact",
+          "discoveries.rising.3:graygnatconsole/mcp-audit-tool",
+          "pulse.lobsters.3:lobsters-arxiv-2608-23642",
+          "pulse.ai_bloggers.1:devto-qodovscoderabbit"
+        ],
+        "audience": "both"
+      },
+      {
+        "id": "focus.cheap-inference-levers",
+        "title": "推論便宜化的槓桿移到 bit 數、解碼路徑與啟用參數",
+        "body": "AMD 的 UltraQuant 在 Instinct 上用 MXFP4 服務 Qwen3.8，decode 吞吐提高、負載下的延遲降低，推理準確率沒有明顯下降。prism-ml 把 Qwen3.8-27B 量到三元 2-bit 並出 GGUF，CUDA 與 Metal 都能跑，HF 快照上 3,343,748 次下載。llama.cpp 這邊加速的是 prompt lookup decoding，不需要草稿模型，候選 token 直接從上下文的重複片段抓。最硬的一個數字來自 tau2-bench：近期榜首 RAFT-30B-A3B，名稱上是 30B 總參數、3B 啟用，位置在剛從第 10 跳到第 2 的 GPT-5.2 前面。",
+        "mechanism": "三條路都不動模型學到的東西，只動它怎麼被存、怎麼被算：權重與 KV 換成更少的 bit，候選 token 從上下文查表而不是再跑一個草稿模型，MoE 則把每次前向真正參與計算的參數壓到總參數的一小部分。省下來的是頻寬與記憶體，不是精度，所以這些手段可以疊加。",
+        "evidence": "UltraQuant / MXFP4 on AMD Instinct：decode 吞吐升、延遲降、準確率無可測下降（廠商部落格，3 天內）。prism-ml 三元 2-bit GGUF：HF 快照 3,343,748 次下載。llama.cpp prompt lookup：HN 59 分。tau2-bench 今日：top-5 依序 RAFT-30B-A3B、GPT-5.2、Claude Opus 4.5、Gemini 3 Flash、Qwen3.5-397B-A17B，GPT-5.2 由第 10 升至第 2。",
+        "cross_source": 4,
+        "product_opportunity": "先量自己 prompt 的重複率，再決定要不要開 prompt lookup（agent 的系統提示與反覆貼進去的檔案內容通常重複率很高）；另外拿三元 2-bit 的 27B 在本機當分流與預審模型，把貴的呼叫留給真的需要的那一步。",
+        "source_links": [
+          "tech.vendor.0:rocm-blog-ultraquant-kv4",
+          "tech.models.4:prism-ml/Ternary-Bonsai-2-27B-gguf",
+          "pulse.hn.2:hn-promptlookup-llamacpp",
+          "tech.benchmarks.0:tau2-bench-gpt-5.2"
+        ],
+        "audience": "both"
+      },
+      {
+        "id": "focus.weights-distribution-channel",
+        "title": "權重的實際取用路徑是打包單檔，官方 repo 只剩門面",
+        "body": "同一個模型的兩個入口，下載數差 75 倍。Qwen-Image-2.1 官方 repo 在 HF 熱門快照上是 52,804 次下載，Comfy-Org 的 ComfyUI 單檔版本是 3,987,373 次，第三方 uncensored GGUF 另外還有 964,220 次。文字側的形狀一樣：prism-ml 的三元 2-bit GGUF 3,343,748 次，官方 base Qwen3.8-27B 6,727,629 次，一個量化版做到官方的一半。這件事對做圖像生成的人最直接：你發模型時如果只出 diffusers 目錄，等於把散佈權交給願意幫你轉檔的人。",
+        "mechanism": "下載端跑的是 ComfyUI 或 llama.cpp，要的是能直接載入的單檔權重；官方 repo 給的是 diffusers 或 transformers 的目錄結構。中間那層轉檔工作被第三方接走之後，流量也跟著搬過去，而官方 repo 的下載數就不再代表採用率。",
+        "evidence": "HF 熱門快照下載數：Qwen/Qwen-Image-2.1 52,804、Comfy-Org/Qwen-Image-2.1 3,987,373（約 75 倍）、abenzerps uncensored GGUF 964,220；prism-ml 2-bit GGUF 3,343,748 對 Qwen/Qwen3.8-27B 6,727,629。",
+        "cross_source": 2,
+        "product_opportunity": "自己要發模型時把 ComfyUI single-file 或 GGUF 當第一級產物一起發，不要等社群幫你包；對外報採用率也別只引官方 repo 的數字，那個數字現在會少一個量級。",
+        "source_links": [
+          "tech.models.1:Qwen/Qwen-Image-2.1",
+          "tech.models.4:prism-ml/Ternary-Bonsai-2-27B-gguf"
+        ],
+        "audience": "work"
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper.typed-decision-models",
+      "title": "小型「決策模型」正在變成 agent pipeline 的獨立零件",
+      "body": "HF 熱門榜上有兩個不做生成的模型。convaiinnovations/laya 掛的標籤是分類、路由、評分、guardrail 與校準決策，4,083 個 like；Contrastive-LM 的 CLM-v0.1-8B 定位是 verifier 與 reranker，405 個 like。GitHub 這邊，圍繞 TypeSafe 一個叫 Jev 的「System One」模型（輸出帶型別與校準機率的判斷，而不是散文）在十天內冒出至少五個資源列表與包裝專案，其中一個 5 天就 504 顆星。我的判斷分成兩半：這個類別是真的，這些星數不是證據。laya 有 4,083 個 like、下載數 0；CLM 有 405 個 like、766 次下載。資源列表衝星比模型被用起來容易得多。",
+      "mechanism": "agent pipeline 裡每個判斷點（要不要呼叫這個工具、這段檢索有沒有用、輸出能不能放行）現在多半是拿通用大模型寫一段散文再自己 parse，貴、慢、而且會 retry。把這些點換成輸出型別固定、附機率的小模型，省的是呼叫成本與解析失敗的重試次數，這是一個獨立於模型能力競賽的成本項。",
+      "evidence": "laya：4,083 like / 下載數 0 / 標籤含 routing、scoring、guardrails、moderation、calibrated-decisions。CLM-v0.1-8B：405 like / 766 次下載 / text-ranking。GitHub funnel 內 Jev 相關專案：AbdelStark 的資源列表 532 星 / 10 天（僅 15 個原始檔）、另一份 504 星 / 5 天、jevcore 49 星 / 7 天。",
+      "product_opportunity": "挑 pipeline 裡最吵的一個判斷點，例如檢索結果要不要送進 context，拿一個 8B 級的 reranker 或 verifier 換掉大模型的 yes/no 呼叫，量 latency 跟重試次數的變化，再決定要不要往其他判斷點推。",
+      "source_links": [],
+      "audience": "work"
+    },
+    "contrarian": {
+      "id": "contrarian.hf-likes-decoupled",
+      "title": "HF 的 like 數已經不是採用的先行指標",
+      "body": "共識是 HF 熱門榜上 like 衝很快的模型，接下來就會被用起來。我押相反邊：在這批「決策模型」上兩者已經脫鉤。可驗證的形式是，到 2026-11-30，convaiinnovations/laya 在 HF 模型頁上的 downloads 欄位仍低於 10,000，儘管它今天已經有 4,083 個 like。對照組是 CLM-v0.1-8B，405 個 like 配 766 次下載，數量級一致。如果 laya 的下載數超過 10,000，我就錯了，like 仍然領先採用。",
+      "mechanism": "like 的邊際成本是一次點擊，下載的邊際成本是把模型接進自己的 pipeline。當一個模型的價值主張是「取代 pipeline 裡某個判斷點」，接進去要改程式碼，這兩個數字就會分岔；純生成模型下載試玩幾乎沒有成本，才不容易看出差別。",
+      "evidence": "今日 HF 熱門快照：laya 4,083 like / 0 下載；CLM-v0.1-8B 405 like / 766 下載；同榜純生成模型 Qwen/Qwen3.8-27B 16,423 like / 6,727,629 下載。",
+      "product_opportunity": "自己選模型時把下載數當第一眼指標、like 當第二眼；要對外報自家模型的採用率，也用下載數，而且說清楚是哪個入口的下載數。",
+      "source_links": [],
+      "audience": "both",
+      "resolution_date": "2026-11-30"
+    },
+    "predictions": [
+      {
+        "id": "pred-2026-09-28-mcp-scan",
+        "text": "到 2026-12-31，Anthropic、OpenAI、GitHub 三家至少有一家在官方文件裡提供 MCP server 設定的安全掃描或允許清單機制。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "第三方已經先做出來（mcp-audit-tool 建立 1 天 105 星，輸出 SARIF 可進 CI）。這類需求通常由平台方收攏，因為設定檔格式在平台手上。"
+      },
+      {
+        "id": "pred-2026-09-28-session-spec",
+        "text": "到 2026-12-31，universal-session-log 的 star 數仍低於 1,000（今天 53），也就是 session 可攜性不會靠這份規格收斂。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "建立 29 天、53 星、近期增速 0。協定要成立需要至少兩家 harness 廠願意寫入，而 harness 方沒有拆自己綁定的動機。"
+      },
+      {
+        "id": "pred-2026-09-28-ternary-share",
+        "text": "到 2026-11-30，prism-ml 三元 2-bit GGUF 在 HF 的下載數仍維持在官方 Qwen/Qwen3.8-27B 的 40% 以上（今天約 50%：3,343,748 對 6,727,629）。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "本機跑 27B 的人沒有別的選擇，量化版的需求跟官方版是兩個不同市場，不是替代關係。"
+      },
+      {
+        "id": "pred-2026-09-28-comfy-firstparty",
+        "text": "到 2026-12-31，Qwen 影像系列的下一個版本在發布當天就有可直接載入 ComfyUI 的單檔權重（官方自己發或掛在 Comfy-Org 名下）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "官方 repo 與打包版的下載數差 75 倍，這個落差大到官方沒理由把散佈入口留在外面。"
+      },
+      {
+        "id": "pred-2026-09-28-tau2-top3",
+        "text": "到 2026-10-31，GPT-5.2 仍在 tau2-bench 前三名（今天從第 10 升到第 2）。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "名次跳動來自模型或評測 harness 的更新而非雜訊；一個月內能把它擠下去的只有現在榜上的 RAFT-30B-A3B 與 Claude Opus 4.5 的下一版。"
+      },
+      {
+        "id": "pred-2026-09-28-router-model-100k",
+        "text": "到 2026-11-30，HF 上至少有一個明確定位為 router 或 guardrail 的小模型，模型頁下載數超過 100,000。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "這個類別今天在熱門榜上是 like 高、下載低。如果它是真需求，下載數會在一兩個月內補上；補不上就說明大家還是用通用模型硬幹。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.4:Nehanth/pooled",
+        "audience": "both",
+        "url": "https://github.com/Nehanth/pooled",
+        "name": "Nehanth/pooled",
+        "stars": 463,
+        "language": null,
+        "relevance": "純瀏覽器 P2P 湊多台裝置的算力跑大模型推論，不用裝任何軟體。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 26,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.0:agent-session-protocol/universal-session-log",
+        "audience": "work",
+        "url": "https://github.com/agent-session-protocol/universal-session-log",
+        "name": "agent-session-protocol/universal-session-log",
+        "stars": 53,
+        "language": null,
+        "relevance": "把 agent session 紀錄拆成獨立協定，讓對話能在 Pi、Codex、Claude Code 間搬移。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 29,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:Colton-z/AstraBox",
+        "audience": "work",
+        "url": "https://github.com/Colton-z/AstraBox",
+        "name": "Colton-z/AstraBox",
+        "stars": 4,
+        "language": null,
+        "relevance": "自建版 Claude Managed Agents，同時扛 Claude Code、Codex、Pi 等多種 agent。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 5,
+        "eng_score": 4,
+        "excellence_score": 0.36575,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.1:hokindeng/object-permanence",
+        "audience": "work",
+        "url": "https://github.com/hokindeng/object-permanence",
+        "name": "hokindeng/object-permanence",
+        "stars": 194,
+        "language": null,
+        "relevance": "訓練世界模型記住看不見的物件還在，附 150 萬筆訓練資料與基準。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 108,
+        "repo_age_days": 11,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:graygnatconsole/mcp-audit-tool",
+        "audience": "both",
+        "url": "https://github.com/graygnatconsole/mcp-audit-tool",
+        "name": "graygnatconsole/mcp-audit-tool",
+        "stars": 105,
+        "language": null,
+        "relevance": "掃 MCP server 設定抓工具毒化與 rug pull，輸出 SARIF 能直接接進 CI。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 36,
+        "repo_age_days": 1,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:canivel/dynolab",
+        "audience": "both",
+        "url": "https://github.com/canivel/dynolab",
+        "name": "canivel/dynolab",
+        "stars": 178,
+        "language": null,
+        "relevance": "在 Apple Silicon 本機跑 SAE 與探針做可解釋性實驗，不用送模型上雲端 GPU。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 23,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.8:jianruntech/geo-score",
+        "audience": "work",
+        "url": "https://github.com/jianruntech/geo-score",
+        "name": "jianruntech/geo-score",
+        "stars": 553,
+        "language": null,
+        "relevance": "開源 GEO 評分規則，直接打四家模型 API 查網站有沒有真的被引用。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 76,
+        "repo_age_days": 19,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.6:getgat-dev/gat",
+        "audience": "work",
+        "url": "https://github.com/getgat-dev/gat",
+        "name": "getgat-dev/gat",
+        "stars": 6,
+        "language": null,
+        "relevance": "git 存大檔案不用架專用伺服器，靠 lock 檔案對齊工作目錄就好。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 20,
+        "eng_score": 3,
+        "excellence_score": 0.3692940740740741,
+        "validation_refs": [
+          "hackernews"
+        ]
+      },
+      {
+        "id": "discoveries.rising.7:cv-superding/dsh-deepseek-web-login",
+        "audience": "work",
+        "url": "https://github.com/cv-superding/dsh-deepseek-web-login",
+        "name": "cv-superding/dsh-deepseek-web-login",
+        "stars": 168,
+        "language": null,
+        "relevance": "靠瀏覽器登入態解 PoW，把網頁版模型接成 agent 可呼叫的介面。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 10.727272727272727,
+        "repo_age_days": 17,
+        "eng_score": 5,
+        "excellence_score": 0.3526304545454546,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.9:OneMoh/html-explainer",
+        "audience": "general",
+        "url": "https://github.com/OneMoh/html-explainer",
+        "name": "OneMoh/html-explainer",
+        "stars": 77,
+        "language": null,
+        "relevance": "用 HTML 逐格算成 MP4，靠決定性算法解掉配音跟畫面對不齊的問題。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 10,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:facebookresearch/logact",
+        "audience": "work",
+        "url": "https://github.com/facebookresearch/logact",
+        "name": "facebookresearch/logact",
+        "stars": 0,
+        "language": null,
+        "relevance": "agent 先送出意圖再執行動作，出錯能回放，還能被獨立審核。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 2,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.1:KohakuBlueleaf/TTVidT",
+        "audience": "work",
+        "url": "https://github.com/KohakuBlueleaf/TTVidT",
+        "name": "KohakuBlueleaf/TTVidT",
+        "stars": 1,
+        "language": null,
+        "relevance": "NeurIPS 2026 收錄：影片預訓練把動作拆成獨立路徑，用擴散重建當訓練目標。",
+        "novelty_strength": 3,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-fireworksai-ember1",
+        "audience": "general",
+        "url": "https://fireworks.ai/blog/ember-1",
+        "title": "Ember-1",
+        "score": 286,
+        "comments": 29,
+        "takeaway": "Fireworks AI 部落格發布 Ember-1，推論服務新動作，HN 累積 29 則留言。"
+      },
+      {
+        "id": "pulse.hn.1:hn-tinyaiarena",
+        "audience": "general",
+        "url": "https://tinyaiarena.com/",
+        "title": "Show HN: TinyAIArena watch AI agents battle it out",
+        "score": 91,
+        "comments": 21,
+        "takeaway": "TinyAIArena 讓 AI agent 互相對戰，用真實勝負而非跑分評估 agent 能力。"
+      },
+      {
+        "id": "pulse.hn.2:hn-promptlookup-llamacpp",
+        "audience": "general",
+        "url": "https://jadidbourbaki.github.io/blog/prompt-lookup-llama-cpp/",
+        "title": "Faster prompt lookup drafting in llama.cpp",
+        "score": 59,
+        "comments": 3,
+        "takeaway": "prompt lookup decoding 不用草稿模型，直接從上下文找重複片段生成候選 token，llama.cpp 讓它跑更快。"
+      },
+      {
+        "id": "pulse.hn.3:hn-deepfates-imp",
+        "audience": "general",
+        "url": "https://github.com/deepfates/imp",
+        "title": "Imp is a full port of DSPy to the BEAM",
+        "score": 32,
+        "comments": 2,
+        "takeaway": "DSPy 的宣告式 LLM 程式設計搬進 Erlang/Elixir 的 BEAM 虛擬機，跨語言生態又多一個入口。"
+      },
+      {
+        "id": "pulse.hn.4:hn-coltonz-astrabox",
+        "audience": "general",
+        "url": "https://github.com/Colton-z/AstraBox",
+        "title": "Show HN: AstraBox – an open-source alternative to Claude Managed Agents",
+        "score": 2,
+        "comments": 0,
+        "takeaway": "AstraBox 想做 Claude Managed Agents 的開源替代，留言數掛零，落地程度還沒被驗證。"
+      },
+      {
+        "id": "pulse.hn.5:hn-rebyteai-agentsapi",
+        "audience": "general",
+        "url": "https://rebyte.ai/docs/agents-api/overview",
+        "title": "Show HN: An OpenAI-compatible, model-agnostic agent API",
+        "score": 2,
+        "comments": 0,
+        "takeaway": "rebyte.ai 推出相容 OpenAI 介面、可換底層模型的 agent API，降低換模型的整合成本。"
+      },
+      {
+        "id": "pulse.hn.6:hn-heysquint",
+        "audience": "general",
+        "url": "https://heysquint.com/",
+        "title": "Show HN: Squint – Drag a box on your screen and ask AI about it",
+        "score": 3,
+        "comments": 0,
+        "takeaway": "Squint 讓使用者在螢幕上框選畫面直接問 AI，把視覺問答做成隨手可用的桌面工具。"
+      },
+      {
+        "id": "pulse.hn.7:hn-aresluna-dutyofcare",
+        "audience": "general",
+        "url": "https://unsung.aresluna.org/they-had-no-concept-of-a-duty-of-care-to-their-users/",
+        "title": "On caring for user data: NeoVim caused Vim undo files to be deleted",
+        "score": 335,
+        "comments": 31,
+        "takeaway": "NeoVim 的改動曾讓 Vim 的 undo 檔案被刪，凸顯開發工具對使用者資料的責任常被低估。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-bustikiller-onemonthwithoutai",
+        "audience": "general",
+        "url": "https://blog.bustikiller.com/2026/09/25/one-month-without-ai.html",
+        "title": "One month without AI",
+        "score": 70,
+        "takeaway": "一位開發者停用 AI 工具一個月，記錄生產力與思考習慣的實際落差。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-thegreenplace-parsedontvalidate",
+        "audience": "general",
+        "url": "https://eli.thegreenplace.net/2026/rusty-thoughts-on-parse-dont-validate/",
+        "title": "Rusty thoughts on \"Parse, don't validate\"",
+        "score": 48,
+        "takeaway": "作者用 Rust 案例重新檢視「parse, don't validate」，點出型別系統能擋掉哪些錯誤。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-phoronix-pyrowave",
+        "audience": "general",
+        "url": "https://www.phoronix.com/news/Valve-Steam-Beta-Pyrowave",
+        "title": "Valve Introduces Pyrowave Video Codec In Beta For Low Latency Streaming",
+        "score": 44,
+        "takeaway": "Valve 在 Steam Beta 推出 Pyrowave 影片編碼器，鎖定低延遲串流場景。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-arxiv-2608-23642",
+        "audience": "general",
+        "url": "https://arxiv.org/abs/2608.23642",
+        "title": "AI Agents Push Humans Out of the Loop",
+        "score": 26,
+        "takeaway": "論文指出 AI agent 自主權擴大後，「人在迴路」的監督設計正被架空。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-luarocks-securityincident",
+        "audience": "general",
+        "url": "https://luarocks.org/security-incident-september-2026",
+        "title": "LuaRocks Security Incident September 2026",
+        "score": 25,
+        "takeaway": "LuaRocks 套件庫爆發資安事故，凸顯 Lua 套件供應鏈仍是攻擊破口。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-acm-devproductivity",
+        "audience": "general",
+        "url": "https://dl.acm.org/doi/pdf/10.1145/3540250.3558940",
+        "title": "What Improves Developer Productivity at Google? Code Quality (2022)",
+        "score": 12,
+        "takeaway": "Google 內部研究指出，程式碼品質對開發者生產力的影響比一般認為的更直接。"
+      }
+    ],
+    "chinese_community": [],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:devto-apiforagents",
+        "audience": "general",
+        "url": "https://dev.to/nikolas_dimitroulakis_d23/we-described-our-api-twice-once-for-humans-once-for-agents-4e4g",
+        "title": "Your API's newest users are agents...",
+        "takeaway": "作者主張 API 文件要同時寫給人類與 AI agent 兩種讀者，因為呼叫端已經悄悄換成 agent。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:devto-qodovscoderabbit",
+        "audience": "general",
+        "url": "https://dev.to/anthonymax/qodo-vs-coderabbit-vs-cubic-which-one-enforces-rules-instead-of-just-suggesting-them-gck",
+        "title": "Qodo vs CodeRabbit vs Cubic: Which One Enforces Rules Instead of Just Suggesting Them? 🔥",
+        "takeaway": "比較三款 AI code review 工具：多數只給建議，只有少數能把規則強制寫進 PR 流程。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [],
+    "funding": [],
+    "taiwan": []
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:rocm-blog-ultraquant-kv4",
+        "audience": "both",
+        "url": "https://rocm.blogs.amd.com/software-tools-optimization/ultraquant-kv4/README.html",
+        "title": "UltraQuant on AMD Instinct: More Efficient Agentic Serving for Qwen3.8-MXFP4",
+        "takeaway": "UltraQuant 讓 AMD Instinct 跑 MXFP4 量化,decode 吞吐更高、延遲更低,準確率不掉。",
+        "companies": [
+          "AMD"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:XiaomiMiMo/MiMo-V2.6-Pro-RL",
+        "audience": "general",
+        "url": "https://huggingface.co/XiaomiMiMo/MiMo-V2.6-Pro-RL",
+        "title": "XiaomiMiMo/MiMo-V2.6-Pro-RL",
+        "takeaway": "小米以 MIT 授權開源 MiMo-V2.6,一個模型同時處理視覺、語音、影片與長文脈 agent 任務。",
+        "companies": [
+          "Xiaomi"
+        ]
+      },
+      {
+        "id": "tech.models.1:Qwen/Qwen-Image-2.1",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen-Image-2.1",
+        "title": "Qwen/Qwen-Image-2.1",
+        "takeaway": "阿里 Qwen 開源 Qwen-Image-2.1,同時做文字轉圖與圖片編輯,支援 RGBA 透明圖層。",
+        "companies": [
+          "Alibaba"
+        ]
+      },
+      {
+        "id": "tech.models.2:XingChen-AGI/Xing4.0-29B-A4B",
+        "audience": "general",
+        "url": "https://huggingface.co/XingChen-AGI/Xing4.0-29B-A4B",
+        "title": "XingChen-AGI/Xing4.0-29B-A4B",
+        "takeaway": "中國新創 XingChen-AGI 開源 29B 總參數、4B 啟用的 MoE 模型,Apache 2.0 授權。",
+        "companies": [
+          "XingChen-AGI"
+        ]
+      },
+      {
+        "id": "tech.models.3:TaichuAI/ZDTaichu5.0-9B",
+        "audience": "general",
+        "url": "https://huggingface.co/TaichuAI/ZDTaichu5.0-9B",
+        "title": "TaichuAI/ZDTaichu5.0-9B",
+        "takeaway": "TaichuAI 開源 9B 多模態模型,主打空間推理與影片理解的 agent 任務。",
+        "companies": [
+          "TaichuAI"
+        ]
+      },
+      {
+        "id": "tech.models.4:prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "audience": "both",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "title": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "takeaway": "prism-ml 把 Qwen3.8-27B 量化到三元 2-bit,GGUF 格式可在 CUDA、Metal 上跑。",
+        "companies": [
+          "prism-ml"
+        ]
+      },
+      {
+        "id": "tech.models.5:StarDoc-AI/TeleOCR",
+        "audience": "general",
+        "url": "https://huggingface.co/StarDoc-AI/TeleOCR",
+        "title": "StarDoc-AI/TeleOCR",
+        "takeaway": "StarDoc-AI 的 TeleOCR 微調自 Qwen2.5-VL,鎖定文件解析與 OCR,附論文佐證。",
+        "companies": [
+          "StarDoc-AI"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-bench-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 從 #10 跳到 #2",
+        "takeaway": "GPT-5.2 在 agent 工具呼叫測試 tau2-bench 上名次從第 10 衝到第 2。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": []
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-28",
+    "flagged": [
+      {
+        "path": "signals.focus[2].body",
+        "type": "temporal",
+        "marker": "今天",
+        "ids": [
+          "tech.vendor.0:rocm-blog-ultraquant-kv4",
+          "pulse.hn.2:hn-promptlookup-llamacpp"
+        ]
+      }
+    ],
+    "repaired": 1
+  }
+}
