@@ -197,8 +197,9 @@ describe('runPipeline — modes', () => {
 
 // Auto-recover harness: runStage result depends on call COUNT, so a stage can
 // fail once then succeed on retry. `failTimes[id] = n` fails the first n calls;
-// `alwaysFail` fails every call.
-function recoverHarness({ failTimes = {}, alwaysFail = [] } = {}) {
+// `alwaysFail` fails every call. `failExit[id]` sets a failing call's exit code
+// (default 1).
+function recoverHarness({ failTimes = {}, alwaysFail = [], failExit = {} } = {}) {
   const sat = new Set();
   const calls = [];
   const counts = {};
@@ -210,7 +211,12 @@ function recoverHarness({ failTimes = {}, alwaysFail = [] } = {}) {
     const fails = alwaysFail.includes(stage.id) || counts[stage.id] <= (failTimes[stage.id] ?? 0);
     if (fails) sat.delete(stage.id);
     else sat.add(stage.id);
-    return { exitCode: fails ? 1 : 0, duration_ms: 1, cost_usd: 0, tokens: 0 };
+    return {
+      exitCode: fails ? (failExit[stage.id] ?? 1) : 0,
+      duration_ms: 1,
+      cost_usd: 0,
+      tokens: 0,
+    };
   };
   return {
     calls,
@@ -281,6 +287,47 @@ describe('runPipeline — auto-recover', () => {
     expect(recovery.attempted).toBe(true);
     expect(h.counts.synthesize).toBe(2); // delay does not change the one-retry bound
     expect(slept).toEqual([90_000]); // slept exactly once, with the configured delay
+  });
+
+  it('retries synthesize immediately when its editorial failed validation (exit 2)', async () => {
+    const h = recoverHarness({ failTimes: { synthesize: 1 }, failExit: { synthesize: 2 } });
+    const slept = [];
+    const sleep = (ms) => {
+      slept.push(ms);
+      return Promise.resolve();
+    };
+    const { ok, recovery } = await h.run({ autoRecover: true, retryDelayMs: 90_000, sleep });
+    expect(ok).toBe(true);
+    expect(recovery.targets).toEqual(['synthesize']);
+    expect(h.counts.synthesize).toBe(2); // still exactly one retry
+    expect(slept).toEqual([]); // a bad output is not overload: no wait
+  });
+
+  it('keeps the configured delay when synthesize fails for another reason (exit 1)', async () => {
+    const h = recoverHarness({ failTimes: { synthesize: 1 }, failExit: { synthesize: 1 } });
+    const slept = [];
+    const sleep = (ms) => {
+      slept.push(ms);
+      return Promise.resolve();
+    };
+    const { ok } = await h.run({ autoRecover: true, retryDelayMs: 90_000, sleep });
+    expect(ok).toBe(true);
+    expect(h.counts.synthesize).toBe(2);
+    expect(slept).toEqual([90_000]);
+  });
+
+  it('keeps the delay for exit 2 from a stage that does not declare it immediate', async () => {
+    const h = recoverHarness({
+      failTimes: { 'curate.market': 1 },
+      failExit: { 'curate.market': 2 },
+    });
+    const slept = [];
+    const sleep = (ms) => {
+      slept.push(ms);
+      return Promise.resolve();
+    };
+    await h.run({ autoRecover: true, retryDelayMs: 90_000, sleep });
+    expect(slept).toEqual([90_000]);
   });
 
   it('does not sleep when there is nothing to retry', async () => {

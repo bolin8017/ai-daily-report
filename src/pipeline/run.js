@@ -14,7 +14,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { satisfied as defaultSatisfied } from './satisfied.js';
 import { stageFailureReason } from './stage-error.js';
-import { getStage, isRetryable, STAGES, topoOrder } from './stages.js';
+import { getStage, isRetryable, retriesImmediately, STAGES, topoOrder } from './stages.js';
 
 // A dependency in one of these states is "available" — a dependent may proceed.
 const AVAILABLE = new Set(['satisfied', 'ok', 'degraded', 'suspicious-empty', 'skipped']);
@@ -136,7 +136,9 @@ function classify(stage, res, { rawSatisfied, stagingDir, dryRun }) {
 // Default wait before the single auto-recover retry. A transient API overload
 // (e.g. synthesize 529) routinely outlasts an immediate back-to-back retry, so
 // the one retry is more useful after a pause. Tunable via env (minutes); tests
-// inject retryDelayMs/sleep to stay instant.
+// inject retryDelayMs/sleep to stay instant. A stage whose failure exit code
+// marks a bad output rather than a transient (stages.js immediateRetryExitCodes)
+// skips the wait — see the recovery pass below.
 const DEFAULT_RETRY_DELAY_MS = 30 * 60_000;
 function resolveRetryDelayMs() {
   const min = Number(process.env.AUTORECOVER_RETRY_DELAY_MIN);
@@ -198,6 +200,7 @@ export async function runPipeline({
   // are treated as available so the operator's asserted upstream isn't re-run.
   const state = new Map();
   const emptyRetried = new Set(); // per-run guard: one empty re-roll per curate stage
+  const failedExit = new Map(); // failed stage id -> exit code, for the retry delay
   for (const id of order) {
     if (!scope.has(id)) state.set(id, 'skipped');
     else if (initiallySatisfied(id)) state.set(id, 'satisfied');
@@ -295,6 +298,7 @@ export async function runPipeline({
                   : `exit ${res.exitCode}`,
             };
           }
+          if (status === 'failed') failedExit.set(id, res.exitCode ?? 0);
           state.set(id, status);
           emit(buildResult(stage, status, { runId, ...res }));
         }),
@@ -323,11 +327,17 @@ export async function runPipeline({
       for (const id of toReset) {
         if (UNAVAILABLE.has(state.get(id))) state.set(id, 'pending');
       }
-      if (retryDelayMs > 0) {
+      // One shared wait before the shared retry pass: skip it only when every
+      // target failed with a bad-output exit code, since any transient among
+      // them still needs the full delay.
+      const delayMs = targets.every((t) => retriesImmediately(t, failedExit.get(t)))
+        ? 0
+        : retryDelayMs;
+      if (delayMs > 0) {
         console.error(
-          `[run.js] auto-recover: waiting ${Math.round(retryDelayMs / 60_000)}m before retry`,
+          `[run.js] auto-recover: waiting ${Math.round(delayMs / 60_000)}m before retry`,
         );
-        await sleep(retryDelayMs);
+        await sleep(delayMs);
       }
       console.error(`[run.js] auto-recover: retrying ${targets.join(', ')} (+ downstream)`);
       await settle();
