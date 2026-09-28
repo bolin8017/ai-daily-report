@@ -91,34 +91,33 @@ run_curator() {
 
   echo "[curate.sh] starting $section (model=$MODEL)"
 
-  # Assemble the curator prompt and append an explicit "Execute now"
-  # imperative at the end. Without the imperative Haiku ack-chats; with it,
-  # the model treats the prompt as an immediate task. Mirrors the pattern
-  # used by the legacy lens prompts.
+  # Assemble the complete single-turn prompt: curator rules + the section's
+  # staging inputs (manifest `inputs`) inlined + the execute instruction.
   # Prompt generation must fail loudly: the block's exit status used to be the
   # trailing printf, so a throwing getPrompt() produced a contentless prompt
   # and burned a full claude -p call that surfaced later as a misleading
   # VALIDATION FAILED.
-  if ! node -e "
-      import('./src/curators/${section}.js').then(m => m.getPrompt()).then(p => process.stdout.write(p));
+  if ! CURATE_STAGING_DIR="$STAGING_DIR" node -e "
+      import('./src/curators/${section}.js')
+        .then(m => m.getPrompt({ stagingDir: process.env.CURATE_STAGING_DIR }))
+        .then(p => process.stdout.write(p));
     " > "$prompt_file" 2> "$err_file.prompt"; then
     echo "[curate.sh] $section FAILED (prompt generation):" >&2
     cat "$err_file.prompt" >&2
     return 1
   fi
-  {
-    printf '\n\n---\n\n## Execute now\n\n'
-    printf 'Use the Read tool on the staging files listed above, apply the include/exclude rules per sub-group, and use the Write tool to write strict JSON matching the schema to `data/staging/curated/%s.json`.\n\n' "$section"
-    printf 'Do not output prose, acknowledgement, or explanation. Do not ask questions. Begin with Read calls immediately. The final action is one Write call.\n'
-  } >> "$prompt_file"
 
+  # Single turn, no tools: the reply text is the curated JSON. The former
+  # Read/Write tool loop re-sent the whole accumulated context (system prompt,
+  # every file chunk read so far, prior thinking) on every turn — up to 10
+  # turns and ~1M cache-read tokens for one curator.
   (
     claude -p \
       --model "$MODEL" \
       --fallback-model "$FALLBACK_MODEL" \
       --output-format json \
-      --tools "Read,Write,Glob,Grep" \
-      --allowed-tools Read Write Glob Grep \
+      --tools "" \
+      --allowed-tools "" \
       --no-session-persistence \
       "${LEAN_FLAGS[@]}" \
       < "$prompt_file" \
@@ -145,12 +144,10 @@ run_curator() {
     return 1
   fi
 
-  # The curator writes $out_file directly via the Write tool. If it didn't,
-  # recover the model's final text from the json envelope's .result field
-  # (stdout is now the envelope, not bare JSON).
-  if [ ! -f "$out_file" ]; then
-    node src/lib/claude-envelope.js result "$raw_file" > "$out_file"
-  fi
+  # The model's reply is the output: pull the JSON object out of the
+  # envelope's .result (a stray fence or preamble is stripped here; anything
+  # still malformed goes to the jsonrepair + LLM repair path below).
+  node src/lib/claude-envelope.js json "$raw_file" > "$out_file"
 
   # Validate — the validator (src/curators/validate-output.js) already
   # attempts a deterministic jsonrepair pass on malformed JSON. If it still

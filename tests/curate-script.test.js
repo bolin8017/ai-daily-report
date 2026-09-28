@@ -125,6 +125,22 @@ describe('curate.sh per-section invocation (the sequencer path)', () => {
     expect(fs.existsSync(path.join(sb.curated, 'market.json'))).toBe(false);
   });
 
+  // The curator runs single-turn with no tools: its reply text is the output,
+  // so a fenced reply must still land as the bare JSON object, and a file left
+  // by an earlier run must not survive in place of today's reply.
+  it('writes the reply JSON, unwrapping a markdown fence, over a stale output', () => {
+    fs.writeFileSync(path.join(sb.curated, 'market.json'), JSON.stringify(SCHEMA_INVALID_MARKET));
+    fs.writeFileSync(
+      path.join(sb.envelopes, 'market.json'),
+      JSON.stringify({ result: `\`\`\`json\n${JSON.stringify(VALID.market)}\n\`\`\`` }),
+    );
+    const r = runCurate(['market']);
+    expect(r.status).toBe(0);
+    expect(JSON.parse(fs.readFileSync(path.join(sb.curated, 'market.json'), 'utf8'))).toEqual(
+      VALID.market,
+    );
+  });
+
   it('quarantines the rejected output before removing it', () => {
     setEnvelope('market', SCHEMA_INVALID_MARKET);
     runCurate(['market']);

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseEnvelope } from '../src/lib/claude-envelope.js';
+import { extractJsonText, parseEnvelope } from '../src/lib/claude-envelope.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const sample = JSON.parse(
@@ -33,5 +33,23 @@ describe('parseEnvelope', () => {
   it('omits fields that are absent rather than emitting undefined', () => {
     const rec = parseEnvelope({ num_turns: 2 }, 'faithfulness');
     expect(rec).toEqual({ stage: 'faithfulness', num_turns: 2 });
+  });
+});
+
+describe('extractJsonText', () => {
+  it('returns a bare JSON reply unchanged (trimmed)', () => {
+    expect(extractJsonText('  {"a":"```"}\n')).toBe('{"a":"```"}');
+  });
+
+  it('unwraps a markdown fence', () => {
+    expect(extractJsonText('```json\n{"a":1}\n```')).toBe('{"a":1}');
+  });
+
+  it('drops prose around the outermost object', () => {
+    expect(extractJsonText('Here it is:\n{"a":{"b":1}}\nDone.')).toBe('{"a":{"b":1}}');
+  });
+
+  it('returns empty string for a non-string result', () => {
+    expect(extractJsonText(undefined)).toBe('');
   });
 });

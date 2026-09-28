@@ -7,6 +7,7 @@
 //   import { parseEnvelope } from './claude-envelope.js'
 //   node src/lib/claude-envelope.js sidecar <rawPath> <outPath> <stage>
 //   node src/lib/claude-envelope.js result  <rawPath>      # prints .result text
+//   node src/lib/claude-envelope.js json    <rawPath>      # prints the JSON object in .result
 
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -39,6 +40,27 @@ export function parseEnvelope(env, stageName) {
   return rec;
 }
 
+/**
+ * Extract the JSON object from a model's final text, for stages whose reply
+ * IS the output file. Strips a markdown fence and any prose around the
+ * outermost {...}; anything left malformed is the validator's (jsonrepair +
+ * LLM repair) job, not this function's.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
+export function extractJsonText(text) {
+  if (typeof text !== 'string') return '';
+  let t = text.trim();
+  if (t.startsWith('{') || t.startsWith('[')) return t;
+  const fenced = t.match(/```(?:json)?\s*\n([\s\S]*?)\n?```/);
+  if (fenced) t = fenced[1].trim();
+  if (t.startsWith('{') || t.startsWith('[')) return t;
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
+  return start !== -1 && end > start ? t.slice(start, end + 1) : t;
+}
+
 function readEnvelope(rawPath) {
   try {
     return JSON.parse(readFileSync(rawPath, 'utf8'));
@@ -67,5 +89,7 @@ if (isMain) {
     }
   } else if (mode === 'result') {
     process.stdout.write(env && typeof env.result === 'string' ? env.result : '');
+  } else if (mode === 'json') {
+    process.stdout.write(env ? extractJsonText(env.result) : '');
   }
 }
