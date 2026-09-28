@@ -28,7 +28,11 @@ import './fetchers/providers/native-json.js';
 import './fetchers/providers/native-rss.js';
 import './fetchers/providers/rsshub.js';
 
-import { fetchMinifluxEntries } from './fetchers/miniflux.js';
+import {
+  feedHealthNote,
+  fetchMinifluxEntries,
+  fetchMinifluxFeedHealth,
+} from './fetchers/miniflux.js';
 import { runAll } from './fetchers/run-all.js';
 import { buildDiscoveries } from './lib/build-discoveries.js';
 import { condenseAll } from './lib/condense.js';
@@ -192,6 +196,17 @@ async function main() {
       raw.feeds.items = [...mf.items, ...(raw.feeds.items ?? [])];
       raw.feeds.ok = raw.feeds.items.length > 0;
       banner(`miniflux: +${mf.items.length} native-RSS feed items`);
+      // A successful pull says nothing about feeds Miniflux quietly stopped
+      // polling, so check them separately. Only on a successful pull: a failed
+      // one is already degraded and would just fail this check too.
+      const fh = await fetchMinifluxFeedHealth({ knownSources: minifluxIds });
+      raw._feedHealth = fh;
+      const note = fh.ok ? feedHealthNote(fh) : `miniflux-feed-health (check failed: ${fh.error})`;
+      if (note) {
+        banner(`miniflux feed health: ${note}`);
+        raw._degraded ??= [];
+        raw._degraded.push(note);
+      }
     } else {
       banner(`miniflux feed pull FAILED (feed half degraded): ${mf.error}`);
       raw._degraded ??= [];
@@ -412,6 +427,9 @@ async function main() {
       // report a degraded chain against the bucket it emptied, instead of
       // naming one failure twice across the two namespaces.
       source_chains: bucketSourceIds(sources),
+      // Per-feed Miniflux health (sibling of `sources`, same invariant): the
+      // unhealthy feeds behind a `miniflux-feeds (… unhealthy …)` degraded note.
+      ...(raw._feedHealth ? { miniflux_feed_health: raw._feedHealth } : {}),
       degraded: raw._degraded ?? [],
     },
   };

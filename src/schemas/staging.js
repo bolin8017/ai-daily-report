@@ -48,5 +48,26 @@ export const StagingMetadataSchema = z.object({
   // one failure twice (`arxiv=empty, arxiv-cs-ai`). Optional so staging written
   // before it existed still validates.
   source_chains: z.record(z.string(), z.array(z.string())).optional(),
+  // Per-feed Miniflux health from /v1/feeds (src/fetchers/miniflux.js). The
+  // entries pull cannot see a feed Miniflux stopped polling; this can. ok:false
+  // means the check itself failed. Optional: absent when Miniflux is off.
+  miniflux_feed_health: z
+    .object({
+      ok: z.boolean(),
+      error: z.string().optional(),
+      total: z.number().int().nonnegative().optional(),
+      unhealthy: z
+        .array(
+          z.object({
+            id: z.string(),
+            reason: z.enum(['disabled', 'stalled', 'erroring', 'missing']),
+            errors: z.number().int().nonnegative(),
+            checked_at: z.string().nullable(),
+            message: z.string(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
   degraded: z.array(z.string()).default([]),
 });
