@@ -63,6 +63,11 @@ export const STAGES = [
     satisfiedCheck: 'fresh-outputs',
     command: ['bash', 'scripts/synthesize.sh'],
     recovery: 'retry-self', // one bounded Sonnet re-run (editorial is ~3-5K tokens)
+    // synthesize.sh exits 2 only after `claude -p` itself returned 0 — the
+    // editorial was never written or failed EditorialSchema (e.g. the
+    // 2026-09-10 malformed JSON). That is a bad roll, not API overload, so
+    // waiting out AUTORECOVER_RETRY_DELAY_MIN buys nothing: retry at once.
+    immediateRetryExitCodes: [2],
   },
   {
     id: 'faithfulness',
@@ -99,6 +104,13 @@ export function getStage(id) {
 // --auto-recover pass (src/pipeline/run.js).
 export function isRetryable(id) {
   return getStage(id).recovery === 'retry-self';
+}
+
+// Whether the one auto-recover retry of a stage that failed with `exitCode`
+// should skip the retry delay: its failure is a bad output, not a transient
+// the delay is meant to outlast.
+export function retriesImmediately(id, exitCode) {
+  return (getStage(id).immediateRetryExitCodes ?? []).includes(exitCode);
 }
 
 export function allStageIds() {

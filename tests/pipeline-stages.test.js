@@ -4,6 +4,7 @@ import {
   CURATE_SECTIONS,
   getStage,
   isRetryable,
+  retriesImmediately,
   STAGES,
   topoOrder,
 } from '../src/pipeline/stages.js';
@@ -35,6 +36,13 @@ describe('stage registry', () => {
     expect(isRetryable('context')).toBe(true);
     expect(isRetryable('faithfulness')).toBe(false);
     expect(isRetryable('merge')).toBe(false);
+  });
+
+  it('skips the retry delay only for synthesize exit 2 (invalid editorial)', () => {
+    expect(retriesImmediately('synthesize', 2)).toBe(true);
+    expect(retriesImmediately('synthesize', 1)).toBe(false); // claude -p failed: may be 529
+    expect(retriesImmediately('synthesize', undefined)).toBe(false);
+    expect(retriesImmediately('curate.market', 2)).toBe(false);
   });
 
   it('each curate.<section> command passes its section to curate.sh', () => {
