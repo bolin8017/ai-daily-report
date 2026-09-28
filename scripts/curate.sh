@@ -28,7 +28,13 @@ FALLBACK_MODEL="${CURATE_FALLBACK_MODEL:-sonnet}"
 # Lean-context flags: strip the per-call MCP-discovery tax (curators need no MCP
 # servers). NB: --bare also strips it but DROPS AUTH in our env (probe 2026-06-02
 # returned "Not logged in"), so use --strict-mcp-config, which keeps auth + tools.
-LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
+# claudeMdExcludes drops this repo's CLAUDE.md from the model's context: it is
+# developer documentation (~18K tokens on every call) that no curator or
+# synthesizer prompt relies on. Paths resolve from the repo root, where run.sh
+# runs every stage; elsewhere the exclude simply matches nothing. User-level
+# instructions still load.
+LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}'
+  --settings "{\"claudeMdExcludes\":[\"$PWD/CLAUDE.md\"]}")
 
 mkdir -p "$CURATED_DIR"
 LOG_DIR="$CURATED_DIR/.logs"
