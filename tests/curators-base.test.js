@@ -1,5 +1,14 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { mergePrompts, stableId, validateCuratedOutput } from '../src/curators/_base.js';
+import {
+  buildCuratorPrompt,
+  mergePrompts,
+  stableId,
+  validateCuratedOutput,
+} from '../src/curators/_base.js';
+import { getPrompt as discoveriesPrompt } from '../src/curators/discoveries.js';
 import { ShippedCuratedSchema } from '../src/schemas/curated.js';
 
 describe('stableId', () => {
@@ -101,4 +110,64 @@ describe('mergePrompts', () => {
     expect(merged).toContain('Curator: Discoveries');
     expect(merged.length).toBeGreaterThan(1000);
   });
+});
+
+describe('buildCuratorPrompt (single-turn, inputs inlined)', () => {
+  function withStaging(files, fn) {
+    const dir = mkdtempSync(join(tmpdir(), 'curator-prompt-'));
+    for (const [name, body] of Object.entries(files)) writeFileSync(join(dir, name), body);
+    return fn(dir).finally(() => rmSync(dir, { recursive: true, force: true }));
+  }
+
+  it('inlines every manifest input, compacting pretty-printed JSON', () =>
+    withStaging(
+      {
+        'feeds-market.json': JSON.stringify({ ok: true, items: [{ title: 'x' }] }, null, 2),
+        'mops.json': JSON.stringify({ ok: true, items: [] }, null, 2),
+      },
+      async (dir) => {
+        const p = await buildCuratorPrompt('market', { stagingDir: dir });
+        expect(p).toContain('Curator shared voice');
+        expect(p).toContain(
+          '<file path="data/staging/feeds-market.json">\n{"ok":true,"items":[{"title":"x"}]}\n</file>',
+        );
+        expect(p).toContain(
+          '<file path="data/staging/mops.json">\n{"ok":true,"items":[]}\n</file>',
+        );
+        // The reply is the output: the prompt names the target and forbids tools/prose.
+        expect(p).toContain('`data/staging/curated/market.json`');
+        expect(p).toMatch(/no tools/);
+      },
+    ));
+
+  it('marks a missing input instead of throwing', () =>
+    withStaging({ 'feeds-market.json': '{}' }, async (dir) => {
+      const p = await buildCuratorPrompt('market', { stagingDir: dir });
+      expect(p).toContain('<file path="data/staging/mops.json" missing="true"></file>');
+    }));
+
+  it('passes unparseable input through as raw text', () =>
+    withStaging({ 'feeds-market.json': '{not json', 'mops.json': '{}' }, async (dir) => {
+      const p = await buildCuratorPrompt('market', { stagingDir: dir });
+      expect(p).toContain('<file path="data/staging/feeds-market.json">\n{not json\n</file>');
+    }));
+
+  it('discoveries drops the diagnostic rejected[] pool but keeps candidates + watchlist', () =>
+    withStaging(
+      {
+        'feeds-discoveries.json': JSON.stringify({
+          candidates: [{ full_name: 'a/cand' }],
+          watchlist: [{ full_name: 'b/watch' }],
+          rejected: [{ full_name: 'c/rejected-repo' }],
+          stats: { n: 1 },
+        }),
+      },
+      async (dir) => {
+        const p = await discoveriesPrompt({ stagingDir: dir });
+        expect(p).toContain('a/cand');
+        expect(p).toContain('b/watch');
+        expect(p).toContain('"stats":{"n":1}');
+        expect(p).not.toContain('c/rejected-repo');
+      },
+    ));
 });
