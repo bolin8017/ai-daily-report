@@ -44,9 +44,15 @@ describe('condenseAll', () => {
     developers: mockGithub(25, 'developers'),
   };
 
-  it('returns an object with all 4 keys', () => {
+  it('returns an object with all 4 bucket keys plus the budget report', () => {
     const out = condenseAll(raw);
-    expect(Object.keys(out).sort()).toEqual(['developers', 'search', 'trending', 'unified']);
+    expect(Object.keys(out).sort()).toEqual([
+      'developers',
+      'over_budget',
+      'search',
+      'trending',
+      'unified',
+    ]);
   });
 
   it('drops noisy fields (readme_excerpt, creator, pushed_at)', () => {
@@ -195,5 +201,83 @@ describe('condense exports (for section-condense reuse)', () => {
     );
     expect(o.description).toBe('abc...');
     expect(o.readme_excerpt).toBeUndefined();
+  });
+});
+
+// 2026-09-28: adding one feed source made Stage 1 abort with "[condense] budget
+// exceeded: unified-feeds (9510 tokens)" — and that bucket has had no consumer
+// since the Plan 5 cutover retired unified.json. Feed prompts are built from
+// the section slices (buildSectionFeedSlices over RAW items); only the three
+// GitHub buckets still reach a prompt, through buildShippedSlice. So a feed
+// pool that cannot be squeezed into the budget must not take the pipeline down,
+// while a GitHub bucket that cannot still must.
+describe('condenseAll budget scope', () => {
+  // Far past what the tightest attempt profile can shrink: many distinct
+  // sources, each contributing its floor of one item.
+  const hugeFeeds = {
+    ok: true,
+    items: Array.from({ length: 400 }, (_, i) => ({
+      source: `source-${i}`,
+      title: `A reasonably long headline about something number ${i}`,
+      url: `https://example.com/a/rather/long/path/segment/${i}`,
+      description: 'x'.repeat(300),
+      rank: i + 1,
+    })),
+  };
+
+  it('does not abort when the feed pool overshoots — nothing prompts with it', () => {
+    const out = condenseAll({
+      feeds: hugeFeeds,
+      trending: mockGithub(5, 'trending'),
+      search: mockGithub(5, 'search'),
+      developers: mockGithub(5, 'developers'),
+    });
+    expect(out.unified.items.length).toBeGreaterThan(0);
+  });
+
+  it('names the overshooting bucket so a silent prompt-size creep is visible', () => {
+    const out = condenseAll({
+      feeds: hugeFeeds,
+      trending: mockGithub(5, 'trending'),
+      search: mockGithub(5, 'search'),
+      developers: mockGithub(5, 'developers'),
+    });
+    expect(out.over_budget).toEqual([expect.stringContaining('unified-feeds')]);
+  });
+
+  it('leaves over_budget empty on a pool that fits', () => {
+    const out = condenseAll({
+      feeds: mockFeeds(80),
+      trending: mockGithub(15, 'trending'),
+      search: mockGithub(30, 'search'),
+      developers: mockGithub(25, 'developers'),
+    });
+    expect(out.over_budget).toEqual([]);
+  });
+
+  // The flat buckets cap at 6 items in the tightest profile, so only oversized
+  // per-item fields can push one past the budget — the field lengths here are
+  // deliberately absurd, because the point is that the abort still fires for a
+  // bucket a curator actually reads.
+  it('still aborts when a github bucket overshoots — those do reach a prompt', () => {
+    const hugeTrending = {
+      ok: true,
+      items: Array.from({ length: 10 }, (_, i) => ({
+        source: 'github-trending',
+        full_name: `${'o'.repeat(4000)}/repository-number-${i}`,
+        url: `https://github.com/${'p'.repeat(4000)}/${i}`,
+        description: 'y'.repeat(300),
+        stars: 1000 - i,
+        rank: i + 1,
+      })),
+    };
+    expect(() =>
+      condenseAll({
+        feeds: mockFeeds(10),
+        trending: hugeTrending,
+        search: mockGithub(5, 'search'),
+        developers: mockGithub(5, 'developers'),
+      }),
+    ).toThrow(/budget exceeded: github-trending/);
   });
 });
