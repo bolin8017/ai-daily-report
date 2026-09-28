@@ -527,6 +527,21 @@ describe('collectHealth', () => {
     cleanup();
   });
 
+  // 2026-09-10..28: feeds Miniflux stopped polling shrank the pull 4,620 -> 25
+  // entries while feeds stayed ok:true. The feed-health note is what names them.
+  it('names unhealthy Miniflux feeds even while the feeds bucket is ok', () => {
+    const d = write({
+      date: '2026-09-29',
+      sources: { feeds: { ok: true, count: 25 } },
+      degraded: ['miniflux-feeds (2/49 unhealthy: oschina erroring, lwn stalled)'],
+    });
+    expect(collectHealth(d)).toEqual({
+      status: 'degraded',
+      error: 'degraded sources: miniflux-feeds (2/49 unhealthy: oschina erroring, lwn stalled)',
+    });
+    cleanup();
+  });
+
   // An empty bucket and the chain that emptied it are two measurements of one
   // failure, in two different namespaces (bucket `arxiv` vs source id
   // `arxiv-cs-ai`). Listing both read as two independent problems:
