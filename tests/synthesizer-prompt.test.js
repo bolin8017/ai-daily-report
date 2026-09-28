@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -35,10 +35,10 @@ describe('build-synthesizer-prompt', () => {
     });
 
     expect(prompt).toContain('data/staging/report-context.md');
-    expect(prompt).toContain('bounded report context');
-    // Output contract: exactly one Write call, written file is the sole output.
-    expect(prompt).toContain('exactly ONE Write call');
-    expect(prompt).toContain('written file is your entire response');
+    expect(prompt).toContain('bounded report');
+    // Output contract: the reply is the editorial file, nothing else.
+    expect(prompt).toContain('Your reply is saved verbatim as');
+    expect(prompt).toContain('the reply is the file');
     expect(prompt).toContain('"2.1-editorial"');
     // Path Y source_links discipline: cite-or-empty, never invent.
     expect(prompt).toContain('An empty array is always valid');
@@ -91,5 +91,37 @@ describe('build-synthesizer-prompt', () => {
     const prompt = await buildSynthesizerPrompt({ date: '2026-06-09' });
     expect(prompt).not.toMatch(/ideation/i);
     expect(prompt).not.toContain('IdeaItem');
+  });
+
+  it('inlines curated files, small inputs, curated-url source ages and the schema source', async () => {
+    const root = await mkdtemp(path.join(os.tmpdir(), 'adr-synth-inline-'));
+    const curatedDir = path.join(root, 'curated');
+    await mkdir(curatedDir);
+    await writeFile(
+      path.join(curatedDir, 'pulse.json'),
+      JSON.stringify({ hn: [{ id: 'pulse.hn.0:hn-1', url: 'https://a.example/x' }] }, null, 2),
+    );
+    await writeFile(
+      path.join(root, 'source-ages.json'),
+      JSON.stringify({ 'https://a.example/x': 2, 'https://b.example/uncurated': 0 }),
+    );
+    await writeFile(path.join(root, 'feeds-pulse.json'), JSON.stringify({ items: ['RAW-FEED'] }));
+    await writeFile(path.join(root, 'report-context.md'), '# ctx line\n');
+
+    const prompt = await buildSynthesizerPrompt({ date: '2026-06-03', stagingDir: root });
+
+    // Inputs come first (long-context layout), the instructions after them.
+    expect(prompt.startsWith('<inputs>')).toBe(true);
+    expect(prompt).toContain(
+      '<file path="data/staging/curated/pulse.json">\n{"hn":[{"id":"pulse.hn.0:hn-1","url":"https://a.example/x"}]}\n</file>',
+    );
+    expect(prompt).toContain('<file path="data/staging/curated/tech.json" missing="true"></file>');
+    expect(prompt).toContain('# ctx line');
+    // Source ages are narrowed to the urls the curated files cite.
+    expect(prompt).toContain('{"https://a.example/x":2}');
+    expect(prompt).not.toContain('b.example/uncurated');
+    // The large raw feeds stay on disk for targeted lookups.
+    expect(prompt).not.toContain('RAW-FEED');
+    expect(prompt).toContain('<file path="src/schemas/editorial.js">');
   });
 });

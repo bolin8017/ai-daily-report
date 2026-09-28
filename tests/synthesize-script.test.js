@@ -31,7 +31,7 @@ case "$*" in
   *"\${STUB_FAIL:-__never__}"*) echo "stub node failure: $*" >&2; exit 1 ;;
 esac
 case "$*" in
-  *build-report-context*|*build-synthesizer-prompt*|*claude-envelope*)
+  *build-report-context*|*build-synthesizer-prompt*|*"claude-envelope.js sidecar"*)
     prev=""
     for a in "$@"; do
       if [ "$prev" = "--output" ]; then mkdir -p "$(dirname "$a")"; printf 'prompt' > "$a"; fi
@@ -43,13 +43,14 @@ esac
 exec "$REAL_NODE" "$@"
 `;
 
-// claude stub: writes MOCK_EDITORIAL to the editorial path when set, so the
-// "synthesizer didn't Write it" branch is reachable by leaving it unset.
+// claude stub: prints a json envelope whose .result is MOCK_EDITORIAL (the
+// synthesizer's reply is the editorial), or an empty result when unset, so the
+// "returned no editorial" branch is reachable by leaving it unset.
 const CLAUDE_STUB = `#!/usr/bin/env bash
 cat > /dev/null
 echo "claude $*" >> "$RUN_LOG"
 if [ "\${MOCK_CLAUDE_RC:-0}" != "0" ]; then exit "$MOCK_CLAUDE_RC"; fi
-if [ -n "\${MOCK_EDITORIAL:-}" ]; then printf '%s' "$MOCK_EDITORIAL" > "$EDITORIAL_TARGET"; fi
+MOCK_EDITORIAL="\${MOCK_EDITORIAL:-}" "$REAL_NODE" -e 'process.stdout.write(JSON.stringify({ result: process.env.MOCK_EDITORIAL }))'
 exit 0
 `;
 
@@ -111,7 +112,6 @@ function run(script, env = {}) {
       PATH: `${path.join(sb.root, 'bin')}:${process.env.PATH}`,
       RUN_LOG: sb.log,
       REAL_NODE: process.execPath,
-      EDITORIAL_TARGET: path.join(sb.root, 'data', 'staging', 'editorial.json'),
       ...env,
     },
   });
@@ -160,12 +160,26 @@ describe('synthesize.sh', () => {
     expect(r.stderr).toMatch(/claude -p failed rc=7/);
   });
 
-  // An expensive call that produced no file is the failure this catches: claude
-  // exits 0 having never used the Write tool.
-  it('exits 2 when claude succeeds without writing the editorial', () => {
+  // An expensive call that produced no editorial is the failure this catches:
+  // claude exits 0 with an empty reply. A stale editorial from an earlier run
+  // must not survive to be validated in its place.
+  it('exits 2 when claude succeeds without returning an editorial', () => {
+    const editorial = path.join(sb.root, 'data', 'staging', 'editorial.json');
+    fs.writeFileSync(editorial, VALID_EDITORIAL);
     const r = run('synthesize.sh');
     expect(r.status).toBe(2);
-    expect(r.stderr).toMatch(/missing — synthesizer didn't Write it/);
+    expect(r.stderr).toMatch(/returned no editorial/);
+    expect(fs.existsSync(editorial)).toBe(false);
+  });
+
+  it('writes the editorial from a fenced reply', () => {
+    const r = run('synthesize.sh', { MOCK_EDITORIAL: `\`\`\`json\n${VALID_EDITORIAL}\n\`\`\`` });
+    expect(r.status).toBe(0);
+    const written = fs.readFileSync(
+      path.join(sb.root, 'data', 'staging', 'editorial.json'),
+      'utf8',
+    );
+    expect(JSON.parse(written).schema_version).toBe('2.1-editorial');
   });
 
   // The last line of defense on an expensive call: the file exists and parses,

@@ -72,7 +72,8 @@ export async function mergePrompts(section) {
 }
 
 /**
- * Render one staging input for inlining into a curator prompt. JSON is
+ * Render one staging input for inlining into a single-turn prompt (curators
+ * and the synthesizer). JSON is
  * re-serialized compactly (the staging files are pretty-printed, and the
  * indentation is pure token cost to the model); `transform` may drop fields
  * the section prompt never uses. A missing file is reported inline instead of
@@ -81,10 +82,10 @@ export async function mergePrompts(section) {
  * @param {string} stagingDir
  * @param {string} name file name relative to the staging dir
  * @param {(data: unknown) => unknown} [transform]
+ * @param {string} [label] path shown to the model (the one the prompt names)
  * @returns {Promise<string>}
  */
-async function renderInput(stagingDir, name, transform) {
-  const label = `data/staging/${name}`;
+export async function renderInput(stagingDir, name, transform, label = `data/staging/${name}`) {
   let text;
   try {
     text = await readFile(join(stagingDir, name), 'utf8');

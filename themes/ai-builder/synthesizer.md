@@ -40,7 +40,7 @@ Four recurring real failure modes, all instances of the above:
 - **Fabricated magnitude** — no `N倍 / Nx` unless the source states it; a vendor's "up to N×" is a marketing claim, not a fact — prefer the absolute number.
 - **Forward-looking numbers are hedged** — a future-year TAM, a projected benchmark score, or "will reach N" must carry a qualifier (預計 / 預估 / 將 / 上看 / 有望). State a published `actual` number plainly; never assert an estimate or forecast as an accomplished fact.
 
-## Inputs (read via Read tool)
+## Inputs (inlined in the `<inputs>` block, except the raw feeds)
 
 Curated outputs from Stage 2:
 - `data/staging/curated/discoveries.json`
@@ -62,7 +62,7 @@ Bounded cross-day context:
 Recency (computed in code — do NOT do date math yourself):
 - `data/staging/source-ages.json` — each source URL's age in days (today − publish date). Use this for recency / "this-week" judgements; NEVER compute or infer dates yourself.
 
-## Output (write via Write tool)
+## Output (your reply)
 
 - `data/staging/editorial.json` — editorial layer ONLY (lead + signals). A separate mechanical merge step composes the final `data/reports/<TODAY>.json` from this editorial.json + the curated/*.json inputs.
 
