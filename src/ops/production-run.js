@@ -180,6 +180,66 @@ export function collectHealth(stagingDir) {
   };
 }
 
+// Two outages 30 days apart (2026-08-26, 2026-09-26) were one failure mode:
+// `claude -p` stops authenticating about a month after each interactive
+// /login, because the OAuth refresh token rotates on every use WITHOUT its
+// expiry moving forward. Only a person at a terminal can fix it, and the
+// deadline is sitting in the credential file the whole time — so read it and
+// say it out loud. Cross-day state (star-history, seen-repos) makes a missed
+// day unrecoverable after 24h, which is why a week of warning matters.
+const AUTH_WARN_DAYS = 7;
+const AUTH_EXPIRED_ERROR = /OAuth session expired|Failed to authenticate/i;
+
+/**
+ * Read the claude credential's refresh-token deadline.
+ *
+ * Returns null when the file is missing or carries no deadline — an unknown
+ * deadline must not be reported as a healthy one, and the pipeline runs fine
+ * with no credential file at all when only Stage 1 is exercised.
+ *
+ * @param {string} [credentialsFile]
+ * @param {number} [nowMs]
+ * @returns {{refresh_expires_at: string, days_left: number}|null}
+ */
+export function authHealth(
+  credentialsFile = path.join(os.homedir(), '.claude', '.credentials.json'),
+  nowMs = Date.now(),
+) {
+  const expiresAt = readJson(credentialsFile)?.claudeAiOauth?.refreshTokenExpiresAt;
+  if (!Number.isFinite(expiresAt)) return null;
+  return {
+    refresh_expires_at: new Date(expiresAt).toISOString(),
+    days_left: Math.floor((expiresAt - nowMs) / 86_400_000),
+  };
+}
+
+function authWarning(auth) {
+  if (!auth || !Number.isFinite(auth.days_left) || auth.days_left > AUTH_WARN_DAYS) return null;
+  const date = auth.refresh_expires_at.slice(0, 10);
+  const left =
+    auth.days_left < 0
+      ? `expired ${-auth.days_left} days ago (${date})`
+      : `expires in ${auth.days_left} days (${date})`;
+  return `claude login ${left} — run /login on the host, or tomorrow's run fails at the first curator`;
+}
+
+// Did this run die on expired auth? The four curators fan out in parallel, so
+// the signature is all of them failing in ~2s with the same message; naming the
+// one remedy beats a stage table that looks like four separate problems.
+function authFailureRemedy(stages) {
+  const hit = Object.values(stages ?? {}).some(
+    (s) => s?.status === 'failed' && AUTH_EXPIRED_ERROR.test(s.error ?? ''),
+  );
+  if (!hit) return null;
+  return [
+    'this is an expired claude login, not a pipeline bug — only an interactive',
+    'login fixes it: run /login on the host, then recover the SAME day',
+    '(staging inputs are gone tomorrow):',
+    '  node src/ops/production-run.js run --state-dir <state-dir> \\',
+    '    --wiki-root <wiki> --recover-from curate.discoveries',
+  ].join('\n');
+}
+
 export function renderFailure(latest) {
   const rc = latest.rc ?? {};
   return [
@@ -209,6 +269,7 @@ export function renderFailure(latest) {
     latest.publish?.missing_days?.length
       ? `missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${latest.publish.missing_days.join(', ')}`
       : null,
+    authFailureRemedy(latest.stages),
     `log: ${latest.log_file ?? '?'}`,
     '--- stage summary ---',
     renderStages(latest.stages),
@@ -240,6 +301,7 @@ export function renderSuccess(latest) {
     latest.publish?.missing_days?.length
       ? `missing reports (last ${DEFAULT_LOOKBACK_DAYS} days): ${latest.publish.missing_days.join(', ')}`
       : null,
+    authWarning(latest.auth),
     'report: https://bolin8017.github.io/ai-daily-report/',
   ]
     .filter((l) => l != null)
@@ -519,6 +581,7 @@ function cmdRun({ stateDir, wikiRoot, skipPush, recoverFrom }) {
       missing_days: null,
     },
     rc: { run: null, validate: null, remote: null, dispatch: null, final: null },
+    auth: authHealth(),
   };
   atomicWriteJson(path.join(stateDir, 'latest.json'), base);
 

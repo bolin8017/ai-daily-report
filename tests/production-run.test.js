@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import {
+  authHealth,
   buildRunArgs,
   cmdMonitor,
   collectHealth,
@@ -624,5 +625,105 @@ describe('parseArgs', () => {
 
   it('leaves recoverFrom undefined for a plain run', () => {
     expect(parseArgs(['run', '--state-dir', '/s']).recoverFrom).toBeUndefined();
+  });
+});
+
+// ops-3 (2026-09-28): two outages 30 days apart — 08-26 and 09-26 — were the
+// same failure. `claude -p` stops authenticating ~30 days after each
+// interactive /login, because the OAuth refresh token rotates without its
+// expiry moving forward. Nothing in the run state named the deadline, so the
+// only signal was four curators dying at once, three mornings in a row.
+describe('authHealth', () => {
+  let dir;
+  const write = (oauth) => {
+    dir = mkdtempSync(join(tmpdir(), 'auth-health-'));
+    const f = join(dir, '.credentials.json');
+    writeFileSync(f, JSON.stringify({ claudeAiOauth: oauth }));
+    return f;
+  };
+  const cleanup = () => dir && rmSync(dir, { recursive: true, force: true });
+  const now = Date.parse('2026-09-28T14:20:00.000Z');
+  const days = (n) => now + n * 86_400_000;
+
+  it('reports the refresh-token deadline and days left', () => {
+    const f = write({ refreshTokenExpiresAt: days(30) });
+    expect(authHealth(f, now)).toEqual({
+      refresh_expires_at: new Date(days(30)).toISOString(),
+      days_left: 30,
+    });
+    cleanup();
+  });
+
+  it('floors days left so a deadline later today is not reported as tomorrow', () => {
+    const f = write({ refreshTokenExpiresAt: now + 3 * 3_600_000 });
+    expect(authHealth(f, now).days_left).toBe(0);
+    cleanup();
+  });
+
+  it('reports a passed deadline as negative rather than clamping to zero', () => {
+    const f = write({ refreshTokenExpiresAt: days(-2) });
+    expect(authHealth(f, now).days_left).toBe(-2);
+    cleanup();
+  });
+
+  it('returns null when the credential file is absent or shapeless', () => {
+    expect(authHealth(join(tmpdir(), 'no-such-credentials.json'), now)).toBeNull();
+    const f = write({});
+    expect(authHealth(f, now)).toBeNull();
+    cleanup();
+  });
+});
+
+describe('auth deadline in notices', () => {
+  const ok = (auth) => ({
+    report_date: '2026-10-24',
+    duration_ms: 19 * 60_000,
+    stages: {},
+    auth: auth,
+  });
+
+  it('warns in a success notice once the deadline is within a week', () => {
+    const text = renderSuccess(
+      ok({ refresh_expires_at: '2026-10-28T14:20:00.000Z', days_left: 4 }),
+    );
+    expect(text).toMatch(/claude login expires in 4 days \(2026-10-28\)/);
+    expect(text).toMatch(/\/login/);
+  });
+
+  it('stays quiet while the deadline is far off', () => {
+    const text = renderSuccess(
+      ok({ refresh_expires_at: '2026-10-28T14:20:00.000Z', days_left: 29 }),
+    );
+    expect(text).not.toMatch(/login/);
+  });
+
+  it('names /login as the remedy when a stage died on expired auth', () => {
+    const text = renderFailure({
+      run_id: 'r1',
+      report_date: '2026-09-28',
+      rc: { final: 1, run: 1 },
+      log_file: '/var/log/x.log',
+      stages: {
+        'curate.discoveries': {
+          status: 'failed',
+          error: 'Failed to authenticate: OAuth session expired and could not be refreshed',
+        },
+        merge: { status: 'blocked', error: 'required dep curate.discoveries is failed' },
+      },
+    });
+    expect(text).toMatch(/expired claude login/);
+    expect(text).toMatch(/\/login on the host/);
+    expect(text).toMatch(/--recover-from curate\.discoveries/);
+  });
+
+  it('adds no login remedy to an unrelated failure', () => {
+    const text = renderFailure({
+      run_id: 'r1',
+      report_date: '2026-09-28',
+      rc: { final: 1, run: 1 },
+      log_file: '/var/log/x.log',
+      stages: { synthesize: { status: 'failed', error: 'API error 529 overloaded' } },
+    });
+    expect(text).not.toMatch(/login/);
   });
 });
