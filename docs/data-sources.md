@@ -142,7 +142,34 @@ RSSHub：`themes/ai-builder/sources.yaml` → `rsshub_urls` 指向自架實例 `
 >
 > 自成 `video-generation` 分類（而非併入 `diffusion-research`），是為了讓每日的影片生成供給量可以單獨計數——兩週後要用這個數字決定問題出在來源還是 curator。
 >
-> **未接：Reddit**（r/StableDiffusion、r/comfyui）。本領域訊息最早出現處，但免費路徑全被擋：原生 `.rss` 403、自架 RSSHub 無 reddit route（上游 2023 移除）、jina-reader 403、公開 redlib 302。需 Reddit 官方 OAuth script app 憑證。
+#### 1.3.7c 社群實測（→ `tech.vendor`）
+
+| 名稱 | URL | 上限 |
+|---|---|---|
+| r/StableDiffusion | `https://www.reddit.com/r/StableDiffusion/.rss` | 20 |
+
+> 2026-09-28 新增。實測在自己卡上跑生成的人，通常比廠商或 repo 早幾天講出結果：
+> 當天實抓 25 篇，標題幾乎都是技術貼（H3 實測、自行訓練的 YuE2 encoder、refiner
+> LoRA）。curator 規則要求貼文帶量化觀察、可重現做法或實測結論，純作品展示一律排除。
+>
+> **走原生 `.rss`，不走 API。** Reddit 的 API 自助註冊自 2025-11 的 Responsible
+> Builder Policy 起關閉，按 create app 只會看到政策連結。原生 feed 只認瀏覽器
+> User-Agent，其餘一律 403——所以這條 feed 在 registry 帶 `userAgent`，
+> `feeds.opml` 以 `userAgent` 屬性帶到 Miniflux 的 per-feed `user_agent`。
+> Miniflux 自己的 UA 會被 403，那會變成「feed 建好了卻永遠沒有 entry」。
+>
+> **只接一個 subreddit。** Reddit 的 feed 限流約每分鐘一發（連發會拿到 `429`、
+> `x-ratelimit-remaining: 0`），而 Miniflux 連續 3 次抓取錯誤就會停用 feed，
+> 同一輪詢週期抓兩個 sub 有互相拖垮的風險。r/comfyui 的內容本來就大量出現在這條
+> feed 裡。
+>
+> **分類是 `genai-community`，不是 `video-generation`。** 後者的每日筆數是用來判斷
+> 2026-09 新增的影片生成來源值不值得留的量測值，混進一條高流量社群 feed 會讓那個
+> 數字失去意義。也刻意不進 `pulse`：pulse curator 按 source 硬性分組，未列入的
+> 來源會被靜默丟掉。
+>
+> RSSHub（上游 2023 移除 reddit route）、jina-reader（403）、公開 redlib（302）
+> 三條路確實都不通，不用再試。
 
 #### 1.3.8 市場情報（→ `market.ma` / `market.funding`）
 

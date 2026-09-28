@@ -19,6 +19,22 @@ describe('planMinifluxSync', () => {
     ]);
   });
 
+  // A feed whose outline declares a UA must be created WITH it: Miniflux's
+  // default UA earns a 403 from Reddit, and the feed would then sit in the
+  // instance looking provisioned while never returning an entry.
+  it('carries a per-feed userAgent into the create plan', () => {
+    const plan = planMinifluxSync({
+      opmlFeeds: [
+        { id: 'r', url: 'https://r.com/.rss', category: 'tech', userAgent: 'Mozilla/5.0' },
+      ],
+      existingFeeds: [],
+      existingCategories: [{ id: 1, title: 'tech' }],
+    });
+    expect(plan.createFeeds).toEqual([
+      { feed_url: 'https://r.com/.rss', category: 'tech', source: 'r', userAgent: 'Mozilla/5.0' },
+    ]);
+  });
+
   it('is a no-op when everything already exists (idempotent)', () => {
     const plan = planMinifluxSync({
       opmlFeeds: opml,

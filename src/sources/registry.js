@@ -326,6 +326,32 @@ export default [
   rss('rocm-releases', 'ROCm Releases', '大廠技術', 'https://github.com/ROCm/ROCm/releases.atom', {
     homepageUrl: 'https://github.com/ROCm/ROCm/releases',
   }),
+  // === Practitioner community, image/video (1) ===
+  // Where a new sampler, LoRA or ComfyUI node is reported by the people running
+  // it on their own cards, usually days before any vendor or repo says anything.
+  // Measured 2026-09-28: one request returned 25 entries whose titles were
+  // almost all technique reports (H3 tests, a trained YuE2 encoder, refiner
+  // LoRAs). No API involved — Reddit's self-service API registration has been
+  // closed since 2025-11, so this is the native .rss feed, which serves a
+  // browser UA and 403s everything else. Hence the userAgent below: Miniflux's
+  // own UA gets the 403.
+  //
+  // Only ONE subreddit on purpose. Reddit's feed quota is roughly one request a
+  // minute per IP and Miniflux disables a feed after 3 consecutive fetch
+  // errors, so two subreddits polled in the same cycle risk retiring each other
+  // with 429s. r/comfyui content already shows up in this feed.
+  rss(
+    'reddit-stablediffusion',
+    'r/StableDiffusion',
+    'genai-community',
+    'https://www.reddit.com/r/StableDiffusion/.rss',
+    {
+      homepageUrl: 'https://www.reddit.com/r/StableDiffusion/',
+      userAgent:
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36',
+    },
+  ),
+
   rss('phoronix', 'Phoronix', '系統/底層', 'https://www.phoronix.com/rss.php', {
     homepageUrl: 'https://www.phoronix.com/',
   }),

@@ -11,7 +11,12 @@ export function planMinifluxSync({ opmlFeeds, existingFeeds, existingCategories 
   const createCategories = wantCats.filter((c) => !haveCats.has(c));
   const createFeeds = opmlFeeds
     .filter((f) => !haveFeeds.has(normUrl(f.url)))
-    .map((f) => ({ feed_url: f.url, category: f.category, source: f.id }));
+    .map((f) => ({
+      feed_url: f.url,
+      category: f.category,
+      source: f.id,
+      ...(f.userAgent ? { userAgent: f.userAgent } : {}),
+    }));
 
   const wantUrls = new Set(opmlFeeds.map((f) => normUrl(f.url)));
   const orphanFeeds = existingFeeds.map((f) => f.feed_url).filter((u) => !wantUrls.has(normUrl(u)));

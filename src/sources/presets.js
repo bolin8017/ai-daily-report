@@ -23,10 +23,13 @@ function homepageFromFeed(feedUrl) {
   return u;
 }
 
-export function rssWithCloudFallback({ url, sourceName, category, homepageUrl }) {
+export function rssWithCloudFallback({ url, sourceName, category, homepageUrl, userAgent }) {
   const page = homepageUrl ?? homepageFromFeed(url);
   return [
-    { provider: 'native-rss', config: { url, sourceName, category } },
+    {
+      provider: 'native-rss',
+      config: { url, sourceName, category, ...(userAgent ? { userAgent } : {}) },
+    },
     { provider: 'jina-reader', config: { url: page, sourceName, category } },
     { provider: 'firecrawl', config: { url: page, sourceName, category } },
   ];
