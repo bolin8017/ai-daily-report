@@ -195,4 +195,15 @@ describe('synthesize.sh', () => {
     expect(r.status).toBe(0);
     expect(r.stdout).toMatch(/editorial validates against EditorialSchema/);
   });
+
+  // The repo's CLAUDE.md is developer documentation; keeping it out of the
+  // synthesizer's context saves ~18K input tokens a call.
+  it("excludes the repo's CLAUDE.md from the claude call", () => {
+    run('synthesize.sh', { MOCK_EDITORIAL: VALID_EDITORIAL });
+    const call = fs
+      .readFileSync(sb.log, 'utf8')
+      .split('\n')
+      .find((l) => l.startsWith('claude '));
+    expect(call).toContain(`"claudeMdExcludes":["${sb.root}/CLAUDE.md"]`);
+  });
 });

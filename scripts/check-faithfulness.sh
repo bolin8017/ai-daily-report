@@ -17,7 +17,10 @@ TOL="${FAITHFULNESS_TEMPORAL_TOLERANCE_DAYS:-1}"
 FALLBACK_MODEL="${FAITHFULNESS_FALLBACK_MODEL:-sonnet}"
 # Lean-context flags: see curate.sh (--bare drops auth in our env). The judge
 # needs no tools, so --strict-mcp-config is purely belt-and-braces here.
-LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
+# claudeMdExcludes drops this repo's CLAUDE.md (developer docs, ~18K tokens)
+# from the model's context; the user-level instructions still load. See curate.sh.
+LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}'
+  --settings "{\"claudeMdExcludes\":[\"$PWD/CLAUDE.md\"]}")
 STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 EDITORIAL_FILE="${STAGING_DIR}/editorial.json"

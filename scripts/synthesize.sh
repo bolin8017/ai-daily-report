@@ -20,8 +20,11 @@ STAGING_DIR="${STAGING_DIR:-data/staging}"
 CURATED_DIR="${CURATED_DIR:-${STAGING_DIR}/curated}"
 FALLBACK_MODEL="${SYNTH_FALLBACK_MODEL:-sonnet}"
 # Lean-context flags: see curate.sh — --bare drops auth in our env, so use
-# --strict-mcp-config (keeps auth + Read/Write/Glob/Grep).
-LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}')
+# --strict-mcp-config (keeps auth + tools).
+# claudeMdExcludes drops this repo's CLAUDE.md (developer docs, ~18K tokens)
+# from the model's context; the user-level instructions still load. See curate.sh.
+LEAN_FLAGS=(--strict-mcp-config --mcp-config '{"mcpServers":{}}'
+  --settings "{\"claudeMdExcludes\":[\"$PWD/CLAUDE.md\"]}")
 # Same timezone source as run.sh / merge-report.sh — the date the LLM writes
 # into editorial.date becomes report.date, while merge-report.sh names the
 # report file from REPORT_TIMEZONE; deriving them differently can split
