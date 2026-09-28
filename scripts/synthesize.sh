@@ -78,9 +78,12 @@ echo "[synthesize.sh] starting (model=$MODEL date=$TODAY)"
 # Grep remain only for targeted lookups in the large raw feeds. The reply is
 # the editorial JSON — no Write tool: the Read-everything-then-Write loop took
 # ~23 turns, each re-sending the whole accumulated context.
-# NB: extended thinking stays OFF for this synthesis call — reasoning mode
-# raises hallucination on source-faithful summarization. (The Stage 3.5 judge
-# call may use it; synthesis must not.)
+# Thinking is ON here: nothing in this call disables it, and the CLI's
+# adaptive thinking spent ~15-18K thinking tokens per run in 2026-09 (the
+# envelope's modelUsage.thinkingTokens). A comment here used to claim it was
+# off. Turning it off (MAX_THINKING_TOKENS=0) was measured on 2026-09-28
+# staging: 1.33 -> 0.90 USD, but source_links fell 27 -> 15 and em dashes rose
+# 1 -> 9, so it stays on until a quality comparison says otherwise.
 (
   claude -p \
     --model "$MODEL" \
