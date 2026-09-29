@@ -27,7 +27,7 @@ Write strict JSON matching `TechCuratedSchema` to `data/staging/curated/tech.jso
 
 ### vendor (cap 8) — 大廠技術
 
-Source: feeds.json from `Anthropic News`, `Google AI Blog`, `OpenAI`, `Microsoft Research AI`, `AWS ML Blog`, `NVIDIA Developer Blog`, `Meta (Research/FAIR)`, DeepMind if present, plus the video-generation feeds (`NVlabs Sana Commits`, `LTX-Video Releases`, `FastVideo Releases`, `ComfyUI Blog`, `stable-diffusion.cpp Releases`) and the practitioner community feed (`r/StableDiffusion`).
+Source: feeds.json, matched by each item's `source` id: `anthropic-news`, `google-ai-blog`, `openai`, `microsoft-research-ai`, `aws-ml-blog`, `nvidia-developer-blog`, `meta-research`, the accelerator-vendor feeds (`trt-model-optimizer-releases`, `openvino-releases`, `rocm-blog`, `rocm-releases`), plus the image/video-generation feeds (`nvlabs-sana-commits`, `fastvideo-commits`, `nvidia-cosmos-commits`, `comfy-blog`, `comfyui-releases`, `diffusers-releases`, `sdcpp-commits`) and the practitioner community feed (`reddit-stablediffusion`).
 
 - **Substance test (include):** post contains model card details, API feature specs with quantitative claims, OSS releases, paper links, OR benchmark numbers.
 - **Marketing-fluff test (exclude):** post is "X enables Y for customers" / "partner X chose us" / pure case study without technical substance.
