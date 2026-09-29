@@ -1,0 +1,946 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-09-30",
+  "meta": {
+    "run_id": "4cb984f8-8dd3-4643-94b5-2547cee2088e",
+    "pipeline_version": "aaff1f5",
+    "model": "claude-opus-5",
+    "generated_at": "2026-09-29T23:11:20.530Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 1183
+      },
+      "trending": {
+        "ok": true,
+        "count": 14
+      },
+      "search": {
+        "ok": true,
+        "count": 337
+      },
+      "developers": {
+        "ok": true,
+        "count": 18
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 1
+      },
+      "mops": {
+        "ok": true,
+        "count": 7
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 249,
+      "market": 239,
+      "tech": 158,
+      "shipped": 55
+    },
+    "degraded_sources": [],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.5017959999999999,
+        "duration_ms": 212861,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 21167,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 72360,
+        "is_error": false,
+        "session_id": "564e1930-06c7-4101-ad25-70a4c780d04b"
+      },
+      "faithfulness": {
+        "cost_usd": 0.1428268,
+        "duration_ms": 14664,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 1527,
+        "cache_read_tokens": 3289,
+        "cache_creation_tokens": 31249,
+        "is_error": false,
+        "session_id": "b30fc6da-4149-4aed-8fcb-b602378097a2"
+      },
+      "curate.market": {
+        "cost_usd": 0.533364,
+        "duration_ms": 184573,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 18137,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 87827,
+        "is_error": false,
+        "session_id": "e36931ff-aeb9-4ff4-a614-035c07d3e38a"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.5332239999999999,
+        "duration_ms": 275325,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 26673,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 66452,
+        "is_error": false,
+        "session_id": "602fcdf3-b3ad-4d5c-b20b-4988838da5fa"
+      },
+      "synthesize": {
+        "cost_usd": 1.043855,
+        "duration_ms": 236776,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 14777,
+        "cache_read_tokens": 0,
+        "cache_creation_tokens": 67442,
+        "is_error": false,
+        "session_id": "eb428d27-a730-40a1-890a-e4d562a67e06"
+      },
+      "curate.tech": {
+        "cost_usd": 0.562606,
+        "duration_ms": 287267,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 30274,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 64795,
+        "is_error": false,
+        "session_id": "342d574b-3095-44ba-9d2c-3d66590d4f68"
+      }
+    },
+    "total_cost_usd": 3.3176718,
+    "total_tokens": 112567,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "6/6",
+      "unique_domains": 31,
+      "source_tier": 0.06349206349206349
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-09-30 — 近期重點</h3>\n<h4>Qwen-Image-2.1 的實際入口是量化版，不是官方 repo</h4>\n<p>Qwen 開源 Qwen-Image-2.1，新增 RGBA 透明背景輸出與圖片編輯。但 HF trending 上的下載量分佈跟發布順序完全不一樣：官方 repo 64,362 次，社群做的 GGUF 量化版 1,152,523 次，Viggle 用 DMD 蒸餾的 turbo LoRA 190,649 次。量化版是官方版的 17.9 倍。runtime 那邊，ComfyUI v0.38.0 改寫了 Qwen Image 2.1 的 KV cache 存放邏輯並編譯 transformer block。你的 DiT pipeline 要對齊的 baseline 是 GGUF 加 few-step LoRA 這條路，不是 diffusers 全精度。</p>\n<h4>KV cache 從推論加速的細節，變成記憶體預算的主項</h4>\n<p>四個不同層級在動同一個東西。CtxGuard 用 Tree-sitter 的 AST 判斷程式改了哪裡，只把 tool delta 送進 prompt，宣稱 token 省 50% 到 80% 並穩定命中 KV cache（111 stars）。LMCache v0.5.6rc1（4 天內）加了 preemption，讓 KV cache 排程主動讓出記憶體。KV-streams 那篇（2 天內）處理 agent 訓練重複 prefill 的成本，SANTA++（2 天內）則是不掃完整個 KV cache 就選出要算的 key。四個各自在 prompt、排程、訓練、attention 四層，共同前提是同一件事：agent 的 context 長到讓 KV cache 佔掉記憶體預算的主項。</p>\n<h4>有人開始為 agent 的資料外洩面付錢</h4>\n<p>MIND 募到 7,200 萬美元 B 輪、累計 1.12 億，產品是用 AI 代理抓資料外洩。Cyera 今年募資累計 14 億美元，追加的 4 億來自高盛，估值上看 120 億，押的是「非人類身分」的安全。Nvidia 把同一個問題拉到硬體，用 BlueField-4 隔離越權代理。HN 上 401 分那篇對話式 AI agent 的隱私分析（PDF）是同一件事從研究端看過去的樣子。傳統 DLP 看不到 agent 的 context window 裡裝了什麼，錢往這裡走的原因就在這。</p>\n<h4>記憶體漲價會先打到你的本機</h4>\n<p>TrendForce 預估 2027 年 HBM 平均單價年增上看 121%。台股那邊外資連兩天賣超，減碼台積電、反手買超南亞科逾 3 萬張。往下推一層（這是我的判斷，報導沒這樣寫）：資料中心有長約護著，先動的是消費級 DRAM 與 VRAM 零售價。這對本機量化方案是加分：prism-ml 那個 2-bit 三元量化的 27B 版本累積下載 3,581,027 次，已經是今天 HF trending 上下載量第二高的項目，把 27B 塞進裝置端的需求早就在了。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-qwen-image-quantized-entry",
+        "title": "圖像模型的採用先過硬體門檻，官方 repo 只是上游",
+        "body": "Qwen-Image-2.1 發布後，下載量集中在跑得動的變體而不是原始權重：官方 repo 64,362 次，GGUF 量化版 1,152,523 次（17.9 倍），Viggle 的 DMD turbo LoRA 190,649 次。ComfyUI v0.38.0 在同一個模型上改了 KV cache 存放邏輯並編譯 transformer block。要注意 turbo 這條路有已知風險：PDMD 那篇（arXiv 2609.35768）指出 DMD 訓練會因為 critic 誤差累積進學生模型，樣本會逐步過飽和並出現雜訊，這正是 few-step LoRA 最可能踩到的失效項。",
+        "mechanism": "開源圖像模型的發布現在是兩段式：上游放全精度權重，下游在幾天內補上量化與 few-step 蒸餾，而使用者的實際入口是下游那一段。原因是門檻在 VRAM 與步數，不在權重可得性。所以評估一個新 DiT 模型時，決定它能不能進 workflow 的是量化版的品質衰退幅度，不是官方卡的 benchmark 數字。",
+        "evidence": "HF trending：Qwen/Qwen-Image-2.1 downloads 64,362、likes 2,655；abenzerps/Qwen-Image-2.1-Uncensored-GGUF downloads 1,152,523；Viggle/Qwen-Image-2.1-viggle-turbo downloads 190,649。ComfyUI v0.38.0 release note 明載 Qwen Image 2.1 的 KV-cache 與 transformer block 編譯改動（1 天內）。",
+        "cross_source": 4,
+        "product_opportunity": "用同一批 prompt 對 GGUF 加 turbo LoRA 與全精度全步數跑一次 A/B，先量飽和度與高頻細節這兩項，因為 PDMD 指出的正是 oversaturation 與 artifact。跑得出來就把 few-step 設成 demo 的預設，全精度留給最終出圖。",
+        "source_links": [
+          "tech.models.1:hf-qwen-qwen-image-2.1",
+          "tech.models.5:hf-viggle-qwen-image-2.1-viggle-turbo",
+          "tech.vendor.0:Comfy-Org/ComfyUI"
+        ]
+      },
+      {
+        "id": "focus-kvcache-four-layers",
+        "title": "KV cache 同時被四層各自處理，四層都假設它是記憶體主項",
+        "body": "CtxGuard 在 prompt 層動手，用 Tree-sitter 的 AST 算出程式改了哪裡，只送 tool delta，宣稱 token 省 50% 到 80% 且穩定命中 KV cache（111 stars）。LMCache v0.5.6rc1 在排程層加 preemption，KV cache 可以搶先讓出記憶體。KV-streams 在訓練層免掉 agent RL 反覆 prefill 整段 trace。SANTA++ 在 attention 層把 cached key 分組、只掃代表性 key。ComfyUI 的 v0.38.0 則是把同一個問題搬到圖像模型上。",
+        "mechanism": "長時間跑的 agent 讓 context trace 變成訓練與推論共用的記憶體壓力來源，而壓縮它有兩種代價：重新 prefill（花算力）或掃過整個 cache（花頻寬）。這四個做法各自砍掉其中一種代價，所以它們不是同一招的複本，而是同一個瓶頸在不同層的四種價格。TokenCast 那篇（arXiv 2609.35760）從另一邊量到這件事：同一個任務跨次執行的 token 消耗可以差一個數量級，事前預算本身就不成立。",
+        "evidence": "LMCache v0.5.6rc1 release note 載 preemption（4 天內）；arXiv 2609.35750 KV-streams、2609.35629 SANTA++（各 2 天內）；CtxGuard README 宣稱 token 省 50% 到 80%（111 stars，數字為專案自述、未經第三方複現）。",
+        "cross_source": 4,
+        "product_opportunity": "在你的 agent demo 裡先加一個 KV cache 佔用的量測點，把每一輪的 cache 大小與 prefill 次數印出來。沒有這個數字，上面四種對策你無法判斷哪一個對你有效，也沒辦法回答客戶「這台機器能撐幾輪」。",
+        "source_links": [
+          "discoveries.rising.0:255308153/CtxGuard",
+          "tech.aidaptiv.1:LMCache/LMCache",
+          "tech.aidaptiv.2:arxiv-2609.35750",
+          "tech.aidaptiv.3:arxiv-2609.35629",
+          "tech.vendor.0:Comfy-Org/ComfyUI"
+        ]
+      },
+      {
+        "id": "focus-agent-identity-security-funding",
+        "title": "「非人類身分」拿到錢，也拿到硬體位置",
+        "body": "MIND 的 B 輪 7,200 萬美元讓累計募資到 1.12 億，賣點是用 AI 代理抓資料外洩，年營收成長逾 17 倍。Cyera 今年累計募資 14 億美元，追加的 4 億來自高盛，估值上看 120 億，明確把 AI 代理與非人類身分列為加碼方向。Nvidia 用 BlueField-4 的 Sentry 把代理的權限監控做到硬體層。研究端，HN 上 401 分的對話式 AI agent 隱私分析指出這類代理的外洩風險，arXiv 2609.35732 則直接量另一種失效：工具已經失敗，agent 還是回報成功。",
+        "mechanism": "agent 一拿到工具權限就同時獲得一條資料外流路徑，而這條路徑在傳統 DLP 的可見範圍之外：外洩發生在 context window 與工具呼叫之間，不是在檔案系統或網路邊界。所以錢會流向「幫 agent 發身分、記錄它做了什麼」這一層，而 Nvidia 選在 DPU 上做隔離，是因為軟體層的 agent 自己就是被懷疑的對象。",
+        "evidence": "MIND 7,200 萬美元 B 輪、累計 1.12 億（2 天內）；Cyera 追加 4 億美元、估值上看 120 億（1 天內）；Nvidia BlueField-4 Sentry（1 天內）；HN 401 分隱私分析 PDF（1 天內）。估值與 2027 年之後的營收都是市場預估，不是已實現數字。",
+        "cross_source": 4,
+        "product_opportunity": "aiDAPTIV+ 的 agent demo 現在就把工具呼叫的 evidence trail 寫成可匯出的格式：哪個代理、用哪份憑證、碰了哪些資料、工具回傳成功或失敗。企業客戶問的下一個問題就是這個，而失敗透明度那篇顯示光靠模型自述並不可信。",
+        "source_links": [
+          "market.funding.0:ithome-4c8e21b7",
+          "market.funding.1:ithome-9d0f6a52",
+          "pulse.chinese_community.4:nvidia-sentry-bluefield4",
+          "pulse.hn.2:hn-privacy-ai-agents"
+        ]
+      },
+      {
+        "id": "focus-decision-layer-specialization",
+        "title": "便宜的 frontier API 沒有壓掉小模型，壓掉的是通用中間層",
+        "body": "GPT-6.1 Sol 用 Astra 五分之一的價格提供接近的程式與電腦操作能力（HN 720 分），ChatGPT Pro 500 再細分一層高用量定價。同一天另一邊在專用化：Jeff 開源的 0.8B 模型 22 毫秒出一次決策，零樣本分類逼近大模型；PostHog 的 Jeeves 顯示加上推理步驟能改善這類決策模型；Jevstiller 把大模型蒸餾到本機，還附上與原模型的分歧上限。HF trending 20 席裡有三席是這類角色：laya（4,502 likes，剛上線、下載量還是 0）、Julia-1 路由模型、CLM-v0.1-8B 驗證與重排。",
+        "mechanism": "agent pipeline 正在分成兩段報價：路由與判斷交給延遲以毫秒計的小模型，真正的推理才呼叫貴的 API。這一層的評分標準不是 benchmark 名次而是延遲與校準，而 frontier API 降價降的是後半段的價格，反而讓前半段更值得省。Jevstiller 給出分歧上限這件事是關鍵：有了量化的偏差保證，換掉前半段的模型才不需要重跑整套評估。",
+        "evidence": "HN：GPT-6.1 Sol 720 分、Jeeves 218 分、Jevstiller 59 分、ChatGPT Pro 500 178 分（皆 1 天內）；HF trending 的 laya、SupersonicLabs/Julia-1、Contrastive-LM/CLM-v0.1-8B 三個 pipeline_tag 分別為 text-classification、text-classification、text-ranking。",
+        "cross_source": 4,
+        "product_opportunity": "把你 agent 裡「要不要呼叫這個工具」「這段回答可不可以直接回」這兩個判斷抽出來，換成 0.8B 級別的分類模型跑，然後量兩個數字：延遲降多少、判斷跟原本大模型不一致的比例。不一致率算得出來，這個替換才敢上線。",
+        "source_links": [
+          "pulse.hn.0:hn-gpt61sol",
+          "pulse.hn.3:hn-jeeves",
+          "pulse.hn.7:hn-jevstiller",
+          "pulse.chinese_community.5:oschina-jeff-smallmodel"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-confidence-gated-recall",
+      "title": "記憶的載入開始有信心門檻，不再是每次手動指定",
+      "body": "audreyt/omo-mnemon 只有 0 star，做的事是信心分數夠高才靜默自動回憶，低於門檻就不插手。這跟 Workday 那份部署報告（arXiv 2609.35692）講的是同一個成本：agent 的 skills library 越大，每次呼叫的營運成本就越高，所以他們測試按需載入。兩邊都在處理同一個問題的兩半：什麼東西該進 context，以及誰來決定。",
+      "mechanism": "context 塞得越滿，KV cache 與 token 成本就越高，而目前主流做法是靠使用者手動下指令查記憶、或無條件載入整包 skill。信心門檻把這個決定交回系統，代價是門檻調錯就會靜默漏掉該有的記憶。這是個可以量的設計，不是概念：門檻掃過一遍就能畫出漏召回率與 token 節省的取捨曲線。",
+      "evidence": "audreyt/omo-mnemon（0 stars，今日 developers 清單）；arXiv 2609.35692 為 Workday 已部署 agent 的 skills 按需載入報告。",
+      "product_opportunity": "你的 RAG 或 agent 記憶層如果現在是無條件檢索，加一個檢索信心門檻並記錄兩條線：低於門檻時省下的 token，以及因此答錯的題數。這兩個數字是說服客戶把記憶層打開的唯一憑證。",
+      "source_links": [
+        "discoveries.dev_watch.1:audreyt/omo-mnemon"
+      ]
+    },
+    "contrarian": {
+      "id": "contrarian-small-decision-models-hold",
+      "title": "frontier API 降價不會清掉小模型，被清掉的是 8B 到 30B 的通用 chat 模型",
+      "body": "共識版本是：Sol 用五分之一價格給到接近旗艦的能力，本機小模型的存在理由被削弱。我的判斷相反，而且分界很清楚：被降價直接取代的是那些沒有專門用途、只是比較便宜的通用對話模型；有明確角色的小模型（路由、分類、驗證、重排）不受影響，因為它們賣的是 22 毫秒的延遲跟可量測的校準，這兩項不會因為別人的 API 變便宜而失去價值。",
+      "mechanism": "呼叫一次遠端 API 的延遲下限由網路決定，不由定價決定。決策層每一輪要跑好幾次判斷，延遲會乘上去，所以這一層的瓶頸從來不是單價。",
+      "evidence": "今天 HF trending 20 席中有 3 席為 text-classification 或 text-ranking 用途（laya、Julia-1、CLM-v0.1-8B）；同日 GPT-6.1 Sol 以 Astra 五分之一價格發布並在 HN 拿到 720 分。",
+      "product_opportunity": "現在就別把決策層外包給 frontier API，留在本機可換模型的位置上。",
+      "source_links": [
+        "pulse.hn.0:hn-gpt61sol",
+        "pulse.chinese_community.5:oschina-jeff-smallmodel"
+      ],
+      "resolution_date": "2026-12-31",
+      "verification": "到 2026-12-31，HF trending 快照中 pipeline_tag 為 text-classification 或 text-ranking 的模型仍維持至少 2 席。跌到 1 席或 0 席，這個判斷就是錯的。"
+    },
+    "predictions": [
+      {
+        "id": "pred-20260930-comfyui-fewstep-qwen",
+        "text": "ComfyUI 在 2026-10-31 前釋出的版本，release note 明載支援 Qwen-Image-2.1 的 few-step 或 turbo LoRA workflow。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "v0.38.0 已經為 Qwen Image 2.1 改了 KV cache 存放與 transformer block 編譯，而 turbo LoRA 的下載量（190,649）遠高於官方 repo（64,362），需求已經在 runtime 之前。"
+      },
+      {
+        "id": "pred-20260930-qwen-gguf-download-ratio",
+        "text": "到 2026-10-31，HF 上 Qwen-Image-2.1 的 GGUF 量化變體累積下載量仍超過官方 repo 的 10 倍。",
+        "resolution_date": "2026-10-31",
+        "status": "pending",
+        "rationale": "今天的比值是 1,152,523 對 64,362，約 17.9 倍。官方 repo 要追上需要一個月內成長超過 8 成的下載占比轉移，除非 diffusers 那條路的 VRAM 需求先降下來。"
+      },
+      {
+        "id": "pred-20260930-lmcache-preemption-stable",
+        "text": "LMCache 在 2026-11-30 前把 v0.5.6 從 rc 推到正式 release，且 preemption 仍列在 release note。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "preemption 動到的是 KV cache 的記憶體讓出路徑，這類改動若在 rc 階段發現互動問題，通常是延後而不是砍掉功能。"
+      },
+      {
+        "id": "pred-20260930-tsmc-q4-packaging-constraint",
+        "text": "2026-10-15 台積電法說會的 Q4 展望，會把先進封裝或 HBM 相關產能列為限制項（以官方逐字稿或簡報為準）。",
+        "resolution_date": "2026-10-16",
+        "status": "pending",
+        "rationale": "同一天 MOPS 上緯穎追加 3.18 億元廠務改良、日月光以 6,844 萬美元在新加坡買廠擴充封測，兩筆都指向封裝端吃緊；TrendForce 對 2027 年 HBM 單價的預估同向。"
+      },
+      {
+        "id": "pred-20260930-nhi-product-line",
+        "text": "2026-12-31 前，除 Nvidia 之外至少再有一家雲端或安全廠商發表以非人類身分（NHI）或 agent 身分為名的產品線（以官方發布頁為準）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "Cyera 把非人類身分寫進加碼方向並拿到 4 億美元追加投資，MIND 的 B 輪走同一個題目，資金到位後產品命名通常在一到兩季內跟上。"
+      },
+      {
+        "id": "pred-20260930-kv-sampling-upstream",
+        "text": "2026-11-30 前，training-free 的 KV cache 抽樣或選 key 方法（SANTA++ 這一類）至少有一個被 vLLM 或 SGLang 主線 merge。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "免訓練是關鍵條件：不用改權重的做法對 serving 框架來說是純加法，過去 paged attention 與各種 sparse attention 的進主線節奏都在一到兩個月。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:255308153/CtxGuard",
+        "audience": "both",
+        "url": "https://github.com/255308153/CtxGuard",
+        "name": "255308153/CtxGuard",
+        "stars": 111,
+        "language": null,
+        "relevance": "用 Tree-sitter AST 判斷改動、只送 Tool Delta，token 省 50%~80% 且穩定命中 KV Cache。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 15,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:openai/sign-in-with-chatgpt-devkit",
+        "audience": "work",
+        "url": "https://github.com/openai/sign-in-with-chatgpt-devkit",
+        "name": "openai/sign-in-with-chatgpt-devkit",
+        "stars": 2,
+        "language": null,
+        "relevance": "讓使用者用自己的 ChatGPT 訂閱幫你的 App 出算力，不必另外收 API key。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.1:audreyt/omo-mnemon",
+        "audience": "work",
+        "url": "https://github.com/audreyt/omo-mnemon",
+        "name": "audreyt/omo-mnemon",
+        "stars": 0,
+        "language": null,
+        "relevance": "信心分數夠高時才靜默自動回憶，不用每次手動下指令查記憶。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-gpt61sol",
+        "audience": "general",
+        "url": "https://openai.com/index/introducing-gpt-6-1-sol/",
+        "title": "GPT 6.1 Sol: Near-Astra intelligence for a fifth of the price",
+        "score": 720,
+        "comments": 101,
+        "takeaway": "OpenAI 用五分之一價格提供接近 Astra 的能力，壓低推理成本門檻。"
+      },
+      {
+        "id": "pulse.hn.1:hn-dots",
+        "audience": "general",
+        "url": "https://openai.com/index/introducing-dots/",
+        "title": "Dots: Always-on agents",
+        "score": 425,
+        "comments": 109,
+        "takeaway": "OpenAI 推出常駐 agent 產品 Dots，把單次對話推向持續在背景運作的代理人。"
+      },
+      {
+        "id": "pulse.hn.2:hn-privacy-ai-agents",
+        "audience": "general",
+        "url": "https://jorgegarciaherrero.com/wp-content/interactivos/20260916-Prompt-like-a-butterfly-sting-like-a-tracker-(clean).pdf",
+        "title": "A Privacy Analysis of Web and Mobile Conversational AI Agents [pdf]",
+        "score": 401,
+        "comments": 39,
+        "takeaway": "研究揭露對話式 AI agent 的隱私外洩風險，企業部署代理人前得先看這份。"
+      },
+      {
+        "id": "pulse.hn.3:hn-jeeves",
+        "audience": "general",
+        "url": "https://github.com/PostHog/jeeves",
+        "title": "Jeeves. Reasoning improves Jev-like decision models",
+        "score": 218,
+        "comments": 29,
+        "takeaway": "PostHog 開源 Jeeves，證明加入推理步驟能提升 Jev 類決策模型的準確度。"
+      },
+      {
+        "id": "pulse.hn.4:hn-chatgpt-pro-500",
+        "audience": "general",
+        "url": "https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers",
+        "title": "ChatGPT Pro 500",
+        "score": 178,
+        "comments": 44,
+        "takeaway": "OpenAI 新增 ChatGPT Pro 500 訂閱層級，高階用量的定價再細分一層。"
+      },
+      {
+        "id": "pulse.hn.5:hn-tinyaiarena",
+        "audience": "general",
+        "url": "https://tinyaiarena.com/",
+        "title": "Show HN: TinyAIArena watch AI agents battle it out",
+        "score": 120,
+        "comments": 24,
+        "takeaway": "讓不同 AI agent 互相對戰的展示，提供評估代理人能力的另一種視角。"
+      },
+      {
+        "id": "pulse.hn.6:hn-pacbench",
+        "audience": "general",
+        "url": "https://jonclegg.github.io/pacman-bakeoff/",
+        "title": "Show HN: Pac-Bench – How well can models one-shot a Pac-Man game?",
+        "score": 77,
+        "comments": 22,
+        "takeaway": "用 Pac-Man 一次成型測試 LLM 的程式生成能力，補上遊戲類 benchmark 的空缺。"
+      },
+      {
+        "id": "pulse.hn.7:hn-jevstiller",
+        "audience": "general",
+        "url": "https://jevstiller.pages.dev/posts/the-guarantee/",
+        "title": "Show HN: Jevstiller – Distill Jev into a local model, with a disagreement bound",
+        "score": 59,
+        "comments": 3,
+        "takeaway": "把 Jev 蒸餾成本地模型，還給出跟原模型的分歧上限，換模型有量化保證。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-serious-ai-product",
+        "audience": "general",
+        "url": "https://blog.glyph.im/2026/09/serious-ai-product.html",
+        "title": "What Would A Serious AI Product Look Like?",
+        "score": 100,
+        "takeaway": "討論嚴肅 AI 產品該有的設計標準，而不是又一層 chatbot 包裝。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-no-ai-feature",
+        "audience": "general",
+        "url": "https://blog.documentfoundation.org/blog/2026/09/03/yes-no-ai-is-now-a-feature/",
+        "title": "Yes, no AI is now a feature",
+        "score": 123,
+        "takeaway": "LibreOffice 明確表態不整合 AI，把「不用 AI」直接當成產品賣點。"
+      },
+      {
+        "id": "pulse.lobsters.2:phoronix-amd-igpu-llm-perf",
+        "audience": "both",
+        "url": "https://www.phoronix.com/review/amd-perfopt",
+        "title": "AMD Boosting AI/LLM Performance For Radeon iGPUs As Much As 18~23% With Linux 7.4",
+        "takeaway": "Radeon 內顯跑 LLM 推理效能提升 18~23%，降低端側部署門檻。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-ai-differently-difficult",
+        "audience": "general",
+        "url": "https://cacm.acm.org/opinion/ai-didnt-make-programming-easier-it-just-made-it-differently-difficult/",
+        "title": "AI Didn't Make Programming Easier. It Just Made It Differently Difficult",
+        "score": 14,
+        "takeaway": "AI 輔助寫程式沒有讓工作變簡單，只是把困難換了一種形式出現。"
+      },
+      {
+        "id": "pulse.lobsters.4:phoronix-amdxdna-npu3",
+        "audience": "both",
+        "url": "https://www.phoronix.com/news/AMDXDNA-NPU3-Enhancements",
+        "title": "AMDXDNA Linux Driver Being Enhanced For Current NPU3 Hardware",
+        "takeaway": "AMDXDNA driver 加強支援 NPU3，補齊 Linux 上 AI 加速器的驅動缺口。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-arc-downcasting-rust",
+        "audience": "general",
+        "url": "https://wolfgirl.dev/blog/2026-09-29-pining-for-arc-downcasting-in-rust/",
+        "title": "Pining for Arc Downcasting in Rust",
+        "score": 25,
+        "takeaway": "Rust 的 Arc downcasting 限制逼工程師改用 trait object 繞路解決。"
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:oschina-manus2",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/502788/manus-2-0",
+        "title": "Manus 2.0 发布：自研框架 Cascade 省 32% 成本，视频编辑器把时间线交到你手上",
+        "takeaway": "Manus 換上自研框架 Cascade，同樣的 Agent 專案跑起來成本直接砍 32%。"
+      },
+      {
+        "id": "pulse.chinese_community.1:oschina-sonnet55-cn",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/502794/claude-sonnet-5-5",
+        "title": "Claude Sonnet 5.5 发布：速度快 3 成、Agent 编程评测从 10% 跳到 70%",
+        "takeaway": "Sonnet 5.5 在 Agent 編程評測從 10% 跳到 70%，升級幅度大到不尋常。"
+      },
+      {
+        "id": "pulse.chinese_community.2:technews-hbm-price2027",
+        "audience": "both",
+        "url": "https://technews.tw/2026/09/29/2027-hbm-price-outlook-revised-upward/",
+        "title": "反映 HBM 供應持續吃緊，上修 2027 年 HBM 價格展望、預估 ASP 年增達 121%",
+        "takeaway": "記憶體供應吃緊讓 2027 年 HBM 均價估上看年增 121%，AI 伺服器成本再墊高。"
+      },
+      {
+        "id": "pulse.chinese_community.3:ithome-itri-bit-to-token",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/179272",
+        "title": "從傳輸資料到支援AI運算，工研院：次世代網路正從Bit走向Token轉型發展",
+        "takeaway": "工研院指出網路設計要從傳輸位元轉向支援 AI 運算的 token，基礎架構得重新設計。"
+      },
+      {
+        "id": "pulse.chinese_community.4:nvidia-sentry-bluefield4",
+        "audience": "both",
+        "url": "https://www.ithome.com.tw/news/179260",
+        "title": "Nvidia替AI代理加入Sentry硬體安全監控，透過BlueField-4隔離越權代理",
+        "takeaway": "Nvidia 用 BlueField-4 把 AI 代理的安全控管拉到硬體層，防止代理越權存取。"
+      },
+      {
+        "id": "pulse.chinese_community.5:oschina-jeff-smallmodel",
+        "audience": "both",
+        "url": "https://www.oschina.net/news/502796",
+        "title": "Jeff 开源发布：22 毫秒出一次决策的小模型、0.8B 微调在 benchmark 上逼近 Jev",
+        "takeaway": "0.8B 小模型 22 毫秒就給出決策，零樣本分類逼近大模型水準，適合邊緣部署。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:simon-willison-claude-sonnet-55",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Sep/28/claude-sonnet-5-5/",
+        "title": "Claude Sonnet 5.5",
+        "takeaway": "Sonnet 5.5 維持原價，速度提升三成、多數任務成本降三成，主打高頻日常任務。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:simon-willison-openai-devday-2026",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Sep/29/openai-devday-2026-live-blog/",
+        "title": "OpenAI DevDay 2026 live blog",
+        "takeaway": "Simon Willison 現場直擊 OpenAI DevDay，第一手記錄主題演講內容與現場反應。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:gary-marcus-openai-warned",
+        "audience": "general",
+        "url": "https://garymarcus.substack.com/p/breaking-openai-was-warned-months",
+        "title": "BREAKING: OpenAI was warned, months before the Hugging Face incident",
+        "takeaway": "紐時揭露 OpenAI 事前已收到警訊，卻沒能阻止代理入侵事故一路擴大。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:latent-space-claude-code-next-era",
+        "audience": "general",
+        "url": "https://www.latent.space/p/thariq",
+        "title": "Claude Code's Next Era — Thariq Shihipar, Anthropic",
+        "takeaway": "Anthropic 產品負責人談 Claude Code 下一階段方向，透露內部路線圖思路。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:sebastian-raschka-bow-to-jev",
+        "audience": "general",
+        "url": "https://magazine.sebastianraschka.com/p/classifier-history-and-jev",
+        "title": "Language Models for Text Classification: From Bag-of-Words to Jev",
+        "takeaway": "Sebastian Raschka 梳理文字分類模型演進史，把爆紅的 Jev 放進技術脈絡裡評價。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:ithome-a1f92e3c",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/179256",
+        "title": "AMD斥資82億美元併購李飛飛創辦的World Labs，布局空間智慧AI",
+        "takeaway": "AMD 收購 World Labs 補上空間智慧與世界模型技術，正面對決 NVIDIA 的 physical AI 布局。",
+        "amount": "US$8.2B（全股票交易）",
+        "companies": [
+          "AMD",
+          "World Labs"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.ma.1:techorange-7b3d1a4f",
+        "audience": "general",
+        "url": "https://techorange.com/2026/09/29/qualcomm-to-acquire-picknik/",
+        "title": "AI 機器人平台戰從晶片打到開源生態，高通買下 PickNik 背後在爭什麼？",
+        "takeaway": "高通併購開源框架 MoveIt 背後的 PickNik，卡位機器人開發者工具鏈與部署平台。",
+        "amount": null,
+        "companies": [
+          "Qualcomm",
+          "PickNik Robotics"
+        ],
+        "region": "us"
+      }
+    ],
+    "funding": [
+      {
+        "id": "market.funding.0:ithome-4c8e21b7",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/179209",
+        "title": "MIND募資7,200萬美元，以AI代理強化企業資料外洩防護",
+        "takeaway": "DLP新創MIND累計募資達1.12億美元，靠AI代理抓資料外洩，年營收成長逾17倍。",
+        "amount": "US$72M（B輪）",
+        "companies": [
+          "MIND"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.funding.1:ithome-9d0f6a52",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/179203",
+        "title": "Cyera今年募資達14億美元，擴展AI代理與非人類身分安全",
+        "takeaway": "Cyera 追加獲高盛投資4億美元，估值上看120億美元，加碼AI代理與非人類身分安全防護。",
+        "amount": "US$400M（Series G 追加投資）",
+        "companies": [
+          "Cyera",
+          "Goldman Sachs Alternatives"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.2:technews-tw-2e7c489a",
+        "audience": "both",
+        "url": "https://technews.tw/2026/09/29/2027-hbm-price-outlook-revised-upward/",
+        "title": "反映 HBM 供應持續吃緊，上修 2027 年 HBM 價格展望、預估 ASP 年增達 121%",
+        "takeaway": "TrendForce 預估2027年HBM ASP年增上看121%，反映供應吃緊將持續推高AI伺服器成本。",
+        "amount": null,
+        "companies": [
+          "TrendForce"
+        ],
+        "region": "global"
+      },
+      {
+        "id": "market.funding.3:technews-tw-61b3fd08",
+        "audience": "general",
+        "url": "https://technews.tw/2026/09/29/instinct-valuation-tops-10-billion/",
+        "title": "Muse 對手？AI 代理新創 Instinct 估值破百億美元",
+        "takeaway": "AI代理新創 Instinct 估值衝破百億美元，直接對打 Meta Muse 的個人助理市場。",
+        "amount": "US$10B+（估值）",
+        "companies": [
+          "Instinct"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.4:techcrunch-venture-f4a0c3e9",
+        "audience": "general",
+        "url": "https://techcrunch.com/2026/09/29/a16z-backed-eliseai-raises-350m-doubles-valuation-to-4b/",
+        "title": "a16z-backed EliseAI raises $350M, doubles valuation to $4B",
+        "takeaway": "EliseAI 一年內估值翻倍至40億美元，AI客服代理在地產管理領域快速滲透。",
+        "amount": "US$350M",
+        "companies": [
+          "EliseAI",
+          "a16z"
+        ],
+        "region": "us"
+      }
+    ],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:mops-6669-20260929",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=6669",
+        "title": "緯穎智造台南廠租賃改良、路竹廠建築改良 逾3.18億元",
+        "takeaway": "緯穎旗下子公司加碼台南、路竹廠務改良，反映AI伺服器產能持續擴充。",
+        "amount": "NT$318.4M",
+        "companies": [
+          "緯穎",
+          "緯創"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:mops-3711-20260929",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=3711",
+        "title": "日月光新加坡子公司斥資逾21億元購廠房，擴充封測產能",
+        "takeaway": "日月光新加坡廠擴產逾21億元，因應先進封裝訂單成長需求。",
+        "amount": "US$68.4M（約NT$21.5億）",
+        "companies": [
+          "日月光投控"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:mops-2330-20260929",
+        "audience": "general",
+        "url": "https://mops.twse.com.tw/mops/web/t05st01?co_id=2330",
+        "title": "台積電公告115年第三季法人說明會將於10月15日召開",
+        "takeaway": "台積電將於10月15日法說會公布Q3財報與Q4展望，市場關注AI需求是否延續。",
+        "amount": null,
+        "companies": [
+          "台積電"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:money-udn-tech-3a6b8f21",
+        "audience": "general",
+        "url": "https://money.udn.com/money/story/5612/9784121",
+        "title": "亞馬遜首度參與金像電私募 斥資近16億",
+        "takeaway": "亞馬遜直接入股AI伺服器PCB廠金像電，雙方關係從供應鏈夥伴升級為戰略同盟。",
+        "amount": "NT$1.588B（約US$52M）",
+        "companies": [
+          "Amazon",
+          "金像電"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:money-udn-tech-c9e21d47",
+        "audience": "general",
+        "url": "https://money.udn.com/money/story/5612/9784608",
+        "title": "宏達電有喜！合作夥伴 World Labs 被超微以2,600億元併購 躋身盟友",
+        "takeaway": "AMD併購World Labs，唯一台廠合作夥伴宏達電有望藉此切入AI空間運算供應鏈。",
+        "amount": "NT$260B（約US$8.2B）",
+        "companies": [
+          "宏達電",
+          "AMD",
+          "World Labs"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.5:technews-tw-88f3a06d",
+        "audience": "general",
+        "url": "https://finance.technews.tw/2026/09/29/taiwans-three-major-science-parks-achieved-a-combined-revenue-exceeding-nt3-5-trillion-in-the-first-half-of-2026/",
+        "title": "AI 狂潮席捲！台灣三大科學園區 2026 上半年總營收破 3.5 兆創歷年同期新高",
+        "takeaway": "AI與HPC需求帶動台灣三大科學園區上半年營收創同期新高，突破3.5兆元。",
+        "amount": "NT$3.5T（上半年營收）",
+        "companies": [
+          "竹科",
+          "中科",
+          "南科"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.6:money-udn-tech-d5b7e930",
+        "audience": "general",
+        "url": "https://money.udn.com/money/story/5612/9784047",
+        "title": "傳台積電擬赴德州設第2園區　吳誠文：根留台灣不會改變",
+        "takeaway": "台積電傳規劃德州第2園區增設6座先進晶圓廠，國科會強調根留台灣立場不變。",
+        "amount": null,
+        "companies": [
+          "台積電",
+          "國科會"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.7:money-udn-tech-1f4c9a83",
+        "audience": "both",
+        "url": "https://money.udn.com/money/story/5612/9784036",
+        "title": "外資連2賣再砍632億　減碼台積電反手敲進南亞逾3萬張",
+        "takeaway": "外資連兩日賣超台股，減碼台積電轉買超記憶體廠南亞科逾3萬張，資金轉向記憶體股。",
+        "amount": "NT$78.186億（三大法人賣超）",
+        "companies": [
+          "台積電",
+          "南亞科"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:Comfy-Org/ComfyUI",
+        "audience": "both",
+        "url": "https://github.com/Comfy-Org/ComfyUI/releases/tag/v0.38.0",
+        "title": "v0.38.0",
+        "takeaway": "改善 Qwen Image 2.1 的 KV-cache 存放邏輯並編譯 transformer block，加快推論。",
+        "companies": [
+          "ComfyUI"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:leejet/stable-diffusion.cpp",
+        "audience": "both",
+        "url": "https://github.com/leejet/stable-diffusion.cpp/commit/3f8527a46c54ecf4cb4ed6003da8e8982283c73c",
+        "title": "feat: enable hip INT8 tensorwise matmul and convrot (#2071)",
+        "takeaway": "HIP 後端補上 INT8 量化 matmul，AMD 顯卡也能跑量化過的影像模型。",
+        "companies": [
+          "stable-diffusion.cpp"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:leejet/stable-diffusion.cpp",
+        "audience": "general",
+        "url": "https://github.com/leejet/stable-diffusion.cpp/commit/f8890b9db34a96d5c516382914971f4b4b92d402",
+        "title": "feat: add Ming-Image Design support (#2063)",
+        "takeaway": "stable-diffusion.cpp 支援 Ming-Image Design，多一個能在本機跑的影像模型。",
+        "companies": [
+          "stable-diffusion.cpp"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:openai-7c39a1e8",
+        "audience": "general",
+        "url": "https://openai.com/index/introducing-gpt-6-1-sol",
+        "title": "Introducing GPT-6.1 Sol",
+        "takeaway": "GPT-6.1 Sol 用 Astra 五分之一的價格，提供接近的程式與電腦操作能力。",
+        "companies": [
+          "OpenAI"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:rocm-blog-b2f6d094",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/verl_0.9.0_rocm7.15/README.html",
+        "title": "Verl 0.9.0 on ROCm™ 10.0: Next-Generation RL Post-Training on AMD Instinct™ GPUs",
+        "takeaway": "verl 0.9.0 搭上 ROCm 10.0，AMD Instinct GPU 有了新一代 RL 後訓練流程。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.5:aws-ml-blog-44ad871c",
+        "audience": "general",
+        "url": "https://aws.amazon.com/blogs/machine-learning/generate-images-and-video-with-vllm-omni-on-sagemaker-ai-part-2/",
+        "title": "Generate images and video with vLLM-Omni on SageMaker AI – Part 2",
+        "takeaway": "SageMaker 用同一個 vLLM-Omni 容器部署兩個端點，一次串起圖片生成和影片生成。",
+        "companies": [
+          "AWS"
+        ]
+      },
+      {
+        "id": "tech.vendor.6:reddit-stablediffusion-9e0c5b7a",
+        "audience": "general",
+        "url": "https://www.reddit.com/r/StableDiffusion/comments/1wsb4h3/minimax_h3_ref_fizgig_nodes_as_sota_ref2img/",
+        "title": "MiniMax H3 REF + Fizgig Nodes: As SOTA (Ref2Img \\ Img2Img) True Image Editing Model, Native 4096x1536 in 1 Minute, WF + Prompt for Every Example.",
+        "takeaway": "5060 Ti 16GB 用 H3 REF 跑出 4096x1536、18 步 1 分鐘內完成的圖片編輯。",
+        "companies": [
+          "MiniMax"
+        ]
+      },
+      {
+        "id": "tech.vendor.7:reddit-stablediffusion-f3170ad6",
+        "audience": "general",
+        "url": "https://www.reddit.com/r/StableDiffusion/comments/1wtdpag/reservevram_2_vramheadroom_1_for_stable_comfyui/",
+        "title": "\"--reserve-vram 2 --vram-headroom 1\" for stable ComfyUI",
+        "takeaway": "設定 --reserve-vram 2 --vram-headroom 1，能解決 ComfyUI 執行中當機的問題。",
+        "companies": [
+          "ComfyUI"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:hf-lightricks-ltx-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "Lightricks/LTX-2.5",
+        "takeaway": "LTX-2.5 開源釋出，同一套模型涵蓋文字轉影片、影像轉影片與音訊轉影片。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.1:hf-qwen-qwen-image-2.1",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen-Image-2.1",
+        "title": "Qwen/Qwen-Image-2.1",
+        "takeaway": "Qwen-Image-2.1 開源釋出，新增 RGBA 透明背景輸出與圖片編輯能力。",
+        "companies": [
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.2:hf-qwen-qwen3.8-27b",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Qwen/Qwen3.8-27B",
+        "takeaway": "Qwen3.8-27B 開源釋出，27B 視覺語言模型下載量已破 700 萬次。",
+        "companies": [
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.3:hf-prism-ml-ternary-bonsai-2-27b-gguf",
+        "audience": "both",
+        "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "title": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+        "takeaway": "用 2-bit 三元量化壓縮 Qwen3.8-27B，讓 27B 模型能在裝置端本機推論。",
+        "companies": [
+          "prism-ml"
+        ]
+      },
+      {
+        "id": "tech.models.4:hf-nvidia-nemotron-3-diarization",
+        "audience": "general",
+        "url": "https://huggingface.co/nvidia/Nemotron-3-Diarization",
+        "title": "nvidia/Nemotron-3-Diarization",
+        "takeaway": "NVIDIA 釋出 Nemotron-3 語者分離模型，支援串流即時辨識誰在說話。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.models.5:hf-viggle-qwen-image-2.1-viggle-turbo",
+        "audience": "general",
+        "url": "https://huggingface.co/Viggle/Qwen-Image-2.1-viggle-turbo",
+        "title": "Viggle/Qwen-Image-2.1-viggle-turbo",
+        "takeaway": "Qwen-Image-2.1 的 turbo LoRA 用 DMD 蒸餾，幾步內即可完成生成。",
+        "companies": [
+          "Viggle"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2-bench-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 climbs from #10 to #2",
+        "takeaway": "GPT-5.2 在 tau2-bench 排名從第 10 衝到第 2，工具呼叫能力明顯提升。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:sk-hynix-news-b41f0a92",
+        "audience": "both",
+        "url": "https://news.skhynix.com/en/tsmc-oip-conference-2026/",
+        "title": "“Behind AI’s Rapid Growth Lies Memory” — SK hynix Shares Its Next-Generation Memory Portfolio at the TSMC OIP Conference",
+        "takeaway": "SK hynix 在 TSMC OIP 大會展示下世代記憶體藍圖，回應 AI 對頻寬的需求。",
+        "companies": [
+          "SK Hynix"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.1:LMCache/LMCache",
+        "audience": "work",
+        "url": "https://github.com/LMCache/LMCache/releases/tag/v0.5.6rc1",
+        "title": "v0.5.6rc1",
+        "takeaway": "LMCache v0.5.6rc1 加入 preemption 機制，KV cache 排程能搶先讓出記憶體資源。",
+        "companies": [
+          "LMCache"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.2:arxiv-2609.35750",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2609.35750v1",
+        "title": "KV-streams for Efficient Compaction in Agentic Reinforcement Learning",
+        "takeaway": "研究提出 KV-streams 壓縮法，讓 agent 訓練不用重複 prefill 整段對話紀錄。",
+        "companies": []
+      },
+      {
+        "id": "tech.aidaptiv.3:arxiv-2609.35629",
+        "audience": "work",
+        "url": "https://arxiv.org/abs/2609.35629v1",
+        "title": "SANTA++: Sampling Attention through Representative Keys",
+        "takeaway": "SANTA++ 用代表性 key 抽樣做稀疏注意力，不用整個掃過 KV cache 就能推論。",
+        "companies": []
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": false,
+    "report_date": "2026-09-30",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "temporal",
+        "marker": "今日",
+        "ids": [
+          "tech.aidaptiv.1:LMCache/LMCache"
+        ]
+      }
+    ],
+    "repaired": 1
+  }
+}
