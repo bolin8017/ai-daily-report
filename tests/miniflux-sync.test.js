@@ -35,6 +35,78 @@ describe('planMinifluxSync', () => {
     ]);
   });
 
+  // The fastvideo feed existed before its rule did, so creation-time attributes
+  // alone would never reach it: the rule must be reconciled on existing feeds.
+  describe('block_filter_entry_rules reconcile', () => {
+    const rule = 'EntryTitle=(?i)^\\[bugfix\\]';
+    const cats = [{ id: 1, title: 'tech' }];
+    const want = [
+      { id: 'fv', url: 'https://fv.com/feed', category: 'tech', blockFilterEntryRules: rule },
+    ];
+
+    it('carries the rule into the create plan for a new feed', () => {
+      const plan = planMinifluxSync({
+        opmlFeeds: want,
+        existingFeeds: [],
+        existingCategories: cats,
+      });
+      expect(plan.createFeeds[0].blockFilterEntryRules).toBe(rule);
+      expect(plan.updateFeeds).toEqual([]);
+    });
+
+    it('plans an update when an existing feed lacks the rule', () => {
+      const plan = planMinifluxSync({
+        opmlFeeds: want,
+        existingFeeds: [{ id: 45, feed_url: 'https://fv.com/feed/', block_filter_entry_rules: '' }],
+        existingCategories: cats,
+      });
+      expect(plan.createFeeds).toEqual([]);
+      expect(plan.updateFeeds).toEqual([{ id: 45, source: 'fv', block_filter_entry_rules: rule }]);
+    });
+
+    it('is a no-op once the existing feed carries the same rule', () => {
+      const plan = planMinifluxSync({
+        opmlFeeds: want,
+        existingFeeds: [
+          { id: 45, feed_url: 'https://fv.com/feed', block_filter_entry_rules: rule },
+        ],
+        existingCategories: cats,
+      });
+      expect(plan.updateFeeds).toEqual([]);
+    });
+
+    it('clears a rule the OPML no longer declares', () => {
+      const plan = planMinifluxSync({
+        opmlFeeds: [{ id: 'fv', url: 'https://fv.com/feed', category: 'tech' }],
+        existingFeeds: [
+          { id: 45, feed_url: 'https://fv.com/feed', block_filter_entry_rules: rule },
+        ],
+        existingCategories: cats,
+      });
+      expect(plan.updateFeeds).toEqual([{ id: 45, source: 'fv', block_filter_entry_rules: '' }]);
+    });
+
+    it('reaches a redirected feed through its source-id title', () => {
+      const plan = planMinifluxSync({
+        opmlFeeds: want,
+        existingFeeds: [
+          { id: 46, feed_url: 'https://moved.com/feed', title: 'fv', block_filter_entry_rules: '' },
+        ],
+        existingCategories: cats,
+      });
+      expect(plan.updateFeeds).toEqual([{ id: 46, source: 'fv', block_filter_entry_rules: rule }]);
+    });
+
+    it('treats a missing field (older Miniflux) as no rule', () => {
+      const plan = planMinifluxSync({
+        opmlFeeds: [{ id: 'fv', url: 'https://fv.com/feed', category: 'tech' }],
+        existingFeeds: [{ id: 45, feed_url: 'https://fv.com/feed' }],
+        existingCategories: cats,
+      });
+      expect(plan.updateFeeds).toEqual([]);
+    });
+  });
+
   it('is a no-op when everything already exists (idempotent)', () => {
     const plan = planMinifluxSync({
       opmlFeeds: opml,
@@ -46,6 +118,7 @@ describe('planMinifluxSync', () => {
     });
     expect(plan.createCategories).toEqual([]);
     expect(plan.createFeeds).toEqual([]);
+    expect(plan.updateFeeds).toEqual([]);
   });
 
   it('reports extra feeds in Miniflux not present in OPML (no auto-delete)', () => {

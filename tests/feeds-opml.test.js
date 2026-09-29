@@ -29,6 +29,16 @@ describe('parseOpml', () => {
     expect(feeds[0].userAgent).toBe('Mozilla/5.0 (X11; Linux x86_64)');
   });
 
+  it('carries a per-feed blockFilterEntryRules, decoding XML entities', () => {
+    const xml = [
+      '<opml><body>',
+      '<outline text="fv" xmlUrl="https://fv.com/feed" category="tech" blockFilterEntryRules="EntryTitle=(?i)^\\[fix\\]|a &amp; b"/>',
+      '</body></opml>',
+    ].join('');
+    expect(parseOpml(xml)[0].blockFilterEntryRules).toBe('EntryTitle=(?i)^\\[fix\\]|a & b');
+    expect(parseOpml(SAMPLE)[0].blockFilterEntryRules).toBeUndefined();
+  });
+
   it('leaves userAgent undefined for feeds that do not need one', () => {
     expect(parseOpml(SAMPLE)[0].userAgent).toBeUndefined();
   });

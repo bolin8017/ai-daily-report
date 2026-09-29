@@ -23,12 +23,27 @@ function homepageFromFeed(feedUrl) {
   return u;
 }
 
-export function rssWithCloudFallback({ url, sourceName, category, homepageUrl, userAgent }) {
+export function rssWithCloudFallback({
+  url,
+  sourceName,
+  category,
+  homepageUrl,
+  userAgent,
+  blockFilterEntryRules,
+}) {
   const page = homepageUrl ?? homepageFromFeed(url);
   return [
     {
       provider: 'native-rss',
-      config: { url, sourceName, category, ...(userAgent ? { userAgent } : {}) },
+      config: {
+        url,
+        sourceName,
+        category,
+        ...(userAgent ? { userAgent } : {}),
+        // Miniflux-only: gen-feeds-opml carries it to the feed's
+        // block_filter_entry_rules. The in-repo native-rss provider ignores it.
+        ...(blockFilterEntryRules ? { blockFilterEntryRules } : {}),
+      },
     },
     { provider: 'jina-reader', config: { url: page, sourceName, category } },
     { provider: 'firecrawl', config: { url: page, sourceName, category } },

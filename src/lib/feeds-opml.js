@@ -27,6 +27,11 @@ export function parseOpml(xml) {
       // Non-standard OPML attribute: the UA Miniflux must send for hosts that
       // serve the feed only to a browser (Reddit 403s anything else).
       ...(attrs.userAgent ? { userAgent: attrs.userAgent } : {}),
+      // Non-standard OPML attribute: Miniflux block_filter_entry_rules (one
+      // `Field=regex` rule per line) that drop entries before they are stored.
+      ...(attrs.blockFilterEntryRules
+        ? { blockFilterEntryRules: attrs.blockFilterEntryRules }
+        : {}),
     });
   }
   return feeds;

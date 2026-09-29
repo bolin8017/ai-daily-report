@@ -65,6 +65,7 @@ async function main() {
           // Miniflux's own UA is 403'd by Reddit; without this the feed is
           // created and then never returns an entry.
           ...(f.userAgent ? { user_agent: f.userAgent } : {}),
+          ...(f.blockFilterEntryRules ? { block_filter_entry_rules: f.blockFilterEntryRules } : {}),
         }),
       });
       // Tag with the registry source id (the fetcher reads it back via feed.title).
@@ -87,12 +88,29 @@ async function main() {
     }
   }
 
+  let updated = 0;
+  for (const f of plan.updateFeeds) {
+    try {
+      await api(`/v1/feeds/${f.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ block_filter_entry_rules: f.block_filter_entry_rules }),
+      });
+      updated++;
+      console.error(
+        `~ feed ${f.source}: block_filter_entry_rules = ${JSON.stringify(f.block_filter_entry_rules)}`,
+      );
+    } catch (e) {
+      failures.push({ url: f.source, error: e.message });
+      console.error(`! FAILED update ${f.source}: ${e.message}`);
+    }
+  }
+
   if (plan.orphanFeeds.length) {
     console.error(`! ${plan.orphanFeeds.length} feed(s) in Miniflux not in OPML (left as-is):`);
     for (const u of plan.orphanFeeds) console.error(`  - ${u}`);
   }
   console.error(
-    `done: +${plan.createCategories.length} categories, +${created} feeds, ${failures.length} failed`,
+    `done: +${plan.createCategories.length} categories, +${created} feeds, ~${updated} updated, ${failures.length} failed`,
   );
   // Partial provisioning failure must not exit 0 (unc-4, 2026-07-22 review):
   // an operator chaining `miniflux-sync && ...` would proceed as if every feed

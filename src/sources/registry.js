@@ -269,6 +269,14 @@ export default [
       homepageUrl: 'https://github.com/NVlabs/Sana',
     },
   ),
+  // FastVideo tags every commit title with a bracket prefix. Measured
+  // 2026-09-29 on the last 100 commits: [bugfix] 30, [perf] 24, [feat] 18,
+  // [docs] 9, [kernel] 4, [refactor] 3, [misc] 3, [ci] 3, [chore] 2, none 4.
+  // A blocklist rather than an allowlist of [feat]/[perf]/[kernel], because the
+  // unprefixed and [misc] titles include real features ("Add H3 support into
+  // Dreamverse", "[misc] ... H3 Ref2V support"). The rule drops 48 of the 100
+  // (fixes, docs, CI, chores, refactors, merge commits) and keeps 52. Miniflux
+  // applies it when it fetches, so the tech curator never sees the dropped ones.
   rss(
     'fastvideo-commits',
     'FastVideo Commits',
@@ -276,6 +284,8 @@ export default [
     'https://github.com/hao-ai-lab/FastVideo/commits/main.atom',
     {
       homepageUrl: 'https://github.com/hao-ai-lab/FastVideo',
+      blockFilterEntryRules:
+        'EntryTitle=(?i)^\\s*(\\[(bugfix|fix|ci|docs|test|tests|chore|refactor)\\]|merge )',
     },
   ),
   // NVIDIA's own video/world model line. cosmos-predict2.5 is deliberately not
