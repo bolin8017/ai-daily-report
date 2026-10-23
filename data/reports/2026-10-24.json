@@ -1,0 +1,1086 @@
+{
+  "schema_version": 2.1,
+  "date": "2026-10-24",
+  "meta": {
+    "run_id": "3e5da8b6-c111-4b4c-93ae-91498a41fc5a",
+    "pipeline_version": "aaff1f5",
+    "model": "claude-opus-5",
+    "generated_at": "2026-10-23T23:16:27.272Z",
+    "source_health": {
+      "feeds": {
+        "ok": true,
+        "count": 5233
+      },
+      "trending": {
+        "ok": true,
+        "count": 8
+      },
+      "search": {
+        "ok": true,
+        "count": 345
+      },
+      "developers": {
+        "ok": true,
+        "count": 15
+      },
+      "leaderboards": {
+        "ok": true,
+        "count": 2
+      },
+      "mops": {
+        "ok": true,
+        "count": 1
+      },
+      "hf_trending": {
+        "ok": true,
+        "count": 20
+      },
+      "arxiv": {
+        "ok": true,
+        "count": 30
+      }
+    },
+    "feeds_sections": {
+      "pulse": 242,
+      "market": 218,
+      "tech": 198,
+      "shipped": 48
+    },
+    "degraded_sources": [
+      "leaderboard-epoch-hle",
+      "leaderboard-lmarena",
+      "miniflux-feeds (1/49 unhealthy: segmentfault erroring)"
+    ],
+    "stages": {
+      "curate.discoveries": {
+        "cost_usd": 0.538628,
+        "duration_ms": 300548,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 27397,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 65993,
+        "is_error": false,
+        "session_id": "41b375f7-609c-48ab-b272-fbb1c08435c8"
+      },
+      "faithfulness": {
+        "cost_usd": 0.0816984,
+        "duration_ms": 32521,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 2938,
+        "cache_read_tokens": 8532,
+        "cache_creation_tokens": 12652,
+        "is_error": false,
+        "session_id": "00dfb787-e8fe-4207-89c2-fb4a8c53615f"
+      },
+      "curate.market": {
+        "cost_usd": 0.526644,
+        "duration_ms": 229074,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 20513,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 80207,
+        "is_error": false,
+        "session_id": "a6ed1cb9-5279-4f12-8714-387123b77819"
+      },
+      "curate.pulse": {
+        "cost_usd": 0.501386,
+        "duration_ms": 248831,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 23536,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 66335,
+        "is_error": false,
+        "session_id": "0615e8d4-0596-40e1-a94f-8cec5dd01412"
+      },
+      "synthesize": {
+        "cost_usd": 1.19259,
+        "duration_ms": 332037,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 22642,
+        "cache_read_tokens": 0,
+        "cache_creation_tokens": 62653,
+        "is_error": false,
+        "session_id": "49d0c655-618b-4ab3-a161-a92e027963a6"
+      },
+      "curate.tech": {
+        "cost_usd": 0.734462,
+        "duration_ms": 445069,
+        "num_turns": 1,
+        "input_tokens": 2,
+        "output_tokens": 44786,
+        "cache_read_tokens": 3410,
+        "cache_creation_tokens": 71479,
+        "is_error": false,
+        "session_id": "4c27792a-df8b-4f94-b4be-7d729050dfde"
+      }
+    },
+    "total_cost_usd": 3.5754083999999997,
+    "total_tokens": 141824,
+    "confidence": {
+      "band": "reliable",
+      "citation_coverage": 1,
+      "cited_signals": "6/6",
+      "unique_domains": 36,
+      "source_tier": 0.027777777777777776
+    },
+    "lint": {
+      "findings": [],
+      "counts": {}
+    }
+  },
+  "lead": {
+    "html": "<h3>2026-10-24 — 今日重點</h3><h4>開源影片與圖像模型下載破百萬，程式那端全在砍成本</h4><p>LTX-2.5 在 Hugging Face 累積 202 萬次下載，Comfy-Org 版 MOSS-Image 160 萬次，Qwen-Image-2.1 的量化版 240 萬次。但這幾天真正動到程式的事情沒有一件跟品質有關：stable-diffusion.cpp 讓 Wan2.2 TI2V 5B 改用分組時序解碼來壓記憶體與延遲，另一筆 commit 更新 ggml 修掉 SageAttention 在舊卡的編譯問題，FastVideo 在快取 MLX 上的文字特徵，Reddit 有人實測 3090 Ti 解鎖核心限制後 ComfyUI 吞吐量最高多 59%。我的判讀是下載量已經跑在消費級硬體前面，所以進展全部落在 VRAM 峰值與注意力算力這兩條線上。</p><h4>多 agent 同時寫同一份 repo，缺的是執行當下的權限層</h4><p>celador/weft 只有 43 顆星，做的事是在編輯當下就擋住多個 agent 互踩並給出診斷，不等開 PR 才發現衝突；tunr-dev/tunr 101 顆星，把 agent 碰客戶內部資料的方式限成限時、唯讀、需核准、留稽核記錄。HN 這邊 Omnara 以開源版 Claude Managed Agents 拿 111 分，agent-usage-guard 這個盯住 Claude Code 用量上限的 mod 拿 26 分，都是使用者自己補官方沒給的控制面。財政部那邊把稅務場景的代理式 AI 定調成要「能管、值得做、控得住」才准上，走的是同一條路徑。</p><h4>推論省法三層並進，但收益不跟著硬體走</h4><p>AWS 跟 i14 把 Laplace 3B 的線性注意力搬上 Trainium2，整個省掉 KV cache；arXiv 上 BeNice! 處理迴圈式架構每次遞迴都生一份獨立 KV cache、記憶體隨深度線性長的問題，用跨層共享砍掉重複；輸出端則有人拿 Gemma-4-26B-A4B 做到同準確率下思考 token 少 39% 到 69%。SK 海力士的說法替這幾條線補上背景：AI 推論與 agent 工作負載讓記憶體頻寬的需求超過算力本身。但另一篇評估 Apple Silicon 的論文指出，KV cache 修剪、投機解碼這些在 server 級 NVIDIA GPU 上驗出來的優化，換平台後效果不一定延續。</p><h4>記憶體供給側在卡下一代位置，不是在擴產</h4><p>美光跳過原定的一代 NAND 直接押下一代，SK 海力士放棄 Solidigm 赴美 IPO 的評估、把原本上看 150 億美元的募資改成內部資金撐美國新廠，NVIDIA 則把記憶體控制器搬進 HBM base die，重劃晶片與記憶體的分工。需求端兩個訊號同向：黃仁勳判斷 2029 年前記憶體難過剩，EE Times 的分析預估 DRAM 吃緊可能延續到 2027 年。對做 aiDAPTIV+ 這類「用 SSD 補 DRAM」題目的人，供給端肯這樣押，意思是這個題目的有效期按年算，不是按季。</p>"
+  },
+  "signals": {
+    "focus": [
+      {
+        "id": "focus-video-cost-floor",
+        "title": "開源影片與圖像模型下載破百萬，工程力氣全在砍記憶體",
+        "body": "LTX-2.5 在 Hugging Face 累積 202 萬次下載，Comfy-Org 版 MOSS-Image 160 萬次，Qwen-Image-2.1 的量化版 240 萬次，數字都在百萬級。但同一批來源裡動到程式的事情全是成本：stable-diffusion.cpp 讓 Wan2.2 TI2V 5B 改用分組時序解碼壓記憶體與延遲，另一筆 commit 更新 ggml 修掉 SageAttention 在舊卡的編譯問題，FastVideo 在快取 MLX 上的文字特徵，Reddit 有人實測 3090 Ti 解鎖核心限制後 ComfyUI 吞吐量最高多 59%。AMD 的 ROCm 部落格也指出 World Action Model 最貴的那塊是影片骨幹的推論，整篇在示範怎麼砍掉那段算力。沒有一筆是在追生成品質。",
+        "mechanism": "權重的下載門檻只有頻寬，執行門檻是 VRAM 峰值與注意力的算力。權重一旦免費，瓶頸就整個移到後者，工程力氣因此集中在解碼排程、注意力 kernel 與舊硬體支援這幾件事上。這也解釋了為什麼「修舊卡編譯」這種看起來瑣碎的 commit 會跟百萬下載同時出現：能跑得動的機器數量才是現在的限制條件。",
+        "evidence": "技術分頁六個項目同向，sd.cpp 兩筆、FastVideo、Reddit 實測來源年齡都是 1 天，ROCm 那篇 3 天，都落在同一週內。",
+        "cross_source": 6,
+        "product_opportunity": "把你 DiT 流程的記憶體峰值做成基準再談優化：固定一組 prompt 與 seed，分別在開啟與關閉 SageAttention、以及有無分組時序解碼的情況下各跑一次，把峰值 VRAM（GB）與單張延遲（秒）寫進 repo 裡的一個檔案。之後每次 kernel 更新重跑同一組，就分得清省下來的是真的，還是 release note 寫爽的。",
+        "source_links": [
+          "tech.models.0:hf-ltx-2.5",
+          "tech.models.4:hf-moss-image-sft",
+          "tech.vendor.1:sdcpp-40b17884",
+          "tech.vendor.4:sdcpp-95ff7623",
+          "tech.vendor.2:fastvideo-8db2d71e",
+          "tech.vendor.5:reddit-stablediffusion-1xdoh8k",
+          "tech.vendor.3:rocm-blog-faster-a"
+        ]
+      },
+      {
+        "id": "focus-agent-runtime-enforcement",
+        "title": "工具正長在 agent 的執行當下，而不是 prompt 裡",
+        "body": "celador/weft 只有 43 顆星，做的事是在編輯當下就擋住多個 agent 互踩並給出診斷，不等開 PR 才發現衝突。tunr-dev/tunr 101 顆星，把 agent 碰客戶內部資料限成限時、唯讀、需核准、留稽核記錄。HN 上 Omnara 以開源版 Claude Managed Agents 拿 111 分，agent-usage-guard 這個盯 Claude Code 用量上限的 mod 拿 26 分，兩個都是使用者自己補官方沒給的控制面。Meta 的 AmbiGUI 從另一端切進來，專門測 GUI agent 碰到指令不完整時會不會先問清楚。財政部這邊把稅務場景的代理式 AI 定調成要「能管、值得做、控得住」才准上。",
+        "mechanism": "agent 從一個人配一個工具，變成多個 agent 同時寫同一份 repo、同時讀同一批內部資料，衝突與越權就從偶發變成常態。模型的對齊訓練管不到這一層：它決定 agent 想做什麼，不決定 agent 在這個 repo、這張資料表、這個時段被允許做什麼。要擋就得擋在呼叫發生的那一刻，所以這些工具會長在編輯器、檔案系統與資料存取介面上，那是 agent 真的碰得到的位置。",
+        "evidence": "發現與社群脈動共六個項目同向；HN 兩項來源年齡 2 到 3 天，財政部那則 1 天，兩個 GitHub 專案都還在三位數以下的星數。",
+        "cross_source": 6,
+        "product_opportunity": "在你的 agent 工具層補三件事，今天就動得了手：工具呼叫帶到期時間、寫入類操作先落到暫存分支等人核准、每次呼叫寫一行可追的 log（誰、什麼時間、碰了哪個路徑）。weft 跟 tunr 的原始碼可以直接讀來抄介面設計，它們的介面還沒定案，現在跟著改比之後補便宜。",
+        "source_links": [
+          "discoveries.rising.1:celador/weft",
+          "discoveries.rising.2:tunr-dev/tunr",
+          "discoveries.dev_watch.0:facebookresearch/AmbiGUI",
+          "pulse.hn.3:hn-omnara",
+          "pulse.hn.7:hn-agentusageguard",
+          "market.taiwan.7:ithome-4e8b1c73"
+        ]
+      },
+      {
+        "id": "focus-inference-savings-nonportable",
+        "title": "推論省法分三層並進，收益卻不跟著硬體走",
+        "body": "AWS 跟 i14 把 Laplace 3B 的線性注意力搬上 Trainium2，用原生 PyTorch 整個省掉 KV cache。arXiv 上 BeNice! 處理另一塊：迴圈式架構每次遞迴都生一份獨立 KV cache，記憶體隨深度線性長，它用跨層共享砍掉這份重複。輸出那一端，有人拿 Gemma-4-26B-A4B 做到同準確率下思考 token 少 39% 到 69%。SK 海力士替這幾條線補上背景，指出 AI 推論與 agent 工作負載讓記憶體頻寬的需求超過算力本身。另一篇評估 Apple Silicon 的論文則給了反面量測：KV cache 修剪、投機解碼這些在 server 級 NVIDIA GPU 上驗出來的優化，搬過去效果不一定延續。",
+        "mechanism": "這三層省的是同一樣東西，每產生一個 token 要搬多少位元組。架構層讓 cache 從存在變成不存在，cache 層讓它不要隨深度複製，輸出層直接少產幾個 token。至於為什麼換平台就失效，我的推論是每種省法都預設了一個特定的受限資源：server GPU 上通常是算力與 HBM 容量，筆電或用 SSD 補 DRAM 的場景受限的是搬運頻寬，預設一換，省法的排序就換。這段歸因是推測，Apple Silicon 那篇只給了「效果不一定延續」的量測結果，沒有逐項說明是哪個環節失效。",
+        "evidence": "技術分頁五個項目指向同一條機制；兩篇 arXiv 的來源年齡 2 天，SK 海力士那篇 2 天，AWS 那篇 4 天，Gemma 那篇 1 天。兩篇 arXiv 的公告時間相同只是 arXiv 批次公告的結果，不構成同日成果。",
+        "cross_source": 5,
+        "product_opportunity": "別把別人 benchmark 上的省法直接搬進你要出貨的硬體。挑 KV cache 修剪與投機解碼各做一次 A/B，在真正要交付的那台機器上量 token/s 與記憶體峰值兩個數字；aiDAPTIV+ 這種把權重搬去 SSD 的路線更要自己量，因為頻寬受限時哪一項先碰到天花板，只有量過才算數。",
+        "source_links": [
+          "tech.vendor.0:aws-ml-blog-beyond-t",
+          "tech.aidaptiv.0:arxiv-2610.31633",
+          "tech.aidaptiv.1:arxiv-2610.31479",
+          "tech.aidaptiv.2:sk-hynix-news-ai-infra",
+          "pulse.hn.4:hn-gemma4thinking"
+        ]
+      },
+      {
+        "id": "focus-memory-supply-positioning",
+        "title": "記憶體供給側在卡下一代位置，不是在擴產",
+        "body": "美光跳過原定的一代 NAND，直接押下一代，牽動 SSD 的供貨節奏。SK 海力士放棄 Solidigm 赴美 IPO 的評估，原本上看 150 億美元的募資改用內部資金撐美國新廠擴產 AI 用記憶體。NVIDIA 把記憶體控制器搬進 HBM base die，重劃晶片與記憶體的分工。需求端兩個訊號同向：黃仁勳判斷 2029 年前記憶體難過剩，EE Times 的分析預估 AI 需求推升的 DRAM 吃緊可能延續到 2027 年。",
+        "mechanism": "三個動作表面上各自是財務或製程決定，底下共用一個判斷：吃緊會持續得夠久，讓「卡住下一代的位置」比「多賣一年現在這一代」更值錢。跳代、把 IPO 現金收回內部、把控制器往記憶體端收，都是把資本從產能擴張挪到架構位置上。供給端願意這樣押，等於拿真錢替需求端那兩個預估背書，這比單看分析師的預估可靠。",
+        "evidence": "市場與技術分頁共六個項目同向；供給側三則來源年齡 1 到 2 天，NVHBM 那篇 4 天，DRAM 分析 3 天，黃仁勳那則 1 天。",
+        "cross_source": 6,
+        "product_opportunity": "在 repo 放一份記錄假設的檔案，寫下你的 demo 現在假設的 DRAM 容量、SSD 規格與價格基準，以及是哪天的哪個來源。aiDAPTIV+ 的賣點建立在 DRAM 貴、SSD 相對便宜這個價差上，而價差會動；寫下來，下次報價或規格變動時才分得清是市場動了，還是假設一開始就錯。",
+        "source_links": [
+          "tech.aidaptiv.5:blocksandfiles-micron-skip",
+          "tech.aidaptiv.3:sk-hynix-news-fact-12",
+          "market.funding.4:inside-6a1f8c3b",
+          "market.taiwan.3:eettaiwan-c2a4f609",
+          "market.taiwan.2:technews-tw-8d1f6b2c",
+          "market.taiwan.0:eettaiwan-2e7b9f04"
+        ]
+      }
+    ],
+    "sleeper": {
+      "id": "sleeper-token-budget-data-layer",
+      "title": "省 token 的下一步可能在資料怎麼存，不在模型",
+      "body": "fatsearch 只有 48 顆星，做法是把資料存成有大綱、能用 id 定位的 Markdown，宣稱 agent 查資料能省 99% token。這個 99% 是專案自己講的，沒有第三方量測，先當宣稱看。值得對照的是另一端：模型那邊砍 thinking token 已經有人做到同準確率下少 39% 到 69%，而且上了 HN 頭版，資料格式這一端幾乎沒人在碰。",
+      "mechanism": "agent 的 token 帳單由兩個因子相乘：模型每步產生多少 token、以及每次查資料要把多少無關內容塞進 context。模型那一邊已經有一整排團隊在壓，資料那一邊還停在「整份丟進去或整份切 chunk」。能用 id 精準取某一節的儲存格式，砍掉的是乘法裡另一個因子，兩邊的收益會疊加而不是互相取代。",
+      "evidence": "48 顆星，沒有進任何排行榜或社群頭版；對照組 Gemma-4-26B-A4B 的 thinking token 壓縮拿到 HN 91 分。",
+      "product_opportunity": "拿你 RAG 流程裡最大的那份文件做一次對照：一邊照現在的 chunk 切法，一邊轉成帶大綱與 section id 的 Markdown 讓模型自己點進去取，量兩邊的 input token 數與答對率。如果真的差一個數量級，這就是今年最便宜的一筆成本改善。",
+      "source_links": [
+        "discoveries.rising.5:fatsearch/fatsearch",
+        "pulse.hn.4:hn-gemma4thinking"
+      ]
+    },
+    "contrarian": {
+      "id": "contrarian-kimi-k31-weights-late",
+      "title": "我賭 Kimi K3.1 Pro 的權重 11 月 4 日前不會上架",
+      "body": "Moonshot 承諾 11 月 4 日前補放 K3.1 Pro 權重，API 則已經先上線。這套節奏已經替它換到實質好處：K3.1 Pro 擠進 Artificial Analysis 綜合評測前五，把 Claude Opus 5.5（High）壓到第六。市場現在預設它會履約，我押反邊。進榜之後，API 的定價權每多撐一天就多值一點，而權重一放就沒有了；開源在這種位置上是行銷排程，不是技術排程。",
+      "evidence": "HN 624 分那則的重點就是「先開 API 卡位、權重延到 11 月」，Simon Willison 的整理則記下了 11 月 4 日這個承諾日期。",
+      "source_links": [
+        "pulse.hn.0:hn-kimik31pro",
+        "pulse.ai_bloggers.2:simonwillison-simonk31",
+        "tech.benchmarks.1:artificialanalysis-kimi-k3.1-pro"
+      ],
+      "resolution_date": "2026-11-04",
+      "verification": "判定方式：到 2026-11-04 當天結束，若 Hugging Face 上 Moonshot 官方帳號仍沒有可下載的 K3.1 Pro 權重檔案，這條成立；權重上架即不成立，不管授權條款寬鬆或嚴格、也不管有沒有閹割版本。"
+    },
+    "predictions": [
+      {
+        "id": "pred-2026-10-24-sdcpp-temporal-decoding-spread",
+        "text": "stable-diffusion.cpp 會把分組時序解碼套用到 Wan2.2 TI2V 5B 以外、至少一個另外的影片模型，以合併進主線的 commit 為準。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "今天這筆 commit 只針對單一模型，但省的是記憶體峰值這個所有影片模型共有的瓶頸，移植成本低。"
+      },
+      {
+        "id": "pred-2026-10-24-agent-guardrail-repo-traction",
+        "text": "celador/weft 與 tunr-dev/tunr 至少一個的 GitHub 星數超過 1000（今天分別是 43 與 101）。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "多 agent 同時寫同一份 repo 的衝突是普遍痛點，而官方工具還沒給執行當下的 enforcement。"
+      },
+      {
+        "id": "pred-2026-10-24-aa-top3-non-anthropic",
+        "text": "Artificial Analysis 綜合評測的前三名出現至少一個非 Anthropic 模型（今天前三全是 Claude Opus 5.5 與 Sonnet 5.5 的不同設定）。",
+        "resolution_date": "2026-11-30",
+        "status": "pending",
+        "rationale": "Kimi K3.1 Pro 今天已經進到第五並把 Opus 5.5（High）推到第六，前段的位次正在鬆動。"
+      },
+      {
+        "id": "pred-2026-10-24-tau2-top1-change",
+        "text": "tau2-bench 的第一名不再是 RAFT-30B-A3B。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "GPT-5.2 今天從第 10 跳到第 2，工具呼叫這條賽道的位次變動速度明顯快於綜合評測。"
+      },
+      {
+        "id": "pred-2026-10-24-second-nand-generation-skip",
+        "text": "美光之外，至少再有一家 NAND 廠公開宣布跳過或延後原定世代的量產。",
+        "resolution_date": "2026-12-31",
+        "status": "pending",
+        "rationale": "美光跳代與 SK 海力士收回 Solidigm IPO 現金是同一種資本配置，壓力來自同一個供需判斷，同業很難單獨承擔跟進落後的代價。"
+      },
+      {
+        "id": "pred-2026-10-24-anthropic-s1-not-filed",
+        "text": "Anthropic 不會公開遞交 IPO 申請文件。",
+        "resolution_date": "2026-11-15",
+        "status": "pending",
+        "rationale": "估值傳聞從 2 兆美元下修到 1.5 兆美元，加上客戶集中度與安全政策爭議還懸著，這幾項都是遞件前要先處理掉的東西。"
+      }
+    ]
+  },
+  "discoveries": {
+    "rising": [
+      {
+        "id": "discoveries.rising.0:nanaism/yomiyasu",
+        "audience": "general",
+        "url": "https://github.com/nanaism/yomiyasu",
+        "name": "nanaism/yomiyasu",
+        "stars": 2439,
+        "language": null,
+        "relevance": "抓 AI 生成日文的比喻生硬、主述不清，Agent Skill 專治這些破綻。",
+        "novelty_strength": 1,
+        "stars_today": null,
+        "velocity_per_day": 68.9090909090909,
+        "repo_age_days": 23,
+        "eng_score": 2,
+        "excellence_score": 0.5364242424242425,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.rising.4:StartLuxLabs/DecisionPivot",
+        "audience": "general",
+        "url": "https://github.com/StartLuxLabs/DecisionPivot",
+        "name": "StartLuxLabs/DecisionPivot",
+        "stars": 144,
+        "language": null,
+        "relevance": "用只差一個關鍵細節的對照組，抓出 LLM 決策點真正失準處。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 9,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.5:fatsearch/fatsearch",
+        "audience": "work",
+        "url": "https://github.com/fatsearch/fatsearch",
+        "name": "fatsearch/fatsearch",
+        "stars": 48,
+        "language": null,
+        "relevance": "存成可用大綱／id 定位的 Markdown，讓 agent 查資料省 99% token。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 6,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.2:tunr-dev/tunr",
+        "audience": "work",
+        "url": "https://github.com/tunr-dev/tunr",
+        "name": "tunr-dev/tunr",
+        "stars": 101,
+        "language": null,
+        "relevance": "讓 agent 碰客戶內部資料限時、唯讀、需核准、留稽核記錄。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 28,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.3:VectorSpaceLab/InfoVis",
+        "audience": "general",
+        "url": "https://github.com/VectorSpaceLab/InfoVis",
+        "name": "VectorSpaceLab/InfoVis",
+        "stars": 41,
+        "language": null,
+        "relevance": "一個 9B 模型能生成也能編輯投影片，附專屬基準與 1500 萬筆訓練資料。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 14,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      },
+      {
+        "id": "discoveries.rising.1:celador/weft",
+        "audience": "work",
+        "url": "https://github.com/celador/weft",
+        "name": "celador/weft",
+        "stars": 43,
+        "language": null,
+        "relevance": "編輯當下就擋衝突、給診斷，不等 PR 才發現多個 agent 互踩。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 19,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": [],
+        "provisional": true
+      }
+    ],
+    "dev_watch": [
+      {
+        "id": "discoveries.dev_watch.0:facebookresearch/AmbiGUI",
+        "audience": "general",
+        "url": "https://github.com/facebookresearch/AmbiGUI",
+        "name": "facebookresearch/AmbiGUI",
+        "stars": 0,
+        "language": null,
+        "relevance": "專測 GUI agent 碰到指令不完整時，會不會先問清楚。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.1:liyupi/dafeiyu-cleaner",
+        "audience": "general",
+        "url": "https://github.com/liyupi/dafeiyu-cleaner",
+        "name": "liyupi/dafeiyu-cleaner",
+        "stars": 38,
+        "language": null,
+        "relevance": "混規則與 DeepSeek API 判讀，揪出 B 站留言區的 AI 機器人。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      },
+      {
+        "id": "discoveries.dev_watch.2:KohakuBlueleaf/KohakuvLLM",
+        "audience": "both",
+        "url": "https://github.com/KohakuBlueleaf/KohakuvLLM",
+        "name": "KohakuBlueleaf/KohakuvLLM",
+        "stars": 1,
+        "language": null,
+        "relevance": "不改 vLLM 原始碼，靠外掛讓混合注意力 VLM 吃滿 GPU 還能跟著升級。",
+        "novelty_strength": 2,
+        "stars_today": null,
+        "velocity_per_day": 0,
+        "repo_age_days": 0,
+        "eng_score": null,
+        "excellence_score": null,
+        "validation_refs": []
+      }
+    ]
+  },
+  "pulse": {
+    "hn": [
+      {
+        "id": "pulse.hn.0:hn-kimik31pro",
+        "audience": "general",
+        "url": "https://www.kimi.ai/blog/kimi-k3-1-pro",
+        "title": "Kimi K3.1 Pro and K3.1 Pro Highspeed",
+        "score": 624,
+        "comments": 75,
+        "takeaway": "先開 API 卡位，權重延到 11 月才放，開源節奏明顯慢於聲量。"
+      },
+      {
+        "id": "pulse.hn.1:hn-worldtui",
+        "audience": "general",
+        "url": "https://simedw.com/2026/10/21/world-model-terminal/",
+        "title": "WorldTUI: I trained a 360M model to pretend to be a terminal",
+        "score": 608,
+        "comments": 59,
+        "takeaway": "360M 參數就能模擬終端機輸出，世界模型不一定要堆大參數才有用。"
+      },
+      {
+        "id": "pulse.hn.2:hn-dessa",
+        "audience": "general",
+        "url": "https://block.xyz/dessa",
+        "title": "Dessa: the most authentic full-duplex speech model ever built",
+        "score": 149,
+        "comments": 33,
+        "takeaway": "Block 推出全雙工語音模型 Dessa，對打斷、搶話等真人對話節奏做了專門處理。"
+      },
+      {
+        "id": "pulse.hn.3:hn-omnara",
+        "audience": "general",
+        "url": "https://github.com/omnara-ai/omnara",
+        "title": "Show HN: Omnara – Open-source alternative to Claude Managed Agents",
+        "score": 111,
+        "comments": 14,
+        "takeaway": "開源版 Claude Managed Agents 出現，代理託管不再只能綁單一供應商。"
+      },
+      {
+        "id": "pulse.hn.4:hn-gemma4thinking",
+        "audience": "general",
+        "url": "https://bottlecapai.com/post/thinkingcap-gemma-4-26b/",
+        "title": "Gemma-4-26B-A4B with 39-69% less thinking at same accuracy",
+        "score": 91,
+        "comments": 6,
+        "takeaway": "同樣準確率下思考 token 砍 39%-69%，推理成本直接跟著降。"
+      },
+      {
+        "id": "pulse.hn.5:hn-enronwiki",
+        "audience": "general",
+        "url": "https://www.thisandthat.chat/enron/",
+        "title": "Show HN: We had AI write a wiki from 45k Enron emails, every fact cited",
+        "score": 54,
+        "comments": 10,
+        "takeaway": "4.5 萬封 Enron 郵件餵給 AI 寫成 wiki，每條事實都附原始郵件出處。"
+      },
+      {
+        "id": "pulse.hn.6:hn-jsneuralnet",
+        "audience": "general",
+        "url": "https://chenglou.me/handwired/",
+        "title": "Show HN: Turn regular JavaScript into a neural net",
+        "score": 44,
+        "comments": 7,
+        "takeaway": "把一般 JavaScript 函式直接轉成神經網路權重，示範程式與模型的界線多模糊。"
+      },
+      {
+        "id": "pulse.hn.7:hn-agentusageguard",
+        "audience": "general",
+        "url": "https://github.com/rbartoli/agent-usage-guard",
+        "title": "Show HN: agent-usage-guard – a Claude Code mod to protect your usage window",
+        "score": 26,
+        "comments": 2,
+        "takeaway": "社群自己動手寫 mod 盯緊 Claude Code 用量上限，官方配額工具還不夠用。"
+      }
+    ],
+    "lobsters": [
+      {
+        "id": "pulse.lobsters.0:lobsters-dockerisweird",
+        "audience": "general",
+        "url": "https://codeandcake.dev/posts/2026-10-22-docker-is-weird",
+        "title": "Docker is weird",
+        "score": 91,
+        "takeaway": "作者整理 Docker 幾個反直覺行為，提醒容器語意跟一般程式假設差很多。"
+      },
+      {
+        "id": "pulse.lobsters.1:lobsters-dontmesslinks",
+        "audience": "general",
+        "url": "https://maurycyz.com/misc/real_links/",
+        "title": "Please don't mess with links",
+        "score": 85,
+        "takeaway": "文章主張連結該維持原始行為，JS 攔截點擊改導向正在破壞網頁基本契約。"
+      },
+      {
+        "id": "pulse.lobsters.2:lobsters-traitsathome",
+        "audience": "general",
+        "url": "https://www.axelmagn.com/blog/202610-zig-traits/",
+        "title": "We have Traits at Home",
+        "score": 51,
+        "takeaway": "用 Zig 現有機制手刻出類似 trait 的介面抽象，不靠語言新增語法。"
+      },
+      {
+        "id": "pulse.lobsters.3:lobsters-xkcdrandom",
+        "audience": "general",
+        "url": "https://ochagavia.nl/blog/the-glorious-@xkcdrandom-zig-builtin/",
+        "title": "The glorious @xkcdRandom Zig builtin",
+        "score": 37,
+        "takeaway": "Zig 把 xkcd 的「隨機數產生器」玩笑做成真的編譯器內建函式。"
+      },
+      {
+        "id": "pulse.lobsters.4:lobsters-purefpvsc",
+        "audience": "general",
+        "url": "https://rtfeldman.com/fp-vs-c",
+        "title": "How close can pure FP get to C?",
+        "score": 34,
+        "takeaway": "純函式風格要逼近 C 的效能，得先搞懂編譯器實際幫你做了哪些最佳化。"
+      },
+      {
+        "id": "pulse.lobsters.5:lobsters-fasterthanrust",
+        "audience": "general",
+        "url": "https://blog.fyralabs.com/debunking-faster-than-rust-malicious-benchmarks-in-tov/",
+        "title": "Debunking \"Faster than Rust\": Malicious Benchmarks in Tov",
+        "score": 31,
+        "takeaway": "拆穿 Tov 語言宣稱比 Rust 快的測試方法，benchmark 條件根本不對等。"
+      }
+    ],
+    "chinese_community": [
+      {
+        "id": "pulse.chinese_community.0:oschina-5f503177",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/503177",
+        "title": "Anthropic 平台工程团队 200 人的代码，全是 Claude 写的",
+        "takeaway": "Anthropic 核心服務與開發工具的程式碼全交給 Claude 寫，工程師轉做系統設計與驗證。"
+      },
+      {
+        "id": "pulse.chinese_community.1:oschina-5f503166",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/503166",
+        "title": "Linus 使用 Claude 辅助对内核进行迟到已久的历史清理",
+        "takeaway": "Linus 親自送出 48 段 patch，靠 Claude 幫忙刪掉內核裡用錯多年的兩個函式。"
+      },
+      {
+        "id": "pulse.chinese_community.2:oschina-5f503167",
+        "audience": "general",
+        "url": "https://www.oschina.net/news/503167",
+        "title": "MiniMax M3.1 Flash 正式开源",
+        "takeaway": "428B 總參數、23B 啟用的 M3.1 Flash 開源，72 小時處理掉破百萬億 token。"
+      },
+      {
+        "id": "pulse.chinese_community.3:technews-openairu",
+        "audience": "general",
+        "url": "https://technews.tw/2026/10/23/openai-runs-1946-gpt-rosalind-agents-on-a-mouse-brain-atlas/",
+        "title": "OpenAI 動用近 2 千個 GPT-Rosalind 代理，32 分鐘完成小鼠全腦基因圖譜分析",
+        "takeaway": "OpenAI 派出近 2000 個代理，32 分鐘跑完過去要耗費數月的全腦基因分析。"
+      },
+      {
+        "id": "pulse.chinese_community.4:technews-nvidiato",
+        "audience": "both",
+        "url": "https://technews.tw/2026/10/23/nvidia-to-connect-576-rubin-ultra-gpus-using-cpo-to-create-one-giant-gpu/",
+        "title": "576 顆 GPU 合體成一顆巨型 GPU，輝達揭露 Rubin Ultra NVL576 架構",
+        "takeaway": "576 顆 Rubin Ultra 用 CPO 連成一顆巨型 GPU，機櫃等級的互連密度再上一階。"
+      },
+      {
+        "id": "pulse.chinese_community.5:technews-memoryov",
+        "audience": "both",
+        "url": "https://technews.tw/2026/10/23/memory-oversupply-is-unlikely-before-2029/",
+        "title": "黃仁勳：2029 年前記憶體難過剩，與中國企業合作持開放態度",
+        "takeaway": "黃仁勳判斷記憶體吃緊會撐到 2029 年，對中國廠商合作態度也沒關死。"
+      }
+    ],
+    "ai_bloggers": [
+      {
+        "id": "pulse.ai_bloggers.0:hamel-husain-hameldec",
+        "audience": "general",
+        "url": "https://hamel.dev/blog/posts/decision-model-evals/",
+        "title": "How To Use Decision Models for Evals",
+        "takeaway": "Jev、Decider、d1、Clef 等決策模型一窩蜂冒出，文章拆解它們真正解決哪種評測痛點。"
+      },
+      {
+        "id": "pulse.ai_bloggers.1:simonwillison-simonaas",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Oct/22/donating-agent-skills/",
+        "title": "Donating Agent Skills to the Agentic AI Foundation",
+        "takeaway": "Agent Skills 標準捐給 Agentic AI Foundation，已有 70 多個平臺採用。"
+      },
+      {
+        "id": "pulse.ai_bloggers.2:simonwillison-simonk31",
+        "audience": "general",
+        "url": "https://simonwillison.net/2026/Oct/23/kimi-k31-pro/",
+        "title": "Introducing Kimi K3.1 Pro",
+        "takeaway": "Moonshot 承諾 11 月 4 日前補放 K3.1 Pro 權重，API 先上線搶市場聲量。"
+      },
+      {
+        "id": "pulse.ai_bloggers.3:garymarcus-garybank",
+        "audience": "general",
+        "url": "https://garymarcus.substack.com/p/breaking-news-us-banks-are-taking",
+        "title": "Breaking news: U.S. banks are taking hits from AI agents",
+        "takeaway": "Gary Marcus 點名銀行已因 AI 代理吃虧，引用 Altman「容忍壞事發生」說法。"
+      },
+      {
+        "id": "pulse.ai_bloggers.4:latentspace-latentmt",
+        "audience": "general",
+        "url": "https://latent.space/p/ai-is-getting-good-at-math/",
+        "title": "AI Is Getting Good at Math. Here's Why.",
+        "takeaway": "OpenAI 內部模型找到塵封 80 年的 Erdős 猜想反例，數學能力正被低估。"
+      }
+    ]
+  },
+  "market": {
+    "ma": [
+      {
+        "id": "market.ma.0:techbang-b4f29a31",
+        "audience": "general",
+        "url": "https://www.techbang.com/posts/134089-character-ai-bankruptcy-disney-acquisition",
+        "title": "陪伴型AI熱潮降溫！Character.AI 正式聲請破產保護，迪士尼砸2千萬美元收購部分資產",
+        "takeaway": "AI陪伴新創撐不住訴訟與伺服器成本，低價賤賣資產見估值重挫。",
+        "amount": "$20M",
+        "companies": [
+          "Disney",
+          "Character.AI"
+        ],
+        "region": "us"
+      }
+    ],
+    "funding": [
+      {
+        "id": "market.funding.0:techcrunch-7f3a9c2e",
+        "audience": "general",
+        "url": "https://techcrunch.com/2026/10/21/legal-ai-startup-legora-raises-550m-series-e-at-8-8b-valuation/",
+        "title": "Legal AI startup Legora raises $550M Series E at $8.8B valuation",
+        "takeaway": "法律AI新創估值衝上88億美元，垂直AI工具吸金力道不減。",
+        "amount": "$550M",
+        "companies": [
+          "Legora"
+        ],
+        "region": "eu"
+      },
+      {
+        "id": "market.funding.1:techcrunch-4d8e1b6f",
+        "audience": "general",
+        "url": "https://techcrunch.com/2026/10/21/blacksmith-hits-unicorn-valuation-after-sequoia-leads-series-c/",
+        "title": "Blacksmith hits unicorn valuation after Sequoia leads Series C",
+        "takeaway": "AI程式碼測試平台估值破10億美元，Sequoia領投力挺開發工具賽道。",
+        "amount": "$66M",
+        "companies": [
+          "Blacksmith",
+          "Sequoia"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.2:ithome-9c2f7a1d",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/179916",
+        "title": "OpenAI前產品長創辦Warp Sciences，募資2.15億美元打造AI藥物實驗室",
+        "takeaway": "OpenAI前產品長跨界AI藥物研發，首輪估值即達8.65億美元。",
+        "amount": "$215M",
+        "companies": [
+          "Warp Sciences",
+          "Lightspeed"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.3:inside-3b6d0e5a",
+        "audience": "general",
+        "url": "https://www.inside.com.tw/article/42717-anthropic-ipo-valuation-customer-concentration-model-safety",
+        "title": "Anthropic 上市前先過這三關！估值傳從 2 兆降到 1.5 兆美元，客戶集中、模型越界與安全政策爭議成隱憂",
+        "takeaway": "IPO估值傳自2兆下修至1.5兆美元，客戶集中度與安全爭議成隱憂。",
+        "amount": "$1.5–2兆美元（估值傳聞）",
+        "companies": [
+          "Anthropic"
+        ],
+        "region": "us"
+      },
+      {
+        "id": "market.funding.4:inside-6a1f8c3b",
+        "audience": "both",
+        "url": "https://www.inside.com.tw/article/42713-sk-hynix-solidigm-us-ipo-suspended",
+        "title": "SK 海力士暫停 Solidigm 赴美 IPO 評估，美國 NAND 新廠資金另覓出路",
+        "takeaway": "SK海力士喊卡Solidigm赴美IPO，NAND擴產資金得另覓管道。",
+        "amount": "最高$150億美元（已喊卡評估）",
+        "companies": [
+          "SK Hynix",
+          "Solidigm"
+        ],
+        "region": "global"
+      }
+    ],
+    "taiwan": [
+      {
+        "id": "market.taiwan.0:eettaiwan-2e7b9f04",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20261021nt01-ai-demand-will-keep-dram-market-under-pressure/",
+        "title": "AI需求持續升溫　DRAM供應吃緊恐延續至2027年",
+        "takeaway": "AI需求推升DRAM短缺，分析估吃緊態勢恐牽動至2027年。",
+        "companies": [],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.1:money-udn-tech-5a3c8e71",
+        "audience": "both",
+        "url": "https://money.udn.com/money/story/5612/9834200",
+        "title": "長鑫最快2027年躍全球DRAM三哥 南亞科現在不用怕？真正交鋒時間曝光",
+        "takeaway": "長鑫鎖定美光、SK海力士等前三大廠，南亞科非其首要競爭對手。",
+        "companies": [
+          "南亞科",
+          "長鑫"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.2:technews-tw-8d1f6b2c",
+        "audience": "both",
+        "url": "https://technews.tw/2026/10/23/memory-oversupply-is-unlikely-before-2029/",
+        "title": "黃仁勳：2029 年前記憶體難過剩，與中國企業合作持開放態度",
+        "takeaway": "黃仁勳看淡記憶體供過於求時間點，對南亞科等台廠是信心指標。",
+        "companies": [
+          "NVIDIA"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.3:eettaiwan-c2a4f609",
+        "audience": "both",
+        "url": "https://www.eettaiwan.com/20261020nt21-nvhbm-ai-chips-memory-interconnect-architecture/",
+        "title": "NVHBM問世　AI晶片競爭延伸至記憶體與互連架構",
+        "takeaway": "NVIDIA把記憶體控制器搬進HBM Base Die，重劃晶片與記憶體分工。",
+        "companies": [
+          "NVIDIA",
+          "Amazon Annapurna Labs"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.4:money-udn-tech-f1b7d3a8",
+        "audience": "general",
+        "url": "https://money.udn.com/money/story/5612/9834192",
+        "title": "科技三巨頭傳付千億 包載板產能 帶動欣興、景碩、南電加速擴廠",
+        "takeaway": "英特爾、輝達、超微付千億訂金包產能，載板三強今年擴廠逾1,612億元。",
+        "amount": "逾$1,000億元（訂金）",
+        "companies": [
+          "欣興",
+          "景碩",
+          "南電",
+          "Intel",
+          "NVIDIA",
+          "超微"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.5:money-udn-tech-7c9e2b45",
+        "audience": "general",
+        "url": "https://money.udn.com/money/story/5612/9834058",
+        "title": "AI吃電怪獸逼出800V革命！光寶科、台達電領軍34家台廠搶新商機",
+        "takeaway": "AI資料中心用電量暴增，34家台廠搶進800V電源新規格供應鏈。",
+        "companies": [
+          "光寶科",
+          "台達電"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.6:techbang-1a6f8d2e",
+        "audience": "general",
+        "url": "https://www.techbang.com/posts/134387-asus-edge-ai-agent-hackathon",
+        "title": "驅動創新！華碩力挺邊緣AI代理黑客松",
+        "takeaway": "華碩砸算力辦邊緣AI代理黑客松，卡位Agentic AI開發者生態。",
+        "companies": [
+          "華碩"
+        ],
+        "region": "taiwan"
+      },
+      {
+        "id": "market.taiwan.7:ithome-4e8b1c73",
+        "audience": "general",
+        "url": "https://www.ithome.com.tw/news/179929",
+        "title": "AI要能管、值得、控得住，財政資訊中心揭稅務AI應用準則",
+        "takeaway": "財政部定調AI三要件：能管、值得做、控得住，為代理式AI劃紅線。",
+        "companies": [
+          "財政資訊中心"
+        ],
+        "region": "taiwan"
+      }
+    ]
+  },
+  "tech": {
+    "vendor": [
+      {
+        "id": "tech.vendor.0:aws-ml-blog-beyond-t",
+        "audience": "both",
+        "url": "https://aws.amazon.com/blogs/machine-learning/beyond-the-kv-cache-training-and-serving-i14s-laplace-3b-linear-attention-model-on-aws-trainium2-with-native-pytorch/",
+        "title": "Beyond the KV cache: Training and serving i14's Laplace 3B linear attention model on AWS Trainium2 with native PyTorch",
+        "takeaway": "線性注意力省掉 KV cache,3B 模型用原生 PyTorch 跑在 Trainium2。",
+        "companies": [
+          "AWS",
+          "i14"
+        ]
+      },
+      {
+        "id": "tech.vendor.1:sdcpp-40b17884",
+        "audience": "general",
+        "url": "https://github.com/leejet/stable-diffusion.cpp/commit/40b1788476bbe8fe42fa538ddf7d32408a126b93",
+        "title": "feat: allow grouped temporal decoding for Wan2.2 TI2V 5B (#2196)",
+        "takeaway": "Wan2.2 TI2V 5B 改用分組時序解碼,降低影片生成的記憶體與延遲。",
+        "companies": [
+          "stable-diffusion.cpp"
+        ]
+      },
+      {
+        "id": "tech.vendor.2:fastvideo-8db2d71e",
+        "audience": "general",
+        "url": "https://github.com/hao-ai-lab/FastVideo/commit/8db2d71ef217e84bec7dbb6e4ab65c92b144df4f",
+        "title": "[perf] Cache MLX H3 text refinement and speed up attention (#2002)",
+        "takeaway": "快取文字特徵、加速注意力運算,讓 MLX 上的 H3 推論更快。",
+        "companies": [
+          "FastVideo"
+        ]
+      },
+      {
+        "id": "tech.vendor.3:rocm-blog-faster-a",
+        "audience": "general",
+        "url": "https://rocm.blogs.amd.com/artificial-intelligence/faster-action-models/README.html",
+        "title": "Optimizing World Action Models on AMD GPUs",
+        "takeaway": "World Action Model 靠影片骨幹做推論最貴,文章示範怎麼砍掉其中的算力。",
+        "companies": [
+          "AMD"
+        ]
+      },
+      {
+        "id": "tech.vendor.4:sdcpp-95ff7623",
+        "audience": "general",
+        "url": "https://github.com/leejet/stable-diffusion.cpp/commit/95ff76230889898e1bf40058ba272a3699b50dc6",
+        "title": "fix: update ggml to fix SageAttention builds on older GPUs (#2199)",
+        "takeaway": "SageAttention 這種稀疏注意力補上舊卡編譯支援,省算力的適用範圍跟著擴大。",
+        "companies": [
+          "stable-diffusion.cpp"
+        ]
+      },
+      {
+        "id": "tech.vendor.5:reddit-stablediffusion-1xdoh8k",
+        "audience": "general",
+        "url": "https://www.reddit.com/r/StableDiffusion/comments/1xdoh8k/i_tested_the_rtx_30series_gpu_unlock_up_to_59/",
+        "title": "I tested the RTX 30-series GPU Unlock: up to 59% higher throughput in ComfyUI (3090 Ti)",
+        "takeaway": "3090 Ti 解鎖核心限制,ComfyUI 實測吞吐量最高提升 59%。",
+        "companies": [
+          "NVIDIA"
+        ]
+      },
+      {
+        "id": "tech.vendor.6:openai-scaling-",
+        "audience": "general",
+        "url": "https://openai.com/index/scaling-storage-one-billion-users-part-two",
+        "title": "Rapidly scaling online storage to serve over 1 billion ChatGPT users (Part II)",
+        "takeaway": "ChatGPT 儲存層重構,靠多租戶快取與 Cosmos DB 讀取速度提升 12 倍。",
+        "companies": [
+          "OpenAI"
+        ]
+      },
+      {
+        "id": "tech.vendor.7:nvidia-developer-blog-how-to-r",
+        "audience": "both",
+        "url": "https://developer.nvidia.com/blog/how-to-read-data-into-gpu-memory-in-python-with-nvidia-gpudirect-storage/",
+        "title": "How to Read Data into GPU Memory in Python with NVIDIA GPUDirect Storage",
+        "takeaway": "GPUDirect Storage 讓 Python 直接把資料從硬碟讀進 GPU 記憶體,省去 CPU 中轉。",
+        "companies": [
+          "NVIDIA"
+        ]
+      }
+    ],
+    "models": [
+      {
+        "id": "tech.models.0:hf-ltx-2.5",
+        "audience": "general",
+        "url": "https://huggingface.co/Lightricks/LTX-2.5",
+        "title": "Lightricks/LTX-2.5",
+        "takeaway": "Lightricks 開源影片生成模型 LTX-2.5 下載破 200 萬,一次整合文字、影像、聲音生成。",
+        "companies": [
+          "Lightricks"
+        ]
+      },
+      {
+        "id": "tech.models.1:hf-deepseek-v4.1-flash",
+        "audience": "both",
+        "url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash-1017",
+        "title": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+        "takeaway": "DeepSeek V4.1 Flash 開源發佈,FP8 量化、MIT 授權,社群下載已破 5.7 萬次。",
+        "companies": [
+          "DeepSeek"
+        ]
+      },
+      {
+        "id": "tech.models.2:hf-qwen3.8-27b",
+        "audience": "general",
+        "url": "https://huggingface.co/Qwen/Qwen3.8-27B",
+        "title": "Qwen/Qwen3.8-27B",
+        "takeaway": "Qwen 推出 3.8 代 27B 模型,上架沒多久下載量就衝上 770 萬次。",
+        "companies": [
+          "Qwen"
+        ]
+      },
+      {
+        "id": "tech.models.3:hf-flux-3-image-klein",
+        "audience": "general",
+        "url": "https://huggingface.co/black-forest-labs/flux-3-image-klein-comfy",
+        "title": "black-forest-labs/flux-3-image-klein-comfy",
+        "takeaway": "FLUX.3 Image Klein 開源上架 ComfyUI,首週下載突破 53 萬次。",
+        "companies": [
+          "Black Forest Labs"
+        ]
+      },
+      {
+        "id": "tech.models.4:hf-moss-image-sft",
+        "audience": "general",
+        "url": "https://huggingface.co/OpenMOSS-Team/MOSS-Image-SFT",
+        "title": "OpenMOSS-Team/MOSS-Image-SFT",
+        "takeaway": "OpenMOSS 發佈 MOSS-Image 開源文生圖模型,Reddit 這幾天滿是實測與 LoRA 成果。",
+        "companies": [
+          "OpenMOSS"
+        ]
+      },
+      {
+        "id": "tech.models.5:hf-drama-3",
+        "audience": "general",
+        "url": "https://huggingface.co/fishaudio/drama-3",
+        "title": "fishaudio/drama-3",
+        "takeaway": "Fish Audio 開源多語者 TTS 模型 Drama 3,支援情緒語音與 70 多種語言。",
+        "companies": [
+          "Fish Audio"
+        ]
+      }
+    ],
+    "benchmarks": [
+      {
+        "id": "tech.benchmarks.0:tau2bench-gpt-5.2",
+        "audience": "general",
+        "url": "https://taubench.com/",
+        "title": "tau2-bench: GPT-5.2 rises to #2",
+        "takeaway": "tau2-bench 專測 agent 工具呼叫能力,GPT-5.2 這次從第 10 衝到第 2。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "GPT-5.2"
+          ],
+          "rank_changes": [
+            "GPT-5.2: #10 → #2 ↑"
+          ]
+        }
+      },
+      {
+        "id": "tech.benchmarks.1:artificialanalysis-kimi-k3.1-pro",
+        "audience": "general",
+        "url": "https://artificialanalysis.ai/",
+        "title": "Artificial Analysis Intelligence Index: Kimi K3.1 Pro enters top 5",
+        "takeaway": "Kimi K3.1 Pro 擠進 Artificial Analysis 綜合評測前五,Opus 5.5(High)因此退到第六。",
+        "benchmark_changes": {
+          "new_top_5": [
+            "Kimi K3.1 Pro"
+          ],
+          "rank_changes": [
+            "Claude Opus 5.5 (High, Default Fallback): #5 → #6 ↓",
+            "Claude Fable 5.1 (Max, Default Fallback): #6 → #7 ↓",
+            "Claude Fable 5.1 (Xhigh, Default Fallback): #7 → #8 ↓",
+            "GPT-6 Astra (Max): #8 → #9 ↓",
+            "Gemini 4 Argon (High): #9 → #10 ↓"
+          ]
+        }
+      }
+    ],
+    "aidaptiv": [
+      {
+        "id": "tech.aidaptiv.0:arxiv-2610.31633",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2610.31633v1",
+        "title": "BeNice! Closing Looping's Inference-Memory Gap via KV-Sharing",
+        "takeaway": "迴圈式架構的 KV cache 隨深度疊代線性增長,這篇論文用 KV-sharing 砍掉這塊重複開銷。",
+        "companies": []
+      },
+      {
+        "id": "tech.aidaptiv.1:arxiv-2610.31479",
+        "audience": "both",
+        "url": "https://arxiv.org/abs/2610.31479v1",
+        "title": "Evaluating the Applicability of LLM Inference Optimizations on Apple Silicon",
+        "takeaway": "KV cache 修剪、投機解碼等推論優化,搬到 Apple Silicon 上效果不一定延續。",
+        "companies": []
+      },
+      {
+        "id": "tech.aidaptiv.2:sk-hynix-news-ai-infra",
+        "audience": "work",
+        "url": "https://news.skhynix.com/en/ai-infrastructure-insight-ep4/",
+        "title": "[AI Infrastructure Insight] How AI infrastructure will be designed for the future",
+        "takeaway": "SK 海力士指出,AI 推論與 agent 工作負載讓記憶體頻寬需求超越算力本身。",
+        "companies": [
+          "SK Hynix"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.3:sk-hynix-news-fact-12",
+        "audience": "work",
+        "url": "https://news.skhynix.com/en/fact-12/",
+        "title": "Solidigm to Discontinue Review of Potential IPO, Reaffirming Commitment to Long-Term Growth and Shareholder Value",
+        "takeaway": "Solidigm 放棄 IPO 評估,改靠內部資金撐美國新廠擴產 AI 用記憶體。",
+        "companies": [
+          "SK Hynix",
+          "Solidigm"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.4:blocksandfiles-metas-promet",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/ai-ml/2026/10/20/metas-prometheus-using-object-storage-for-massive-ai-training-jobs/5304117",
+        "title": "Meta's Prometheus using object storage for massive AI training jobs",
+        "takeaway": "Meta 把物件儲存搬進大型模型訓練流程,用它撐住資料餵入訓練叢集的規模。",
+        "companies": [
+          "Meta"
+        ]
+      },
+      {
+        "id": "tech.aidaptiv.5:blocksandfiles-micron-skip",
+        "audience": "work",
+        "url": "https://www.blocksandfiles.com/flash/2026/10/22/micron-skipping-planned-nand-generation/5304729",
+        "title": "Micron skipping planned NAND generation",
+        "takeaway": "美光跳過原定的一代 NAND 世代,直接卡位下一代,牽動 SSD 供貨節奏。",
+        "companies": [
+          "Micron"
+        ]
+      }
+    ]
+  },
+  "faithfulness": {
+    "checked": true,
+    "model": "claude-sonnet-5",
+    "ran_judge": true,
+    "report_date": "2026-10-24",
+    "flagged": [
+      {
+        "path": "lead.html",
+        "type": "attribution",
+        "author": "Apple Silicon",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "NO_SUPPORTING_QUOTE"
+      },
+      {
+        "path": "signals.focus[0].body",
+        "type": "attribution",
+        "author": "World Action",
+        "verdict": "NOT_ENOUGH_INFO",
+        "quote": "World Action Model 靠影片骨幹做推論最貴,文章示範怎麼砍掉其中的算力。"
+      }
+    ],
+    "repaired": 0
+  }
+}
